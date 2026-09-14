@@ -1,0 +1,421 @@
+import { useMemo, useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import {
+  Avatar,
+  BarisData,
+  HanyaPembacaLayar,
+  Kartu,
+  Lencana,
+  Pemisah,
+  Tombol,
+  TombolTautan,
+} from '@/components/ui/dasar'
+import { PengaturJumlah } from '@/components/ui/formulir'
+import { Lembar } from '@/components/ui/lembar'
+import { BilahAksi, KepalaHalaman } from '@/components/ui/navigasi'
+import { KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
+import { ChipStok, KuotaBulanIni, TombolTerkunci, useTerkunci } from '@/components/domain'
+import {
+  IkonBintangIsi,
+  IkonKeranjang,
+  IkonKontrak,
+  IkonKotak,
+  IkonPanahKanan,
+  IkonToko,
+} from '@/icons'
+import { angka, jumlahSatuan, rupiah, waktuLalu } from '@/lib/format'
+import { BANTUAN } from '@/lib/label'
+import { distributorById, hariCukup, paketUntukPenawaran, penawaranById, statusStok } from '@/data/dummy'
+import { useAplikasi } from '@/store/aplikasi'
+
+/**
+ * Detail satu penawaran: satu barang dari satu distributor.
+ *
+ * Dua tombol di kaki layar sengaja dibedakan bobotnya. "Ikat Kontrak" penuh dan
+ * berwarna, "Beli Sekali" bergaris. Bukan untuk mendorong kontrak diam-diam,
+ * tapi karena kontrak adalah keputusan yang perlu dipikirkan, jadi jalur menuju
+ * layar pembandingnya harus paling mudah ditemukan. Harga kedua jalur ditulis
+ * bersebelahan tepat di atas tombol supaya perbandingannya tidak bisa dilewati.
+ */
+export default function PenawaranDetail() {
+  const { id = '' } = useParams()
+  const navigasi = useNavigate()
+  const terkunci = useTerkunci()
+
+  const penawaran = penawaranById(id)
+  const distributor = penawaran ? distributorById(penawaran.distributorId) : undefined
+  const paket = useMemo(() => paketUntukPenawaran(id), [id])
+
+  const daftarBarangGudang = useAplikasi((s) => s.barang)
+  const daftarKontrakAktif = useAplikasi((s) => s.kontrak)
+  const tambahKeKeranjang = useAplikasi((s) => s.tambahKeKeranjang)
+  const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
+
+  const barang = daftarBarangGudang.find((b) => b.id === penawaran?.barangIdTerkait)
+  const kontrakTerkait = daftarKontrakAktif.filter(
+    (k) => k.penawaranId === id && (k.status === 'aktif' || k.status === 'akan-berakhir'),
+  )
+
+  const [lembarBeli, setLembarBeli] = useState(false)
+  const [jumlah, setJumlah] = useState(1)
+
+  if (!penawaran || !distributor) {
+    return (
+      <div className="pb-6">
+        <KepalaHalaman judul="Penawaran" kembaliKe="/belanja" />
+        <Kartu className="mt-6">
+          <h2 className="sr-only">Penawaran tidak ditemukan</h2>
+          <KeadaanKosong
+            ikon={<IkonToko size={26} />}
+            judul="Penawaran ini sudah tidak ada"
+            pesan="Distributor mungkin sudah menurunkan barang ini dari daftar jualnya, atau tautannya salah salin. Cari barang yang sama dari distributor lain."
+            aksi={<TombolTautan ke="/belanja">Cari barang di Belanja</TombolTautan>}
+          />
+        </Kartu>
+      </div>
+    )
+  }
+
+  const hargaKontrakTermurah = paket.length > 0 ? Math.min(...paket.map((p) => p.hargaSatuan)) : null
+  const kelipatan = penawaran.kemasanJual
+  const habisDiDistributor = penawaran.stokTersedia <= 0
+  /* Kontrak dibaca dari penyimpanan aplikasi, bukan dari berkas contoh, supaya
+     kontrak yang baru berubah di layar lain langsung ikut terlihat di sini. */
+  const kontrakBarang = barang
+    ? daftarKontrakAktif.filter(
+        (k) => k.barangId === barang.id && (k.status === 'aktif' || k.status === 'akan-berakhir'),
+      )
+    : []
+  const kontrakUntukPenawaranIni = kontrakTerkait[0] ?? null
+  const subtotal = jumlah * penawaran.hargaSatuan
+
+  function bukaLembarBeli() {
+    setJumlah(1)
+    setLembarBeli(true)
+  }
+
+  function simpanKeKeranjang() {
+    if (!penawaran) return
+    tambahKeKeranjang(
+      penawaran.distributorId,
+      penawaran.id,
+      jumlah,
+      null,
+      kontrakUntukPenawaranIni?.id ?? null,
+    )
+    setLembarBeli(false)
+    tampilkanRacun(`${jumlah} ${penawaran.satuan} ${penawaran.nama} masuk keranjang.`, 'aman')
+  }
+
+  return (
+    <div className="pb-6">
+      <KepalaHalaman judul={penawaran.nama} keterangan={distributor.nama} kembaliKe="/belanja" />
+
+      <div className="mt-4 lg:grid lg:grid-cols-12 lg:gap-6 lg:items-start">
+        <div className="lg:col-span-7 space-y-4">
+          {/* Identitas barang. Nama barang tidak diulang di sini: ia sudah ada
+              di kepala halaman yang lengket di atas layar. */}
+          <Kartu>
+            <h2 className="text-[0.9375rem] font-bold text-ink mb-2.5">Harga dan ketersediaan</h2>
+            <div className="flex items-start gap-3.5">
+              <Avatar nama={penawaran.nama} warna={distributor.warna} ukuran={56} />
+              <div className="min-w-0 grow">
+                <p className="text-[0.9375rem] font-semibold text-ink leading-snug">{penawaran.kategori}</p>
+                <p className="mt-0.5 text-[0.8125rem] text-ink-3 leading-relaxed">{penawaran.keterangan}</p>
+              </div>
+            </div>
+
+            <Pemisah className="my-3.5" />
+
+            {/* Harga beli sekali: satu-satunya angka besar di blok ini */}
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-[1.625rem] font-extrabold text-ink leading-none tracking-tight">
+                {rupiah(penawaran.hargaSatuan)}
+              </span>
+              <span className="text-[0.875rem] font-semibold text-ink-3">/{penawaran.satuan}</span>
+            </div>
+            <p className="mt-1 text-[0.8125rem] text-ink-3">Harga beli sekali, belum termasuk ongkos kirim.</p>
+
+            <dl className="mt-3.5">
+              {/* Stok distributor dan waktu pembaruannya wajib tampil: angka stok
+                  tanpa stempel waktu membuat orang memesan barang yang sudah habis. */}
+              <BarisData
+                label="Stok distributor"
+                nilai={`${angka(penawaran.stokTersedia)} ${penawaran.satuan}`}
+                tebal
+              />
+              <BarisData label="Diperbarui" nilai={waktuLalu(penawaran.stokDiperbaruiPada)} />
+              <BarisData
+                label="Kelipatan pemesanan"
+                nilai={
+                  kelipatan && barang
+                    ? `1 ${kelipatan.nama} = ${angka(kelipatan.isi)} ${barang.satuan}`
+                    : kelipatan
+                      ? `1 ${kelipatan.nama} = ${angka(kelipatan.isi)} satuan pakai`
+                      : `per 1 ${penawaran.satuan}`
+                }
+              />
+              <BarisData label="Area kirim" nilai={distributor.areaKirim.join(', ')} />
+            </dl>
+          </Kartu>
+
+          {/* Distributor */}
+          <Link
+            to={`/distributor/${distributor.id}`}
+            className="flex items-center gap-3 bg-surface border border-line rounded-lg p-4 min-h-[72px] shadow-e1 hover:border-line-strong"
+          >
+            <Avatar nama={distributor.nama} warna={distributor.warna} ukuran={44} />
+            <div className="min-w-0 grow">
+              <p className="text-[0.9375rem] font-bold text-ink truncate">{distributor.nama}</p>
+              <p className="text-[0.8125rem] text-ink-3">{distributor.kota}</p>
+              <div className="mt-1.5">
+                {distributor.baru || distributor.rating == null ? (
+                  <Lencana nada="netral">
+                    Distributor Baru &middot; belum ada ulasan &middot; bergabung {distributor.sejak}
+                  </Lencana>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 text-[0.8125rem] text-ink-2">
+                    <IkonBintangIsi size={14} className="text-menipis" />
+                    <strong className="text-ink">{distributor.rating.toFixed(1).replace('.', ',')}</strong>
+                    <HanyaPembacaLayar>dari 5 bintang &middot;</HanyaPembacaLayar>
+                    {distributor.jumlahUlasan} ulasan dari {distributor.jumlahUmkmPengulas} UMKM &middot;{' '}
+                    {angka(distributor.jumlahPesananSelesai)} pesanan selesai
+                  </span>
+                )}
+              </div>
+            </div>
+            <IkonPanahKanan size={18} className="shrink-0 text-ink-3" />
+          </Link>
+        </div>
+
+        <div className="lg:col-span-5 mt-4 lg:mt-0 space-y-4">
+          {/* Barang gudang yang terkait */}
+          {barang ? (
+            <Kartu padat>
+              <div className="flex items-start justify-between gap-2">
+                <h2 className="text-[0.875rem] font-bold text-ink">Stok kamu untuk barang ini</h2>
+                <ChipStok status={statusStok(barang)} />
+              </div>
+              <p className="mt-2 text-[0.875rem] text-ink-2">
+                Sisa <strong className="text-ink">{jumlahSatuan(barang.stok, barang.satuan)}</strong>
+                {barang.pemakaianHarian > 0 && hariCukup(barang) != null && (
+                  <> &middot; cukup &plusmn;{hariCukup(barang)} hari</>
+                )}
+              </p>
+              <Link
+                to={`/stok/${barang.id}`}
+                className="mt-2 inline-flex items-center gap-1 text-[0.8125rem] font-bold text-brand hover:underline"
+              >
+                Buka detail stok
+                <IkonPanahKanan size={15} />
+              </Link>
+            </Kartu>
+          ) : (
+            <Kartu padat>
+              <h2 className="text-[0.875rem] font-bold text-ink">Belum ada di daftar stok kamu</h2>
+              <p className="mt-1.5 text-[0.8125rem] text-ink-2 leading-relaxed">
+                Barang ini belum terdaftar di gudangmu, jadi kami belum bisa menghitung pemakaian dan perkiraan
+                kebutuhannya. Stok baru bertambah otomatis setelah pesanan pertama kamu terima.
+              </p>
+              <TombolTautan ke="/stok/baru" ragam="garis" ukuran="kecil" className="mt-2.5">
+                Tambah ke daftar stok
+              </TombolTautan>
+            </Kartu>
+          )}
+
+          {/* Kontrak aktif yang sudah ada untuk barang ini */}
+          {kontrakBarang.length > 0 && (
+            <section aria-label="Kontrak aktif untuk barang ini" className="space-y-2.5">
+              <h2 className="text-[0.875rem] font-bold text-ink px-1">
+                Kamu sudah punya kontrak untuk barang ini
+              </h2>
+              {kontrakBarang.map((k) => {
+                const d = distributorById(k.distributorId)
+                return (
+                  <Kartu key={k.id} padat>
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="min-w-0">
+                        <p className="text-[0.9375rem] font-bold text-ink truncate">{d?.nama}</p>
+                        <p className="text-[0.75rem] text-ink-3">
+                          {k.durasiBulan} bulan &middot; {rupiah(k.hargaSatuan)}/{k.satuan}
+                        </p>
+                      </div>
+                      <Lencana nada="merek" ikon={<IkonKontrak size={13} />}>
+                        Berjalan
+                      </Lencana>
+                    </div>
+                    <KuotaBulanIni kontrak={k} ringkas />
+                    <Link
+                      to={`/kontrak/${k.id}`}
+                      className="mt-2.5 inline-flex items-center gap-1 text-[0.8125rem] font-bold text-brand hover:underline"
+                    >
+                      Lihat kontrak
+                      <IkonPanahKanan size={15} />
+                    </Link>
+                  </Kartu>
+                )
+              })}
+              <p className="text-[0.75rem] text-ink-3 px-1">{BANTUAN.satuKontrakSatuBarang}</p>
+            </section>
+          )}
+
+          {paket.length === 0 && (
+            <Peringatan nada="netral" judul="Distributor belum membuka kontrak untuk barang ini">
+              Kamu tetap bisa membeli sekali sebanyak yang kamu butuhkan. Harga kontrak baru bisa dibandingkan
+              kalau distributor sudah memasang paketnya.
+            </Peringatan>
+          )}
+        </div>
+      </div>
+
+      {/* Kaki lengket: satu baris pembanding, lalu dua tombol berbeda bobot */}
+      <BilahAksi
+        ringkasan={
+          <p className="text-[0.875rem] text-ink-2 leading-snug">
+            Beli sekali{' '}
+            <strong className="text-ink">
+              {rupiah(penawaran.hargaSatuan)}/{penawaran.satuan}
+            </strong>
+            {hargaKontrakTermurah != null ? (
+              <>
+                {' '}
+                &mdash; Harga kontrak mulai{' '}
+                <strong className="text-brand">
+                  {rupiah(hargaKontrakTermurah)}/{penawaran.satuan}
+                </strong>
+              </>
+            ) : (
+              <> &mdash; belum ada paket kontrak untuk barang ini</>
+            )}
+            {habisDiDistributor && (
+              <>
+                {' '}
+                <span className="block mt-1 font-semibold text-menipis-ink">
+                  Stok distributor sedang kosong, jadi belum bisa dibeli sekali. Kamu masih bisa mengikat kontrak
+                  supaya kebagian kiriman berikutnya.
+                </span>
+              </>
+            )}
+          </p>
+        }
+      >
+        <div className="flex flex-col sm:flex-row gap-2.5">
+          {paket.length > 0 &&
+            (terkunci ? (
+              <div className="sm:flex-1">
+                <TombolTerkunci label="Ikat Kontrak" penuh />
+              </div>
+            ) : (
+              <TombolTautan
+                ke={`/penawaran/${penawaran.id}/kontrak`}
+                penuh
+                ukuran="besar"
+                className="sm:flex-1"
+                ikonKiri={<IkonKontrak size={18} />}
+              >
+                Ikat Kontrak
+              </TombolTautan>
+            ))}
+
+          {terkunci ? (
+            <div className="sm:flex-1">
+              <TombolTerkunci label="Beli Sekali" penuh />
+            </div>
+          ) : (
+            <Tombol
+              ragam="garis"
+              penuh
+              ukuran="besar"
+              className="sm:flex-1"
+              ikonKiri={<IkonKeranjang size={18} />}
+              onClick={bukaLembarBeli}
+              disabled={habisDiDistributor}
+            >
+              Beli Sekali
+            </Tombol>
+          )}
+        </div>
+      </BilahAksi>
+
+      {/* Lembar beli sekali */}
+      <Lembar
+        terbuka={lembarBeli}
+        tutup={() => setLembarBeli(false)}
+        judul="Beli sekali"
+        keterangan={`${penawaran.nama} dari ${distributor.nama}`}
+        lebar="sempit"
+        kaki={
+          <div className="space-y-2.5">
+            <Tombol penuh ukuran="besar" onClick={simpanKeKeranjang} disabled={jumlah <= 0}>
+              Masukkan ke Keranjang
+            </Tombol>
+            <Tombol
+              ragam="sunyi"
+              penuh
+              onClick={() => {
+                simpanKeKeranjang()
+                navigasi('/keranjang')
+              }}
+              disabled={jumlah <= 0}
+            >
+              Masukkan lalu buka keranjang
+            </Tombol>
+          </div>
+        }
+      >
+        <div className="pb-4 space-y-4">
+          <div>
+            <p className="text-[0.875rem] font-semibold text-ink-2 mb-2">Berapa yang kamu ambil?</p>
+            <PengaturJumlah
+              nilai={jumlah}
+              ubah={setJumlah}
+              min={1}
+              maks={Math.max(1, penawaran.stokTersedia)}
+              satuan={penawaran.satuan}
+              label="Jumlah"
+            />
+            <p className="mt-2 text-[0.8125rem] text-ink-3">
+              {kelipatan && barang ? (
+                <>
+                  = {angka(jumlah * kelipatan.isi)} {barang.satuan} &middot; kelipatan 1 {kelipatan.nama}
+                </>
+              ) : (
+                <>Pemesanan naik turun per 1 {penawaran.satuan}.</>
+              )}
+            </p>
+            <p className="mt-1 text-[0.8125rem] text-ink-3">
+              Stok distributor {angka(penawaran.stokTersedia)} {penawaran.satuan}, diperbarui{' '}
+              {waktuLalu(penawaran.stokDiperbaruiPada)}.
+            </p>
+          </div>
+
+          <div className="rounded-md bg-sunken p-3.5">
+            <BarisData
+              label={`${angka(jumlah)} ${penawaran.satuan} x ${rupiah(penawaran.hargaSatuan)}`}
+              nilai={rupiah(subtotal)}
+              tebal
+            />
+            <p className="mt-1 text-[0.75rem] text-ink-3 leading-relaxed">
+              Ongkos kirim ditentukan distributor saat pesanan dikonfirmasi. {BANTUAN.bayarLuar}
+            </p>
+          </div>
+
+          {kontrakUntukPenawaranIni && (
+            <Peringatan nada="info" judul="Pembelian ini ikut menghitung kuota kontrak">
+              Kamu punya kontrak berjalan untuk barang ini. Jumlah yang kamu ambil sekarang akan dihitung sebagai
+              pemenuhan kuota bulan ini setelah barangnya kamu terima.
+            </Peringatan>
+          )}
+
+          {barang && (
+            <p className="text-[0.8125rem] text-ink-3 leading-relaxed flex items-start gap-2">
+              <IkonKotak size={15} className="shrink-0 mt-px" />
+              Stok gudang kamu sekarang {jumlahSatuan(barang.stok, barang.satuan)}. Angka ini baru bertambah
+              setelah barang kamu terima dan kamu periksa.
+            </p>
+          )}
+        </div>
+      </Lembar>
+    </div>
+  )
+}

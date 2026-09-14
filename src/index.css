@@ -1,0 +1,375 @@
+@import 'tailwindcss';
+
+/* ============================================================
+   SISTEM DESAIN — Warungku
+   Token semantik. Semua komponen WAJIB memakai token ini,
+   tidak boleh menulis nilai hex langsung di komponen.
+   ============================================================ */
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  color-scheme: light;
+
+  /* Permukaan */
+  --c-bg: #f4f6f8;
+  --c-surface: #ffffff;
+  --c-surface-2: #fafbfc;
+  --c-surface-sunken: #eef1f4;
+  --c-border: #e2e6ea;
+  --c-border-strong: #cbd2d9;
+
+  /* Teks */
+  --c-ink: #111a23;
+  --c-ink-2: #48545f;
+  /* Digelapkan dari #6b7883: nilai lama hanya 4,18:1 di atas --c-bg, di bawah
+     ambang 4,5:1 untuk teks kecil. Token ini dipakai untuk hampir seluruh teks
+     bantu, jadi selisih kecil di sini berdampak ke puluhan layar sekaligus. */
+  --c-ink-3: #5a6773;
+  --c-ink-inverse: #ffffff;
+
+  /* Merek */
+  --c-brand: #0f766e;
+  --c-brand-hover: #115e59;
+  --c-brand-soft: #e6f5f3;
+  --c-brand-soft-ink: #0b544e;
+  --c-brand-ring: #0f766e33;
+
+  /* Status stok & sistem — selalu dipasangkan dengan ikon + label,
+     tidak pernah mengandalkan warna saja (WCAG 1.4.1). */
+  --c-aman: #15803d;
+  --c-aman-soft: #e8f6ec;
+  --c-aman-ink: #10642f;
+
+  --c-menipis: #b45309;
+  --c-menipis-soft: #fdf2e3;
+  --c-menipis-ink: #8f4207;
+
+  --c-kritis: #c1121f;
+  --c-kritis-soft: #fdecec;
+  --c-kritis-ink: #96101a;
+
+  --c-info: #1d4ed8;
+  --c-info-soft: #eaeffd;
+  --c-info-ink: #1740ad;
+
+  --c-netral-soft: #eff2f5;
+  --c-netral-ink: #48545f;
+
+  /* Warna grafik.
+     Dipisah dari warna status dan warna merek karena tugasnya berbeda.
+     Urutan slot ini TETAP, tidak pernah diputar ulang, supaya satu entitas
+     selalu memakai warna yang sama meski seri lain disaring keluar.
+     Sudah lolos validasi: pita terang, lantai kroma, pemisahan buta warna
+     (semua pasangan), lantai penglihatan normal, dan kontras >= 3:1. */
+  --c-seri-1: #0ba393;
+  --c-seri-2: #eb6834;
+  --c-seri-3: #4a3aa7;
+  --c-grid: #e6eaee;
+  --c-sumbu: #9aa5b1;
+
+  /* Elevasi */
+  --shadow-1: 0 1px 2px 0 rgb(16 24 40 / 0.05);
+  --shadow-2: 0 1px 3px 0 rgb(16 24 40 / 0.08), 0 1px 2px -1px rgb(16 24 40 / 0.06);
+  --shadow-3: 0 4px 12px -2px rgb(16 24 40 / 0.1), 0 2px 6px -2px rgb(16 24 40 / 0.05);
+  --shadow-sheet: 0 -8px 32px -8px rgb(16 24 40 / 0.18);
+
+  /* Ukuran */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 22px;
+
+  --nav-h: 4.5rem; /* tinggi bilah navigasi bawah di mobile */
+  --rail-w: 16.5rem; /* lebar side nav di desktop */
+}
+
+.dark {
+  color-scheme: dark;
+
+  --c-bg: #0b1116;
+  --c-surface: #131c24;
+  --c-surface-2: #18232c;
+  --c-surface-sunken: #0e161d;
+  --c-border: #27333d;
+  --c-border-strong: #3a4854;
+
+  --c-ink: #eef3f7;
+  --c-ink-2: #a8b6c2;
+  --c-ink-3: #7d8c99;
+  --c-ink-inverse: #08121a;
+
+  --c-brand: #2dd4bf;
+  --c-brand-hover: #5eead4;
+  --c-brand-soft: #10312f;
+  --c-brand-soft-ink: #7ee7db;
+  --c-brand-ring: #2dd4bf40;
+
+  --c-aman: #4ade80;
+  --c-aman-soft: #102a1a;
+  --c-aman-ink: #86efac;
+
+  --c-menipis: #fbbf24;
+  --c-menipis-soft: #2e2310;
+  --c-menipis-ink: #fcd34d;
+
+  --c-kritis: #f87171;
+  --c-kritis-soft: #2e1517;
+  --c-kritis-ink: #fca5a5;
+
+  --c-info: #60a5fa;
+  --c-info-soft: #12203a;
+  --c-info-ink: #93c5fd;
+
+  --c-netral-soft: #1d2932;
+  --c-netral-ink: #a8b6c2;
+
+  /* Langkah gelap dipilih ulang untuk permukaan gelap, bukan sekadar
+     dibalik dari mode terang, lalu divalidasi sebagai satu set. */
+  --c-seri-1: #0da596;
+  --c-seri-2: #e2703a;
+  --c-seri-3: #8577dd;
+  --c-grid: #22303b;
+  --c-sumbu: #64717d;
+
+  --shadow-1: 0 1px 2px 0 rgb(0 0 0 / 0.4);
+  --shadow-2: 0 1px 3px 0 rgb(0 0 0 / 0.45);
+  --shadow-3: 0 4px 14px -2px rgb(0 0 0 / 0.5);
+  --shadow-sheet: 0 -8px 32px -8px rgb(0 0 0 / 0.6);
+}
+
+@theme inline {
+  --color-bg: var(--c-bg);
+  --color-surface: var(--c-surface);
+  --color-surface-2: var(--c-surface-2);
+  --color-sunken: var(--c-surface-sunken);
+  --color-line: var(--c-border);
+  --color-line-strong: var(--c-border-strong);
+
+  --color-ink: var(--c-ink);
+  --color-ink-2: var(--c-ink-2);
+  --color-ink-3: var(--c-ink-3);
+  --color-ink-inverse: var(--c-ink-inverse);
+
+  --color-brand: var(--c-brand);
+  --color-brand-hover: var(--c-brand-hover);
+  --color-brand-soft: var(--c-brand-soft);
+  --color-brand-soft-ink: var(--c-brand-soft-ink);
+
+  --color-aman: var(--c-aman);
+  --color-aman-soft: var(--c-aman-soft);
+  --color-aman-ink: var(--c-aman-ink);
+
+  --color-menipis: var(--c-menipis);
+  --color-menipis-soft: var(--c-menipis-soft);
+  --color-menipis-ink: var(--c-menipis-ink);
+
+  --color-kritis: var(--c-kritis);
+  --color-kritis-soft: var(--c-kritis-soft);
+  --color-kritis-ink: var(--c-kritis-ink);
+
+  --color-info: var(--c-info);
+  --color-info-soft: var(--c-info-soft);
+  --color-info-ink: var(--c-info-ink);
+
+  --color-netral-soft: var(--c-netral-soft);
+  --color-netral-ink: var(--c-netral-ink);
+
+  --color-seri-1: var(--c-seri-1);
+  --color-seri-2: var(--c-seri-2);
+  --color-seri-3: var(--c-seri-3);
+  --color-grid: var(--c-grid);
+  --color-sumbu: var(--c-sumbu);
+
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+  --radius-xl: var(--r-xl);
+
+  --shadow-e1: var(--shadow-1);
+  --shadow-e2: var(--shadow-2);
+  --shadow-e3: var(--shadow-3);
+  --shadow-sheet: var(--shadow-sheet);
+
+  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+}
+
+/* ============================================================
+   Dasar
+   ============================================================ */
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  /* Pengguna 40+ adalah mayoritas pemilik usaha: dasar 16px, tidak lebih kecil. */
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--c-bg);
+  color: var(--c-ink);
+  font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  font-feature-settings: 'cv11', 'ss01';
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overscroll-behavior-y: none;
+}
+
+/* Angka stok & rupiah selalu rata kolom */
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+
+/* Fokus keyboard yang jelas di desktop (WCAG 2.4.7) */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--c-brand);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Lewati ke konten — untuk pengguna keyboard/pembaca layar */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+}
+.skip-link:focus {
+  left: 0.75rem;
+  top: 0.75rem;
+  padding: 0.6rem 1rem;
+  background: var(--c-brand);
+  color: #fff;
+  border-radius: var(--r-sm);
+}
+
+/* Scrollbar ramping di desktop */
+@media (pointer: fine) {
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--c-border-strong);
+    border-radius: 99px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+/* Sembunyikan scrollbar pada baris chip yang bisa digeser */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ============================================================
+   Animasi — ringan, aman untuk Android kelas menengah
+   ============================================================ */
+
+@keyframes naik {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes pudar {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes munculHalus {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes denyut {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+@keyframes geserKilau {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.anim-naik {
+  animation: naik 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.anim-pudar {
+  animation: pudar 0.18s ease-out;
+}
+.anim-muncul {
+  animation: munculHalus 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.anim-denyut {
+  animation: denyut 1.8s ease-in-out infinite;
+}
+
+/* Kerangka pemuatan (skeleton) untuk koneksi lambat */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--c-surface-sunken);
+  border-radius: var(--r-sm);
+}
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.45), transparent);
+  animation: geserKilau 1.4s infinite;
+}
+.dark .skeleton::after {
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.06), transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ============================================================
+   Area aman perangkat (notch / gesture bar)
+   ============================================================ */
+.pb-aman {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.pt-aman {
+  padding-top: env(safe-area-inset-top, 0px);
+}
