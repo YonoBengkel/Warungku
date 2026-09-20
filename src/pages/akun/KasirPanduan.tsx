@@ -1,12 +1,12 @@
 import { useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Kartu, Pemisah, Tombol, TombolTautan } from '@/components/ui/dasar'
 import { Kolom } from '@/components/ui/formulir'
 import { KepalaHalaman } from '@/components/ui/navigasi'
-import { KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
-import { IkonPeringatan, IkonSalin, IkonSinkron, IkonTanpaSinyal } from '@/icons'
-import { cx } from '@/lib/format'
-import { merekKasir } from '@/data/dummy'
+import { Peringatan } from '@/components/ui/umpanBalik'
+import { IkonPeringatan, IkonSalin, IkonSinkron } from '@/icons'
+import { cx, inisial } from '@/lib/format'
+import { POS_TUNGGAL } from '@/data/dummy'
 import { useAplikasi } from '@/store/aplikasi'
 
 type Hasil = 'belum' | 'menguji' | 'berhasil' | 'gagal'
@@ -30,7 +30,11 @@ const LANGKAH = [
 ]
 
 /**
- * Panduan menyambungkan satu merek kasir.
+ * Panduan menyambungkan kasir.
+ *
+ * Halaman ini tidak lagi menerima parameter merek: aplikasi hanya mendukung
+ * SATU POS (`POS_TUNGGAL`), jadi tidak ada yang perlu dipilih dan tidak ada
+ * cabang "merek tidak dikenal". Jangan mengembalikan pemilihan merek ke sini.
  *
  * Dua hal yang dipegang di layar ini:
  * 1. Hasil uji koneksi harus bercerita, bukan berkata "Sukses". Pemilik usaha
@@ -38,34 +42,20 @@ const LANGKAH = [
  * 2. Kegagalan ditulis sebagai langkah perbaikan, bukan sebagai keluhan sistem.
  */
 export default function KasirPanduan() {
-  const { merek: idMerek } = useParams<{ merek: string }>()
   const navigate = useNavigate()
+  const [params] = useSearchParams()
   const hubungkanKasir = useAplikasi((s) => s.hubungkanKasir)
   const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
 
+  /* Halaman ini dipakai dua kali: sebagai langkah pendaftaran dan sebagai
+     "Atur Ulang" dari halaman sambungan. Penanda dari halaman sebelumnya yang
+     membedakannya, dan penanda itu ikut dibawa pada semua jalan kembali supaya
+     pendaftar tidak terlempar keluar dari alurnya di tengah jalan. */
+  const onboarding = params.get('langkah') === 'mulai'
+  const tautanKembali = onboarding ? '/akun/kasir?langkah=mulai' : '/akun/kasir'
+
   const [kode, setKode] = useState('')
   const [hasil, setHasil] = useState<Hasil>('belum')
-
-  const merek = merekKasir.find((m) => m.id === idMerek)
-
-  if (!merek) {
-    return (
-      <div className="pb-8">
-        <KepalaHalaman judul="Panduan Sambungkan Kasir" kembaliKe="/akun/kasir" />
-        {/* KeadaanKosong memakai h3; tanpa h2 di antaranya tingkat judul
-            halaman ini melompat dari h1 ke h3. */}
-        <h2 className="sr-only">Aplikasi kasir tidak ditemukan</h2>
-        <KeadaanKosong
-          ikon={<IkonTanpaSinyal size={26} />}
-          judul="Aplikasi kasir ini tidak kami kenali"
-          pesan="Tautan yang kamu buka menunjuk ke merek kasir yang tidak ada di daftar kami. Pilih ulang dari daftar aplikasi kasir."
-          aksi={
-            <TombolTautan ke="/akun/kasir">Kembali ke Data dari Kasir</TombolTautan>
-          }
-        />
-      </div>
-    )
-  }
 
   async function tempel() {
     try {
@@ -92,29 +82,37 @@ export default function KasirPanduan() {
   }
 
   function masukkanSekarang() {
-    hubungkanKasir(merek!.nama)
-    navigate('/mulai/batas-aman')
+    hubungkanKasir()
+    /* Layar batas aman awal mengisi ulang batas aman SEMUA barang dengan angka
+       saran, jadi ia hanya boleh muncul saat pendaftaran. Pengguna lama yang
+       datang dari "Atur Ulang" dikembalikan ke halaman sambungannya supaya
+       batas aman yang sudah ia atur sendiri tidak tertimpa diam-diam. */
+    navigate(onboarding ? '/mulai/batas-aman' : '/akun/kasir')
   }
 
   return (
     <div className="pb-8">
       <KepalaHalaman
         judul="Panduan Sambungkan Kasir"
-        keterangan={merek.nama}
-        kembaliKe="/akun/kasir"
+        keterangan={POS_TUNGGAL.nama}
+        kembaliKe={tautanKembali}
       />
 
       <div className="mt-4 max-w-2xl lg:max-w-6xl">
         <div className="flex items-center gap-3">
+          {/* Warna diambil dari data POS, bukan dari kelas hex: ini nilai milik
+              merek yang bersangkutan, bukan token tema aplikasi. Karena
+              latarnya tetap gelap di kedua tema, tulisannya tetap putih —
+              text-ink-inverse justru berubah jadi nyaris hitam di tema gelap. */}
           <span
             aria-hidden="true"
-            style={{ background: merek.warna }}
+            style={{ background: POS_TUNGGAL.warna }}
             className="size-12 rounded-md grid place-items-center text-white font-extrabold text-[1rem] shrink-0"
           >
-            {merek.nama.slice(0, 2).toUpperCase()}
+            {inisial(POS_TUNGGAL.nama)}
           </span>
           <div className="min-w-0">
-            <h2 className="text-[1.125rem] font-extrabold text-ink leading-tight">{merek.nama}</h2>
+            <h2 className="text-[1.125rem] font-extrabold text-ink leading-tight">{POS_TUNGGAL.nama}</h2>
             <p className="text-[0.8125rem] text-ink-3">Tiga langkah, kira-kira dua menit.</p>
           </div>
         </div>
@@ -131,7 +129,7 @@ export default function KasirPanduan() {
                   <Kartu>
                     <div className="sm:flex sm:items-start sm:gap-4">
                       <div className="shrink-0 w-full sm:w-44 mb-3 sm:mb-0">
-                        <Ilustrasi langkah={l.nomor} warnaMerek={merek.warna} />
+                        <Ilustrasi langkah={l.nomor} warnaMerek={POS_TUNGGAL.warna} />
                       </div>
                       <div className="min-w-0">
                         <p className="inline-flex items-center gap-2">
@@ -202,7 +200,7 @@ export default function KasirPanduan() {
                 {/* Hasil uji: satu-satunya bagian layar yang berubah */}
                 <div aria-live="polite" className="mt-4 empty:mt-0">
                   {hasil === 'berhasil' && (
-                    <Peringatan nada="aman" judul={`Tersambung ke ${merek.nama}`}>
+                    <Peringatan nada="aman" judul={`Tersambung ke ${POS_TUNGGAL.nama}`}>
                       Ditemukan <strong>128 barang</strong> dan <strong>penjualan 30 hari terakhir</strong>. Mau kami
                       masukkan sekarang?
                       <p className="mt-1.5">
@@ -213,7 +211,7 @@ export default function KasirPanduan() {
                         <Tombol penuh onClick={masukkanSekarang}>
                           Ya, masukkan sekarang
                         </Tombol>
-                        <TombolTautan ke="/akun/kasir" ragam="garis" penuh>
+                        <TombolTautan ke={tautanKembali} ragam="garis" penuh>
                           Nanti saja
                         </TombolTautan>
                       </div>
@@ -228,7 +226,7 @@ export default function KasirPanduan() {
                         <Tombol penuh onClick={() => uji()} ikonKiri={<IkonSinkron size={17} />}>
                           Coba Lagi
                         </Tombol>
-                        <TombolTautan ke="/akun/kasir" ragam="garis" penuh>
+                        <TombolTautan ke={tautanKembali} ragam="garis" penuh>
                           Pilih cara lain
                         </TombolTautan>
                       </div>
@@ -281,8 +279,8 @@ const KETERANGAN_GAMBAR: Record<1 | 2 | 3, string> = {
 
 /**
  * Gambar dibuat sendiri sebagai SVG, bukan tangkapan layar, karena tampilan
- * tiap merek kasir berbeda dan berubah. Yang perlu dikenali pengguna hanyalah
- * POSISI menunya: kiri untuk daftar menu, kanan untuk isinya.
+ * aplikasi kasir berubah dari versi ke versi. Yang perlu dikenali pengguna
+ * hanyalah POSISI menunya: kiri untuk daftar menu, kanan untuk isinya.
  */
 function Ilustrasi({ langkah, warnaMerek }: { langkah: 1 | 2 | 3; warnaMerek: string }) {
   const sorotMenu = langkah === 1

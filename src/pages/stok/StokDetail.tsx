@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import type { Pergerakan } from '@/lib/types'
 import { ALASAN_KOREKSI } from '@/lib/types'
 import { ChipKedaluwarsa, ChipStok, KartuPerkiraan } from '@/components/domain'
+import { KartuStruk } from '@/components/domain/KartuStruk'
 import { Kartu, Lencana, Pemisah, TombolTautan } from '@/components/ui/dasar'
 import { KepalaHalaman, TabSegmen } from '@/components/ui/navigasi'
 import { KeadaanKosong } from '@/components/ui/umpanBalik'
@@ -25,6 +26,7 @@ import {
   penawaranUntukBarang,
   perkiraanUntuk,
   statusStok,
+  transaksiById,
   trenBarang,
 } from '@/data/dummy'
 import { PESANAN_BERJALAN } from '@/lib/label'
@@ -524,8 +526,21 @@ function BarisRiwayat({
   const masuk = gerak.jumlah > 0
   const besaran = `${masuk ? '+' : '−'}${jumlahSatuan(Math.abs(gerak.jumlah), satuan)}`
 
+  /* Dibedakan lewat keterangannya, bukan lewat transaksiId: pergerakan dari
+     kasir juga bisa tanpa struk kalau hari itu tidak ada yang tercetak, jadi
+     memakai transaksiId akan melabeli penjualan kasir sebagai catatan manual. */
+  const dicatatManual = gerak.keterangan === 'Pemakaian dicatat manual'
+
+  /* Struk asal penjualan. Kalau barisnya bukan penjualan, berasal dari catatan
+     manual, atau struknya tidak ketemu, pengungkapnya tidak ditampilkan sama
+     sekali — diam lebih baik daripada bukti yang menunjuk barang lain. */
+  const struk =
+    gerak.jenis === 'terjual' && !dicatatManual && gerak.transaksiId
+      ? transaksiById(gerak.transaksiId)
+      : undefined
+
   let judul = 'Pergerakan stok'
-  if (gerak.jenis === 'terjual') judul = 'Terjual dari kasir'
+  if (gerak.jenis === 'terjual') judul = dicatatManual ? 'Pemakaian dicatat manual' : 'Terjual dari kasir'
   else if (gerak.jenis === 'masuk') judul = nomorPesanan ? `Masuk dari pesanan ${nomorPesanan}` : 'Barang masuk'
   else if (gerak.jenis === 'hitung-fisik') judul = 'Hasil hitung fisik'
   else if (gerak.jenis === 'koreksi')
@@ -577,5 +592,27 @@ function BarisRiwayat({
     )
   }
 
-  return <div className="bg-surface border border-line rounded-md p-3.5">{isi}</div>
+  return (
+    <div className="bg-surface border border-line rounded-md p-3.5">
+      {isi}
+      {struk && (
+        <details className="mt-1.5">
+          {/* Judulnya menyebut "terakhir hari itu" karena satu baris merangkum
+              pemakaian sehari penuh sementara struk yang tersimpan cuma yang
+              terakhir. Tanpa itu, pemilik usaha yang menelusuri selisih stok
+              membaca struk berisi barang lain sebagai penyebab angkanya. */}
+          <summary className="inline-flex items-center min-h-11 text-[0.8125rem] font-semibold text-brand cursor-pointer select-none">
+            Lihat struk terakhir hari itu
+          </summary>
+          <div className="mt-1">
+            <p className="mb-1.5 text-[0.75rem] text-ink-3 leading-relaxed">
+              Baris ini merangkum penjualan sehari penuh. Struk di bawah cuma contoh struk terakhir hari itu,
+              bukan satu-satunya penyebab angkanya.
+            </p>
+            <KartuStruk transaksi={struk} ringkas />
+          </div>
+        </details>
+      )}
+    </div>
+  )
 }

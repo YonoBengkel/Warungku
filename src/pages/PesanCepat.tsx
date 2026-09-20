@@ -542,7 +542,7 @@ export default function PesanCepat() {
         {/* Jalan keluar yang selalu ada, supaya lembar ini tidak pernah jadi buntu */}
         <div className="mt-4 flex flex-wrap gap-2.5">
           <TombolTautan ke="/belanja" ragam="garis" ukuran="kecil" ikonKiri={<IkonPasokan size={15} />}>
-            Cari barang lain di Belanja
+            Cari barang lain di Distributor
           </TombolTautan>
           <TombolTautan ke="/keranjang" ragam="sunyi" ukuran="kecil">
             Lihat keranjang

@@ -1,13 +1,14 @@
 import { Suspense, lazy } from 'react'
-import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { Route, Routes, useLocation } from 'react-router-dom'
 import KerangkaAplikasi from '@/layouts/KerangkaAplikasi'
+import KerangkaDistributor from '@/layouts/KerangkaDistributor'
 import { KerangkaBaris } from '@/components/ui/dasar'
 import { BatasGalat } from '@/components/BatasGalat'
 
 /**
  * Peta rute.
  *
- * Tiga aturan yang mengikat di sini:
+ * Empat aturan yang mengikat di sini:
  *
  * 1. Rute datar per entitas. /kontrak/:id dan /penawaran/:id berdiri sendiri
  *    walaupun dirender di dalam sebuah tab, supaya memindahkan menu di masa
@@ -17,7 +18,14 @@ import { BatasGalat } from '@/components/BatasGalat'
  * 3. Tiap layar dimuat saat dibutuhkan. Sasaran penggunanya memakai Android
  *    kelas menengah dengan koneksi tidak stabil, jadi memuat 50 layar sekaligus
  *    di awal adalah biaya yang tidak perlu mereka bayar untuk membuka Beranda.
+ * 4. Tab "Distributor" tetap tinggal di rute /belanja. Yang berganti cuma kata
+ *    yang dibaca pengguna, karena /distributor/:id sudah dipakai profil satu
+ *    distributor dan /distributor-portal/* adalah portal milik distributor.
+ *    Tiga hal berbeda, dan hanya satu di antaranya yang perlu berubah nama.
  */
+
+/* Pintu masuk pengunjung */
+const Hero = lazy(() => import('@/pages/Hero'))
 
 /* Otentikasi & pendaftaran */
 const Masuk = lazy(() => import('@/pages/auth/Masuk'))
@@ -29,6 +37,7 @@ const BatasAmanAwal = lazy(() => import('@/pages/mulai/BatasAmanAwal'))
 
 /* Tab 1 */
 const Beranda = lazy(() => import('@/pages/Beranda'))
+const PromoDetail = lazy(() => import('@/pages/promo/PromoDetail'))
 
 /* Tab 2 */
 const Stok = lazy(() => import('@/pages/stok/Stok'))
@@ -44,6 +53,9 @@ const HitungRingkasan = lazy(() => import('@/pages/stok/HitungRingkasan'))
 const KelolaKategori = lazy(() => import('@/pages/stok/KelolaKategori'))
 
 /* Tab 3 */
+const Prediksi = lazy(() => import('@/pages/prediksi/Prediksi'))
+
+/* Tab 4 — berkasnya tetap bernama belanja, labelnya "Distributor" */
 const Belanja = lazy(() => import('@/pages/belanja/Belanja'))
 const DistributorProfil = lazy(() => import('@/pages/belanja/DistributorProfil'))
 const DistributorUlasan = lazy(() => import('@/pages/belanja/DistributorUlasan'))
@@ -52,7 +64,7 @@ const PilihPaket = lazy(() => import('@/pages/belanja/PilihPaket'))
 const RincianPaket = lazy(() => import('@/pages/belanja/RincianPaket'))
 const PeriksaKesepakatan = lazy(() => import('@/pages/belanja/PeriksaKesepakatan'))
 
-/* Tab 4 */
+/* Tab 5 */
 const PesananDaftar = lazy(() => import('@/pages/pesanan/PesananDaftar'))
 const PesananDetail = lazy(() => import('@/pages/pesanan/PesananDetail'))
 const TerimaBarang = lazy(() => import('@/pages/pesanan/TerimaBarang'))
@@ -80,9 +92,17 @@ const JenisUsaha = lazy(() => import('@/pages/akun/JenisUsaha'))
 const PengaturanPengingat = lazy(() => import('@/pages/akun/PengaturanPengingat'))
 const Pengguna = lazy(() => import('@/pages/akun/Pengguna'))
 const PenggunaUndang = lazy(() => import('@/pages/akun/PenggunaUndang'))
-const Langganan = lazy(() => import('@/pages/akun/Langganan'))
 const UlasanSaya = lazy(() => import('@/pages/akun/UlasanSaya'))
 const Bantuan = lazy(() => import('@/pages/akun/Bantuan'))
+
+/* Portal Distributor */
+const DistributorDashboard = lazy(() => import('@/pages/distributor-portal/Dashboard'))
+const PesananMasukDaftar = lazy(() => import('@/pages/distributor-portal/PesananMasukDaftar'))
+const PesananMasukDetail = lazy(() => import('@/pages/distributor-portal/PesananMasukDetail'))
+const LacakPesanan = lazy(() => import('@/pages/distributor-portal/LacakPesanan'))
+const LacakToko = lazy(() => import('@/pages/distributor-portal/LacakToko'))
+const PetaSebaran = lazy(() => import('@/pages/distributor-portal/PetaSebaran'))
+const ProfilDistributor = lazy(() => import('@/pages/distributor-portal/ProfilDistributor'))
 
 const TidakDitemukan = lazy(() => import('@/pages/TidakDitemukan'))
 
@@ -108,7 +128,9 @@ export default function App() {
     <BatasGalat key={pathname}>
       <Suspense fallback={<SedangMemuat />}>
       <Routes>
-        {/* Di luar kerangka: otentikasi dan pendaftaran punya tata letaknya sendiri */}
+        {/* Di luar kerangka: landing page, otentikasi, dan pendaftaran punya
+            tata letaknya sendiri */}
+        <Route path="/" element={<Hero />} />
         <Route path="/masuk" element={<Masuk />} />
         <Route path="/daftar" element={<Daftar />} />
         <Route path="/daftar/usaha" element={<DaftarUsaha />} />
@@ -117,8 +139,8 @@ export default function App() {
         <Route path="/mulai/batas-aman" element={<BatasAmanAwal />} />
 
         <Route element={<KerangkaAplikasi />}>
-          <Route path="/" element={<Navigate to="/beranda" replace />} />
           <Route path="/beranda" element={<Beranda />} />
+          <Route path="/promo/:id" element={<PromoDetail />} />
 
           <Route path="/stok" element={<Stok />} />
           <Route path="/stok/baru" element={<StokBaru />} />
@@ -131,6 +153,8 @@ export default function App() {
           <Route path="/stok/:id/koreksi" element={<StokKoreksi />} />
           <Route path="/stok/:id/batas-aman" element={<StokBatasAman />} />
           <Route path="/stok/:id/rapor" element={<StokRapor />} />
+
+          <Route path="/prediksi" element={<Prediksi />} />
 
           <Route path="/belanja" element={<Belanja />} />
           <Route path="/distributor/:id" element={<DistributorProfil />} />
@@ -159,16 +183,28 @@ export default function App() {
           <Route path="/akun/profil/pratinjau" element={<AkunPratinjau />} />
           <Route path="/akun/data-usaha" element={<DataUsaha />} />
           <Route path="/akun/kasir" element={<AkunKasir />} />
-          <Route path="/akun/kasir/panduan/:merek" element={<KasirPanduan />} />
+          {/* Tanpa parameter merek: aplikasi hanya mendukung satu POS. */}
+          <Route path="/akun/kasir/panduan" element={<KasirPanduan />} />
           <Route path="/akun/kasir/pasangkan/:idMenu" element={<KasirPasangkan />} />
           <Route path="/akun/jenis-usaha" element={<JenisUsaha />} />
           <Route path="/akun/notifikasi" element={<PengaturanPengingat />} />
           <Route path="/akun/pengguna" element={<Pengguna />} />
           <Route path="/akun/pengguna/undang" element={<PenggunaUndang />} />
-          <Route path="/akun/langganan" element={<Langganan />} />
           <Route path="/akun/ulasan" element={<UlasanSaya />} />
           <Route path="/akun/bantuan" element={<Bantuan />} />
 
+          <Route path="*" element={<TidakDitemukan />} />
+        </Route>
+
+        {/* Portal Distributor: peran lain, kerangka lain, sidebar empat menu */}
+        <Route path="/distributor-portal" element={<KerangkaDistributor />}>
+          <Route index element={<DistributorDashboard />} />
+          <Route path="pesanan" element={<PesananMasukDaftar />} />
+          <Route path="pesanan/:id" element={<PesananMasukDetail />} />
+          <Route path="lacak" element={<LacakPesanan />} />
+          <Route path="lacak/toko/:umkmId" element={<LacakToko />} />
+          <Route path="lacak/barang/:penawaranId" element={<PetaSebaran />} />
+          <Route path="profil" element={<ProfilDistributor />} />
           <Route path="*" element={<TidakDitemukan />} />
         </Route>
       </Routes>

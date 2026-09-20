@@ -1,5 +1,8 @@
 import type {
+  ArahPrediksi,
   Barang,
+  BarisPesananMasuk,
+  BarisTransaksi,
   DataKasir,
   Distributor,
   Kontrak,
@@ -9,14 +12,22 @@ import type {
   Pergerakan,
   Perkiraan,
   Pesanan,
+  PesananMasuk,
   ProfilUsaha,
+  Promo,
+  RekomendasiPrediksi,
   RiwayatKasir,
   SaranBelanja,
   StatusKuota,
   StatusStok,
   TitikTren,
+  Transaksi,
   Ulasan,
+  UmkmPemesan,
+  WarnaTitik,
 } from '@/lib/types'
+import { angka } from '@/lib/format'
+import { JAM_TITIK_BIRU } from '@/lib/label'
 
 /**
  * Data contoh untuk skenario "ekosistem sudah berjalan".
@@ -37,6 +48,27 @@ export function hariKe(selisih: number, jam = 0, menit = 0): string {
 
 function menitLalu(n: number): string {
   return new Date(Date.now() - n * 60_000).toISOString()
+}
+
+/**
+ * Kejadian yang umurnya diukur dalam jam, bukan hari.
+ *
+ * Dipakai untuk hal-hal yang harus tetap "baru" kapan pun aplikasi dibuka,
+ * misalnya pesanan yang belum dikonfirmasi dan titik peta yang hanya hidup 12
+ * jam. Kalau memakai jam tetap pada hari ini, contohnya ikut basi tiap sore.
+ */
+function jamLalu(n: number): string {
+  return menitLalu(Math.round(n * 60))
+}
+
+/** Potongan tanggal YYMMDD untuk nomor struk dan nomor pesanan. */
+function kodeTanggal(selisih: number): string {
+  const d = new Date(HARI_INI)
+  d.setDate(d.getDate() + selisih)
+  const yy = String(d.getFullYear()).slice(-2)
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `${yy}${mm}${dd}`
 }
 
 function acakBersemai(semai: number) {
@@ -67,7 +99,6 @@ export const profilAwal: ProfilUsaha = {
   bio: 'Kedai kopi rumahan sejak 2021. Buka 07.00 sampai 23.00. Andalan kami kopi susu gula aren dan gorengan hangat.',
   warna: '#0f766e',
   caraHitung: 'keduanya',
-  tier: 'dasar',
   verifikasi: 'terverifikasi',
   tingkatVerifikasi: 'penuh',
   alasanPerbaikan: [],
@@ -130,14 +161,111 @@ export const riwayatKasir: RiwayatKasir[] = [
   },
 ]
 
-export const merekKasir = [
-  { id: 'kasir-open-pos', nama: 'Kasir Open POS', warna: '#0f766e' },
-  { id: 'moka', nama: 'Moka POS', warna: '#1d4ed8' },
-  { id: 'majoo', nama: 'Majoo', warna: '#b45309' },
-  { id: 'olsera', nama: 'Olsera', warna: '#4a3aa7' },
-  { id: 'pawoon', nama: 'Pawoon', warna: '#0e7490' },
-  { id: 'qasir', nama: 'Qasir', warna: '#9a3412' },
+/** Satu-satunya POS yang didukung. Formatnya jadi satu-satunya format struk yang dikenal aplikasi. */
+export const POS_TUNGGAL = { id: 'kasir-open-pos', nama: 'Kasir Open POS', warna: '#0f766e' } as const
+
+/* ================================================================== */
+/* Transaksi — satu database struk untuk seluruh toko                 */
+/* ================================================================== */
+
+/**
+ * Menu yang bisa muncul di struk, beserta bobot kemunculannya.
+ *
+ * Ini nama MENU JADI, bukan bahan baku. Struk memang tidak tahu apa-apa soal
+ * gudang: pemetaan menu ke bahan baku terjadi belakangan, dan menu yang belum
+ * dipetakan itulah yang muncul di `dataKasirAwal.menuBelumDipasangkan`.
+ */
+const MENU_STRUK: Array<{ nama: string; satuan: string; bobot: number }> = [
+  { nama: 'Kopi Susu Gula Aren', satuan: 'gelas', bobot: 10 },
+  { nama: 'Americano', satuan: 'gelas', bobot: 5 },
+  { nama: 'Cappuccino', satuan: 'gelas', bobot: 4 },
+  { nama: 'Es Teh Manis', satuan: 'gelas', bobot: 4 },
+  { nama: 'Matcha Latte', satuan: 'gelas', bobot: 3 },
+  { nama: 'Cokelat Panas', satuan: 'gelas', bobot: 3 },
+  { nama: 'Teh Tarik', satuan: 'gelas', bobot: 3 },
+  { nama: 'Roti Bakar Cokelat', satuan: 'porsi', bobot: 3 },
+  { nama: 'Roti Bakar Keju', satuan: 'porsi', bobot: 2 },
+  { nama: 'Kentang Goreng', satuan: 'porsi', bobot: 3 },
+  { nama: 'Pisang Goreng Madu', satuan: 'porsi', bobot: 2 },
+  { nama: 'Air Mineral', satuan: 'pcs', bobot: 2 },
 ]
+
+const TOTAL_BOBOT_MENU = MENU_STRUK.reduce((t, m) => t + m.bobot, 0)
+
+const KASIR_JAGA = ['Bagas Prasetyo', 'Sinta', 'Rizal']
+
+function pilihMenu(undi: number) {
+  let sisa = undi * TOTAL_BOBOT_MENU
+  for (const m of MENU_STRUK) {
+    sisa -= m.bobot
+    if (sisa < 0) return m
+  }
+  return MENU_STRUK[MENU_STRUK.length - 1]
+}
+
+/**
+ * Struk sembilan hari terakhir, dikelompokkan per hari.
+ *
+ * Kelompoknya sengaja dipertahankan karena riwayat pergerakan perlu menunjuk
+ * struk terakhir pada hari yang sama, dan mencocokkan ulang lewat tanggal ISO
+ * rawan meleset satu hari untuk zona waktu di timur UTC.
+ */
+function bangkitkanTransaksi(): Transaksi[][] {
+  const rnd = acakBersemai(20260918)
+  const perHari: Transaksi[][] = []
+  let n = 0
+
+  for (let h = 0; h < 9; h++) {
+    // Hari ini baru berjalan separuh, jadi contohnya lebih sedikit daripada hari penuh.
+    const jumlahStruk = h === 0 ? 4 + Math.floor(rnd() * 3) : 7 + Math.floor(rnd() * 4)
+    // Yang benar-benar terjadi di kasir jauh lebih banyak; yang disimpan di sini cuplikan.
+    const totalHariItu = 60 + Math.floor(rnd() * 70)
+    const hariIni: Transaksi[] = []
+
+    for (let i = 0; i < jumlahStruk; i++) {
+      // Jam buka 07.30 sampai 22.30, digeser maju supaya urutannya selalu menanjak.
+      const total = 7 * 60 + 30 + Math.floor(((i + rnd() * 0.8) / jumlahStruk) * 15 * 60)
+      const jam = Math.floor(total / 60)
+      const menit = total % 60
+
+      const baris: BarisTransaksi[] = []
+      const jumlahBaris = 1 + Math.floor(rnd() * 4)
+      for (let j = 0; j < jumlahBaris; j++) {
+        const menu = pilihMenu(rnd())
+        const jumlah = 1 + Math.floor(rnd() * 3)
+        const sudahAda = baris.find((x) => x.nama === menu.nama)
+        // Satu menu cuma boleh sekali per struk; pesanan kedua menambah jumlahnya.
+        if (sudahAda) sudahAda.jumlah += jumlah
+        else baris.push({ nama: menu.nama, jumlah, satuan: menu.satuan })
+      }
+
+      const urut = Math.max(1, Math.round(((i + 1) / jumlahStruk) * totalHariItu))
+      hariIni.push({
+        id: `tr-${String((n += 1)).padStart(3, '0')}`,
+        nomorStruk: `KOP-${kodeTanggal(-h)}-${String(urut).padStart(4, '0')}`,
+        waktu: hariKe(-h, jam, menit),
+        baris,
+        // Kedai ini dua sif: yang jaga pagi bukan yang jaga malam.
+        kasir: jam < 15 ? KASIR_JAGA[h % 3] : KASIR_JAGA[(h + 1) % 3],
+      })
+    }
+
+    perHari.push(hariIni)
+  }
+
+  return perHari
+}
+
+/** Indeks = berapa hari lalu. Tiap kelompok urut menanjak menurut waktu. */
+const strukPerHari = bangkitkanTransaksi()
+
+export const daftarTransaksi: Transaksi[] = strukPerHari
+  .flat()
+  .sort((a, b) => +new Date(b.waktu) - +new Date(a.waktu))
+
+export function transaksiById(id: string): Transaksi | undefined {
+  return daftarTransaksi.find((t) => t.id === id)
+}
 
 /* ================================================================== */
 /* Stok                                                               */
@@ -353,7 +481,10 @@ export const daftarBarang: Barang[] = [
     kodeBarang: 'KJ-010',
     satuan: 'lembar',
     kemasan: [{ nama: 'pak', isi: 50 }],
-    stok: 118,
+    // Sengaja di atas kebutuhan sebulan (perkiraan 233 lembar): setelah arah
+    // "kurang" diperketat, contoh barang yang benar-benar berlebih tinggal
+    // satu, padahal layar Beranda dan Prediksi perlu lebih dari satu.
+    stok: 260,
     batasAman: 60,
     batasAmanSaran: 65,
     sumberBatasAman: 'sistem',
@@ -580,95 +711,122 @@ export function dalamKemasan(b: Barang): string | null {
 /* Riwayat pergerakan                                                 */
 /* ================================================================== */
 
+/**
+ * Pergerakan yang ditulis tangan: koreksi, barang masuk, dan hitung fisik.
+ *
+ * Sengaja tanpa `stokSesudah`. Kolom "stok jadi" adalah satu-satunya cara
+ * pemilik usaha mengaudit selisih stok, jadi angkanya tidak boleh ditulis
+ * tangan berdampingan dengan angka yang dihitung — dulu begitu, dan hasilnya
+ * stok terlihat naik setelah menjual.
+ */
+const pergerakanManual: Array<Omit<Pergerakan, 'stokSesudah'>> = [
+  {
+    id: 'pg-m1',
+    barangId: 'b-02',
+    waktu: hariKe(-1, 9, 15),
+    jenis: 'koreksi',
+    jumlah: -2000,
+    alasan: 'basi',
+    keterangan: 'Kulkas mati semalam, 2 liter susu terpaksa dibuang.',
+    pesananId: null,
+    transaksiId: null,
+    oleh: 'Bagas Prasetyo',
+  },
+  {
+    id: 'pg-m2',
+    barangId: 'b-08',
+    waktu: hariKe(-2, 8, 40),
+    jenis: 'koreksi',
+    jumlah: -6,
+    alasan: 'basi',
+    keterangan: 'Roti berjamur, dibuang.',
+    pesananId: null,
+    transaksiId: null,
+    oleh: 'Sinta',
+  },
+  {
+    id: 'pg-m3',
+    barangId: 'b-01',
+    waktu: hariKe(-4, 10, 5),
+    jenis: 'masuk',
+    jumlah: 5000,
+    alasan: null,
+    keterangan: 'Masuk dari pesanan PS-260907-04',
+    pesananId: 'ps-04',
+    transaksiId: null,
+    oleh: 'Bagas Prasetyo',
+  },
+  {
+    id: 'pg-m4',
+    barangId: 'b-05',
+    waktu: hariKe(-6, 14, 20),
+    jenis: 'hitung-fisik',
+    jumlah: -45,
+    alasan: null,
+    keterangan: 'Hasil hitung fisik bulanan',
+    pesananId: null,
+    transaksiId: null,
+    oleh: 'Bagas Prasetyo',
+  },
+  {
+    id: 'pg-m5',
+    barangId: 'b-03',
+    waktu: hariKe(-3, 16, 0),
+    jenis: 'koreksi',
+    jumlah: -150,
+    alasan: 'susut',
+    keterangan: 'Sisa di dasar jerigen tidak terpakai.',
+    pesananId: null,
+    transaksiId: null,
+    oleh: 'Bagas Prasetyo',
+  },
+]
+
 function bangkitkanPergerakan(): Pergerakan[] {
-  const hasil: Pergerakan[] = []
+  const tanpaStok: Array<Omit<Pergerakan, 'stokSesudah'>> = []
   const rnd = acakBersemai(20260913)
   let n = 0
 
   for (const b of daftarBarang) {
     if (!b.terhubungKasir) continue
-    let stok = b.stok
     for (let h = 0; h < 9; h++) {
       const pakai = Math.round(b.pemakaianHarian * (0.75 + rnd() * 0.5) * 10) / 10
       if (pakai <= 0) continue
-      hasil.push({
+      // Satu baris merangkum pemakaian sehari penuh, jadi yang dirujuk struk
+      // terakhir hari itu: dari situ pemilik usaha bisa menelusuri ke belakang.
+      const strukHariItu = strukPerHari[h]
+      tanpaStok.push({
         id: `pg-${(n += 1)}`,
         barangId: b.id,
         waktu: hariKe(-h, 23, 50),
         jenis: 'terjual',
         jumlah: -pakai,
-        stokSesudah: Math.round(stok * 10) / 10,
         alasan: null,
         keterangan: 'Terjual dari kasir',
         pesananId: null,
+        transaksiId: strukHariItu.length > 0 ? strukHariItu[strukHariItu.length - 1].id : null,
         oleh: 'Data kasir',
       })
-      stok += pakai
     }
   }
 
-  hasil.push(
-    {
-      id: 'pg-m1',
-      barangId: 'b-02',
-      waktu: hariKe(-1, 9, 15),
-      jenis: 'koreksi',
-      jumlah: -2000,
-      stokSesudah: 9600,
-      alasan: 'basi',
-      keterangan: 'Kulkas mati semalam, 2 liter susu terpaksa dibuang.',
-      pesananId: null,
-      oleh: 'Bagas Prasetyo',
-    },
-    {
-      id: 'pg-m2',
-      barangId: 'b-08',
-      waktu: hariKe(-2, 8, 40),
-      jenis: 'koreksi',
-      jumlah: -6,
-      stokSesudah: 40,
-      alasan: 'basi',
-      keterangan: 'Roti berjamur, dibuang.',
-      pesananId: null,
-      oleh: 'Sinta',
-    },
-    {
-      id: 'pg-m3',
-      barangId: 'b-01',
-      waktu: hariKe(-4, 10, 5),
-      jenis: 'masuk',
-      jumlah: 5000,
-      stokSesudah: 9100,
-      alasan: null,
-      keterangan: 'Masuk dari pesanan PS-260907-04',
-      pesananId: 'ps-04',
-      oleh: 'Bagas Prasetyo',
-    },
-    {
-      id: 'pg-m4',
-      barangId: 'b-05',
-      waktu: hariKe(-6, 14, 20),
-      jenis: 'hitung-fisik',
-      jumlah: -45,
-      stokSesudah: 1580,
-      alasan: null,
-      keterangan: 'Hasil hitung fisik bulanan',
-      pesananId: null,
-      oleh: 'Bagas Prasetyo',
-    },
-    {
-      id: 'pg-m5',
-      barangId: 'b-03',
-      waktu: hariKe(-3, 16, 0),
-      jenis: 'koreksi',
-      jumlah: -150,
-      stokSesudah: 3200,
-      alasan: 'susut',
-      keterangan: 'Sisa di dasar jerigen tidak terpakai.',
-      pesananId: null,
-      oleh: 'Bagas Prasetyo',
-    },
-  )
+  tanpaStok.push(...pergerakanManual)
+
+  // Semua pergerakan satu barang — dari kasir maupun tulisan tangan — ikut
+  // satu jalan mundur: baris terbaru berakhir di stok sekarang, baris di
+  // bawahnya dihitung dari baris di atasnya. Dengan begitu tiap baris riwayat
+  // bisa dijumlahkan dari baris di bawahnya, berapa pun urutan kejadiannya.
+  const hasil: Pergerakan[] = []
+  for (const b of daftarBarang) {
+    const milikBarang = tanpaStok
+      .filter((p) => p.barangId === b.id)
+      .sort((x, y) => +new Date(y.waktu) - +new Date(x.waktu))
+    let stok = b.stok
+    for (const p of milikBarang) {
+      hasil.push({ ...p, stokSesudah: Math.round(stok * 10) / 10 })
+      stok -= p.jumlah
+    }
+  }
 
   return hasil.sort((a, b) => +new Date(b.waktu) - +new Date(a.waktu))
 }
@@ -766,6 +924,126 @@ export function trenBarang(barangId: string): TitikTren[] {
     })
   }
   return titik
+}
+
+/* ================================================================== */
+/* Tren bulanan (halaman Prediksi)                                    */
+/* ================================================================== */
+
+/**
+ * Sebulan dihitung 30 hari, bukan panjang kalender sebenarnya.
+ *
+ * Halaman Prediksi membandingkan bulan dengan bulan, dan perbandingan itu jadi
+ * menyesatkan kalau Februari otomatis terlihat lebih sepi hanya karena harinya
+ * lebih sedikit.
+ */
+const HARI_PER_BULAN = 30
+
+function semaiDari(teks: string): number {
+  let a = 2166136261
+  for (let i = 0; i < teks.length; i++) a = Math.imul(a ^ teks.charCodeAt(i), 16777619)
+  return a >>> 0
+}
+
+/** Tanggal 1 pada bulan sekian, dipakai sebagai sumbu grafik bulanan. */
+function awalBulan(selisih: number): string {
+  const d = new Date(HARI_INI)
+  d.setDate(1)
+  d.setMonth(d.getMonth() + selisih)
+  d.setHours(0, 0, 0, 0)
+  return d.toISOString()
+}
+
+/**
+ * Pemakaian satu barang pada bulan tertentu, `mundur` bulan ke belakang.
+ *
+ * Satu-satunya sumber angka bulanan di berkas ini. Semua fungsi tren dan kartu
+ * rekomendasi memanggil ini supaya layar tidak pernah memperlihatkan dua angka
+ * berbeda untuk bulan yang sama.
+ */
+function pemakaianBulan(b: Barang, mundur: number): number {
+  const rnd = acakBersemai(semaiDari(`${b.id}|${mundur}`))
+  // Usaha yang sedang tumbuh: makin ke belakang, makin sepi.
+  const arah = Math.max(0.5, 1 - mundur * 0.05)
+  return Math.max(0, Math.round(b.pemakaianHarian * HARI_PER_BULAN * arah * (0.9 + rnd() * 0.2)))
+}
+
+/**
+ * Perkiraan bulan depan: laju bulan ini terhadap bulan lalu, dijaga di rentang
+ * wajar. Model boleh salah, tapi tidak boleh melompat dua kali lipat hanya
+ * karena satu bulan kebetulan ramai.
+ */
+function perkiraanBulanDepan(b: Barang): number {
+  const bulanIni = pemakaianBulan(b, 0)
+  const bulanLalu = pemakaianBulan(b, 1)
+  const laju = bulanLalu > 0 ? bulanIni / bulanLalu : 1
+  return Math.max(0, Math.round(bulanIni * Math.min(1.25, Math.max(0.85, laju))))
+}
+
+/** Bentuk baku semua grafik bulanan: 6 bulan aktual + 1 bulan perkiraan. */
+function trenDari(kumpulan: Barang[]): TitikTren[] {
+  const titik: TitikTren[] = []
+  for (let i = 5; i >= 0; i--) {
+    titik.push({
+      tanggal: awalBulan(-i),
+      aktual: kumpulan.reduce((t, b) => t + pemakaianBulan(b, i), 0),
+      prediksi: null,
+    })
+  }
+  const p = kumpulan.reduce((t, b) => t + perkiraanBulanDepan(b), 0)
+  titik.push({
+    tanggal: awalBulan(1),
+    aktual: null,
+    prediksi: p,
+    batasBawah: Math.round(p * 0.88),
+    batasAtas: Math.round(p * 1.12),
+  })
+  return titik
+}
+
+export function trenBulanan(barangId: string): TitikTren[] {
+  const b = daftarBarang.find((x) => x.id === barangId)
+  return b ? trenDari([b]) : []
+}
+
+/**
+ * Tren satu kategori. Angkanya penjumlahan satuan pakai yang berbeda-beda
+ * (gram, pcs, lembar), jadi yang dibaca pemilik usaha adalah bentuk kurvanya,
+ * bukan nilai mutlaknya — dan layar wajib menuliskannya begitu.
+ */
+export function trenKategori(kategori: string): TitikTren[] {
+  // Hanya barang yang layak diperkirakan. Kalau tidak disaring, grafik
+  // kategori menghitung barang yang halaman yang sama nyatakan datanya
+  // belum cukup — dua pernyataan bertentangan di satu layar.
+  return trenDari(daftarBarang.filter((b) => b.kategori === kategori && layakDiperkirakan(b)))
+}
+
+export function trenKeseluruhan(): TitikTren[] {
+  return trenDari(daftarBarang.filter(layakDiperkirakan))
+}
+
+export function ringkasanKategori(): Array<{
+  kategori: string
+  pemakaianBulanIni: number
+  perkiraanBulanDepan: number
+  jumlahBarang: number
+  jumlahDiperkirakan: number
+}> {
+  return kategoriBarang.map((kategori) => {
+    const isi = daftarBarang.filter((b) => b.kategori === kategori)
+    // Angkanya hanya dari barang yang layak diperkirakan, tapi `jumlahBarang`
+    // tetap seluruh isi kategori — itu memang jumlah barangnya. Selisihnya
+    // dibaca dari `jumlahDiperkirakan` supaya layar bisa berterus terang
+    // berapa barang yang benar-benar ikut dihitung.
+    const diperkirakan = isi.filter(layakDiperkirakan)
+    return {
+      kategori,
+      pemakaianBulanIni: diperkirakan.reduce((t, b) => t + pemakaianBulan(b, 0), 0),
+      perkiraanBulanDepan: diperkirakan.reduce((t, b) => t + perkiraanBulanDepan(b), 0),
+      jumlahBarang: isi.length,
+      jumlahDiperkirakan: diperkirakan.length,
+    }
+  })
 }
 
 /* ================================================================== */
@@ -1179,6 +1457,95 @@ export function penawaranUntukBarang(barangId: string): Penawaran[] {
 }
 
 /* ================================================================== */
+/* Promo distributor                                                  */
+/* ================================================================== */
+
+/**
+ * Tiga jenis promo, tujuh kartu.
+ *
+ * Tiap jenis sengaja dipakai lebih dari satu distributor supaya terlihat di
+ * layar bahwa kartunya memang kembar: yang membedakan cuma nama toko, dan nama
+ * toko itu tidak pernah ditulis di `judul` — ia diambil dari distributornya
+ * saat dirender.
+ */
+export const daftarPromo: Promo[] = [
+  {
+    id: 'pr-01',
+    jenis: 'cuci-gudang',
+    distributorId: 'd-04',
+    judul: 'Cuci Gudang Kemasan',
+    keterangan: 'Gelas dan sedotan menumpuk sebelum kiriman baru datang. Harga turun sampai gudang lega.',
+    berakhir: hariKe(10),
+    penawaranIds: ['pw-09', 'pw-10', 'pw-19'],
+    potonganPersen: 15,
+  },
+  {
+    id: 'pr-02',
+    jenis: 'cuci-gudang',
+    distributorId: 'd-06',
+    judul: 'Cuci Gudang Bahan Dapur',
+    keterangan: 'Roti dan kentang beku dilepas lebih murah karena masa simpannya tinggal sebentar.',
+    berakhir: hariKe(6),
+    penawaranIds: ['pw-15', 'pw-16'],
+    potonganPersen: 12,
+  },
+  {
+    id: 'pr-03',
+    jenis: 'cuci-gudang',
+    distributorId: 'd-03',
+    judul: 'Cuci Gudang Pemanis',
+    keterangan: 'Sisa stok gula aren, sirup, dan minyak dari kiriman bulan lalu.',
+    berakhir: hariKe(3),
+    penawaranIds: ['pw-06', 'pw-07', 'pw-08'],
+    potonganPersen: 10,
+  },
+  {
+    id: 'pr-04',
+    jenis: 'produk-baru',
+    distributorId: 'd-01',
+    judul: 'Panen Baru Dataran Gayo',
+    keterangan: 'Biji dari panen Juli baru masuk gudang. Sangrai menyusul sesuai pesanan.',
+    berakhir: null,
+    penawaranIds: ['pw-01', 'pw-02'],
+    potonganPersen: null,
+  },
+  {
+    id: 'pr-05',
+    jenis: 'produk-baru',
+    distributorId: 'd-08',
+    judul: 'Matcha Culinary Baru Datang',
+    keterangan: 'Culinary grade asal Uji, giling halus, cocok untuk latte dan adonan.',
+    berakhir: null,
+    penawaranIds: ['pw-18'],
+    potonganPersen: null,
+  },
+  {
+    id: 'pr-06',
+    jenis: 'membership',
+    distributorId: 'd-02',
+    judul: 'Langganan Susu & Keju Bulanan',
+    keterangan: 'Daftar sekali, kiriman datang tiap Senin dan Kamis dengan harga tetap sebulan penuh.',
+    berakhir: null,
+    penawaranIds: ['pw-04', 'pw-05'],
+    potonganPersen: 8,
+  },
+  {
+    id: 'pr-07',
+    jenis: 'membership',
+    distributorId: 'd-05',
+    judul: 'Langganan Kirim Harian',
+    keterangan: 'Es dan air datang tiap pagi tanpa perlu pesan ulang. Bisa dihentikan kapan saja.',
+    berakhir: null,
+    penawaranIds: ['pw-12', 'pw-13'],
+    potonganPersen: 5,
+  },
+]
+
+export function promoById(id: string): Promo | undefined {
+  return daftarPromo.find((p) => p.id === id)
+}
+
+/* ================================================================== */
 /* Paket kontrak                                                      */
 /* ================================================================== */
 
@@ -1415,6 +1782,135 @@ export function sisaHariPeriode(): number {
   const akhirBulan = new Date(HARI_INI)
   akhirBulan.setMonth(akhirBulan.getMonth() + 1, 0)
   return Math.max(0, Math.ceil((+akhirBulan - +HARI_INI) / 86_400_000))
+}
+
+/* ================================================================== */
+/* Rekomendasi prediksi                                               */
+/* ================================================================== */
+
+/**
+ * Barang yang layak diperkirakan.
+ *
+ * Dua saringan, dan keduanya jujur: barang yang memang dicatat manual tidak
+ * punya data permintaan sama sekali, dan di bawah 14 hari data model belum
+ * boleh bersuara. Barang yang tersaring tetap muncul di halaman Stok, cuma
+ * tidak punya kartu rekomendasi.
+ */
+export function layakDiperkirakan(b: Barang): boolean {
+  return !b.dicatatManual && b.hariDataTerkumpul >= 14
+}
+
+/** 14 hari data → 0,62. 90 hari atau lebih → 0,93. Di antaranya lurus saja. */
+function keyakinanDari(hariData: number): number {
+  const t = Math.min(1, Math.max(0, (hariData - 14) / (90 - 14)))
+  return Math.round((0.62 + t * 0.31) * 100) / 100
+}
+
+function arahUntuk(b: Barang, perkiraan: number): ArahPrediksi {
+  // Kelebihan diukur dari batas aman, bukan dari nol: stok dua kali lipat
+  // batas aman yang masih cukup sebulan lebih memang kebanyakan.
+  // Syarat `b.stok >= perkiraan` wajib ada: belum boleh disebut berlebih
+  // kalau kebutuhan bulan depan saja belum tertutup. Tanpa itu, barang bisa
+  // dilencanai "kurangi" padahal pemilik usaha justru akan kehabisan.
+  const cukup = hariCukup(b)
+  if (
+    b.batasAman > 0 &&
+    b.stok > b.batasAman * 2 &&
+    cukup !== null &&
+    cukup > 25 &&
+    b.stok >= perkiraan
+  ) {
+    return 'kurang'
+  }
+  if (b.stok < perkiraan * 0.8) return 'tambah'
+  return 'tetap'
+}
+
+/**
+ * Maksimal tiga butir fakta, dan urutannya ikut arah saran.
+ *
+ * Kartu "kurang" dibuka dengan berapa lama stoknya masih cukup, bukan dengan
+ * angka pertumbuhan, supaya tidak terbaca seperti menyuruh menambah dan
+ * mengurangi sekaligus.
+ */
+function alasanUntuk(b: Barang, arah: ArahPrediksi, bulanIni: number, perkiraan: number): string[] {
+  const bulanLalu = pemakaianBulan(b, 1)
+  const beda = bulanLalu > 0 ? Math.round(((bulanIni - bulanLalu) / bulanLalu) * 100) : 0
+  const perubahan =
+    beda >= 3
+      ? `Pemakaian naik ${beda}% dibanding bulan lalu.`
+      : beda <= -3
+        ? `Pemakaian turun ${Math.abs(beda)}% dibanding bulan lalu.`
+        : 'Pemakaian sebulan terakhir hampir sama dengan bulan lalu.'
+
+  if (arah === 'kurang') {
+    const cukup = hariCukup(b)
+    const alasan = ['Sudah dua kali lipat batas aman yang kamu atur sendiri.']
+    if (cukup !== null) alasan.unshift(`Stok sekarang cukup untuk ${cukup} hari ke depan.`)
+    alasan.push(perubahan)
+    return alasan.slice(0, 3)
+  }
+
+  // Untuk saran "tambah", perbandingan stok vs kebutuhan adalah ALASAN
+  // SEBENARNYA dan harus berdiri paling depan. Kalau ia ditaruh terakhir,
+  // pemotongan tiga butir membuangnya — dan yang tersisa justru bisa berbunyi
+  // "pemakaian turun" di bawah saran "tambah", yang terbaca bertentangan.
+  const alasan: string[] = []
+  if (arah === 'tambah' && perkiraan > b.stok) {
+    alasan.push(
+      `Kebutuhan bulan depan ${angka(perkiraan)} ${b.satuan}, stok sekarang cuma ${angka(Math.round(b.stok))} ${b.satuan}.`,
+    )
+  }
+  alasan.push(perubahan)
+  if (b.pemakaianHarian >= 100) alasan.push('Akhir pekan selalu 40% lebih ramai.')
+  alasan.push(`Kiriman biasanya sampai ${b.hariKirim} hari setelah dipesan.`)
+  return alasan.slice(0, 3)
+}
+
+/**
+ * Satu kartu per barang yang layak. Jumlahnya selalu positif dan selalu dalam
+ * satuan beli, karena angka itulah yang langsung masuk keranjang — arah dibaca
+ * dari `arah`, bukan dari tanda minus.
+ */
+/**
+ * Kartu untuk satu barang, dihitung dari barang yang diberikan — bukan dari
+ * `daftarBarang`. Dipisah jadi fungsi supaya layar bisa menghitung ulang dari
+ * stok hidup di store: setelah Terima Barang menaikkan stok, kartunya tidak
+ * boleh lagi menyuruh menambah barang yang baru saja diterima.
+ */
+export function rekomendasiDari(b: Barang): RekomendasiPrediksi {
+  const bulanIni = pemakaianBulan(b, 0)
+  const perkiraan = perkiraanBulanDepan(b)
+  const arah = arahUntuk(b, perkiraan)
+  const kemasan = b.kemasan[b.kemasan.length - 1]
+  const isi = kemasan?.isi ?? 1
+
+  // Tambah: kekurangan terhadap kebutuhan bulan depan.
+  // Kurang: kelebihan di atas batas aman, bukan seluruh stok.
+  // Tetap: kebutuhan bulan depan sebagai angka rujukan kalau memang mau pesan.
+  const dasar =
+    arah === 'tambah' ? perkiraan - b.stok : arah === 'kurang' ? b.stok - b.batasAman : perkiraan
+
+  return {
+    barangId: b.id,
+    arah,
+    jumlah: Math.max(1, Math.ceil(dasar / isi)),
+    satuanSaran: kemasan?.nama ?? b.satuan,
+    pemakaianBulanIni: bulanIni,
+    perkiraanBulanDepan: perkiraan,
+    keyakinan: keyakinanDari(b.hariDataTerkumpul),
+    alasan: alasanUntuk(b, arah, bulanIni, perkiraan),
+    penawaranId: penawaranUntukBarang(b.id)[0]?.id ?? null,
+    kontrakId: kontrakUntukBarang(b.id)[0]?.id ?? null,
+  }
+}
+
+export const daftarRekomendasi: RekomendasiPrediksi[] = daftarBarang
+  .filter(layakDiperkirakan)
+  .map(rekomendasiDari)
+
+export function rekomendasiUntuk(barangId: string): RekomendasiPrediksi | undefined {
+  return daftarRekomendasi.find((r) => r.barangId === barangId)
 }
 
 /* ================================================================== */
@@ -1954,4 +2450,893 @@ export const daftarUlasan: Ulasan[] = [
 
 export function ulasanUntuk(distributorId: string): Ulasan[] {
   return daftarUlasan.filter((u) => u.distributorId === distributorId)
+}
+
+/* ================================================================== */
+/* Portal Distributor — toko yang sedang masuk                        */
+/* ================================================================== */
+
+/** Distributor yang sedang membuka portal. Purwarupa hanya punya satu. */
+export const distributorAktif: Distributor = daftarDistributor[0]
+
+/**
+ * Kotak koordinat peta sebaran.
+ *
+ * Peta digambar sendiri dari kotak ini, tanpa layanan peta mana pun. Semua
+ * UMKM di bawah wajib berada di dalamnya, kalau tidak titiknya jatuh di luar
+ * bingkai.
+ */
+export const BATAS_PETA = { latMin: -7.83, latMaks: -7.67, lngMin: 110.31, lngMaks: 110.45 }
+
+export const daftarUmkm: UmkmPemesan[] = [
+  {
+    // Toko pemilik aplikasi sendiri. Datanya sengaja dibuat sama dengan profilAwal
+    // supaya jelas bahwa dua portal ini melihat usaha yang sama dari dua sisi.
+    id: 'u-01',
+    nama: 'Kopi Kita Jogja',
+    jenisUsaha: 'Kedai kopi & camilan',
+    kota: 'Sleman',
+    alamat: 'Jl. Kaliurang KM 5,6 No. 24, Sinduadi, Mlati',
+    lat: -7.7548,
+    lng: 110.3782,
+    warna: '#0f766e',
+    nomorHp: '081338827410',
+    sejak: hariKe(-214),
+  },
+  {
+    id: 'u-02',
+    nama: 'Angkringan Pak Slamet',
+    jenisUsaha: 'Angkringan',
+    kota: 'Kota Yogyakarta',
+    alamat: 'Jl. Wongsodirjan No. 8, Sosromenduran',
+    lat: -7.7902,
+    lng: 110.3641,
+    warna: '#b45309',
+    nomorHp: '081227734510',
+    sejak: hariKe(-320),
+  },
+  {
+    id: 'u-03',
+    nama: 'Kedai Teh Sore',
+    jenisUsaha: 'Kedai teh & roti',
+    kota: 'Sleman',
+    alamat: 'Jl. Palagan Tentara Pelajar KM 8, Ngaglik',
+    lat: -7.7211,
+    lng: 110.3765,
+    warna: '#1d4ed8',
+    nomorHp: '081392214477',
+    sejak: hariKe(-180),
+  },
+  {
+    id: 'u-04',
+    nama: 'Warung Gudeg Bu Tarmi',
+    jenisUsaha: 'Warung makan',
+    kota: 'Kota Yogyakarta',
+    alamat: 'Jl. Bantul No. 41, Gedongkiwo',
+    lat: -7.8122,
+    lng: 110.3568,
+    warna: '#9a3412',
+    nomorHp: '082134556710',
+    sejak: hariKe(-402),
+  },
+  {
+    id: 'u-05',
+    nama: 'Kafe Ruang Tunggu',
+    jenisUsaha: 'Kafe & ruang kerja',
+    kota: 'Sleman',
+    alamat: 'Jl. Seturan Raya No. 12, Caturtunggal',
+    lat: -7.7648,
+    lng: 110.4062,
+    warna: '#4a3aa7',
+    nomorHp: '081226640912',
+    sejak: hariKe(-146),
+  },
+  {
+    id: 'u-06',
+    nama: 'Warmindo Barokah',
+    jenisUsaha: 'Warung mi & kopi',
+    kota: 'Sleman',
+    alamat: 'Jl. Affandi Gg. Kinanti, Condongcatur',
+    lat: -7.7583,
+    lng: 110.3928,
+    warna: '#0e7490',
+    nomorHp: '085643312208',
+    sejak: hariKe(-268),
+  },
+  {
+    id: 'u-07',
+    nama: 'Kopi Lereng Merapi',
+    jenisUsaha: 'Kedai kopi',
+    kota: 'Sleman',
+    alamat: 'Jl. Kaliurang KM 17, Pakem',
+    lat: -7.6902,
+    lng: 110.4205,
+    warna: '#166534',
+    nomorHp: '081904452310',
+    sejak: hariKe(-95),
+  },
+  {
+    id: 'u-08',
+    nama: 'Bakmi Jawa Mbah Wito',
+    jenisUsaha: 'Warung bakmi',
+    kota: 'Sleman',
+    alamat: 'Jl. Magelang KM 6, Mlati',
+    lat: -7.7405,
+    lng: 110.3466,
+    warna: '#7c2d12',
+    nomorHp: '082226610045',
+    sejak: hariKe(-512),
+  },
+  {
+    id: 'u-09',
+    nama: 'Kedai Susu Sapi Segar',
+    jenisUsaha: 'Kedai susu',
+    kota: 'Sleman',
+    alamat: 'Jl. Kaliurang KM 12, Ngaglik',
+    lat: -7.7016,
+    lng: 110.4081,
+    warna: '#0369a1',
+    nomorHp: '081328890076',
+    sejak: hariKe(-231),
+  },
+  {
+    id: 'u-10',
+    nama: 'Kopi Tugu Pandang',
+    jenisUsaha: 'Kedai kopi',
+    kota: 'Kota Yogyakarta',
+    alamat: 'Jl. Margo Utomo No. 33, Gowongan',
+    lat: -7.7825,
+    lng: 110.3672,
+    warna: '#a21caf',
+    nomorHp: '087738812204',
+    sejak: hariKe(-168),
+  },
+  {
+    id: 'u-11',
+    nama: 'Warung Sego Abang Mbak Tar',
+    jenisUsaha: 'Warung makan',
+    kota: 'Kota Yogyakarta',
+    alamat: 'Jl. Sisingamangaraja No. 7, Brontokusuman',
+    lat: -7.8168,
+    lng: 110.3745,
+    warna: '#be123c',
+    nomorHp: '085100237744',
+    sejak: hariKe(-355),
+  },
+  {
+    id: 'u-12',
+    nama: 'Kafe Beranda Kotabaru',
+    jenisUsaha: 'Kafe',
+    kota: 'Kota Yogyakarta',
+    alamat: 'Jl. Suroto No. 5, Kotabaru',
+    lat: -7.7789,
+    lng: 110.3802,
+    warna: '#c2410c',
+    nomorHp: '081215567890',
+    sejak: hariKe(-121),
+  },
+  {
+    id: 'u-13',
+    nama: 'Kedai Matcha Selasar',
+    jenisUsaha: 'Kedai minuman',
+    kota: 'Sleman',
+    alamat: 'Jl. Gejayan No. 28, Depok',
+    lat: -7.7702,
+    lng: 110.3891,
+    warna: '#15803d',
+    nomorHp: '082198004411',
+    sejak: hariKe(-77),
+  },
+  {
+    id: 'u-14',
+    nama: 'Roti Bakar Simpang Lima',
+    jenisUsaha: 'Kedai roti bakar',
+    kota: 'Sleman',
+    alamat: 'Jl. Godean KM 5, Gamping',
+    lat: -7.7936,
+    lng: 110.3305,
+    warna: '#854d0e',
+    nomorHp: '085725513390',
+    sejak: hariKe(-189),
+  },
+]
+
+export function umkmById(id: string): UmkmPemesan | undefined {
+  return daftarUmkm.find((u) => u.id === id)
+}
+
+/* ================================================================== */
+/* Portal Distributor — pesanan masuk                                 */
+/* ================================================================== */
+
+/**
+ * Baris pesanan selalu mengutip penawaran aslinya.
+ *
+ * Nama, satuan, dan harga tidak pernah ditulis ulang di sini supaya katalog
+ * dan pesanan tidak bisa berselisih angka.
+ */
+function barisPM(penawaranId: string, jumlah: number): BarisPesananMasuk {
+  const p = penawaranById(penawaranId)!
+  return { penawaranId, nama: p.nama, jumlah, satuan: p.satuan, hargaSatuan: p.hargaSatuan }
+}
+
+/**
+ * Pesanan yang masuk ke Sumber Tani Nusantara.
+ *
+ * Semuanya milik d-01, jadi barisnya hanya bisa berisi pw-01, pw-02, dan
+ * pw-03 — tiga penawaran yang memang dijual toko ini.
+ */
+export const daftarPesananMasuk: PesananMasuk[] = [
+  /* --- Menunggu konfirmasi (baru, umurnya dihitung dalam jam) --- */
+  {
+    id: 'pm-01',
+    nomor: `PM-${kodeTanggal(0)}-07`,
+    umkmId: 'u-01',
+    distributorId: 'd-01',
+    dibuatPada: jamLalu(1.5),
+    status: 'menunggu-konfirmasi',
+    baris: [barisPM('pw-01', 12)],
+    ongkosKirim: 25000,
+    perkiraanTiba: null,
+    jejak: [
+      { waktu: jamLalu(1.6), status: 'menunggu-konfirmasi', keterangan: 'Pesanan dikirim dari aplikasi pemilik usaha.' },
+      { waktu: jamLalu(1.5), status: 'menunggu-konfirmasi', keterangan: 'Masuk ke daftarmu, menunggu diterima atau ditolak.' },
+    ],
+    alasanTolak: null,
+    catatanDariUmkm: 'Tolong sangrai medium seperti biasa.',
+    pengiriman: null,
+    ulasan: null,
+  },
+  {
+    id: 'pm-02',
+    nomor: `PM-${kodeTanggal(0)}-06`,
+    umkmId: 'u-05',
+    distributorId: 'd-01',
+    dibuatPada: jamLalu(3),
+    status: 'menunggu-konfirmasi',
+    baris: [barisPM('pw-01', 8), barisPM('pw-03', 4)],
+    ongkosKirim: 25000,
+    perkiraanTiba: null,
+    jejak: [
+      { waktu: jamLalu(3.1), status: 'menunggu-konfirmasi', keterangan: 'Pesanan dikirim dari aplikasi pemilik usaha.' },
+      { waktu: jamLalu(3), status: 'menunggu-konfirmasi', keterangan: 'Masuk ke daftarmu, menunggu diterima atau ditolak.' },
+    ],
+    alasanTolak: null,
+    catatanDariUmkm: '',
+    pengiriman: null,
+    ulasan: null,
+  },
+  {
+    id: 'pm-03',
+    nomor: `PM-${kodeTanggal(0)}-05`,
+    umkmId: 'u-03',
+    distributorId: 'd-01',
+    dibuatPada: jamLalu(6),
+    status: 'menunggu-konfirmasi',
+    baris: [barisPM('pw-02', 10)],
+    ongkosKirim: 20000,
+    perkiraanTiba: null,
+    jejak: [
+      { waktu: jamLalu(6.2), status: 'menunggu-konfirmasi', keterangan: 'Pesanan dikirim dari aplikasi pemilik usaha.' },
+      { waktu: jamLalu(6), status: 'menunggu-konfirmasi', keterangan: 'Masuk ke daftarmu, menunggu diterima atau ditolak.' },
+    ],
+    alasanTolak: null,
+    catatanDariUmkm: 'Kalau bisa sampai sebelum Jumat.',
+    pengiriman: null,
+    ulasan: null,
+  },
+  {
+    id: 'pm-04',
+    nomor: `PM-${kodeTanggal(0)}-04`,
+    umkmId: 'u-09',
+    distributorId: 'd-01',
+    dibuatPada: jamLalu(9),
+    status: 'menunggu-konfirmasi',
+    baris: [barisPM('pw-03', 6)],
+    ongkosKirim: 22000,
+    perkiraanTiba: null,
+    jejak: [
+      { waktu: jamLalu(9.2), status: 'menunggu-konfirmasi', keterangan: 'Pesanan dikirim dari aplikasi pemilik usaha.' },
+      { waktu: jamLalu(9), status: 'menunggu-konfirmasi', keterangan: 'Masuk ke daftarmu, menunggu diterima atau ditolak.' },
+    ],
+    alasanTolak: null,
+    catatanDariUmkm: '',
+    pengiriman: null,
+    ulasan: null,
+  },
+  {
+    id: 'pm-05',
+    nomor: `PM-${kodeTanggal(-1)}-11`,
+    umkmId: 'u-12',
+    distributorId: 'd-01',
+    dibuatPada: jamLalu(14),
+    status: 'menunggu-konfirmasi',
+    baris: [barisPM('pw-01', 5), barisPM('pw-02', 3)],
+    ongkosKirim: 20000,
+    perkiraanTiba: null,
+    jejak: [
+      { waktu: jamLalu(14.3), status: 'menunggu-konfirmasi', keterangan: 'Pesanan dikirim dari aplikasi pemilik usaha.' },
+      { waktu: jamLalu(14), status: 'menunggu-konfirmasi', keterangan: 'Masuk ke daftarmu, menunggu diterima atau ditolak.' },
+    ],
+    alasanTolak: null,
+    catatanDariUmkm: 'Titip nota, buat laporan bulanan.',
+    pengiriman: null,
+    ulasan: null,
+  },
+  {
+    id: 'pm-06',
+    nomor: `PM-${kodeTanggal(-1)}-09`,
+    umkmId: 'u-14',
+    distributorId: 'd-01',
+    dibuatPada: jamLalu(19),
+    status: 'menunggu-konfirmasi',
+    baris: [barisPM('pw-03', 9)],
+    ongkosKirim: 18000,
+    perkiraanTiba: null,
+    jejak: [
+      { waktu: jamLalu(19.4), status: 'menunggu-konfirmasi', keterangan: 'Pesanan dikirim dari aplikasi pemilik usaha.' },
+      { waktu: jamLalu(19), status: 'menunggu-konfirmasi', keterangan: 'Masuk ke daftarmu, menunggu diterima atau ditolak.' },
+    ],
+    alasanTolak: null,
+    catatanDariUmkm: '',
+    pengiriman: null,
+    ulasan: null,
+  },
+
+  /* --- Disiapkan di gudang --- */
+  {
+    id: 'pm-07',
+    nomor: `PM-${kodeTanggal(-1)}-03`,
+    umkmId: 'u-02',
+    distributorId: 'd-01',
+    dibuatPada: hariKe(-1, 9, 20),
+    status: 'disiapkan',
+    baris: [barisPM('pw-02', 4)],
+    ongkosKirim: 15000,
+    perkiraanTiba: hariKe(1, 9, 0),
+    jejak: [
+      { waktu: hariKe(-1, 9, 20), status: 'menunggu-konfirmasi', keterangan: 'Pesanan masuk.' },
+      { waktu: hariKe(-1, 10, 5), status: 'disiapkan', keterangan: 'Kamu terima. Barang mulai disiapkan di gudang.' },
+    ],
+    alasanTolak: null,
+    catatanDariUmkm: 'Buat stok akhir pekan.',
+    pengiriman: null,
+    ulasan: null,
+  },
+  {
+    id: 'pm-08',
+    nomor: `PM-${kodeTanggal(-1)}-06`,
+    umkmId: 'u-05',
+    distributorId: 'd-01',
+    dibuatPada: hariKe(-1, 14, 5),
+    status: 'disiapkan',
+    baris: [barisPM('pw-01', 15)],
+    ongkosKirim: 25000,
+    perkiraanTiba: hariKe(1, 11, 0),
+    jejak: [
+      { waktu: hariKe(-1, 14, 5), status: 'menunggu-konfirmasi', keterangan: 'Pesanan masuk.' },
+      { waktu: hariKe(-1, 15, 30), status: 'disiapkan', keterangan: 'Kamu terima. Sangrai dijadwalkan besok pagi.' },
+    ],
+    alasanTolak: null,
+    catatanDariUmkm: '',
+    pengiriman: null,
+    ulasan: null,
+  },
+  {
+    id: 'pm-09',
+    nomor: `PM-${kodeTanggal(-1)}-08`,
+    umkmId: 'u-07',
+    distributorId: 'd-01',
+    dibuatPada: hariKe(-1, 16, 40),
+    status: 'disiapkan',
+    baris: [barisPM('pw-01', 20), barisPM('pw-03', 5)],
+    ongkosKirim: 35000,
+    perkiraanTiba: hariKe(1, 14, 0),
+    jejak: [
+      { waktu: hariKe(-1, 16, 40), status: 'menunggu-konfirmasi', keterangan: 'Pesanan masuk.' },
+      { waktu: hariKe(-1, 17, 15), status: 'disiapkan', keterangan: 'Kamu terima. Dipisah dua koli karena jumlahnya besar.' },
+    ],
+    alasanTolak: null,
+    catatanDariUmkm: 'Kirim pagi ya, sore kedai tutup.',
+    pengiriman: null,
+    ulasan: null,
+  },
+  {
+    id: 'pm-10',
+    nomor: `PM-${kodeTanggal(-2)}-02`,
+    umkmId: 'u-10',
+    distributorId: 'd-01',
+    dibuatPada: hariKe(-2, 8, 15),
+    status: 'disiapkan',
+    baris: [barisPM('pw-01', 9)],
+    ongkosKirim: 22000,
+    perkiraanTiba: hariKe(0, 16, 0),
+    jejak: [
+      { waktu: hariKe(-2, 8, 15), status: 'menunggu-konfirmasi', keterangan: 'Pesanan masuk.' },
+      { waktu: hariKe(-2, 9, 0), status: 'disiapkan', keterangan: 'Kamu terima. Menunggu giliran sangrai.' },
+    ],
+    alasanTolak: null,
+    catatanDariUmkm: '',
+    pengiriman: null,
+    ulasan: null,
+  },
+  {
+    id: 'pm-11',
+    nomor: `PM-${kodeTanggal(-2)}-05`,
+    umkmId: 'u-13',
+    distributorId: 'd-01',
+    dibuatPada: hariKe(-2, 11, 30),
+    status: 'disiapkan',
+    baris: [barisPM('pw-03', 7), barisPM('pw-02', 2)],
+    ongkosKirim: 20000,
+    perkiraanTiba: hariKe(0, 13, 0),
+    jejak: [
+      { waktu: hariKe(-2, 11, 30), status: 'menunggu-konfirmasi', keterangan: 'Pesanan masuk.' },
+      { waktu: hariKe(-2, 12, 10), status: 'disiapkan', keterangan: 'Kamu terima. Barang sudah ditimbang dan dikemas.' },
+    ],
+    alasanTolak: null,
+    catatanDariUmkm: '',
+    pengiriman: null,
+    ulasan: null,
+  },
+
+  /* --- Sedang dikirim --- */
+  {
+    id: 'pm-12',
+    nomor: `PM-${kodeTanggal(-2)}-01`,
+    umkmId: 'u-01',
+    distributorId: 'd-01',
+    dibuatPada: hariKe(-2, 7, 45),
+    status: 'dikirim',
+    baris: [barisPM('pw-03', 4)],
+    ongkosKirim: 20000,
+    perkiraanTiba: hariKe(0, 15, 0),
+    jejak: [
+      { waktu: hariKe(-2, 7, 45), status: 'menunggu-konfirmasi', keterangan: 'Pesanan masuk.' },
+      { waktu: hariKe(-2, 8, 30), status: 'disiapkan', keterangan: 'Kamu terima. Barang disiapkan di gudang.' },
+      { waktu: hariKe(-1, 7, 20), status: 'dikirim', keterangan: 'Berangkat dari gudang bersama armada pagi.' },
+    ],
+    alasanTolak: null,
+    catatanDariUmkm: '',
+    pengiriman: null,
+    ulasan: null,
+  },
+  {
+    id: 'pm-13',
+    nomor: `PM-${kodeTanggal(-2)}-07`,
+    umkmId: 'u-04',
+    distributorId: 'd-01',
+    dibuatPada: hariKe(-2, 13, 10),
+    status: 'dikirim',
+    baris: [barisPM('pw-02', 6)],
+    ongkosKirim: 28000,
+    perkiraanTiba: hariKe(0, 17, 30),
+    jejak: [
+      { waktu: hariKe(-2, 13, 10), status: 'menunggu-konfirmasi', keterangan: 'Pesanan masuk.' },
+      { waktu: hariKe(-2, 14, 0), status: 'disiapkan', keterangan: 'Kamu terima. Barang disiapkan di gudang.' },
+      { waktu: hariKe(-1, 13, 45), status: 'dikirim', keterangan: 'Diambil kurir, lewat jalur selatan.' },
+    ],
+    alasanTolak: null,
+    catatanDariUmkm: 'Rumah cat hijau, pagar besi.',
+    pengiriman: null,
+    ulasan: null,
+  },
+  {
+    id: 'pm-14',
+    nomor: `PM-${kodeTanggal(-3)}-02`,
+    umkmId: 'u-06',
+    distributorId: 'd-01',
+    dibuatPada: hariKe(-3, 9, 0),
+    status: 'dikirim',
+    baris: [barisPM('pw-01', 6), barisPM('pw-02', 3)],
+    ongkosKirim: 18000,
+    perkiraanTiba: hariKe(1, 10, 0),
+    jejak: [
+      { waktu: hariKe(-3, 9, 0), status: 'menunggu-konfirmasi', keterangan: 'Pesanan masuk.' },
+      { waktu: hariKe(-3, 10, 20), status: 'disiapkan', keterangan: 'Kamu terima. Menunggu giliran sangrai.' },
+      { waktu: hariKe(0, 8, 10), status: 'dikirim', keterangan: 'Berangkat dari gudang pagi ini.' },
+    ],
+    alasanTolak: null,
+    catatanDariUmkm: '',
+    pengiriman: null,
+    ulasan: null,
+  },
+  {
+    id: 'pm-15',
+    nomor: `PM-${kodeTanggal(-3)}-06`,
+    umkmId: 'u-11',
+    distributorId: 'd-01',
+    dibuatPada: hariKe(-3, 15, 25),
+    status: 'dikirim',
+    baris: [barisPM('pw-02', 8)],
+    ongkosKirim: 30000,
+    perkiraanTiba: hariKe(1, 13, 0),
+    jejak: [
+      { waktu: hariKe(-3, 15, 25), status: 'menunggu-konfirmasi', keterangan: 'Pesanan masuk.' },
+      { waktu: hariKe(-3, 16, 5), status: 'disiapkan', keterangan: 'Kamu terima. Barang disiapkan di gudang.' },
+      { waktu: hariKe(0, 9, 30), status: 'dikirim', keterangan: 'Diambil kurir pagi ini.' },
+    ],
+    alasanTolak: null,
+    catatanDariUmkm: 'Warung buka mulai jam 10.',
+    pengiriman: null,
+    ulasan: null,
+  },
+  {
+    id: 'pm-16',
+    nomor: `PM-${kodeTanggal(-4)}-01`,
+    umkmId: 'u-13',
+    distributorId: 'd-01',
+    dibuatPada: hariKe(-4, 8, 30),
+    status: 'dikirim',
+    baris: [barisPM('pw-01', 11)],
+    ongkosKirim: 20000,
+    perkiraanTiba: hariKe(0, 11, 0),
+    jejak: [
+      { waktu: hariKe(-4, 8, 30), status: 'menunggu-konfirmasi', keterangan: 'Pesanan masuk.' },
+      { waktu: hariKe(-4, 9, 15), status: 'disiapkan', keterangan: 'Kamu terima. Barang disiapkan di gudang.' },
+      { waktu: hariKe(-1, 16, 40), status: 'dikirim', keterangan: 'Berangkat sore, menginap semalam di pul kurir.' },
+    ],
+    alasanTolak: null,
+    catatanDariUmkm: '',
+    pengiriman: null,
+    ulasan: null,
+  },
+
+  /* --- Selesai, baru sampai (titik biru masih hidup) --- */
+  {
+    id: 'pm-17',
+    nomor: `PM-${kodeTanggal(-3)}-03`,
+    umkmId: 'u-05',
+    distributorId: 'd-01',
+    dibuatPada: hariKe(-3, 10, 0),
+    status: 'selesai',
+    baris: [barisPM('pw-01', 18)],
+    ongkosKirim: 25000,
+    perkiraanTiba: jamLalu(4),
+    jejak: [
+      { waktu: hariKe(-3, 10, 0), status: 'menunggu-konfirmasi', keterangan: 'Pesanan masuk.' },
+      { waktu: hariKe(-3, 11, 0), status: 'disiapkan', keterangan: 'Kamu terima. Barang disiapkan di gudang.' },
+      { waktu: hariKe(-1, 7, 30), status: 'dikirim', keterangan: 'Berangkat dari gudang.' },
+      { waktu: jamLalu(2), status: 'selesai', keterangan: 'Barang sampai dan diterima di tempat.' },
+    ],
+    alasanTolak: null,
+    catatanDariUmkm: '',
+    pengiriman: {
+      kurir: 'Armada sendiri',
+      namaPengantar: 'Wahyu Nugroho',
+      nomorResi: 'STN-0917-0231',
+      diterimaOleh: 'Dimas (barista)',
+      waktuSampai: jamLalu(2),
+      catatan: 'Diturunkan lewat pintu samping karena depan sedang ramai.',
+      foto: ['Barang diturunkan di depan kedai', 'Tanda terima ditandatangani'],
+    },
+    ulasan: {
+      rating: 5,
+      isi: 'Datang tepat waktu dan bijinya masih hangat. Aromanya beda.',
+      waktu: jamLalu(1),
+      aspek: { ketepatanWaktu: 5, jumlahSesuai: 5, kondisiBarang: 5 },
+    },
+  },
+  {
+    id: 'pm-18',
+    nomor: `PM-${kodeTanggal(-4)}-02`,
+    umkmId: 'u-02',
+    distributorId: 'd-01',
+    dibuatPada: hariKe(-4, 9, 30),
+    status: 'selesai',
+    baris: [barisPM('pw-02', 5)],
+    ongkosKirim: 15000,
+    perkiraanTiba: jamLalu(6),
+    jejak: [
+      { waktu: hariKe(-4, 9, 30), status: 'menunggu-konfirmasi', keterangan: 'Pesanan masuk.' },
+      { waktu: hariKe(-4, 10, 10), status: 'disiapkan', keterangan: 'Kamu terima. Barang disiapkan di gudang.' },
+      { waktu: hariKe(-2, 8, 0), status: 'dikirim', keterangan: 'Diambil kurir.' },
+      { waktu: jamLalu(5), status: 'selesai', keterangan: 'Barang sampai dan diterima di tempat.' },
+    ],
+    alasanTolak: null,
+    catatanDariUmkm: 'Titip di warung sebelah kalau saya belum datang.',
+    pengiriman: {
+      kurir: 'Kurir Harian Jogja',
+      namaPengantar: 'Tri Handoko',
+      nomorResi: 'STN-0916-0198',
+      diterimaOleh: 'Pak Slamet',
+      waktuSampai: jamLalu(5),
+      catatan: 'Diterima langsung oleh pemilik.',
+      foto: ['Barang diserahkan ke pemilik', 'Tanda terima ditandatangani'],
+    },
+    ulasan: {
+      rating: 4,
+      isi: 'Tehnya sesuai pesanan. Kirimannya agak siang dari perkiraan, tapi tidak masalah.',
+      waktu: jamLalu(3),
+      aspek: { ketepatanWaktu: 4, jumlahSesuai: 5, kondisiBarang: 4 },
+    },
+  },
+  {
+    id: 'pm-19',
+    nomor: `PM-${kodeTanggal(-4)}-05`,
+    umkmId: 'u-08',
+    distributorId: 'd-01',
+    dibuatPada: hariKe(-4, 14, 0),
+    status: 'selesai',
+    baris: [barisPM('pw-03', 3)],
+    ongkosKirim: 18000,
+    perkiraanTiba: jamLalu(10),
+    jejak: [
+      { waktu: hariKe(-4, 14, 0), status: 'menunggu-konfirmasi', keterangan: 'Pesanan masuk.' },
+      { waktu: hariKe(-4, 15, 0), status: 'disiapkan', keterangan: 'Kamu terima. Barang disiapkan di gudang.' },
+      { waktu: hariKe(-2, 13, 20), status: 'dikirim', keterangan: 'Berangkat dari gudang.' },
+      { waktu: jamLalu(9), status: 'selesai', keterangan: 'Barang sampai dan diterima di tempat.' },
+    ],
+    alasanTolak: null,
+    catatanDariUmkm: '',
+    pengiriman: {
+      kurir: 'Armada sendiri',
+      namaPengantar: 'Wahyu Nugroho',
+      nomorResi: 'STN-0916-0205',
+      diterimaOleh: 'Mbak Ria',
+      waktuSampai: jamLalu(9),
+      catatan: '',
+      foto: ['Barang diturunkan di depan warung'],
+    },
+    ulasan: null,
+  },
+
+  /* --- Selesai, sudah lewat 12 jam (titik birunya hilang) --- */
+  {
+    id: 'pm-20',
+    nomor: `PM-${kodeTanggal(-6)}-04`,
+    umkmId: 'u-01',
+    distributorId: 'd-01',
+    dibuatPada: hariKe(-6, 8, 0),
+    status: 'selesai',
+    baris: [barisPM('pw-01', 10), barisPM('pw-02', 2)],
+    ongkosKirim: 25000,
+    perkiraanTiba: hariKe(-4, 10, 0),
+    jejak: [
+      { waktu: hariKe(-6, 8, 0), status: 'menunggu-konfirmasi', keterangan: 'Pesanan masuk.' },
+      { waktu: hariKe(-6, 9, 0), status: 'disiapkan', keterangan: 'Kamu terima. Barang disiapkan di gudang.' },
+      { waktu: hariKe(-5, 7, 15), status: 'dikirim', keterangan: 'Berangkat dari gudang.' },
+      { waktu: hariKe(-4, 11, 20), status: 'selesai', keterangan: 'Barang sampai dan diterima di tempat.' },
+    ],
+    alasanTolak: null,
+    catatanDariUmkm: '',
+    pengiriman: {
+      kurir: 'Armada sendiri',
+      namaPengantar: 'Wahyu Nugroho',
+      nomorResi: 'STN-0914-0177',
+      diterimaOleh: 'Bagas Prasetyo',
+      waktuSampai: hariKe(-4, 11, 20),
+      catatan: 'Ditimbang ulang di tempat, jumlahnya pas.',
+      foto: ['Barang diturunkan di depan kedai', 'Timbangan diperlihatkan ke pemilik', 'Tanda terima ditandatangani'],
+    },
+    ulasan: {
+      rating: 5,
+      isi: 'Sudah langganan lama, belum pernah mengecewakan.',
+      waktu: hariKe(-4, 15, 0),
+      aspek: { ketepatanWaktu: 5, jumlahSesuai: 5, kondisiBarang: 5 },
+    },
+  },
+  {
+    id: 'pm-21',
+    nomor: `PM-${kodeTanggal(-8)}-03`,
+    umkmId: 'u-03',
+    distributorId: 'd-01',
+    dibuatPada: hariKe(-8, 9, 15),
+    status: 'selesai',
+    baris: [barisPM('pw-02', 12)],
+    ongkosKirim: 20000,
+    perkiraanTiba: hariKe(-6, 13, 0),
+    jejak: [
+      { waktu: hariKe(-8, 9, 15), status: 'menunggu-konfirmasi', keterangan: 'Pesanan masuk.' },
+      { waktu: hariKe(-8, 10, 0), status: 'disiapkan', keterangan: 'Kamu terima. Barang disiapkan di gudang.' },
+      { waktu: hariKe(-7, 8, 40), status: 'dikirim', keterangan: 'Diambil kurir.' },
+      { waktu: hariKe(-6, 14, 0), status: 'selesai', keterangan: 'Barang sampai dan diterima di tempat.' },
+    ],
+    alasanTolak: null,
+    catatanDariUmkm: '',
+    pengiriman: {
+      kurir: 'Kurir Harian Jogja',
+      namaPengantar: 'Tri Handoko',
+      nomorResi: 'STN-0912-0140',
+      diterimaOleh: 'Nanda',
+      waktuSampai: hariKe(-6, 14, 0),
+      catatan: 'Satu karung sempat tertukar, langsung ditukar di tempat.',
+      foto: ['Barang diturunkan di depan kedai', 'Tanda terima ditandatangani'],
+    },
+    ulasan: {
+      rating: 4,
+      isi: 'Sempat ada barang tertukar, tapi langsung dibetulkan hari itu juga.',
+      waktu: hariKe(-6, 18, 0),
+      aspek: { ketepatanWaktu: 5, jumlahSesuai: 3, kondisiBarang: 5 },
+    },
+  },
+  {
+    id: 'pm-22',
+    nomor: `PM-${kodeTanggal(-11)}-06`,
+    umkmId: 'u-04',
+    distributorId: 'd-01',
+    dibuatPada: hariKe(-11, 10, 30),
+    status: 'selesai',
+    baris: [barisPM('pw-03', 8)],
+    ongkosKirim: 28000,
+    perkiraanTiba: hariKe(-9, 10, 0),
+    jejak: [
+      { waktu: hariKe(-11, 10, 30), status: 'menunggu-konfirmasi', keterangan: 'Pesanan masuk.' },
+      { waktu: hariKe(-11, 11, 15), status: 'disiapkan', keterangan: 'Kamu terima. Barang disiapkan di gudang.' },
+      { waktu: hariKe(-10, 7, 50), status: 'dikirim', keterangan: 'Berangkat dari gudang.' },
+      { waktu: hariKe(-9, 9, 40), status: 'selesai', keterangan: 'Barang sampai dan diterima di tempat.' },
+    ],
+    alasanTolak: null,
+    catatanDariUmkm: '',
+    pengiriman: {
+      kurir: 'Ekspedisi Merapi Kargo',
+      namaPengantar: 'Adi Kurniawan',
+      nomorResi: 'STN-0909-0112',
+      diterimaOleh: 'Bu Tarmi',
+      waktuSampai: hariKe(-9, 9, 40),
+      catatan: '',
+      foto: ['Barang diturunkan di depan warung', 'Tanda terima ditandatangani'],
+    },
+    ulasan: null,
+  },
+  {
+    id: 'pm-23',
+    nomor: `PM-${kodeTanggal(-14)}-02`,
+    umkmId: 'u-07',
+    distributorId: 'd-01',
+    dibuatPada: hariKe(-14, 13, 0),
+    status: 'selesai',
+    baris: [barisPM('pw-01', 25)],
+    ongkosKirim: 35000,
+    perkiraanTiba: hariKe(-12, 11, 0),
+    jejak: [
+      { waktu: hariKe(-14, 13, 0), status: 'menunggu-konfirmasi', keterangan: 'Pesanan masuk.' },
+      { waktu: hariKe(-14, 14, 20), status: 'disiapkan', keterangan: 'Kamu terima. Sangrai dijadwalkan besok pagi.' },
+      { waktu: hariKe(-13, 7, 40), status: 'dikirim', keterangan: 'Berangkat dari gudang, dua koli.' },
+      { waktu: hariKe(-12, 10, 15), status: 'selesai', keterangan: 'Barang sampai dan diterima di tempat.' },
+    ],
+    alasanTolak: null,
+    catatanDariUmkm: 'Jalan menanjak, mobil besar susah masuk.',
+    pengiriman: {
+      kurir: 'Ekspedisi Merapi Kargo',
+      namaPengantar: 'Adi Kurniawan',
+      nomorResi: 'STN-0906-0088',
+      diterimaOleh: 'Mas Yoga',
+      waktuSampai: hariKe(-12, 10, 15),
+      catatan: 'Dipindah ke motor bak di pertigaan karena jalan sempit.',
+      foto: ['Barang dipindah ke motor bak', 'Barang diturunkan di depan kedai', 'Tanda terima ditandatangani'],
+    },
+    ulasan: {
+      rating: 5,
+      isi: 'Mau repot memindah barang ke motor supaya tetap sampai. Salut.',
+      waktu: hariKe(-12, 16, 0),
+      aspek: { ketepatanWaktu: 4, jumlahSesuai: 5, kondisiBarang: 5 },
+    },
+  },
+  {
+    id: 'pm-24',
+    nomor: `PM-${kodeTanggal(-18)}-04`,
+    umkmId: 'u-09',
+    distributorId: 'd-01',
+    dibuatPada: hariKe(-18, 8, 45),
+    status: 'selesai',
+    baris: [barisPM('pw-03', 5), barisPM('pw-02', 4)],
+    ongkosKirim: 22000,
+    perkiraanTiba: hariKe(-16, 14, 0),
+    jejak: [
+      { waktu: hariKe(-18, 8, 45), status: 'menunggu-konfirmasi', keterangan: 'Pesanan masuk.' },
+      { waktu: hariKe(-18, 9, 30), status: 'disiapkan', keterangan: 'Kamu terima. Barang disiapkan di gudang.' },
+      { waktu: hariKe(-17, 8, 0), status: 'dikirim', keterangan: 'Diambil kurir.' },
+      { waktu: hariKe(-16, 15, 30), status: 'selesai', keterangan: 'Barang sampai dan diterima di tempat.' },
+    ],
+    alasanTolak: null,
+    catatanDariUmkm: '',
+    pengiriman: {
+      kurir: 'Kurir Harian Jogja',
+      namaPengantar: 'Tri Handoko',
+      nomorResi: 'STN-0902-0061',
+      diterimaOleh: 'Mbak Fitri',
+      waktuSampai: hariKe(-16, 15, 30),
+      catatan: '',
+      foto: ['Barang diturunkan di depan kedai'],
+    },
+    ulasan: null,
+  },
+  {
+    id: 'pm-25',
+    nomor: `PM-${kodeTanggal(-23)}-01`,
+    umkmId: 'u-10',
+    distributorId: 'd-01',
+    dibuatPada: hariKe(-23, 11, 0),
+    status: 'selesai',
+    baris: [barisPM('pw-01', 7)],
+    ongkosKirim: 22000,
+    perkiraanTiba: hariKe(-21, 12, 0),
+    jejak: [
+      { waktu: hariKe(-23, 11, 0), status: 'menunggu-konfirmasi', keterangan: 'Pesanan masuk.' },
+      { waktu: hariKe(-23, 12, 30), status: 'disiapkan', keterangan: 'Kamu terima. Barang disiapkan di gudang.' },
+      { waktu: hariKe(-22, 7, 25), status: 'dikirim', keterangan: 'Berangkat dari gudang.' },
+      { waktu: hariKe(-21, 12, 45), status: 'selesai', keterangan: 'Barang sampai dan diterima di tempat.' },
+    ],
+    alasanTolak: null,
+    catatanDariUmkm: '',
+    pengiriman: {
+      kurir: 'Armada sendiri',
+      namaPengantar: 'Wahyu Nugroho',
+      nomorResi: 'STN-0828-0034',
+      diterimaOleh: 'Mas Rendra',
+      waktuSampai: hariKe(-21, 12, 45),
+      catatan: 'Pesanan pertama dari kedai ini.',
+      foto: ['Barang diturunkan di depan kedai', 'Tanda terima ditandatangani'],
+    },
+    ulasan: {
+      rating: 5,
+      isi: 'Pesanan pertama langsung cocok. Bijinya bersih, tidak banyak pecah.',
+      waktu: hariKe(-20, 9, 0),
+      aspek: { ketepatanWaktu: 5, jumlahSesuai: 5, kondisiBarang: 5 },
+    },
+  },
+
+  /* --- Ditolak --- */
+  {
+    id: 'pm-26',
+    nomor: `PM-${kodeTanggal(-5)}-08`,
+    umkmId: 'u-12',
+    distributorId: 'd-01',
+    dibuatPada: hariKe(-5, 16, 20),
+    status: 'ditolak',
+    baris: [barisPM('pw-01', 40)],
+    ongkosKirim: 20000,
+    perkiraanTiba: null,
+    jejak: [
+      { waktu: hariKe(-5, 16, 20), status: 'menunggu-konfirmasi', keterangan: 'Pesanan masuk.' },
+      { waktu: hariKe(-5, 17, 0), status: 'ditolak', keterangan: 'Kamu tolak: jumlahnya di luar kemampuan kami.' },
+    ],
+    alasanTolak: 'Jumlahnya di luar kemampuan kami',
+    catatanDariUmkm: 'Untuk persiapan acara kantor.',
+    pengiriman: null,
+    ulasan: null,
+  },
+  {
+    id: 'pm-27',
+    nomor: `PM-${kodeTanggal(-9)}-03`,
+    umkmId: 'u-14',
+    distributorId: 'd-01',
+    dibuatPada: hariKe(-9, 10, 10),
+    status: 'ditolak',
+    baris: [barisPM('pw-02', 6)],
+    ongkosKirim: 18000,
+    perkiraanTiba: null,
+    jejak: [
+      { waktu: hariKe(-9, 10, 10), status: 'menunggu-konfirmasi', keterangan: 'Pesanan masuk.' },
+      { waktu: hariKe(-9, 11, 5), status: 'ditolak', keterangan: 'Kamu tolak: alamatnya di luar area kirim.' },
+    ],
+    alasanTolak: 'Alamat di luar area kirim',
+    catatanDariUmkm: '',
+    pengiriman: null,
+    ulasan: null,
+  },
+]
+
+export function pesananMasukById(id: string): PesananMasuk | undefined {
+  return daftarPesananMasuk.find((p) => p.id === id)
+}
+
+/**
+ * Warna titik satu pesanan di peta sebaran, atau null kalau pesanan itu tidak
+ * perlu ditampilkan lagi.
+ *
+ * Batas 12 jam untuk titik biru datang dari catatan pemilik proyek: pesanan
+ * yang sudah sampai hanya perlu terlihat sebentar sebagai kabar baik, setelah
+ * itu peta harus kembali bersih supaya yang tersisa cuma yang butuh tindakan.
+ * Pesanan yang ditolak tidak pernah punya titik sama sekali.
+ */
+export function warnaTitikUntuk(p: PesananMasuk): WarnaTitik | null {
+  if (p.status === 'menunggu-konfirmasi') return 'merah'
+  if (p.status === 'disiapkan' || p.status === 'dikirim') return 'oren'
+  if (p.status === 'selesai' && p.pengiriman) {
+    const umurJam = (Date.now() - +new Date(p.pengiriman.waktuSampai)) / 3_600_000
+    return umurJam < JAM_TITIK_BIRU ? 'biru' : null
+  }
+  return null
 }

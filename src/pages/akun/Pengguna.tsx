@@ -38,7 +38,7 @@ const PERAN: Record<Peran, { nama: string; nada: NadaLencana; ringkas: string }>
   pemilik: {
     nama: 'Pemilik',
     nada: 'merek',
-    ringkas: 'Bisa semuanya, termasuk mengatur pengguna dan langganan.',
+    ringkas: 'Bisa semuanya, termasuk mengatur pengguna dan data legalitas usaha.',
   },
   manajer: {
     nama: 'Manajer',
@@ -75,7 +75,10 @@ const HAK: Record<PeranDiberikan, { boleh: string[]; tidakBoleh: string[] }> = {
       'Mengajukan dan menghentikan kontrak',
       'Mengubah batas aman dan pengaturan pengingat',
     ],
-    tidakBoleh: ['Tidak boleh menambah atau menghapus pengguna', 'Tidak boleh mengubah langganan'],
+    tidakBoleh: [
+      'Tidak boleh menambah atau menghapus pengguna',
+      'Tidak boleh mengubah Data Usaha & Legalitas',
+    ],
   },
 }
 
@@ -284,7 +287,7 @@ export default function Pengguna() {
             <p className="mt-3 text-[0.8125rem] text-ink-3 leading-relaxed">
               Peran <strong className="text-ink-2">Pemilik</strong> tidak ada di daftar ini karena ia melekat pada
               akun usaha dan tidak bisa diberikan ke orang lain. Pemilik bisa melakukan semua pekerjaan Manajer,
-              ditambah menambah atau menghapus pengguna dan mengubah langganan.
+              ditambah menambah atau menghapus pengguna dan mengubah Data Usaha &amp; Legalitas.
             </p>
           </section>
         </div>

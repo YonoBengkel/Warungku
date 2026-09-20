@@ -8,7 +8,7 @@ import { IkonBantuan, IkonCentangLingkaran, IkonKembali, IkonSampah, IkonUnggah 
 import { useAplikasi } from '@/store/aplikasi'
 
 /**
- * Langkah 3 dari 3: data legalitas, lalu langsung diantar ke sumber data penjualan.
+ * Langkah 3 dari 5: data legalitas, lalu langsung diantar ke sumber data penjualan.
  *
  * Tidak ada layar "Pendaftaran Berhasil" di antaranya. Layar seperti itu cuma
  * menambah satu ketukan tanpa memberi informasi baru; kalimat "akun sedang
@@ -468,6 +468,11 @@ function GambarLembarNib() {
   )
 }
 
+/**
+ * Penyebut progres dikunci ke 5, sama dengan dua layar pendaftaran sebelumnya.
+ * Layar ini bukan yang terakhir: sesudahnya masih ada data kasir dan batas
+ * aman, jadi "3 dari 3" akan membuat bilah progres penuh lalu mundur lagi.
+ */
 function LayarAuth({
   langkah,
   judul,
@@ -507,17 +512,17 @@ function LayarAuth({
               role="progressbar"
               aria-valuenow={langkah}
               aria-valuemin={1}
-              aria-valuemax={3}
-              aria-label={`Langkah ${langkah} dari 3`}
+              aria-valuemax={5}
+              aria-label={`Langkah ${langkah} dari 5`}
             >
               <div
                 className="h-full rounded-full bg-brand transition-[width] duration-500"
-                style={{ width: `${(langkah / 3) * 100}%` }}
+                style={{ width: `${(langkah / 5) * 100}%` }}
               />
             </div>
             <div className="mt-2 flex items-baseline justify-between gap-3">
               <h1 className="text-[1.25rem] font-extrabold text-ink tracking-tight">{judul}</h1>
-              <span className="text-[0.8125rem] font-semibold text-ink-3 shrink-0">Langkah {langkah} dari 3</span>
+              <span className="text-[0.8125rem] font-semibold text-ink-3 shrink-0">Langkah {langkah} dari 5</span>
             </div>
           </div>
 

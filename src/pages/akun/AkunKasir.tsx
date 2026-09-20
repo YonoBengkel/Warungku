@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { Kartu, Lencana, Pemisah, Tombol, TombolTautan } from '@/components/ui/dasar'
+import { JudulBagian, Kartu, Lencana, Pemisah, Tombol, TombolTautan } from '@/components/ui/dasar'
 import { Kolom } from '@/components/ui/formulir'
 import { Lembar } from '@/components/ui/lembar'
 import { KepalaHalaman, TabSegmen } from '@/components/ui/navigasi'
@@ -28,11 +28,11 @@ import {
 } from '@/lib/format'
 import { JUDUL } from '@/lib/label'
 import type { Barang, RiwayatKasir } from '@/lib/types'
-import { merekKasir, riwayatKasir } from '@/data/dummy'
+import { POS_TUNGGAL, daftarTransaksi, riwayatKasir } from '@/data/dummy'
+import { KartuStruk } from '@/components/domain/KartuStruk'
 import { useAplikasi } from '@/store/aplikasi'
 
 type Tab = 'sambungan' | 'beres' | 'riwayat'
-type KartuTerbuka = 'punya-kasir' | 'tidak-terdaftar' | 'tanpa-kasir' | null
 /** Tugas yang tidak berasal dari daftar menu, jadi keadaannya dipegang layar ini. */
 type TugasLain = 'salinan' | 'satuan'
 
@@ -81,15 +81,16 @@ export default function AkunKasir() {
         </div>
 
         <h1 className="mt-5 text-[1.375rem] font-extrabold text-ink leading-tight tracking-tight">
-          Dari mana data penjualanmu?
+          Apakah kamu sudah memiliki data transaksi sebelumnya?
         </h1>
         <p className="mt-1.5 text-[0.9375rem] text-ink-2 leading-relaxed">
-          Kami perlu tahu ini supaya stok bisa berkurang sendiri setiap ada yang terjual. Pilih yang paling cocok
-          dengan caramu berjualan sekarang.
+          Warungku berdiri terpisah dari aplikasi kasirmu — kami mengurus stok gudang, kasir mengurus penjualan.
+          Karena itu catatan penjualan yang sudah kamu punya perlu disambungkan ke sini. Kalau tidak, perkiraan
+          kebutuhan mulai dari nol dan baru bisa diandalkan setelah dua minggu berjalan.
         </p>
 
         <div className="mt-5">
-          <PilihanSumber />
+          <DaftarKonektor />
         </div>
 
         {/* Jalan keluar disengaja berupa teks, bukan tombol setara: melewati
@@ -214,7 +215,7 @@ function TabSambungan({ jumlahPerluDibereskan }: { jumlahPerluDibereskan: number
           masuk tidak terhapus.
         </Peringatan>
       )}
-      <PilihanSumber />
+      <DaftarKonektor />
     </div>
   )
 }
@@ -232,17 +233,36 @@ function TombolGantiSumber({ onClick }: { onClick: () => void }) {
 }
 
 /**
- * Tiga kartu besar. Hanya satu yang terbuka pada satu waktu supaya layar 360px
- * tidak berubah jadi gulungan panjang berisi tiga formulir sekaligus.
+ * Daftar konektor — satu baris per sumber data, dengan status dan satu tombol
+ * di kanan. Bentuknya sengaja menyerupai halaman konektor yang sudah umum
+ * dikenal orang, bukan tumpukan kartu yang harus dibuka satu-satu.
+ *
+ * Dipakai di DUA tempat: langkah terakhir pendaftaran dan tab Sambungan.
+ * Isinya sama persis supaya pengguna yang melewati langkah ini saat mendaftar
+ * menemukan layar yang ia kenali saat kembali.
+ *
+ * Hanya ada SATU POS yang didukung, yaitu POS_TUNGGAL. Tidak ada pemilihan
+ * merek kasir di sini maupun di mana pun — jangan menambahkannya kembali.
  */
-function PilihanSumber() {
+function DaftarKonektor() {
   const navigate = useNavigate()
+  const [params] = useSearchParams()
+  const kasir = useAplikasi((s) => s.kasir)
   const ubahKasir = useAplikasi((s) => s.ubahKasir)
+  const hubungkanKasir = useAplikasi((s) => s.hubungkanKasir)
   const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
 
-  const [terbuka, setTerbuka] = useState<KartuTerbuka>(null)
-  const [namaKasirLain, setNamaKasirLain] = useState('')
-  const [dicatat, setDicatat] = useState<string | null>(null)
+  const [unggah, setUnggah] = useState(false)
+
+  const tersambungPos = kasir.sumber === 'kasir-digital' && kasir.status !== 'belum-terhubung'
+  const modeManual = kasir.sumber === 'catat-manual'
+
+  /* Penanda pendaftaran diteruskan ke panduan supaya panduan tahu ia sedang
+     menjadi bagian alur pendaftaran. Tanpa penanda ini, pengguna lama yang
+     menekan "Atur Ulang" ikut dilempar ke langkah batas aman awal — layar yang
+     menimpa seluruh batas aman yang pernah ia atur sendiri. */
+  const onboarding = params.get('langkah') === 'mulai'
+  const tautanPanduan = onboarding ? '/akun/kasir/panduan?langkah=mulai' : '/akun/kasir/panduan'
 
   function pilihManual() {
     ubahKasir({ sumber: 'catat-manual', status: 'manual', merek: null })
@@ -250,164 +270,190 @@ function PilihanSumber() {
     navigate('/stok/pemakaian')
   }
 
+  /* Purwarupa: jalur Gmail dan Spreadsheet belum punya pembacanya sendiri, jadi
+     yang benar-benar dijalankan tetap sambungan ke POS tunggal. Kalimatnya
+     dibuat jujur supaya tidak ada yang mengira dua jalur itu sudah hidup. */
+  function sambungkanLewat(nama: string) {
+    hubungkanKasir()
+    tampilkanRacun(
+      `Sambungan lewat ${nama} masih kami siapkan. Sementara ini penjualan diambil dari ${POS_TUNGGAL.nama}.`,
+      'info',
+    )
+  }
+
+  const belumTersambung = <Lencana nada="netral">Belum tersambung</Lencana>
+
   return (
-    <div className="space-y-3">
-      {/* 1 */}
-      <KartuPilihan
-        terbuka={terbuka === 'punya-kasir'}
-        buka={() => setTerbuka(terbuka === 'punya-kasir' ? null : 'punya-kasir')}
-        ikon={<IkonSinkron size={20} />}
-        judul="Saya pakai aplikasi kasir"
-        keterangan="Penjualan masuk sendiri, stok berkurang tanpa kamu catat ulang. Paling sedikit pekerjaan harian."
-        lencana={<Lencana nada="aman">Paling dianjurkan</Lencana>}
-      >
-        <p className="text-[0.875rem] text-ink-2 leading-relaxed">
-          Pilih aplikasi kasir yang kamu pakai di kedai. Kami tunjukkan langkah menyambungkannya satu per satu.
-        </p>
-        <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-          {merekKasir.map((m) => (
-            <Link
-              key={m.id}
-              to={`/akun/kasir/panduan/${m.id}`}
-              className="flex items-center gap-2.5 min-h-[3.5rem] p-2.5 rounded-md border border-line bg-surface hover:border-brand hover:shadow-e1 transition-[border-color,box-shadow]"
-            >
-              <span
-                aria-hidden="true"
-                style={{ background: m.warna }}
-                className="size-9 rounded-md grid place-items-center text-white font-extrabold text-[0.8125rem] shrink-0"
-              >
-                {inisial(m.nama)}
-              </span>
-              <span className="text-[0.8125rem] font-semibold text-ink leading-snug">{m.nama}</span>
-            </Link>
-          ))}
-        </div>
-      </KartuPilihan>
+    <div>
+      {/* Judul hanya untuk pembaca layar: di kedua tempat pemakaian, kalimat
+          pengantarnya sudah terbaca sebagai judul halaman. */}
+      <h2 className="sr-only">Sumber data transaksi</h2>
 
-      {/* 2 */}
-      <KartuPilihan
-        terbuka={terbuka === 'tidak-terdaftar'}
-        buka={() => setTerbuka(terbuka === 'tidak-terdaftar' ? null : 'tidak-terdaftar')}
-        ikon={<IkonTanpaSinyal size={20} />}
-        judul="Kasir saya tidak ada di daftar"
-        keterangan="Sebutkan namanya. Kasir yang paling banyak disebut kami sambungkan lebih dulu."
-      >
-        {dicatat ? (
-          <div>
-            <Peringatan nada="aman" judul={`${dicatat} sudah kami catat`}>
-              Terima kasih. Kami kabari lewat WhatsApp begitu sambungannya siap. Sementara menunggu, cara paling
-              cepat supaya stok tetap akurat adalah mencatat pemakaian harian.
-            </Peringatan>
-            <Tombol penuh className="mt-3" onClick={pilihManual}>
-              Mulai Catat Pemakaian Harian
+      <ul className="space-y-2.5">
+        <BarisKonektor
+          nama={POS_TUNGGAL.nama}
+          keterangan="Penjualan masuk sendiri, stok berkurang tanpa dicatat ulang."
+          logo="bg-brand-soft text-brand-soft-ink"
+          status={
+            tersambungPos ? (
+              <Lencana nada="aman" ikon={<IkonCentangLingkaran size={13} />}>
+                Tersambung
+              </Lencana>
+            ) : (
+              belumTersambung
+            )
+          }
+          aksi={
+            <TombolTautan
+              ke={tautanPanduan}
+              ragam={tersambungPos ? 'garis' : 'utama'}
+              className="w-full sm:w-auto"
+              ikonKanan={<IkonPanahKanan size={16} />}
+            >
+              {tersambungPos ? 'Atur Ulang' : 'Hubungkan'}
+            </TombolTautan>
+          }
+        />
+
+        <BarisKonektor
+          nama="Gmail"
+          keterangan="Tarik rekap penjualan yang dikirim ke emailmu."
+          logo="bg-info-soft text-info-ink"
+          status={belumTersambung}
+          aksi={
+            <Tombol ragam="garis" className="w-full sm:w-auto" onClick={() => sambungkanLewat('Gmail')}>
+              Hubungkan
             </Tombol>
-          </div>
-        ) : (
-          <div>
-            <Kolom
-              label="Nama aplikasi kasir yang kamu pakai"
-              wajib
-              value={namaKasirLain}
-              onChange={(e) => setNamaKasirLain(e.target.value)}
-              bantuan="Tulis apa adanya, termasuk kalau itu buatan sendiri atau catatan di buku."
-            />
+          }
+        />
+
+        <BarisKonektor
+          nama="Google Spreadsheet"
+          keterangan="Baca catatan penjualan dari satu berkas spreadsheet."
+          logo="bg-aman-soft text-aman-ink"
+          status={belumTersambung}
+          aksi={
             <Tombol
-              penuh
-              className="mt-3"
-              disabled={namaKasirLain.trim().length < 2}
-              onClick={() => setDicatat(namaKasirLain.trim())}
+              ragam="garis"
+              className="w-full sm:w-auto"
+              onClick={() => sambungkanLewat('Google Spreadsheet')}
             >
-              Kirim Nama Kasir
+              Hubungkan
             </Tombol>
-          </div>
-        )}
-      </KartuPilihan>
+          }
+        />
 
-      {/* 3 */}
-      <KartuPilihan
-        terbuka={terbuka === 'tanpa-kasir'}
-        buka={() => setTerbuka(terbuka === 'tanpa-kasir' ? null : 'tanpa-kasir')}
-        ikon={<IkonPena size={20} />}
-        judul="Saya belum pakai kasir digital"
-        keterangan="Catat sendiri berapa yang terpakai tiap hari. Satu kolom angka per barang, tidak lebih."
-      >
-        <p className="text-[0.875rem] text-ink-2 leading-relaxed">
-          Setiap sore kamu mengisi satu angka per bahan: berapa yang terpakai hari itu. Stok langsung berkurang dan
-          perkiraan kebutuhan mulai terbentuk setelah dua minggu catatan.
-        </p>
-        <ul className="mt-2.5 space-y-1 text-[0.8125rem] text-ink-3 list-disc pl-4">
-          <li>Tidak ada kolom harga jual dan tidak ada nilai rupiah sama sekali.</li>
-          <li>Butuh sekitar satu menit sehari kalau barangmu di bawah 20 jenis.</li>
-          <li>Kamu tetap bisa menyambungkan aplikasi kasir nanti tanpa kehilangan catatan.</li>
-        </ul>
-        <Tombol penuh className="mt-3.5" onClick={pilihManual}>
-          Mulai Catat Pemakaian Harian
-        </Tombol>
-      </KartuPilihan>
+        <BarisKonektor
+          nama="Unggah berkas sendiri"
+          keterangan="Kirim berkas rekap transaksi yang sudah kamu punya."
+          logo="bg-netral-soft text-netral-ink"
+          status={belumTersambung}
+          aksi={
+            <Tombol ragam="garis" className="w-full sm:w-auto" onClick={() => setUnggah(true)}>
+              Hubungkan
+            </Tombol>
+          }
+        />
 
-      <p className="pt-1 text-[0.75rem] text-ink-3 leading-relaxed">
-        Apa pun yang kamu pilih sekarang bisa diganti nanti. Langkah berikutnya sama saja: menentukan kapan kami
-        harus mengingatkanmu waktu stok mulai menipis.
+        <BarisKonektor
+          nama="Belum punya data transaksi"
+          keterangan="Catat pemakaian harian sendiri, satu angka per barang."
+          logo="bg-menipis-soft text-menipis-ink"
+          status={
+            modeManual ? (
+              <Lencana nada="aman" ikon={<IkonPena size={13} />}>
+                Sedang dipakai
+              </Lencana>
+            ) : undefined
+          }
+          aksi={
+            <Tombol ragam="garis" className="w-full sm:w-auto" onClick={pilihManual}>
+              Mulai Mencatat
+            </Tombol>
+          }
+        />
+      </ul>
+
+      <p className="pt-3 text-[0.75rem] text-ink-3 leading-relaxed">
+        Apa pun yang kamu pilih sekarang bisa diganti nanti lewat Akun &rsaquo; Data dari Kasir. Tidak ada kolom
+        harga jual di mana pun — itu tetap tinggal di aplikasi kasirmu.
       </p>
+
+      <Lembar
+        terbuka={unggah}
+        tutup={() => setUnggah(false)}
+        judul="Kirim berkas rekap transaksimu"
+        keterangan="Untuk catatan penjualan yang sudah kamu simpan sendiri di luar aplikasi kasir."
+        lebar="sempit"
+        kaki={
+          <Tombol penuh ukuran="besar" onClick={() => setUnggah(false)}>
+            Mengerti
+          </Tombol>
+        }
+      >
+        <div className="pb-4 space-y-3 text-[0.875rem] text-ink-2 leading-relaxed">
+          <p>
+            Yang kami baca cuma tiga kolom: <strong className="text-ink">tanggal</strong>,{' '}
+            <strong className="text-ink">nama barang atau menu</strong>, dan{' '}
+            <strong className="text-ink">jumlah yang terjual</strong>. Kolom lain kami lewati, termasuk kolom
+            harga kalau ada.
+          </p>
+          <p>
+            Satu baris untuk satu barang pada satu tanggal sudah cukup. Berkas berbentuk tabel — spreadsheet atau
+            CSV — yang paling mudah kami baca.
+          </p>
+          <p className="text-ink-3">
+            Pengiriman berkas belum bisa dicoba di purwarupa ini. Sementara menunggu, sambungkan{' '}
+            {POS_TUNGGAL.nama} atau catat pemakaian harian supaya stok tetap ikut berkurang.
+          </p>
+        </div>
+      </Lembar>
     </div>
   )
 }
 
-function KartuPilihan({
-  terbuka,
-  buka,
-  ikon,
-  judul,
+/**
+ * Satu baris konektor.
+ *
+ * Di 360px baris ini menumpuk ke bawah — logo dan keterangan di satu baris,
+ * tombolnya turun selebar penuh — supaya tidak ada yang mendorong badan
+ * halaman ke samping. Status tidak pernah hanya warna: lencananya selalu
+ * berteks, dan yang sudah tersambung juga berikon.
+ */
+function BarisKonektor({
+  nama,
   keterangan,
-  lencana,
-  children,
+  logo,
+  status,
+  aksi,
 }: {
-  terbuka: boolean
-  buka: () => void
-  ikon: ReactNode
-  judul: string
+  nama: string
   keterangan: string
-  lencana?: ReactNode
-  children: ReactNode
+  /** Kelas token untuk kotak inisial. Tidak pernah hex langsung. */
+  logo: string
+  status?: ReactNode
+  aksi: ReactNode
 }) {
   return (
-    <div
-      className={cx(
-        'rounded-lg border-2 bg-surface transition-[border-color] duration-150',
-        terbuka ? 'border-brand shadow-e2' : 'border-line hover:border-line-strong',
-      )}
-    >
-      <button
-        type="button"
-        onClick={buka}
-        aria-expanded={terbuka}
-        className="w-full text-left flex items-start gap-3 p-4 min-h-[5rem]"
+    <li className="flex flex-wrap items-center gap-3 min-h-[4.5rem] p-3.5 rounded-lg border border-line bg-surface">
+      <span
+        aria-hidden="true"
+        className={cx(
+          'shrink-0 size-11 rounded-md grid place-items-center text-[0.8125rem] font-extrabold',
+          logo,
+        )}
       >
-        <span
-          className={cx(
-            'shrink-0 size-11 rounded-md grid place-items-center',
-            /* text-ink-inverse: di tema gelap warna merek justru terang, jadi
-               ikon putih di atasnya nyaris tidak terlihat. */
-            terbuka ? 'bg-brand text-ink-inverse' : 'bg-brand-soft text-brand-soft-ink',
-          )}
-          aria-hidden="true"
-        >
-          {ikon}
-        </span>
-        <span className="min-w-0 grow">
-          <span className="flex flex-wrap items-center gap-2">
-            <span className="text-[1rem] font-bold text-ink leading-snug">{judul}</span>
-            {lencana}
-          </span>
-          <span className="block mt-1 text-[0.8125rem] text-ink-2 leading-relaxed">{keterangan}</span>
-        </span>
-        <IkonPanahKanan
-          size={20}
-          className={cx('shrink-0 mt-1 text-ink-3 transition-transform', terbuka && 'rotate-90')}
-        />
-      </button>
-      {terbuka && <div className="px-4 pb-4 anim-muncul">{children}</div>}
-    </div>
+        {inisial(nama)}
+      </span>
+      <div className="min-w-0 grow basis-[11rem]">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span className="text-[0.9375rem] font-bold text-ink leading-snug">{nama}</span>
+          {status}
+        </div>
+        <p className="mt-0.5 text-[0.8125rem] text-ink-2 leading-relaxed">{keterangan}</p>
+      </div>
+      <div className="w-full sm:w-auto sm:shrink-0">{aksi}</div>
+    </li>
   )
 }
 
@@ -802,6 +848,9 @@ const RIWAYAT_HARIAN: Array<{ tanggal: string; masuk: number; catatan: RiwayatKa
   return [...peta.values()]
 })()
 
+/** Cuplikan struk paling baru. `daftarTransaksi` sudah urut dari yang terbaru. */
+const STRUK_TERBARU = daftarTransaksi.slice(0, 8)
+
 /** Riwayat ditulis sebagai catatan kejadian usaha, bukan catatan teknis. */
 function TabRiwayat() {
   if (RIWAYAT_HARIAN.length === 0) {
@@ -825,11 +874,13 @@ function TabRiwayat() {
 
   return (
     <div>
-      <p className="text-[0.875rem] text-ink-2 leading-relaxed max-w-[70ch]">
-        Ringkasan per hari. Yang dicatat di sini adalah akibatnya ke stokmu; rinciannya bisa kamu buka kalau perlu.
-      </p>
+      <JudulBagian
+        id="riwayat-harian"
+        judul="Ringkasan per hari"
+        keterangan="Yang dicatat di sini adalah akibatnya ke stokmu; rinciannya bisa kamu buka kalau perlu."
+      />
 
-      <ol className="mt-4 grid gap-2.5 lg:grid-cols-2 lg:items-start">
+      <ol aria-labelledby="riwayat-harian" className="grid gap-2.5 lg:grid-cols-2 lg:items-start">
         {RIWAYAT_HARIAN.map((h) => {
           const perluDilihat = h.catatan.find((c) => c.hasil !== 'lengkap')
           return (
@@ -866,6 +917,23 @@ function TabRiwayat() {
           )
         })}
       </ol>
+
+      {/* Struk mentahnya, supaya pemilik usaha bisa mencocokkan angka ringkasan
+          di atas dengan apa yang benar-benar tercetak di kasir. */}
+      <div className="mt-7">
+        <JudulBagian
+          id="riwayat-struk"
+          judul="Struk terbaru"
+          keterangan={`Inilah bentuk struk yang dikenal aplikasi — format ${POS_TUNGGAL.nama}, satu-satunya yang kami baca. Harga jual tidak ikut masuk ke sini; itu tetap tinggal di aplikasi kasirmu.`}
+        />
+        <ul aria-labelledby="riwayat-struk" className="grid gap-2.5 lg:grid-cols-2 lg:items-start">
+          {STRUK_TERBARU.map((t) => (
+            <li key={t.id}>
+              <KartuStruk transaksi={t} />
+            </li>
+          ))}
+        </ul>
+      </div>
 
       <p className="mt-4 text-[0.8125rem] text-ink-3 leading-relaxed max-w-[70ch]">
         Riwayat lebih lama dari 30 hari tidak disimpan. Kalau ada angka stok yang terasa tidak masuk akal, buka{' '}

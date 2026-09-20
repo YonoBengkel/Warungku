@@ -57,7 +57,15 @@ export default function KeranjangRingkasan() {
     0,
   )
   const jumlahBarang = aktif.reduce((a, k) => a + k.baris.length, 0)
-  const jumlahPesanan = aktif.length
+  /* Satu sub-keranjang bisa melahirkan LEBIH DARI SATU pesanan: pesanan
+     tidak pernah melintasi dua kontrak, jadi baris berkontrak berbeda
+     dipecah walau distributornya sama. Hitungannya harus mengikuti aturan
+     itu, bukan sekadar menghitung distributor. */
+  const jumlahPesanan = aktif.reduce(
+    (a, k) => a + new Set(k.baris.map((b) => b.kontrakId ?? '')).size,
+    0,
+  )
+  const jumlahDistributor = aktif.length
 
   function kirim() {
     if (sudahKirim.current) return
@@ -81,7 +89,7 @@ export default function KeranjangRingkasan() {
             ikon={<IkonKeranjang size={26} />}
             judul="Tidak ada yang bisa diperiksa"
             pesan="Keranjang kamu kosong atau semua sub-keranjangnya sedang disimpan untuk nanti."
-            aksi={<TombolTautan ke="/belanja">Cari Barang di Belanja</TombolTautan>}
+            aksi={<TombolTautan ke="/belanja">Cari Barang di Distributor</TombolTautan>}
             aksiKedua={
               <TombolTautan ke="/keranjang" ragam="garis">
                 Buka Keranjang
@@ -236,7 +244,7 @@ export default function KeranjangRingkasan() {
           <Kartu>
             <p className="text-[0.8125rem] text-ink-2 leading-snug">
               <strong className="text-ink">{jumlahBarang} barang</strong> akan dikirim sebagai{' '}
-              <strong className="text-ink">{jumlahPesanan} pesanan</strong> ke {jumlahPesanan} distributor.
+              <strong className="text-ink">{jumlahPesanan} pesanan</strong> ke {jumlahDistributor} distributor.
             </p>
             <div className="mt-1">{keteranganKunci('alasan-kunci-samping')}</div>
             <div className="mt-3">{aksi('alasan-kunci-samping')}</div>
@@ -251,7 +259,7 @@ export default function KeranjangRingkasan() {
               <div className="space-y-1">
                 <p className="text-[0.8125rem] text-ink-2 leading-snug">
                   <strong className="text-ink">{jumlahBarang} barang</strong> akan dikirim sebagai{' '}
-                  <strong className="text-ink">{jumlahPesanan} pesanan</strong> ke {jumlahPesanan} distributor.
+                  <strong className="text-ink">{jumlahPesanan} pesanan</strong> ke {jumlahDistributor} distributor.
                 </p>
                 {keteranganKunci('alasan-kunci-bawah')}
               </div>

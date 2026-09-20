@@ -148,7 +148,7 @@ export default function PilihPaket() {
             ikon={<IkonToko size={26} />}
             judul="Penawaran ini sudah tidak ada"
             pesan="Paket kontraknya ikut hilang karena barangnya sudah tidak dijual lagi di aplikasi. Cari barang yang sama dari distributor lain."
-            aksi={<TombolTautan ke="/belanja">Cari barang di Belanja</TombolTautan>}
+            aksi={<TombolTautan ke="/belanja">Cari barang di Distributor</TombolTautan>}
           />
         </Kartu>
       </div>

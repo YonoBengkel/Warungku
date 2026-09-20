@@ -69,7 +69,7 @@ export default function PenawaranDetail() {
             ikon={<IkonToko size={26} />}
             judul="Penawaran ini sudah tidak ada"
             pesan="Distributor mungkin sudah menurunkan barang ini dari daftar jualnya, atau tautannya salah salin. Cari barang yang sama dari distributor lain."
-            aksi={<TombolTautan ke="/belanja">Cari barang di Belanja</TombolTautan>}
+            aksi={<TombolTautan ke="/belanja">Cari barang di Distributor</TombolTautan>}
           />
         </Kartu>
       </div>

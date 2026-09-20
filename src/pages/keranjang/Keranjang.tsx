@@ -53,7 +53,15 @@ export default function Keranjang() {
   const disimpan = keranjang.filter((k) => k.disimpanUntukNanti && k.baris.length > 0)
 
   const jumlahBarang = aktif.reduce((a, k) => a + k.baris.length, 0)
-  const jumlahPesanan = aktif.length
+  /* Satu sub-keranjang bisa melahirkan LEBIH DARI SATU pesanan: pesanan
+     tidak pernah melintasi dua kontrak, jadi baris berkontrak berbeda
+     dipecah walau distributornya sama. Hitungannya harus mengikuti aturan
+     itu, bukan sekadar menghitung distributor. */
+  const jumlahPesanan = aktif.reduce(
+    (a, k) => a + new Set(k.baris.map((b) => b.kontrakId ?? '')).size,
+    0,
+  )
+  const jumlahDistributor = aktif.length
 
   /**
    * Barang yang perlu dibeli tapi belum punya pemasok sama sekali tidak bisa
@@ -102,7 +110,7 @@ export default function Keranjang() {
             ikon={<IkonKeranjang size={26} />}
             judul="Keranjang kamu masih kosong"
             pesan="Belum ada barang yang disiapkan untuk dipesan. Mulai dari katalog distributor, atau buka saran belanja hari ini dari Beranda."
-            aksi={<TombolTautan ke="/belanja">Cari Barang di Belanja</TombolTautan>}
+            aksi={<TombolTautan ke="/belanja">Cari Barang di Distributor</TombolTautan>}
             aksiKedua={
               <TombolTautan ke="/beranda" ragam="garis">
                 Kembali ke Beranda
@@ -122,7 +130,7 @@ export default function Keranjang() {
     ) : (
       <>
         <strong className="text-ink">{jumlahBarang} barang</strong> akan dikirim sebagai{' '}
-        <strong className="text-ink">{jumlahPesanan} pesanan</strong> ke {jumlahPesanan} distributor.
+        <strong className="text-ink">{jumlahPesanan} pesanan</strong> ke {jumlahDistributor} distributor.
       </>
     )
 
@@ -130,7 +138,7 @@ export default function Keranjang() {
     <TombolTerkunci label={`Buat ${jumlahPesanan} Pesanan`} penuh />
   ) : jumlahPesanan === 0 ? (
     <TombolTautan ke="/belanja" ragam="garis" penuh ukuran="besar">
-      Cari Barang di Belanja
+      Cari Barang di Distributor
     </TombolTautan>
   ) : (
     <TombolTautan ke="/keranjang/ringkasan" penuh ukuran="besar">
@@ -145,7 +153,7 @@ export default function Keranjang() {
         keterangan={
           jumlahPesanan === 0
             ? 'Semua disimpan untuk nanti'
-            : `${jumlahBarang} barang siap dipesan ke ${jumlahPesanan} distributor`
+            : `${jumlahBarang} barang siap dipesan ke ${jumlahDistributor} distributor`
         }
         kembaliKe="/beranda"
       />

@@ -1,11 +1,15 @@
 import type {
+  ArahPrediksi,
+  JenisPromo,
   KategoriNotifikasi,
   StatusKontrak,
   StatusKuota,
   StatusPesanan,
+  StatusPesananMasuk,
   StatusStok,
   KematanganPerkiraan,
   CaraHitungStok,
+  WarnaTitik,
 } from './types'
 
 /**
@@ -20,17 +24,27 @@ import type {
  * namanya di aplikasi justru menyesatkan.
  */
 
+/**
+ * Label lima tab utama.
+ *
+ * `belanja` memang berbunyi "Distributor": yang berubah hanya kata yang
+ * dibaca pengguna. Rute, nama berkas, dan nama variabelnya tetap `belanja`,
+ * karena `/distributor/:id` sudah dipakai untuk profil satu distributor dan
+ * menukar rutenya cuma memindahkan kebingungan, bukan menghapusnya.
+ */
 export const NAV = {
   beranda: 'Beranda',
   stok: 'Stok',
-  belanja: 'Belanja',
+  prediksi: 'Prediksi',
+  belanja: 'Distributor',
   pesanan: 'Pesanan',
 } as const
 
 export const JUDUL = {
   beranda: 'Beranda',
   stok: 'Stok',
-  belanja: 'Belanja Stok dari Distributor',
+  prediksi: 'Prediksi Stok',
+  belanja: 'Distributor',
   pesanan: 'Pesanan',
   notifikasi: 'Pemberitahuan',
   keranjang: 'Keranjang',
@@ -173,3 +187,121 @@ export const LABEL_CARA_HITUNG: Record<CaraHitungStok, { judul: string; bantuan:
  * dengan informasi itu.
  */
 export const KATA_TERLARANG = ['error', 'server', 'API', 'timeout', 'sinkron gagal'] as const
+
+/* ------------------------------------------------------------------ */
+/* Promo                                                               */
+/* ------------------------------------------------------------------ */
+
+export const LABEL_PROMO: Record<JenisPromo, string> = {
+  'cuci-gudang': 'Cuci Gudang',
+  'produk-baru': 'Produk Baru',
+  // "Keanggotaan", bukan "Membership": satu-satunya kata Inggris yang tersisa
+  // pada lencana kartu promo.
+  membership: 'Promo Keanggotaan',
+}
+
+/* ------------------------------------------------------------------ */
+/* Prediksi                                                            */
+/* ------------------------------------------------------------------ */
+
+export const LABEL_ARAH_PREDIKSI: Record<ArahPrediksi, string> = {
+  tambah: 'tambah',
+  kurang: 'kurang',
+  tetap: 'cukup',
+}
+
+export const NADA_ARAH_PREDIKSI: Record<ArahPrediksi, 'menipis' | 'info' | 'aman'> = {
+  tambah: 'menipis',
+  kurang: 'info',
+  tetap: 'aman',
+}
+
+/* ------------------------------------------------------------------ */
+/* Portal Distributor                                                  */
+/* ------------------------------------------------------------------ */
+
+export const NAV_DISTRIBUTOR = {
+  // "Beranda", bukan "Dashboard Utama": kata asing, dan di bilah bawah 360px
+  // ia membungkus jadi dua baris. Ikonnya pun sudah IkonBeranda.
+  dashboard: 'Beranda',
+  pesanan: 'Pesanan',
+  lacak: 'Lacak Pesanan',
+  profil: 'Profil',
+} as const
+
+/**
+ * Empat tahap pesanan di sisi distributor.
+ *
+ * Catatan aslinya menulis "Perlu konfirmasi / Gudang / Sedang diantar / Sudah
+ * sampai" lalu meminta kata-katanya diperbaiki. Penamaan di bawah dipilih
+ * supaya sama persis dengan LABEL_PESANAN di sisi UMKM: satu kejadian yang
+ * sama tidak boleh punya dua nama tergantung siapa yang melihatnya.
+ */
+export const LABEL_PESANAN_MASUK: Record<StatusPesananMasuk, string> = {
+  'menunggu-konfirmasi': 'Menunggu Konfirmasi',
+  disiapkan: 'Disiapkan di Gudang',
+  dikirim: 'Sedang Dikirim',
+  selesai: 'Selesai',
+  ditolak: 'Ditolak',
+}
+
+export const NADA_PESANAN_MASUK: Record<
+  StatusPesananMasuk,
+  'netral' | 'info' | 'aman' | 'menipis' | 'kritis'
+> = {
+  'menunggu-konfirmasi': 'menipis',
+  disiapkan: 'info',
+  dikirim: 'info',
+  selesai: 'aman',
+  ditolak: 'kritis',
+}
+
+/** Urutan tab pada halaman Pesanan distributor. Ditolak tidak punya tab sendiri. */
+export const TAHAP_PESANAN_MASUK: StatusPesananMasuk[] = [
+  'menunggu-konfirmasi',
+  'disiapkan',
+  'dikirim',
+  'selesai',
+]
+
+/** Alasan penolakan siap pakai. Distributor tetap boleh menulis alasan sendiri. */
+export const ALASAN_TOLAK = [
+  'Stok kami sedang kosong',
+  'Jumlahnya di luar kemampuan kami',
+  'Alamat di luar area kirim',
+  'Harga sudah berubah',
+  'Pembayaran belum jelas',
+] as const
+
+/* ------------------------------------------------------------------ */
+/* Titik peta sebaran                                                  */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Tiga warna titik, masing-masing selalu dipasangkan dengan keterangannya.
+ * Warna tidak pernah jadi satu-satunya penanda status.
+ */
+export const LABEL_TITIK: Record<WarnaTitik, string> = {
+  // Namanya disamakan persis dengan LABEL_PESANAN_MASUK. Sebelumnya tertulis
+  // "Belum di-approve": kata Inggris di layar, sekaligus nama kedua untuk
+  // keadaan yang di halaman Pesanan sudah bernama "Menunggu Konfirmasi".
+  merah: 'Menunggu Konfirmasi',
+  oren: 'Belum sampai tujuan',
+  biru: 'Sudah sampai',
+}
+
+export const KETERANGAN_TITIK: Record<WarnaTitik, string> = {
+  merah: 'Pesanan masuk yang belum kamu terima atau tolak.',
+  oren: 'Sudah kamu terima, barangnya masih di jalan atau di gudang.',
+  biru: 'Sudah sampai di pemilik usaha. Titik ini hilang sendiri setelah 12 jam.',
+}
+
+/** Warna titik memakai token grafik, bukan token status, karena ini peta bukan lencana. */
+export const WARNA_TITIK_TOKEN: Record<WarnaTitik, string> = {
+  merah: 'var(--c-kritis)',
+  oren: 'var(--c-menipis)',
+  biru: 'var(--c-info)',
+}
+
+/** Titik "sudah sampai" hanya bertahan 12 jam, sesuai catatan. */
+export const JAM_TITIK_BIRU = 12

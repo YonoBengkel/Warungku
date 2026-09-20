@@ -146,7 +146,7 @@ export default function DistributorUlasan() {
             ikon={<IkonToko size={26} />}
             judul="Distributor ini tidak ada lagi"
             pesan="Ulasan yang kamu cari milik distributor yang sudah tidak terdaftar di aplikasi."
-            aksi={<TombolTautan ke="/belanja?tab=distributor">Lihat daftar distributor</TombolTautan>}
+            aksi={<TombolTautan ke="/belanja?tab=distributor">Lihat Daftar Distributor</TombolTautan>}
           />
         </Kartu>
       </div>

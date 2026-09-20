@@ -116,7 +116,7 @@ export default function DistributorProfil() {
             ikon={<IkonToko size={26} />}
             judul="Distributor ini tidak ada lagi"
             pesan="Tautan yang kamu buka menunjuk ke distributor yang sudah tidak terdaftar. Isinya mungkin dihapus atau tautannya salah salin."
-            aksi={<TombolTautan ke="/belanja?tab=distributor">Lihat daftar distributor</TombolTautan>}
+            aksi={<TombolTautan ke="/belanja?tab=distributor">Lihat Daftar Distributor</TombolTautan>}
           />
         </Kartu>
       </div>
@@ -323,7 +323,7 @@ export default function DistributorProfil() {
                   ikon={<IkonToko size={24} />}
                   judul="Belum ada barang yang dipasang"
                   pesan="Distributor ini belum memasang satu pun barang untuk dijual di aplikasi. Coba lihat distributor lain yang mengirim ke kotamu."
-                  aksi={<TombolTautan ke="/belanja">Cari barang di Belanja</TombolTautan>}
+                  aksi={<TombolTautan ke="/belanja">Cari barang di Distributor</TombolTautan>}
                 />
               </Kartu>
             ) : (

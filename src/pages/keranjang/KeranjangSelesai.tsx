@@ -73,7 +73,7 @@ export default function KeranjangSelesai() {
             aksi={<TombolTautan ke="/pesanan">Lihat Pesanan Saya</TombolTautan>}
             aksiKedua={
               <TombolTautan ke="/belanja" ragam="garis">
-                Cari Barang di Belanja
+                Cari Barang di Distributor
               </TombolTautan>
             }
           />

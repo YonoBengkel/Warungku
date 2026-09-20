@@ -9,11 +9,11 @@ import {
   IkonBulan,
   IkonKeluar,
   IkonKontrak,
+  IkonGudang,
   IkonKunci,
   IkonLonceng,
   IkonMatahari,
   IkonPanahKanan,
-  IkonPetir,
   IkonProfil,
   IkonGrafik,
   IkonSinkron,
@@ -39,6 +39,7 @@ export default function Akun() {
   const layanan = useAplikasi((s) => s.layananPerkiraan)
   const aturLayananPerkiraan = useAplikasi((s) => s.aturLayananPerkiraan)
   const aturMasuk = useAplikasi((s) => s.aturMasuk)
+  const aturPeran = useAplikasi((s) => s.aturPeran)
 
   const [tanyaKeluar, setTanyaKeluar] = useState(false)
 
@@ -64,11 +65,8 @@ export default function Akun() {
           <p className="text-[0.8125rem] text-ink-3 truncate">
             {profil.jenisUsaha} &middot; {profil.kota}
           </p>
-          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+          <div className="mt-1.5">
             <LencanaVerifikasi />
-            <Lencana nada={profil.tier === 'premium' ? 'merek' : 'netral'}>
-              {profil.tier === 'premium' ? 'Paket Premium' : 'Paket Dasar'}
-            </Lencana>
           </div>
         </div>
       </div>
@@ -171,12 +169,6 @@ export default function Akun() {
               judul="Pengguna & Hak Akses"
               keterangan="Siapa saja yang boleh memakai aplikasi ini"
             />
-            <BarisMenu
-              ke="/akun/langganan"
-              ikon={<IkonPetir size={19} />}
-              judul="Langganan"
-              keterangan={profil.tier === 'premium' ? 'Paket Premium berjalan' : 'Kamu memakai Paket Dasar'}
-            />
           </Kelompok>
 
           <Kelompok judul="Lainnya">
@@ -195,16 +187,21 @@ export default function Akun() {
           </Kelompok>
 
           {/* Alat uji. Sengaja tidak disembunyikan: purwarupa ini dipakai untuk
-              memeriksa tiga tingkat turun derajat layanan perkiraan, dan menyimpannya
-              di menu rahasia membuat penguji tidak pernah menemukannya. */}
+              memeriksa tiga tingkat turun derajat layanan perkiraan sekaligus sisi
+              distributor, dan menyimpannya di menu rahasia membuat penguji tidak
+              pernah menemukannya. */}
           <section aria-labelledby="judul-alat-uji">
             <div className="rounded-lg border border-dashed border-line-strong bg-surface-2 p-4">
               <h2 id="judul-alat-uji" className="text-[0.9375rem] font-bold text-ink">
-                Alat uji tampilan perkiraan
+                Alat uji purwarupa
               </h2>
               <p className="mt-1 text-[0.8125rem] text-ink-3 leading-relaxed">
-                Hanya untuk pengembang. Tombol ini mengubah tampilan blok perkiraan supaya tiga keadaannya bisa
-                dilihat tanpa menunggu. Data stok, pesanan, dan kontrakmu tidak ikut berubah.
+                Hanya untuk pengembang. Yang ada di kotak ini tidak mengubah data stok, pesanan, maupun kontrakmu.
+              </p>
+
+              <h3 className="mt-4 text-[0.875rem] font-bold text-ink">Tampilan perkiraan</h3>
+              <p className="mt-1 text-[0.8125rem] text-ink-3 leading-relaxed">
+                Tombol ini mengubah tampilan blok perkiraan supaya tiga keadaannya bisa dilihat tanpa menunggu.
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {(
@@ -230,6 +227,26 @@ export default function Akun() {
                   </button>
                 ))}
               </div>
+
+              {/* Pintu ke sisi distributor. Sengaja memakai Tombol, bukan tautan
+                  biasa: perannya harus ikut berpindah sebelum layarnya dibuka,
+                  supaya kerangka yang muncul benar sejak ketukan pertama. */}
+              <h3 className="mt-5 text-[0.875rem] font-bold text-ink">Peran akun</h3>
+              <p className="mt-1 text-[0.8125rem] text-ink-3 leading-relaxed">
+                Berpindah peran adalah alat uji purwarupa. Di aplikasi yang sungguhan, satu akun hanya punya satu
+                peran: pemilik usaha atau distributor, tidak keduanya.
+              </p>
+              <Tombol
+                ragam="garis"
+                ikonKiri={<IkonGudang size={17} />}
+                className="mt-3"
+                onClick={() => {
+                  aturPeran('distributor')
+                  navigate('/distributor-portal')
+                }}
+              >
+                Buka Portal Distributor
+              </Tombol>
             </div>
           </section>
 

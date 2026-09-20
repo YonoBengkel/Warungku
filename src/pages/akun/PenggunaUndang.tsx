@@ -30,7 +30,7 @@ const PERAN: Record<Peran, { nama: string; ringkas: string; boleh: string[]; tid
     nama: 'Manajer',
     ringkas: 'Untuk yang kamu percaya belanja atas nama usahamu.',
     boleh: ['Semua yang bisa Kasir lakukan', 'Buat pesanan ke distributor', 'Ajukan kontrak', 'Ubah batas aman'],
-    tidakBoleh: ['Tambah atau hapus pengguna', 'Ubah langganan'],
+    tidakBoleh: ['Tambah atau hapus pengguna', 'Ubah Data Usaha & Legalitas'],
   },
 }
 

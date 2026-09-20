@@ -59,7 +59,7 @@ export default function BeriPenilaian() {
             ikon={<IkonPasokan size={26} />}
             judul="Pesanan ini sudah tidak ada"
             pesan="Tautannya mungkin sudah lama. Semua pesanan yang bisa kamu nilai ada di daftar pesanan selesai."
-            aksi={<TombolTautan ke="/pesanan?tab=selesai">Lihat Pesanan Selesai</TombolTautan>}
+            aksi={<TombolTautan ke="/pesanan?tab=pesanan&status=selesai">Lihat Pesanan Selesai</TombolTautan>}
           />
         </section>
       </div>

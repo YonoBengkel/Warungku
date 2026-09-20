@@ -30,7 +30,7 @@ import { daftarDistributor, daftarPenawaran, distributorById, paketUntukPenawara
 import { useAplikasi } from '@/store/aplikasi'
 
 /**
- * Belanja: satu kolom cari, hasil di layar yang sama.
+ * Distributor (rute tetap `/belanja`): satu kolom cari, hasil di layar yang sama.
  *
  * Satuan hasil pencarian adalah PENAWARAN (1 barang x 1 distributor), bukan
  * barang dan bukan distributor. Itu sejajar dengan aturan 1 kontrak = 1 barang:
@@ -363,8 +363,11 @@ export default function Belanja() {
   return (
     <div className="pb-6">
       <h1 className="text-[1.25rem] font-extrabold text-ink tracking-tight">{JUDUL.belanja}</h1>
+      {/* Halaman ini berjudul sama dengan salah satu sub-tabnya, jadi kalimat
+          pembuka harus langsung menerangkan apa yang bisa dikerjakan di sini. */}
       <p className="mt-0.5 text-[0.8125rem] text-ink-3">
-        Harga dan stok di bawah berasal dari distributor, bukan dari gudang kamu.
+        Tempat kamu mencari barang dan memilih distributor untuk dipesan. Harga dan stok di bawah berasal
+        dari distributor, bukan dari gudang kamu.
       </p>
 
       <form
@@ -388,9 +391,13 @@ export default function Belanja() {
         className="mt-3"
         aktif={tab}
         ubah={(v) => aturParam({ tab: v === 'barang' ? null : v })}
+        /* Label tab sengaja tidak sama dengan judul halaman: dua hal berbeda
+           dengan nama yang sama membuat orang mengira sedang di layar lain.
+           Nilai query (`barang`/`distributor`) TIDAK ikut berubah — banyak
+           tautan di layar lain sudah memakainya. */
         tab={[
-          { nilai: 'barang', label: 'Barang' },
-          { nilai: 'distributor', label: 'Distributor' },
+          { nilai: 'barang', label: 'Cari Barang' },
+          { nilai: 'distributor', label: 'Daftar Distributor' },
         ]}
       />
 
@@ -445,7 +452,9 @@ export default function Belanja() {
                           Hapus semua saringan
                         </Tombol>
                       ) : (
-                        <Tombol onClick={() => aturParam({ tab: 'distributor' })}>Lihat daftar distributor</Tombol>
+                        <Tombol onClick={() => aturParam({ tab: 'distributor' })}>
+                          Lihat Daftar Distributor
+                        </Tombol>
                       )
                     }
                     aksiKedua={
@@ -548,7 +557,10 @@ export default function Belanja() {
                   {hasilDistributor.lama.length > 0 && (
                     <section aria-label="Daftar distributor">
                       <JudulBagian
-                        judul="Distributor"
+                        /* Bukan "Distributor" saja: judul halaman sudah memakai
+                           kata itu, dan dua judul kembar dalam satu layar
+                           membuat orang kehilangan jejak posisinya. */
+                        judul="Daftar Distributor"
                         keterangan={`${hasilDistributor.lama.length} distributor${kotaSaring ? ` di ${kotaSaring}` : ` yang mengirim ke ${profil.kota.split(',')[0]} dan sekitarnya`}`}
                       />
                       <div className="grid gap-3 sm:grid-cols-2">

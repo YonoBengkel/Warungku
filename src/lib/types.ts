@@ -15,7 +15,6 @@
 /* ------------------------------------------------------------------ */
 
 export type CaraHitungStok = 'racikan' | 'kemasan' | 'keduanya'
-export type TierLangganan = 'dasar' | 'premium'
 export type StatusVerifikasi = 'menunggu' | 'terverifikasi' | 'perlu-diperbaiki'
 export type TingkatVerifikasi = 'penuh' | 'dasar'
 
@@ -33,7 +32,6 @@ export interface ProfilUsaha {
   bio: string
   warna: string
   caraHitung: CaraHitungStok
-  tier: TierLangganan
   verifikasi: StatusVerifikasi
   tingkatVerifikasi: TingkatVerifikasi
   /** Diisi Admin saat data ditolak. Ditampilkan sebagai daftar berbulir. */
@@ -74,6 +72,42 @@ export interface RiwayatKasir {
   jumlahTransaksi: number
   /** Ditulis dalam bahasa bisnis. Tidak boleh memuat kata error/server/API/timeout. */
   keterangan: string
+}
+
+/* ------------------------------------------------------------------ */
+/* Transaksi — satu database besar untuk seluruh struk sebuah toko     */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Satu baris pada struk.
+ *
+ * Tidak ada harga di sini, dan itu disengaja: harga jual dikelola di aplikasi
+ * kasir. Yang dibutuhkan aplikasi ini hanya APA dan BERAPA, karena itulah yang
+ * mengurangi stok gudang.
+ */
+export interface BarisTransaksi {
+  /** Nama menu/barang apa adanya seperti tertulis di struk kasir. */
+  nama: string
+  jumlah: number
+  satuan: string
+}
+
+/**
+ * Satu struk = satu transaksi.
+ *
+ * Aplikasi hanya mengenal SATU format struk, yaitu format POS tunggal yang
+ * didukung (lihat POS_TUNGGAL di src/data/dummy.ts). Tidak ada pemetaan antar
+ * format dan tidak ada skema alternatif: struk yang bentuknya lain tidak
+ * pernah sampai ke sini.
+ */
+export interface Transaksi {
+  id: string
+  /** Nomor struk apa adanya dari kasir, dipakai sebagai rujukan ke pemilik usaha. */
+  nomorStruk: string
+  waktu: string
+  baris: BarisTransaksi[]
+  /** Kasir/nama penjaga yang tercetak di struk. */
+  kasir: string
 }
 
 /* ------------------------------------------------------------------ */
@@ -168,6 +202,8 @@ export interface Pergerakan {
   keterangan: string
   /** Pesanan asal, supaya riwayat bisa diketuk balik ke pesanannya. */
   pesananId: string | null
+  /** Struk asal untuk pergerakan yang lahir dari kasir. Null untuk yang lain. */
+  transaksiId: string | null
   oleh: string
 }
 
@@ -452,4 +488,175 @@ export interface Ulasan {
   /** Label sistem yang tidak bisa diedit penulis. */
   labelSistem: string
   aspek: { ketepatanWaktu: number; jumlahSesuai: number; kondisiBarang: number }
+}
+
+/* ------------------------------------------------------------------ */
+/* Promo distributor (slider Beranda)                                  */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Tiga skenario promo, dan hanya tiga.
+ *
+ * Jenis promo menentukan TEMPLATE KARTUNYA, bukan sekadar warnanya: dua toko
+ * yang sama-sama mengadakan cuci gudang memakai latar dan susunan kartu yang
+ * identik, dan yang berbeda cuma nama tokonya. Itu permintaan eksplisit dari
+ * catatan, dan alasannya masuk akal: pemilik warung mengenali jenis promonya
+ * dari bentuk kartu sebelum sempat membaca namanya.
+ */
+export type JenisPromo = 'cuci-gudang' | 'produk-baru' | 'membership'
+
+export interface Promo {
+  id: string
+  jenis: JenisPromo
+  distributorId: string
+  /** Kalimat pendek di kartu. Nama toko TIDAK ditulis di sini, ia diambil dari distributor. */
+  judul: string
+  keterangan: string
+  /** Berlaku sampai kapan. Null berarti tidak ada tenggat. */
+  berakhir: string | null
+  /** Penawaran yang ikut promo ini, dipakai halaman promo toko. */
+  penawaranIds: string[]
+  /** Potongan dalam persen. Null untuk promo yang tidak memotong harga. */
+  potonganPersen: number | null
+}
+
+/* ------------------------------------------------------------------ */
+/* Prediksi stok                                                       */
+/* ------------------------------------------------------------------ */
+
+/** Arah saran model: tambah stok, kurangi stok, atau biarkan saja. */
+export type ArahPrediksi = 'tambah' | 'kurang' | 'tetap'
+
+/**
+ * Satu kartu rekomendasi hasil model.
+ *
+ * `jumlah` selalu positif dan selalu dalam SATUAN BELI, karena angka inilah
+ * yang langsung masuk keranjang. Arahnya dibaca dari `arah`, bukan dari tanda
+ * minus, supaya tidak ada layar yang menampilkan "−12 dus" kepada pemilik
+ * warung.
+ */
+export interface RekomendasiPrediksi {
+  barangId: string
+  arah: ArahPrediksi
+  /** Selalu positif, dalam satuan beli (satuanSaran). */
+  jumlah: number
+  satuanSaran: string
+  /** Pemakaian bulan ini vs perkiraan bulan depan, dalam satuan pakai. */
+  pemakaianBulanIni: number
+  perkiraanBulanDepan: number
+  /** Keyakinan model 0..1. Ditampilkan sebagai kata, bukan sebagai angka mentah. */
+  keyakinan: number
+  /** Maksimal 3 butir fakta yang menjelaskan kenapa saran ini muncul. */
+  alasan: string[]
+  penawaranId: string | null
+  kontrakId: string | null
+}
+
+/* ------------------------------------------------------------------ */
+/* Portal Distributor                                                  */
+/* ------------------------------------------------------------------ */
+
+/**
+ * UMKM yang memesan kepada distributor.
+ *
+ * Koordinatnya dummy di sekitar Sleman & Kota Yogyakarta, cukup untuk
+ * memperlihatkan sebaran titik pada peta purwarupa. Tidak ada integrasi peta
+ * sungguhan: peta digambar sendiri dari kotak koordinat di bawah.
+ */
+export interface UmkmPemesan {
+  id: string
+  nama: string
+  jenisUsaha: string
+  kota: string
+  alamat: string
+  lat: number
+  lng: number
+  warna: string
+  nomorHp: string
+  sejak: string
+}
+
+/** Empat tahap pesanan di sisi distributor, hasil perbaikan kata dari catatan. */
+export type StatusPesananMasuk =
+  | 'menunggu-konfirmasi'
+  | 'disiapkan'
+  | 'dikirim'
+  | 'selesai'
+  | 'ditolak'
+
+export interface BarisPesananMasuk {
+  penawaranId: string
+  nama: string
+  jumlah: number
+  satuan: string
+  hargaSatuan: number
+}
+
+export interface JejakPesananMasuk {
+  waktu: string
+  status: StatusPesananMasuk
+  keterangan: string
+}
+
+/** Bukti bahwa barang benar-benar diantar, ditampilkan pada lacak yang sudah Selesai. */
+export interface BuktiPengiriman {
+  kurir: string
+  namaPengantar: string
+  nomorResi: string
+  diterimaOleh: string
+  waktuSampai: string
+  catatan: string
+  /**
+   * Keterangan foto bukti. Purwarupa ini menggambar bingkai berlabel, bukan
+   * memuat berkas gambar: menaruh foto palsu akan membuat layar ini terlihat
+   * lebih jadi daripada keadaannya.
+   */
+  foto: string[]
+}
+
+/** Penilaian dari UMKM setelah pesanan selesai, dilihat distributor. */
+export interface UlasanPelanggan {
+  rating: number
+  isi: string
+  waktu: string
+  aspek: { ketepatanWaktu: number; jumlahSesuai: number; kondisiBarang: number }
+}
+
+export interface PesananMasuk {
+  id: string
+  nomor: string
+  umkmId: string
+  distributorId: string
+  dibuatPada: string
+  status: StatusPesananMasuk
+  baris: BarisPesananMasuk[]
+  ongkosKirim: number
+  perkiraanTiba: string | null
+  jejak: JejakPesananMasuk[]
+  /** Wajib terisi begitu status menjadi 'ditolak'. */
+  alasanTolak: string | null
+  catatanDariUmkm: string
+  /** Terisi saat status 'selesai'. */
+  pengiriman: BuktiPengiriman | null
+  ulasan: UlasanPelanggan | null
+}
+
+/**
+ * Warna titik pada peta sebaran.
+ *
+ * Tiga status, bukan dua. Catatan asli menulis "ada 2 jenis titik" lalu
+ * menyebut tiga warna; yang dipakai adalah tiga, dan tiap titik selalu
+ * membawa keterangan teks di sampingnya karena warna tidak pernah berdiri
+ * sendiri sebagai penanda status.
+ */
+export type WarnaTitik = 'biru' | 'merah' | 'oren'
+
+export interface TitikPeta {
+  umkmId: string
+  warna: WarnaTitik
+  /** Berapa pesanan UMKM ini yang masih punya titik di peta. Dipakai untuk angka di dalam lingkaran. */
+  jumlahPesanan: number
+  /** Rincian jumlahPesanan per kondisi. Kartu hitungan memakai ini, bukan warna dominan. */
+  perWarna: Record<WarnaTitik, number>
+  pesananIds: string[]
 }

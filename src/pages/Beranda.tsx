@@ -8,10 +8,12 @@ import {
   KuotaBulanIni,
   PitaDataKasir,
 } from '@/components/domain'
-import { JudulBagian, Kartu, Kerangka, Lencana, TombolTautan } from '@/components/ui/dasar'
-import { GrafikTren } from '@/components/grafik/GrafikTren'
-import { Percikan } from '@/components/grafik/GrafikBatang'
+import { KartuPromo } from '@/components/domain/KartuPromo'
+import { JudulBagian, Kartu, Kerangka, Lencana, Tombol, TombolTautan } from '@/components/ui/dasar'
+import { PengaturJumlah } from '@/components/ui/formulir'
+import { Lembar } from '@/components/ui/lembar'
 import {
+  IkonKalender,
   IkonKeranjang,
   IkonKontrak,
   IkonPasokan,
@@ -20,43 +22,56 @@ import {
   IkonSilang,
   IkonNota,
   IkonCentangLingkaran,
+  IkonTrenNaik,
+  IkonTrenTurun,
 } from '@/icons'
-import { angka, hariLagi, jumlahSatuan } from '@/lib/format'
+import { angka, cx, hariLagi, jumlahSatuan, tanggalLengkapHari } from '@/lib/format'
 import {
-  hariCukup,
-  perkiraanUntuk,
+  daftarPromo,
+  layakDiperkirakan,
+  penawaranById,
+  penawaranUntukBarang,
+  rekomendasiDari,
   saranBelanja,
   statusKuota,
   statusStok,
-  trenBarang,
   sisaHariPeriode,
   distributorById,
 } from '@/data/dummy'
-import { PESANAN_BERJALAN } from '@/lib/label'
+import { LABEL_ARAH_PREDIKSI, NADA_ARAH_PREDIKSI, PESANAN_BERJALAN } from '@/lib/label'
+import type { RekomendasiPrediksi } from '@/lib/types'
 import { useAplikasi } from '@/store/aplikasi'
 
 /**
- * Beranda adalah daftar "Perlu Diurus", bukan galeri grafik.
+ * Beranda menjawab satu pertanyaan: hari ini saya harus ngapain.
  *
- * Pertanyaan yang dijawab halaman ini cuma satu: hari ini saya harus ngapain.
- * Karena itu urutan bloknya dikunci, dan tiap kartu hanya punya satu tombol.
+ * Urutan bloknya dikunci: sambutan, promo distributor, pintasan "Perlu
+ * Tindakan", kartu tindakan konkret, lalu Prediksi Stok.
  *
  * Aturan yang dipegang: Beranda tidak pernah punya data sendiri. Tiap blok
- * adalah cermin dari Stok, Pesanan, atau Kontrak, dan selalu menautkan balik
- * ke sumber aslinya. Tidak ada fitur yang hanya bisa dicapai dari sini.
+ * adalah cermin dari Stok, Pesanan, Kontrak, atau model prediksi, dan selalu
+ * menautkan balik ke sumber aslinya. Tidak ada fitur yang hanya bisa dicapai
+ * dari sini.
  *
  * Yang sengaja tidak ada di sini: kartu omzet, untung, margin, dan nilai
  * rupiah penjualan. Harga jual dikelola di aplikasi kasir, jadi angka apa pun
  * yang kami tampilkan soal itu pasti salah.
  */
+
+/** Ambang "hampir kedaluwarsa". Sama persis dengan penyaring di layar Stok,
+ *  supaya angka pada lencana dan panjang daftar yang dibuka tidak pernah beda. */
+const HARI_KEDALUWARSA_DEKAT = 14
+
 export default function Beranda() {
   const barang = useAplikasi((s) => s.barang)
   const kontrak = useAplikasi((s) => s.kontrak)
   const pesanan = useAplikasi((s) => s.pesanan)
   const keranjang = useAplikasi((s) => s.keranjang)
   const profil = useAplikasi((s) => s.profil)
+  const tambahKeKeranjang = useAplikasi((s) => s.tambahKeKeranjang)
+  const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
 
-  /* Blok perkiraan sengaja dimuat belakangan: ia paling mahal dan paling tidak
+  /* Blok prediksi sengaja dimuat belakangan: ia paling mahal dan paling tidak
      mendesak, jadi tidak boleh menahan daftar yang perlu diurus. */
   const [perkiraanSiap, setPerkiraanSiap] = useState(false)
   useEffect(() => {
@@ -66,6 +81,10 @@ export default function Beranda() {
 
   const tugas = useMemo(() => {
     const hasil: Array<{ kunci: string; urutan: number; elemen: ReactNode }> = []
+
+    /* Dipakai dua kali: sebagai tujuan kartu "habis" (kalau barangnya memang
+       ada di dalamnya) dan sebagai kartu saran belanja sendiri. */
+    const saran = saranBelanja[0]
 
     /* 1. Stok habis dan menipis */
     const kritis = barang
@@ -79,6 +98,18 @@ export default function Beranda() {
         .flatMap((p) => p.baris)
         .filter((x) => x.barangId === b.id)
         .reduce((a, x) => a + x.jumlah * x.isiPerSatuan, 0)
+
+      /* Tujuan "Pesan Sekarang" mengikuti barang yang habis, bukan selalu
+         saran belanja harian. Menaruh pemilik warung di daftar yang tidak
+         memuat barangnya sama saja dengan menyuruh dia mencari sendiri tanpa
+         memberi tahu. Urutannya: daftar saran kalau barangnya memang di sana,
+         lalu penawaran langsung, lalu pencarian di Distributor. */
+      const penawaranPertama = penawaranUntukBarang(b.id)[0]
+      const kePesan = saran?.baris.some((r) => r.barangId === b.id)
+        ? `/pesan-cepat/${saran.id}`
+        : penawaranPertama
+          ? `/penawaran/${penawaranPertama.id}`
+          : `/belanja?cari=${encodeURIComponent(b.nama)}`
 
       hasil.push({
         kunci: `habis-${b.id}`,
@@ -95,14 +126,13 @@ export default function Beranda() {
                 : `Stok tercatat 0. Rata-rata terpakai ${jumlahSatuan(b.pemakaianHarian, b.satuan)} per hari.`
             }
             aksiLabel={dikirim > 0 ? 'Lihat Stok' : 'Pesan Sekarang'}
-            aksiKe={dikirim > 0 ? `/stok/${b.id}` : `/pesan-cepat/${saranBelanja[0].id}`}
+            aksiKe={dikirim > 0 ? `/stok/${b.id}` : kePesan}
           />
         ),
       })
     }
 
     /* 2. Saran belanja harian */
-    const saran = saranBelanja[0]
     if (saran && saran.baris.length > 0) {
       hasil.push({
         kunci: 'saran',
@@ -231,213 +261,448 @@ export default function Beranda() {
   const berjalan = pesanan.filter((p) => PESANAN_BERJALAN.includes(p.status))
   const isiKeranjang = keranjang.reduce((a, k) => a + k.baris.length, 0)
 
-  /* Barang paling genting untuk blok perkiraan, maksimal 3 */
-  const barangPerkiraan = useMemo(
+  /**
+   * Angka pada empat pintasan "Perlu Tindakan".
+   *
+   * Semuanya dihitung dari penyimpanan aplikasi, bukan angka contoh yang
+   * ditulis tangan: lencana yang berbohong satu kali membuat pemilik warung
+   * berhenti mempercayai seluruh halaman.
+   *
+   * Populasinya SELURUH barang, tanpa membuang yang dicatat manual. Layar
+   * Stok menyaring dari seluruh barang juga, dan lencana di sini cuma boleh
+   * menjanjikan panjang daftar yang nanti benar-benar terbuka. Lagi pula
+   * barang yang dicatat manual tetap stok gudang yang perlu diurus kalau
+   * habis — yang tidak bisa kami hitung cuma perkiraannya, bukan sisanya.
+   */
+  const hitungTindakan = useMemo(() => {
+    return {
+      habis: barang.filter((b) => statusStok(b) === 'habis').length,
+      menipis: barang.filter((b) => statusStok(b) === 'menipis').length,
+      kedaluwarsa: barang.filter((b) => {
+        if (!b.ingatkanKedaluwarsa || !b.kedaluwarsa) return false
+        const hari = Math.ceil((+new Date(b.kedaluwarsa) - Date.now()) / 86_400_000)
+        return hari <= HARI_KEDALUWARSA_DEKAT
+      }).length,
+      kontrak: kontrak.filter((k) => k.status === 'akan-berakhir').length,
+    }
+  }, [barang, kontrak])
+
+  /**
+   * Empat pintasan penyaring. Kata "Kedaluwarsa" dipakai konsisten dengan chip
+   * penyaring di layar Stok; satu hal yang sama tidak boleh punya dua ejaan.
+   */
+  const pintasan = [
+    {
+      kunci: 'habis',
+      label: ['Stok', 'Habis'],
+      ke: '/stok?filter=habis',
+      jumlah: hitungTindakan.habis,
+      satuan: 'barang',
+      Ikon: IkonSilang,
+      warna: 'bg-kritis-soft text-kritis-ink',
+    },
+    {
+      kunci: 'menipis',
+      label: ['Stok', 'Menipis'],
+      ke: '/stok?filter=menipis',
+      jumlah: hitungTindakan.menipis,
+      satuan: 'barang',
+      Ikon: IkonPeringatan,
+      warna: 'bg-menipis-soft text-menipis-ink',
+    },
+    {
+      kunci: 'kedaluwarsa',
+      label: ['Hampir', 'Kedaluwarsa'],
+      ke: '/stok?filter=kedaluwarsa',
+      jumlah: hitungTindakan.kedaluwarsa,
+      satuan: 'barang',
+      Ikon: IkonKalender,
+      warna: 'bg-info-soft text-info-ink',
+    },
+    {
+      kunci: 'kontrak',
+      label: ['Kontrak', 'Habis'],
+      ke: '/pesanan?tab=kontrak&status=akan-berakhir',
+      jumlah: hitungTindakan.kontrak,
+      satuan: 'kontrak',
+      Ikon: IkonKontrak,
+      warna: 'bg-brand-soft text-brand-soft-ink',
+    },
+  ]
+
+  /* Rekomendasi model: yang perlu ditindak dulu (tambah), lalu yang perlu
+     direm (kurang). Yang "tetap" tidak ditampilkan karena tidak meminta
+     keputusan apa pun dari pemilik warung.
+
+     Dihitung ulang dari stok yang hidup di penyimpanan, bukan dari daftar
+     yang dibekukan saat aplikasi dimuat. Kalau tidak, kartu masih menyuruh
+     menambah stok yang baru saja bertambah lewat Terima Barang — dan sisi
+     kirinya sendiri sudah menampilkan angka baru. */
+  const rekomendasi = useMemo(
     () =>
       barang
-        .filter((b) => !b.dicatatManual && b.pemakaianHarian > 0)
-        .map((b) => ({ b, hari: hariCukup(b) ?? 999 }))
-        .sort((x, y) => x.hari - y.hari)
-        .slice(0, 3),
+        .filter(layakDiperkirakan)
+        .map(rekomendasiDari)
+        .filter((r) => r.arah !== 'tetap')
+        .map((r) => ({ r, urutan: r.arah === 'tambah' ? 0 : 1 }))
+        .sort((a, b) => a.urutan - b.urutan)
+        .slice(0, 6)
+        .map((x) => x.r),
     [barang],
   )
 
-  const barangGrafik = barangPerkiraan[0]?.b
-  const tren = useMemo(() => (barangGrafik ? trenBarang(barangGrafik.id) : []), [barangGrafik])
+  /* Lembar "Masukkan ke Keranjang" milik kartu prediksi. Jumlah awalnya angka
+     saran model, tapi pemilik warung boleh menurunkannya sesuai isi kantong. */
+  const [pilihan, setPilihan] = useState<RekomendasiPrediksi | null>(null)
+  const [jumlahBeli, setJumlahBeli] = useState(1)
+
+  const penawaranPilihan = pilihan?.penawaranId ? penawaranById(pilihan.penawaranId) : undefined
+  const barangPilihan = pilihan ? barang.find((b) => b.id === pilihan.barangId) : undefined
+
+  function bukaLembar(r: RekomendasiPrediksi) {
+    setPilihan(r)
+    setJumlahBeli(r.jumlah)
+  }
+
+  function simpanKeKeranjang() {
+    if (!pilihan || !penawaranPilihan) return
+    tambahKeKeranjang(
+      penawaranPilihan.distributorId,
+      penawaranPilihan.id,
+      jumlahBeli,
+      pilihan.jumlah,
+      pilihan.kontrakId,
+    )
+    /* Baris yang sudah ada di keranjang DIGANTI jumlahnya, bukan ditambah.
+       Racun yang berbunyi "masuk keranjang" membuat pemilik warung mengira
+       angkanya berakumulasi, jadi yang disebut di sini adalah jumlah akhir
+       yang benar-benar ada di keranjang. */
+    tampilkanRacun(
+      `${barangPilihan?.nama ?? penawaranPilihan.nama} di keranjang diatur jadi ${angka(jumlahBeli)} ${penawaranPilihan.satuan}.`,
+      'aman',
+    )
+    setPilihan(null)
+  }
 
   return (
     <div className="pb-6">
-      {/* Beranda tidak memakai KepalaHalaman karena ia tab akar, jadi judul
-          halamannya disediakan khusus untuk pembaca layar. Tanpa ini, halaman
-          paling sering dibuka justru satu-satunya yang tidak punya h1. */}
-      <h1 className="sr-only">Beranda</h1>
+      {/* Sambutan ditulis biasa, bukan HURUF BESAR SEMUA seperti di catatan
+          aslinya: pengguna sasaran aplikasi ini berumur 40 tahun ke atas, dan
+          teks kapital seluruhnya kehilangan bentuk kata sehingga lebih lambat
+          dibaca. Maknanya sama, kecepatan bacanya tidak.
+          Lonceng, keranjang, logo, dan nama aplikasi tinggal di
+          KerangkaAplikasi, jadi tidak diulang di sini. */}
+      <header className="mb-3">
+        <h1 className="text-[1.375rem] font-extrabold text-ink tracking-tight leading-tight">
+          Selamat datang, {profil.namaUsaha}
+        </h1>
+        <p className="mt-0.5 text-[0.875rem] text-ink-3">{tanggalLengkapHari(new Date())}</p>
+      </header>
 
-      {/* 1. Pita data kasir */}
+      {/* Pita data kasir */}
       <PitaDataKasir />
 
-      {/* 2. Banner status akun */}
+      {/* Banner status akun */}
       <div className="mt-3 empty:mt-0">
         <BannerAkun />
       </div>
 
-      <div className="mt-4 lg:grid lg:grid-cols-12 lg:gap-6 lg:items-start">
-        {/* Kolom kiri di desktop: daftar yang perlu diurus */}
-        <div className="lg:col-span-5 xl:col-span-4 space-y-6">
-          <section aria-labelledby="judul-perlu-diurus">
-            <div className="flex items-baseline justify-between gap-3 mb-3">
-              <h2 id="judul-perlu-diurus" className="text-[1.25rem] font-extrabold text-ink tracking-tight">
-                Perlu Diurus
-              </h2>
-              <p className="text-[0.8125rem] text-ink-3">
-                {new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long' }).format(
-                  new Date(),
-                )}
-              </p>
-            </div>
+      {/* Promo distributor */}
+      <section aria-labelledby="judul-promo" className="mt-6">
+        <JudulBagian
+          id="judul-promo"
+          judul="Promo dari Distributor"
+          keterangan="Geser ke samping untuk melihat promo lainnya."
+        />
+        {/* Baris geser punya wadah gulirnya sendiri. Tarikan tepi negatif hanya
+            di layar sempit supaya kartu tidak terlihat terpotong paksa, dan
+            badan halaman tetap tidak bergeser di 360px. */}
+        <div
+          aria-label="Promo dari distributor, geser ke samping"
+          className={cx(
+            'flex gap-3 overflow-x-auto no-scrollbar snap-x snap-mandatory',
+            '-mx-4 px-4 sm:mx-0 sm:px-0',
+            'lg:grid lg:grid-cols-3 lg:overflow-visible',
+          )}
+        >
+          {daftarPromo.map((p) => (
+            <KartuPromo key={p.id} promo={p} />
+          ))}
+        </div>
+      </section>
 
-            {tugas.length === 0 ? (
-              <p className="flex items-center gap-2 text-[0.9375rem] font-semibold text-aman-ink bg-aman-soft rounded-md px-3.5 py-3">
-                <IkonCentangLingkaran size={18} />
-                Semua aman hari ini.
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {tugas.map((t) => (
-                  <div key={t.kunci}>{t.elemen}</div>
-                ))}
-              </div>
-            )}
-          </section>
-
-          {/* 4. Pesanan berjalan */}
-          <section aria-labelledby="judul-pesanan-berjalan">
-            <JudulBagian
-              judul="Pesanan Berjalan"
-              keterangan={berjalan.length === 0 ? undefined : `${berjalan.length} pesanan sedang diproses`}
-              aksi={
-                berjalan.length > 3 ? (
-                  <Link to="/pesanan" className="text-[0.8125rem] font-bold text-brand hover:underline">
-                    Lihat semua
-                  </Link>
-                ) : undefined
-              }
-            />
-            {berjalan.length === 0 ? (
-              <Kartu padat>
-                <p className="text-[0.875rem] text-ink-3">
-                  Belum ada pesanan yang sedang berjalan.{' '}
-                  <Link to="/belanja" className="font-semibold text-brand hover:underline">
-                    Cari barang di Belanja
-                  </Link>
-                  .
-                </p>
-              </Kartu>
-            ) : (
-              <div className="space-y-2.5">
-                {berjalan.slice(0, 3).map((p) => (
-                  <KartuPesanan key={p.id} pesanan={p} />
-                ))}
-              </div>
-            )}
-          </section>
-
-          {/* 6. Pita belanja yang belum dikirim */}
-          {isiKeranjang > 0 && (
+      {/* Perlu Tindakan: pintasan penyaring, bukan tindakan itu sendiri */}
+      <section aria-labelledby="judul-perlu-tindakan" className="mt-6">
+        <JudulBagian
+          id="judul-perlu-tindakan"
+          judul="Perlu Tindakan"
+          keterangan="Empat pintasan ke daftar yang sudah tersaring."
+        />
+        <div
+          aria-label="Pintasan ke daftar stok dan kontrak yang perlu ditindak"
+          className="flex gap-2 sm:gap-4 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0"
+        >
+          {pintasan.map((p) => (
             <Link
-              to="/keranjang"
-              className="flex items-center gap-2.5 px-3.5 py-3 rounded-md bg-brand-soft text-brand-soft-ink text-[0.875rem] font-semibold hover:brightness-97"
+              key={p.kunci}
+              to={p.ke}
+              aria-label={
+                p.jumlah > 0
+                  ? `${p.label.join(' ')}, ${p.jumlah} ${p.satuan}`
+                  : `${p.label.join(' ')}, tidak ada ${p.satuan}`
+              }
+              className="shrink-0 w-[4.75rem] sm:w-[5.5rem] flex flex-col items-center gap-1.5 rounded-md py-1 hover:bg-sunken transition-colors"
             >
-              <IkonKeranjang size={18} className="shrink-0" />
-              <span className="grow">Belanja belum dikirim: {isiKeranjang} barang</span>
-              <span className="underline underline-offset-2 shrink-0">Lanjutkan</span>
+              {/* relative: lencana angka ditempel ke lingkaran ini, bukan ke
+                  leluhur berposisi entah di mana di luar wadah gulir. */}
+              <span className={cx('relative size-12 rounded-full grid place-items-center', p.warna)}>
+                <p.Ikon size={22} />
+                {p.jumlah > 0 && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-kritis text-ink-inverse text-[0.6875rem] font-bold grid place-items-center"
+                  >
+                    {p.jumlah > 99 ? '99+' : p.jumlah}
+                  </span>
+                )}
+              </span>
+              <span
+                aria-hidden="true"
+                className="text-[0.6875rem] sm:text-[0.75rem] font-semibold text-ink-2 text-center leading-tight"
+              >
+                {p.label[0]}
+                <br />
+                {p.label[1]}
+              </span>
             </Link>
-          )}
+          ))}
         </div>
+      </section>
 
-        {/* Kolom kanan di desktop: perkiraan dan kontrak */}
-        <div className="lg:col-span-7 xl:col-span-8 space-y-6 mt-6 lg:mt-0">
-          {/* 5. Perkiraan kebutuhan */}
-          <section aria-labelledby="judul-perkiraan">
-            <JudulBagian
-              judul="Perkiraan Kebutuhan Minggu Depan"
-              keterangan="Perkiraan bisa meleset. Angka di bawah adalah saran, bukan jaminan."
-            />
+      {/* Kartu tindakan konkret.
+          Sengaja hidup berdampingan dengan baris ikon di atas dan bukan
+          menggantikannya: baris ikon hanya membuka daftar yang sudah
+          tersaring, sedangkan kartu di bawah ini adalah satu tindakan yang
+          sudah jelas - termasuk satu-satunya jalan cepat ke "Barang Sudah
+          Sampai" dan ke Lembar Pesan Cepat. */}
+      <section aria-labelledby="judul-perlu-diurus" className="mt-6">
+        <JudulBagian
+          id="judul-perlu-diurus"
+          judul="Yang perlu kamu urus hari ini"
+          keterangan={tugas.length > 0 ? `${tugas.length} hal menunggu keputusan kamu.` : undefined}
+        />
+        {tugas.length === 0 ? (
+          <p className="flex items-center gap-2 text-[0.9375rem] font-semibold text-aman-ink bg-aman-soft rounded-md px-3.5 py-3">
+            <IkonCentangLingkaran size={18} />
+            Semua aman hari ini.
+          </p>
+        ) : (
+          <div className="grid gap-3 lg:grid-cols-2 [&>*]:min-w-0">
+            {tugas.map((t) => (
+              <div key={t.kunci}>{t.elemen}</div>
+            ))}
+          </div>
+        )}
+      </section>
 
-            {!perkiraanSiap ? (
-              <div className="space-y-3">
-                <Kerangka className="h-5 w-3/5" />
-                <Kerangka className="h-20 w-full rounded-md" />
-              </div>
-            ) : (
-              <>
-                {barangPerkiraan.length > 0 && barangPerkiraan[0].hari < 900 && (
-                  <p className="text-[1rem] font-semibold text-ink mb-3 leading-snug">
-                    {barangPerkiraan[0].b.nama} diperkirakan habis{' '}
-                    <span className="text-menipis-ink">{hariLagi(barangPerkiraan[0].hari)}</span>.
-                  </p>
-                )}
+      {/* Prediksi Stok */}
+      <section aria-labelledby="judul-prediksi" className="mt-6">
+        <JudulBagian
+          id="judul-prediksi"
+          judul="Prediksi Stok"
+          keterangan="Perkiraan bisa meleset. Angka di bawah adalah saran, bukan jaminan."
+          aksi={
+            <Link to="/prediksi" className="text-[0.8125rem] font-bold text-brand hover:underline">
+              Lihat semua
+            </Link>
+          }
+        />
 
-                <div className="space-y-2.5">
-                  {barangPerkiraan.map(({ b }) => {
-                    const p = perkiraanUntuk(b)
-                    const deret = trenBarang(b.id)
-                      .filter((t) => t.aktual != null)
-                      .slice(-12)
-                      .map((t) => t.aktual as number)
-                    return (
-                      <Link
-                        key={b.id}
-                        to={`/stok/${b.id}`}
-                        className="flex items-center gap-3 bg-surface border border-line rounded-md px-3.5 py-3 hover:border-line-strong transition-colors"
-                      >
-                        <div className="min-w-0 grow">
-                          <p className="text-[0.9375rem] font-semibold text-ink truncate">{b.nama}</p>
-                          <p className="text-[0.8125rem] text-ink-3">
-                            {p.kematangan === 'belum-bisa'
-                              ? `Data terkumpul ${b.hariDataTerkumpul} dari 14 hari`
-                              : `Cukup ±${p.hariCukup} hari · saran beli ${angka(p.saranBeli)} ${p.satuanSaran}`}
-                          </p>
+        {!perkiraanSiap ? (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 [&>*]:min-w-0">
+            <Kerangka className="h-40 w-full rounded-lg" />
+            <Kerangka className="h-40 w-full rounded-lg hidden sm:block" />
+            <Kerangka className="h-40 w-full rounded-lg hidden lg:block" />
+          </div>
+        ) : rekomendasi.length === 0 ? (
+          <Kartu padat>
+            <p className="text-[0.875rem] text-ink-3">
+              Belum ada saran bulan depan. Data pemakaian masih dikumpulkan.
+            </p>
+          </Kartu>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 [&>*]:min-w-0">
+            {rekomendasi.map((r) => {
+              const b = barang.find((x) => x.id === r.barangId)
+              const satuanPakai = b?.satuan ?? ''
+              const nada = NADA_ARAH_PREDIKSI[r.arah]
+              const kelasArah = {
+                menipis: 'text-menipis-ink',
+                info: 'text-info-ink',
+                aman: 'text-aman-ink',
+              }[nada]
+              const IkonArah = r.arah === 'tambah' ? IkonTrenNaik : IkonTrenTurun
+              const maks = Math.max(r.pemakaianBulanIni, r.perkiraanBulanDepan, 1)
+              const bar = [
+                { kunci: 'ini', label: 'Terpakai bulan ini', nilai: r.pemakaianBulanIni, warna: 'bg-seri-3' },
+                {
+                  kunci: 'depan',
+                  label: 'Perkiraan bulan depan',
+                  nilai: r.perkiraanBulanDepan,
+                  warna: 'bg-seri-1',
+                },
+              ]
+              const bisaKeranjang = r.arah === 'tambah' && r.penawaranId != null
+
+              return (
+                <Kartu key={r.barangId} padat className="flex flex-col">
+                  <Link
+                    to={`/prediksi?barang=${r.barangId}`}
+                    className="block grow rounded-md p-1 -m-1 hover:bg-surface-2 transition-colors"
+                  >
+                    <p className="text-[0.9375rem] font-bold text-ink leading-snug">
+                      {b?.nama ?? 'Barang'}
+                    </p>
+
+                    {/* Angka saran sengaja jauh lebih besar dari kata-katanya:
+                        yang ingin disorot memang angkanya. */}
+                    <p className="mt-2 flex flex-wrap items-baseline gap-x-1.5">
+                      <span className={cx('inline-flex items-center gap-1 text-[0.8125rem] font-bold', kelasArah)}>
+                        <IkonArah size={14} />
+                        {LABEL_ARAH_PREDIKSI[r.arah]}
+                      </span>
+                      <span className="text-[2.5rem] font-extrabold leading-none tracking-tight text-ink">
+                        {angka(r.jumlah)}
+                      </span>
+                      <span className="text-[0.8125rem] font-semibold text-ink-2">
+                        {r.satuanSaran} — bulan depan
+                      </span>
+                    </p>
+
+                    {/* Proporsi pemakaian: dua bar dengan skala yang sama,
+                        masing-masing membawa angkanya sendiri supaya artinya
+                        tidak bergantung pada warna.
+
+                        Kedua bar mengukur PEMAKAIAN, bukan sisa stok. Tanpa
+                        keterangan itu, angka saran di atas bisa terbaca
+                        bertentangan dengan bar yang menurun — padahal saran
+                        "tambah" muncul justru karena stok di gudang lebih
+                        kecil daripada kebutuhan bulan depan. */}
+                    <p className="mt-3 text-[0.75rem] text-ink-3">Pemakaian, bukan sisa stok:</p>
+                    <div className="mt-1.5 space-y-2">
+                      {bar.map((x) => (
+                        <div key={x.kunci}>
+                          <div className="flex items-baseline justify-between gap-2 text-[0.75rem]">
+                            <span className="text-ink-3">{x.label}</span>
+                            <span className="font-semibold text-ink-2 tabular">
+                              {jumlahSatuan(x.nilai, satuanPakai)}
+                            </span>
+                          </div>
+                          <div className="mt-1 h-2 rounded-full bg-sunken overflow-hidden" aria-hidden="true">
+                            <div
+                              className={cx('h-full rounded-full', x.warna)}
+                              style={{ width: `${Math.max(2, Math.round((x.nilai / maks) * 100))}%` }}
+                            />
+                          </div>
                         </div>
-                        <Percikan data={deret} label={`Tren pemakaian ${b.nama}`} />
-                      </Link>
-                    )
-                  })}
-                </div>
-
-                {/* Grafik garis penuh hanya di layar lebar. Di HP ia mahal
-                    dirender dan paling sedikit dipakai untuk mengambil keputusan. */}
-                {barangGrafik && tren.length > 0 && (
-                  <Kartu className="mt-4 hidden lg:block">
-                    <JudulBagian
-                      judul={`Tren pemakaian ${barangGrafik.nama}`}
-                      keterangan="14 hari terakhir dan 7 hari ke depan"
-                      aksi={
-                        <Link
-                          to={`/stok/${barangGrafik.id}`}
-                          className="text-[0.8125rem] font-bold text-brand hover:underline"
-                        >
-                          Buka detail
-                        </Link>
-                      }
-                    />
-                    <GrafikTren data={tren} satuan={barangGrafik.satuan} />
-                  </Kartu>
-                )}
-              </>
-            )}
-          </section>
-
-          {/* Ringkasan kontrak: cermin dari tab Pesanan, bukan data baru */}
-          {kontrak.length > 0 && (
-            <section aria-labelledby="judul-kontrak" className="hidden lg:block">
-              <JudulBagian
-                judul="Kuota Kontrak Bulan Ini"
-                keterangan={`${kontrak.length} kontrak berjalan. Setiap barang punya kontrak sendiri.`}
-                aksi={
-                  <Link to="/pesanan?tab=kontrak" className="text-[0.8125rem] font-bold text-brand hover:underline">
-                    Lihat semua
-                  </Link>
-                }
-              />
-              <div className="grid sm:grid-cols-2 gap-3">
-                {kontrak.slice(0, 4).map((k) => (
-                  <Kartu key={k.id} padat>
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <Link
-                        to={`/kontrak/${k.id}`}
-                        className="text-[0.9375rem] font-bold text-ink hover:text-brand transition-colors truncate"
-                      >
-                        {k.namaBarang}
-                      </Link>
+                      ))}
                     </div>
-                    <KuotaBulanIni kontrak={k} ringkas />
-                  </Kartu>
-                ))}
-              </div>
-            </section>
-          )}
-        </div>
-      </div>
+                  </Link>
+
+                  {bisaKeranjang && (
+                    <div className="mt-3 pt-3 border-t border-line">
+                      <Tombol
+                        ragam="sekunder"
+                        penuh
+                        ikonKiri={<IkonKeranjang size={16} />}
+                        onClick={() => bukaLembar(r)}
+                      >
+                        Masukkan ke Keranjang
+                      </Tombol>
+                    </div>
+                  )}
+                </Kartu>
+              )
+            })}
+          </div>
+        )}
+      </section>
+
+      {/* Pesanan berjalan */}
+      <section aria-labelledby="judul-pesanan-berjalan" className="mt-6">
+        <JudulBagian
+          id="judul-pesanan-berjalan"
+          judul="Pesanan Berjalan"
+          keterangan={berjalan.length === 0 ? undefined : `${berjalan.length} pesanan sedang diproses`}
+          aksi={
+            berjalan.length > 3 ? (
+              <Link to="/pesanan" className="text-[0.8125rem] font-bold text-brand hover:underline">
+                Lihat semua
+              </Link>
+            ) : undefined
+          }
+        />
+        {berjalan.length === 0 ? (
+          <Kartu padat>
+            <p className="text-[0.875rem] text-ink-3">
+              Belum ada pesanan yang sedang berjalan.{' '}
+              <Link to="/belanja" className="font-semibold text-brand hover:underline">
+                Cari barang di Distributor
+              </Link>
+              .
+            </p>
+          </Kartu>
+        ) : (
+          <div className="grid gap-2.5 lg:grid-cols-2 [&>*]:min-w-0">
+            {berjalan.slice(0, 4).map((p) => (
+              <KartuPesanan key={p.id} pesanan={p} />
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Pita belanja yang belum dikirim */}
+      {isiKeranjang > 0 && (
+        <Link
+          to="/keranjang"
+          className="mt-4 flex items-center gap-2.5 px-3.5 py-3 rounded-md bg-brand-soft text-brand-soft-ink text-[0.875rem] font-semibold hover:brightness-97"
+        >
+          <IkonKeranjang size={18} className="shrink-0" />
+          <span className="grow">Belanja belum dikirim: {isiKeranjang} barang</span>
+          <span className="underline underline-offset-2 shrink-0">Lanjutkan</span>
+        </Link>
+      )}
+
+      {/* Ringkasan kontrak: cermin dari tab Pesanan, bukan data baru */}
+      {kontrak.length > 0 && (
+        <section aria-labelledby="judul-kontrak" className="mt-6 hidden lg:block">
+          <JudulBagian
+            id="judul-kontrak"
+            judul="Kuota Kontrak Bulan Ini"
+            keterangan={`${kontrak.length} kontrak berjalan. Setiap barang punya kontrak sendiri.`}
+            aksi={
+              <Link to="/pesanan?tab=kontrak" className="text-[0.8125rem] font-bold text-brand hover:underline">
+                Lihat semua
+              </Link>
+            }
+          />
+          <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-3 [&>*]:min-w-0">
+            {kontrak.slice(0, 4).map((k) => (
+              <Kartu key={k.id} padat>
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <Link
+                    to={`/kontrak/${k.id}`}
+                    className="text-[0.9375rem] font-bold text-ink hover:text-brand transition-colors truncate"
+                  >
+                    {k.namaBarang}
+                  </Link>
+                </div>
+                <KuotaBulanIni kontrak={k} ringkas />
+              </Kartu>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Jalan keluar yang selalu ada, supaya Beranda tidak pernah jadi buntu */}
       <div className="mt-8 flex flex-wrap gap-2.5">
@@ -445,14 +710,52 @@ export default function Beranda() {
           Lihat semua stok menipis
         </TombolTautan>
         <TombolTautan ke="/belanja" ragam="garis" ukuran="kecil">
-          Cari barang di Belanja
+          Cari barang di Distributor
         </TombolTautan>
-        {profil.tier === 'dasar' && (
-          <TombolTautan ke="/akun/langganan" ragam="sunyi" ukuran="kecil">
-            Lihat paket langganan
-          </TombolTautan>
-        )}
       </div>
+
+      <Lembar
+        terbuka={pilihan != null}
+        tutup={() => setPilihan(null)}
+        judul="Masukkan ke Keranjang"
+        keterangan={
+          barangPilihan && penawaranPilihan
+            ? `${barangPilihan.nama} dari ${distributorById(penawaranPilihan.distributorId)?.nama ?? 'distributor'}`
+            : undefined
+        }
+        lebar="sempit"
+        kaki={
+          <div className="flex gap-2.5">
+            <Tombol ragam="garis" penuh onClick={() => setPilihan(null)}>
+              Batal
+            </Tombol>
+            <Tombol penuh onClick={simpanKeKeranjang} disabled={jumlahBeli <= 0}>
+              Masukkan
+            </Tombol>
+          </div>
+        }
+      >
+        {pilihan && penawaranPilihan && (
+          <div className="pb-4 space-y-3">
+            <p className="text-[0.875rem] text-ink-2 leading-relaxed">
+              Model menyarankan {angka(pilihan.jumlah)} {pilihan.satuanSaran} untuk bulan depan. Kamu boleh
+              menguranginya kalau kondisi hari ini tidak memungkinkan.
+            </p>
+            <PengaturJumlah
+              nilai={jumlahBeli}
+              ubah={setJumlahBeli}
+              min={1}
+              maks={Math.max(1, penawaranPilihan.stokTersedia)}
+              satuan={penawaranPilihan.satuan}
+              saranModel={pilihan.jumlah}
+              label="Jumlah"
+            />
+            <p className="text-[0.8125rem] text-ink-3 leading-relaxed">
+              Barang belum dipesan. Ia menunggu di keranjang sampai kamu kirim pesanannya sendiri.
+            </p>
+          </div>
+        )}
+      </Lembar>
     </div>
   )
 }

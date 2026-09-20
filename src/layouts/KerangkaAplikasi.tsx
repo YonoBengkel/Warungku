@@ -5,6 +5,7 @@ import { NAV } from '@/lib/label'
 import {
   IkonBeranda,
   IkonKotak,
+  IkonTrenNaik,
   IkonToko,
   IkonPasokan,
   IkonLonceng,
@@ -14,20 +15,25 @@ import { useAplikasi, useJumlahKeranjang, useJumlahPerluTindakan } from '@/store
 import { Toast } from '@/components/ui/umpanBalik'
 
 /**
- * Kerangka empat tab.
+ * Kerangka lima tab.
  *
  * Aturan yang dipegang:
  * - Item dan rute di mobile dan desktop sama persis. Tidak ada menu khusus
  *   desktop; kalau sebuah fitur hanya muat di desktop, fiturnya yang salah.
+ * - Urutannya mengikuti urutan berpikir pemilik usaha, bukan urutan fitur
+ *   dibangun: lihat stok → lihat perkiraan → belanja → pantau pesanan. Itu
+ *   sebabnya Prediksi duduk di posisi ketiga, menempel pada Stok yang menjadi
+ *   sumber angkanya dan mendahului Distributor yang menjadi tindak lanjutnya.
  * - Belanja tidak pernah menampilkan pesanan, Pesanan tidak pernah menampilkan
  *   katalog. Pemisahan ini yang membuat pertanyaan "pesanan saya sudah dikirim
  *   belum" selesai dalam satu ketukan.
- * - Akun ada di balik avatar, bukan tab kelima, karena ia dibuka sebulan sekali.
+ * - Akun ada di balik avatar, bukan tab keenam, karena ia dibuka sebulan sekali.
  */
 
 const TAB = [
   { ke: '/beranda', label: NAV.beranda, Ikon: IkonBeranda },
   { ke: '/stok', label: NAV.stok, Ikon: IkonKotak },
+  { ke: '/prediksi', label: NAV.prediksi, Ikon: IkonTrenNaik },
   { ke: '/belanja', label: NAV.belanja, Ikon: IkonToko },
   { ke: '/pesanan', label: NAV.pesanan, Ikon: IkonPasokan },
 ]
@@ -36,6 +42,7 @@ const TAB = [
 const INDUK: Array<[RegExp, string]> = [
   [/^\/(beranda)/, '/beranda'],
   [/^\/stok/, '/stok'],
+  [/^\/prediksi/, '/prediksi'],
   [/^\/(belanja|distributor|penawaran)/, '/belanja'],
   [/^\/(pesanan|kontrak|mitra)/, '/pesanan'],
 ]
@@ -126,11 +133,14 @@ export default function KerangkaAplikasi() {
         {/* Kepala halaman global: tiga ikon tetap di semua tab */}
         <header className="sticky top-0 z-40 bg-surface/95 backdrop-blur border-b border-line pt-aman">
           <div className="h-14 px-4 sm:px-6 flex items-center gap-2 max-w-[1400px] mx-auto w-full">
+            {/* Nama aplikasi, bukan nama toko: di layar sempit nama toko sudah
+                muncul di judul Beranda dan di inisial avatar akun, sementara
+                "Warungku" tidak muncul sama sekali kalau tidak di sini. */}
             <Link to="/beranda" className="lg:hidden flex items-center gap-2 mr-auto min-w-0 min-h-11 pr-2">
               <span className="size-8 rounded-md bg-brand grid place-items-center text-ink-inverse font-extrabold text-[0.875rem] shrink-0">
                 W
               </span>
-              <span className="font-extrabold text-ink text-[0.9375rem] truncate">{profil.namaUsaha}</span>
+              <span className="font-extrabold text-ink text-[0.9375rem] truncate">Warungku</span>
             </Link>
             <span className="hidden lg:block mr-auto" />
 
@@ -199,13 +209,26 @@ export default function KerangkaAplikasi() {
                 to={ke}
                 aria-current={terpilih ? 'page' : undefined}
                 className={cx(
-                  'flex-1 flex flex-col items-center justify-center gap-1 pt-2.5 pb-2 min-h-[4.5rem]',
+                  // `min-w-0` wajib: tanpa itu lebar minimum isi tab mengalahkan
+                  // `flex-1`, lima tab jadi lebih lebar dari layar, dan halaman
+                  // bisa digeser ke samping. Tinggi 4.5rem menjaga target sentuh.
+                  'flex-1 min-w-0 flex flex-col items-center justify-center gap-1 pt-2.5 pb-2 min-h-[4.5rem]',
                   'transition-colors',
                   terpilih ? 'text-brand' : 'text-ink-3',
                 )}
               >
-                <Ikon size={24} strokeWidth={terpilih ? 2.1 : 1.75} />
-                <span className={cx('text-[0.6875rem]', terpilih ? 'font-bold' : 'font-semibold')}>{label}</span>
+                <Ikon size={22} strokeWidth={terpilih ? 2.1 : 1.75} />
+                {/* Label yang paling panjang ("Distributor") harus utuh dalam satu
+                    baris di layar 360px, jadi ia tidak boleh membungkus maupun
+                    dipotong — ukuran hurufnya yang mengalah. */}
+                <span
+                  className={cx(
+                    'text-[0.625rem] leading-tight text-center px-0.5 whitespace-nowrap',
+                    terpilih ? 'font-bold' : 'font-semibold',
+                  )}
+                >
+                  {label}
+                </span>
               </NavLink>
             )
           })}

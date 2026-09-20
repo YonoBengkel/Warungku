@@ -18,7 +18,7 @@ const LOKASI_TERDETEKSI = {
 }
 
 /**
- * Langkah 2 dari 3: identitas usaha dan satu pertanyaan bisnis.
+ * Langkah 2 dari 5: identitas usaha dan satu pertanyaan bisnis.
  *
  * Pertanyaan "Apa yang kamu jual?" ditulis dengan bahasa dagang, bukan bahasa
  * sistem. Jawabannya cuma menentukan bentuk awal formulir Tambah Barang, tidak
@@ -100,7 +100,10 @@ export default function DaftarUsaha() {
         caraHitung: cara,
         ...(kota.trim() ? { kota: kota.trim() } : {}),
       })
-      tampilkanRacun(`Data ${namaUsaha.trim()} tersimpan. Tinggal satu langkah lagi.`, 'aman')
+      /* Tidak lagi menyebut "tinggal satu langkah": sesudah legalitas masih ada
+         data kasir dan batas aman, dan janji yang meleset di sini membuat dua
+         layar berikutnya terasa seperti jebakan. */
+      tampilkanRacun(`Data ${namaUsaha.trim()} tersimpan. Lanjut ke data legalitas.`, 'aman')
       navigate('/daftar/legalitas')
     }, 650)
   }
@@ -241,6 +244,11 @@ function sorotGalatPertama() {
   kolom?.focus({ preventScroll: true })
 }
 
+/**
+ * Penyebut progres dikunci ke 5, sama dengan layar pendaftaran lain, karena
+ * alurnya baru selesai setelah data kasir dan batas aman. Penyebut yang
+ * berbeda antar layar membuat bilah progres mundur di tengah jalan.
+ */
 function LayarAuth({
   langkah,
   judul,
@@ -280,17 +288,17 @@ function LayarAuth({
               role="progressbar"
               aria-valuenow={langkah}
               aria-valuemin={1}
-              aria-valuemax={3}
-              aria-label={`Langkah ${langkah} dari 3`}
+              aria-valuemax={5}
+              aria-label={`Langkah ${langkah} dari 5`}
             >
               <div
                 className="h-full rounded-full bg-brand transition-[width] duration-500"
-                style={{ width: `${(langkah / 3) * 100}%` }}
+                style={{ width: `${(langkah / 5) * 100}%` }}
               />
             </div>
             <div className="mt-2 flex items-baseline justify-between gap-3">
               <h1 className="text-[1.25rem] font-extrabold text-ink tracking-tight">{judul}</h1>
-              <span className="text-[0.8125rem] font-semibold text-ink-3 shrink-0">Langkah {langkah} dari 3</span>
+              <span className="text-[0.8125rem] font-semibold text-ink-3 shrink-0">Langkah {langkah} dari 5</span>
             </div>
           </div>
 

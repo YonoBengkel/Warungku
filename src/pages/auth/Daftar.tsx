@@ -8,9 +8,9 @@ import { cx } from '@/lib/format'
 import { useAplikasi } from '@/store/aplikasi'
 
 /**
- * Langkah 1 dari 3: hanya nomor HP dan kata sandi.
+ * Langkah 1 dari 5: hanya nomor HP dan kata sandi.
  *
- * Akun sengaja dibuat di langkah pertama, bukan di akhir. Pendaftaran tiga
+ * Akun sengaja dibuat di langkah pertama, bukan di akhir. Pendaftaran lima
  * layar hampir selalu terputus di tengah (baterai habis, pembeli datang), dan
  * kalau akunnya baru lahir di langkah tiga, semua isian sebelumnya ikut hilang.
  * Dengan pola ini nomor HP-nya sudah bisa dihubungi sejak menit pertama.
@@ -119,7 +119,7 @@ export default function Daftar() {
 /* ================================================================== */
 
 /**
- * Tombol utama tiga langkah pendaftaran menempel di bawah layar.
+ * Tombol utama langkah pendaftaran menempel di bawah layar.
  * Di HP, isian terakhir sering tertutup papan ketik; tombol yang ikut menggulir
  * membuat pengguna mengira langkahnya belum selesai.
  */
@@ -131,7 +131,14 @@ function BilahLanjut({ children }: { children: ReactNode }) {
   )
 }
 
-/** Kerangka tiga langkah: logo, bar progres tipis, lalu kartu isian. */
+/**
+ * Kerangka langkah pendaftaran: logo, bar progres tipis, lalu kartu isian.
+ *
+ * Penyebutnya 5, bukan 3, karena alur sebenarnya belum selesai di layar
+ * legalitas: masih ada data kasir dan batas aman. Penyebut yang berbeda antar
+ * layar membuat bilah progres mundur dari penuh ke 80% tepat setelah pengguna
+ * diberi tahu ia menyelesaikan langkah terakhir.
+ */
 function LayarAuth({
   langkah,
   judul,
@@ -161,17 +168,17 @@ function LayarAuth({
               role="progressbar"
               aria-valuenow={langkah}
               aria-valuemin={1}
-              aria-valuemax={3}
-              aria-label={`Langkah ${langkah} dari 3`}
+              aria-valuemax={5}
+              aria-label={`Langkah ${langkah} dari 5`}
             >
               <div
                 className="h-full rounded-full bg-brand transition-[width] duration-500"
-                style={{ width: `${(langkah / 3) * 100}%` }}
+                style={{ width: `${(langkah / 5) * 100}%` }}
               />
             </div>
             <div className="mt-2 flex items-baseline justify-between gap-3">
               <h1 className="text-[1.25rem] font-extrabold text-ink tracking-tight">{judul}</h1>
-              <span className="text-[0.8125rem] font-semibold text-ink-3 shrink-0">Langkah {langkah} dari 3</span>
+              <span className="text-[0.8125rem] font-semibold text-ink-3 shrink-0">Langkah {langkah} dari 5</span>
             </div>
           </div>
           {children}

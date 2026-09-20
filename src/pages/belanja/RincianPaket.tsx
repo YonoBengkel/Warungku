@@ -89,7 +89,7 @@ export default function RincianPaket() {
             pesan="Distributor mungkin sudah menurunkan paketnya, atau tautannya salah salin. Lihat lagi paket yang masih tersedia untuk barang ini."
             aksi={
               <TombolTautan ke={penawaran ? `/penawaran/${id}/kontrak` : '/belanja'}>
-                {penawaran ? 'Lihat paket yang tersedia' : 'Cari barang di Belanja'}
+                {penawaran ? 'Lihat paket yang tersedia' : 'Cari barang di Distributor'}
               </TombolTautan>
             }
           />

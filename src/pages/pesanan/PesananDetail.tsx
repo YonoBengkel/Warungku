@@ -190,7 +190,7 @@ export default function PesananDetail() {
           className="mt-3 lg:max-w-[70ch]"
           aksi={
             <TombolTautan ke="/belanja" ragam="garis" ukuran="kecil">
-              Cari Barang di Belanja
+              Cari Barang di Distributor
             </TombolTautan>
           }
         >
@@ -492,7 +492,7 @@ export default function PesananDetail() {
           {selesai && (
             <div className="space-y-2">
               {pesanan.sudahDiulas ? (
-                <TombolTautan ke="/pesanan?tab=selesai" ragam="garis" penuh ukuran="besar">
+                <TombolTautan ke="/pesanan?tab=pesanan&status=selesai" ragam="garis" penuh ukuran="besar">
                   Kembali ke Daftar Pesanan
                 </TombolTautan>
               ) : (

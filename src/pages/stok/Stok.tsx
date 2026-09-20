@@ -849,7 +849,7 @@ function LembarAksiBaris({ barang, tutup }: { barang: Barang | null; tutup: () =
       bantuan:
         penawaran.length > 0
           ? 'Buka penawaran distributor untuk barang ini.'
-          : 'Belum ada penawaran tersimpan, kami carikan di Belanja.',
+          : 'Belum ada penawaran tersimpan, kami carikan di Distributor.',
     },
     {
       ke: `/stok/${barang.id}/batas-aman`,

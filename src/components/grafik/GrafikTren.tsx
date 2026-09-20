@@ -297,7 +297,9 @@ export function GrafikTren({
         <button
           type="button"
           onClick={() => setTampilTabel((v) => !v)}
-          className="ml-auto font-semibold text-brand hover:underline"
+          /* Area sentuh dilebarkan lewat pseudo-element supaya tombolnya tetap
+             ramping di dalam baris legenda, tapi jempol tetap mengenainya. */
+          className="relative ml-auto font-semibold text-brand hover:underline after:absolute after:inset-x-0 after:-top-3 after:-bottom-3 after:content-['']"
           aria-expanded={tampilTabel}
         >
           {tampilTabel ? 'Sembunyikan tabel' : 'Lihat angkanya'}

@@ -298,9 +298,18 @@ export default function KontrakDetail() {
                 tetap berjalan dan kewajiban {angka(kontrak.kuotaMinPerBulan)} {kontrak.satuan} per bulan masih berlaku.
               </Peringatan>
             ) : (
-              <Tombol ragam="garis" penuh onClick={() => setDialogHenti(true)}>
-                Ajukan Penghentian (perlu persetujuan distributor)
-              </Tombol>
+              /* Syaratnya turun ke baris bantuan, bukan ikut di dalam label.
+                 Tombol memakai whitespace-nowrap, jadi label sepanjang ini
+                 melebarkan seluruh halaman di layar 360px — dan label tombol
+                 memang tidak boleh berisi tanda kurung penjelas. */
+              <div>
+                <Tombol ragam="garis" penuh onClick={() => setDialogHenti(true)}>
+                  Ajukan Penghentian
+                </Tombol>
+                <p className="mt-1.5 text-center text-[0.8125rem] text-ink-3 leading-snug">
+                  Perlu persetujuan distributor.
+                </p>
+              </div>
             )}
           </div>
         </div>

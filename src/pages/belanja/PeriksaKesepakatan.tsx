@@ -122,7 +122,7 @@ export default function PeriksaKesepakatan() {
             pesan="Tidak ada yang bisa ditinjau karena paketnya sudah tidak tersedia. Lihat lagi paket yang masih dipasang distributor untuk barang ini."
             aksi={
               <TombolTautan ke={penawaran ? `/penawaran/${id}/kontrak` : '/belanja'}>
-                {penawaran ? 'Lihat paket yang tersedia' : 'Cari barang di Belanja'}
+                {penawaran ? 'Lihat paket yang tersedia' : 'Cari barang di Distributor'}
               </TombolTautan>
             }
           />
