@@ -9,6 +9,7 @@ import type {
   StatusStok,
   KematanganPerkiraan,
   CaraHitungStok,
+  JenisUsaha,
   WarnaTitik,
 } from './types'
 
@@ -173,6 +174,25 @@ export const LABEL_CARA_HITUNG: Record<CaraHitungStok, { judul: string; bantuan:
   racikan: { judul: 'Makanan & minuman racikan', bantuan: 'Stok dihitung dari bahan bakunya' },
   kemasan: { judul: 'Barang kemasan siap jual', bantuan: 'Stok dihitung per buah' },
   keduanya: { judul: 'Dua-duanya', bantuan: 'Sebagian racikan, sebagian barang kemasan' },
+}
+
+/** Urutan di daftar pilihan: yang paling banyak mendaftar ada di atas, "Lainnya" selalu terakhir. */
+export const URUTAN_JENIS_USAHA: JenisUsaha[] = [
+  'kedai-kopi',
+  'kedai-minuman',
+  'warung-makan',
+  'roti-kue',
+  'warung-kelontong',
+  'lainnya',
+]
+
+export const LABEL_JENIS_USAHA: Record<JenisUsaha, { judul: string; contoh: string }> = {
+  'kedai-kopi': { judul: 'Kedai kopi & kafe', contoh: 'Kopi susu, kopi seduh, kafe dengan camilan' },
+  'kedai-minuman': { judul: 'Kedai teh, susu & minuman', contoh: 'Es teh, susu segar, boba, jus' },
+  'warung-makan': { judul: 'Warung makan & angkringan', contoh: 'Nasi rames, bakmi, angkringan' },
+  'roti-kue': { judul: 'Roti & kue', contoh: 'Roti bakar, toko kue, jajanan pasar' },
+  'warung-kelontong': { judul: 'Warung kelontong', contoh: 'Warung Madura, toko sembako' },
+  lainnya: { judul: 'Lainnya', contoh: 'Usaha makanan atau minuman yang tidak ada di daftar' },
 }
 
 /* ------------------------------------------------------------------ */

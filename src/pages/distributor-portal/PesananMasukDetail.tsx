@@ -17,7 +17,7 @@ import {
   IkonToko,
 } from '@/icons'
 import { angka, cx, jam, nomorHp, rupiah, tanggalPendek, waktuLalu } from '@/lib/format'
-import { LABEL_PESANAN_MASUK, NADA_PESANAN_MASUK } from '@/lib/label'
+import { LABEL_JENIS_USAHA, LABEL_PESANAN_MASUK, NADA_PESANAN_MASUK } from '@/lib/label'
 import { promoById, umkmById } from '@/data/dummy'
 import type { StatusPesananMasuk } from '@/lib/types'
 import { useAplikasi } from '@/store/aplikasi'
@@ -132,7 +132,7 @@ export default function PesananMasukDetail() {
                     <Avatar nama={umkm.nama} warna={umkm.warna} ukuran={44} />
                     <div className="min-w-0">
                       <p className="text-[1.0625rem] font-bold text-ink leading-snug">{umkm.nama}</p>
-                      <p className="text-[0.8125rem] text-ink-3 leading-snug">{umkm.jenisUsaha}</p>
+                      <p className="text-[0.8125rem] text-ink-3 leading-snug">{LABEL_JENIS_USAHA[umkm.jenisUsaha].judul}</p>
                     </div>
                   </div>
 

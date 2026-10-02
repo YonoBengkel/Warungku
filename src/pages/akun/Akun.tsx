@@ -19,7 +19,7 @@ import {
   IkonSinkron,
 } from '@/icons'
 import { cx, inisial, tanggalPanjang } from '@/lib/format'
-import { JUDUL } from '@/lib/label'
+import { JUDUL, LABEL_JENIS_USAHA } from '@/lib/label'
 import { useAplikasi } from '@/store/aplikasi'
 
 /**
@@ -63,7 +63,7 @@ export default function Akun() {
             {profil.namaUsaha}
           </h2>
           <p className="text-[0.8125rem] text-ink-3 truncate">
-            {profil.jenisUsaha} &middot; {profil.kota}
+            {LABEL_JENIS_USAHA[profil.jenisUsaha].judul} &middot; {profil.kota}
           </p>
           <div className="mt-1.5">
             <LencanaVerifikasi />

@@ -90,7 +90,7 @@ function acakBersemai(semai: number) {
 export const profilAwal: ProfilUsaha = {
   id: 'usaha-1',
   namaUsaha: 'Kopi Kita Jogja',
-  jenisUsaha: 'Kedai kopi & camilan',
+  jenisUsaha: 'kedai-kopi',
   namaPemilik: 'Bagas Prasetyo',
   nib: '1204250031298',
   npwp: '',
@@ -1478,6 +1478,22 @@ export const daftarPenawaran: Penawaran[] = [
     barangIdTerkait: 'b-18',
     keterangan: '1 dus isi 1.000 pcs',
   },
+  /* Barang yang sama dari distributor kedua. Rekomendasi distributor hanya bisa
+     menilai harga kalau ada pembandingnya, jadi data contoh perlu beberapa
+     barang yang dijual lebih dari satu distributor (lihat juga pw-17). */
+  {
+    id: 'pw-20',
+    distributorId: 'd-06',
+    nama: 'Minyak Goreng Kemasan',
+    kategori: 'Bahan Makanan',
+    satuan: 'jerigen',
+    hargaSatuan: 91000,
+    kemasanJual: { nama: 'jerigen', isi: 5000 },
+    stokTersedia: 60,
+    stokDiperbaruiPada: hariKe(0, 7, 30),
+    barangIdTerkait: 'b-14',
+    keterangan: '1 jerigen 5 liter',
+  },
 ]
 
 export function penawaranById(id: string): Penawaran | undefined {
@@ -2583,7 +2599,7 @@ export const daftarUmkm: UmkmPemesan[] = [
     // supaya jelas bahwa dua portal ini melihat usaha yang sama dari dua sisi.
     id: 'u-01',
     nama: 'Kopi Kita Jogja',
-    jenisUsaha: 'Kedai kopi & camilan',
+    jenisUsaha: 'kedai-kopi',
     kota: 'Sleman',
     alamat: 'Jl. Kaliurang KM 5,6 No. 24, Sinduadi, Mlati',
     lat: -7.7548,
@@ -2595,7 +2611,7 @@ export const daftarUmkm: UmkmPemesan[] = [
   {
     id: 'u-02',
     nama: 'Angkringan Pak Slamet',
-    jenisUsaha: 'Angkringan',
+    jenisUsaha: 'warung-makan',
     kota: 'Kota Yogyakarta',
     alamat: 'Jl. Wongsodirjan No. 8, Sosromenduran',
     lat: -7.7902,
@@ -2607,7 +2623,7 @@ export const daftarUmkm: UmkmPemesan[] = [
   {
     id: 'u-03',
     nama: 'Kedai Teh Sore',
-    jenisUsaha: 'Kedai teh & roti',
+    jenisUsaha: 'kedai-minuman',
     kota: 'Sleman',
     alamat: 'Jl. Palagan Tentara Pelajar KM 8, Ngaglik',
     lat: -7.7211,
@@ -2619,7 +2635,7 @@ export const daftarUmkm: UmkmPemesan[] = [
   {
     id: 'u-04',
     nama: 'Warung Gudeg Bu Tarmi',
-    jenisUsaha: 'Warung makan',
+    jenisUsaha: 'warung-makan',
     kota: 'Kota Yogyakarta',
     alamat: 'Jl. Bantul No. 41, Gedongkiwo',
     lat: -7.8122,
@@ -2631,7 +2647,7 @@ export const daftarUmkm: UmkmPemesan[] = [
   {
     id: 'u-05',
     nama: 'Kafe Ruang Tunggu',
-    jenisUsaha: 'Kafe & ruang kerja',
+    jenisUsaha: 'kedai-kopi',
     kota: 'Sleman',
     alamat: 'Jl. Seturan Raya No. 12, Caturtunggal',
     lat: -7.7648,
@@ -2643,7 +2659,7 @@ export const daftarUmkm: UmkmPemesan[] = [
   {
     id: 'u-06',
     nama: 'Warmindo Barokah',
-    jenisUsaha: 'Warung mi & kopi',
+    jenisUsaha: 'warung-makan',
     kota: 'Sleman',
     alamat: 'Jl. Affandi Gg. Kinanti, Condongcatur',
     lat: -7.7583,
@@ -2655,7 +2671,7 @@ export const daftarUmkm: UmkmPemesan[] = [
   {
     id: 'u-07',
     nama: 'Kopi Lereng Merapi',
-    jenisUsaha: 'Kedai kopi',
+    jenisUsaha: 'kedai-kopi',
     kota: 'Sleman',
     alamat: 'Jl. Kaliurang KM 17, Pakem',
     lat: -7.6902,
@@ -2667,7 +2683,7 @@ export const daftarUmkm: UmkmPemesan[] = [
   {
     id: 'u-08',
     nama: 'Bakmi Jawa Mbah Wito',
-    jenisUsaha: 'Warung bakmi',
+    jenisUsaha: 'warung-makan',
     kota: 'Sleman',
     alamat: 'Jl. Magelang KM 6, Mlati',
     lat: -7.7405,
@@ -2679,7 +2695,7 @@ export const daftarUmkm: UmkmPemesan[] = [
   {
     id: 'u-09',
     nama: 'Kedai Susu Sapi Segar',
-    jenisUsaha: 'Kedai susu',
+    jenisUsaha: 'kedai-minuman',
     kota: 'Sleman',
     alamat: 'Jl. Kaliurang KM 12, Ngaglik',
     lat: -7.7016,
@@ -2691,7 +2707,7 @@ export const daftarUmkm: UmkmPemesan[] = [
   {
     id: 'u-10',
     nama: 'Kopi Tugu Pandang',
-    jenisUsaha: 'Kedai kopi',
+    jenisUsaha: 'kedai-kopi',
     kota: 'Kota Yogyakarta',
     alamat: 'Jl. Margo Utomo No. 33, Gowongan',
     lat: -7.7825,
@@ -2703,7 +2719,7 @@ export const daftarUmkm: UmkmPemesan[] = [
   {
     id: 'u-11',
     nama: 'Warung Sego Abang Mbak Tar',
-    jenisUsaha: 'Warung makan',
+    jenisUsaha: 'warung-makan',
     kota: 'Kota Yogyakarta',
     alamat: 'Jl. Sisingamangaraja No. 7, Brontokusuman',
     lat: -7.8168,
@@ -2715,7 +2731,7 @@ export const daftarUmkm: UmkmPemesan[] = [
   {
     id: 'u-12',
     nama: 'Kafe Beranda Kotabaru',
-    jenisUsaha: 'Kafe',
+    jenisUsaha: 'kedai-kopi',
     kota: 'Kota Yogyakarta',
     alamat: 'Jl. Suroto No. 5, Kotabaru',
     lat: -7.7789,
@@ -2727,7 +2743,7 @@ export const daftarUmkm: UmkmPemesan[] = [
   {
     id: 'u-13',
     nama: 'Kedai Matcha Selasar',
-    jenisUsaha: 'Kedai minuman',
+    jenisUsaha: 'kedai-minuman',
     kota: 'Sleman',
     alamat: 'Jl. Gejayan No. 28, Depok',
     lat: -7.7702,
@@ -2739,7 +2755,7 @@ export const daftarUmkm: UmkmPemesan[] = [
   {
     id: 'u-14',
     nama: 'Roti Bakar Simpang Lima',
-    jenisUsaha: 'Kedai roti bakar',
+    jenisUsaha: 'roti-kue',
     kota: 'Sleman',
     alamat: 'Jl. Godean KM 5, Gamping',
     lat: -7.7936,

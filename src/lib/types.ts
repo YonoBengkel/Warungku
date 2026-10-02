@@ -15,13 +15,26 @@
 /* ------------------------------------------------------------------ */
 
 export type CaraHitungStok = 'racikan' | 'kemasan' | 'keduanya'
+
+/**
+ * Jenis usaha: pilihan baku, bukan teks bebas. Rekomendasi distributor
+ * memetakannya ke kategori barang lewat aturan IF-ELSE, dan teks yang diketik
+ * bebas seperti "Kedai kopi & camilan" tidak bisa dicocokkan dengan aturan.
+ */
+export type JenisUsaha =
+  | 'kedai-kopi'
+  | 'kedai-minuman'
+  | 'warung-makan'
+  | 'roti-kue'
+  | 'warung-kelontong'
+  | 'lainnya'
 export type StatusVerifikasi = 'menunggu' | 'terverifikasi' | 'perlu-diperbaiki'
 export type TingkatVerifikasi = 'penuh' | 'dasar'
 
 export interface ProfilUsaha {
   id: string
   namaUsaha: string
-  jenisUsaha: string
+  jenisUsaha: JenisUsaha
   namaPemilik: string
   nib: string
   npwp: string
@@ -569,7 +582,7 @@ export interface RekomendasiPrediksi {
 export interface UmkmPemesan {
   id: string
   nama: string
-  jenisUsaha: string
+  jenisUsaha: JenisUsaha
   kota: string
   alamat: string
   lat: number

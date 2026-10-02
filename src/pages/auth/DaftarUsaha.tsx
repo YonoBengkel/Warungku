@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Tombol } from '@/components/ui/dasar'
-import { AreaTeks, Kolom, PilihanKartu } from '@/components/ui/formulir'
+import { AreaTeks, Kolom, Pilihan, PilihanKartu } from '@/components/ui/formulir'
 import { IkonKembali, IkonLokasi } from '@/icons'
-import { LABEL_CARA_HITUNG } from '@/lib/label'
-import type { CaraHitungStok } from '@/lib/types'
+import { LABEL_CARA_HITUNG, LABEL_JENIS_USAHA, URUTAN_JENIS_USAHA } from '@/lib/label'
+import type { CaraHitungStok, JenisUsaha } from '@/lib/types'
 import { useAplikasi } from '@/store/aplikasi'
 
 /* Urutan kartu dikunci: yang paling sering dipilih pemilik warung ada di atas. */
@@ -30,6 +30,7 @@ export default function DaftarUsaha() {
   const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
 
   const [namaUsaha, setNamaUsaha] = useState('')
+  const [jenisUsaha, setJenisUsaha] = useState<JenisUsaha | ''>('')
   const [alamat, setAlamat] = useState('')
   const [kota, setKota] = useState('')
   const [namaPemilik, setNamaPemilik] = useState('')
@@ -37,6 +38,7 @@ export default function DaftarUsaha() {
   const [cara, setCara] = useState<CaraHitungStok | null>(null)
   const [galat, setGalat] = useState<{
     namaUsaha?: string
+    jenisUsaha?: string
     alamat?: string
     namaPemilik?: string
     email?: string
@@ -67,6 +69,10 @@ export default function DaftarUsaha() {
       baru.namaUsaha =
         'Nama usaha belum diisi atau terlalu pendek. Tulis nama yang tertera di spanduk warungmu, minimal 3 huruf. Contoh: Kopi Kita Jogja.'
     }
+    if (!jenisUsaha) {
+      baru.jenisUsaha =
+        'Jenis usaha belum dipilih. Pilih yang paling mirip dengan daganganmu; kalau tidak ada yang cocok, pilih Lainnya.'
+    }
     if (alamat.trim().length < 8) {
       baru.alamat =
         'Alamat usaha belum lengkap. Tulis nama jalan dan nomor supaya kurir bisa menemukannya. Contoh: Jl. Kaliurang KM 5,6 No. 24.'
@@ -82,7 +88,7 @@ export default function DaftarUsaha() {
       baru.cara = 'Pilih salah satu dari tiga kartu di atas supaya formulir Tambah Barang menyesuaikan jualanmu.'
     }
     setGalat(baru)
-    if (Object.keys(baru).length > 0 || !cara) {
+    if (Object.keys(baru).length > 0 || !cara || !jenisUsaha) {
       setPercobaanGagal((n) => n + 1)
       return
     }
@@ -94,6 +100,7 @@ export default function DaftarUsaha() {
          kosong akan menghapus kota yang sudah ada di profil tanpa diminta. */
       ubahProfil({
         namaUsaha: namaUsaha.trim(),
+        jenisUsaha,
         alamat: alamat.trim(),
         namaPemilik: namaPemilik.trim(),
         email: email.trim(),
@@ -127,6 +134,33 @@ export default function DaftarUsaha() {
             galat={galat.namaUsaha}
             onChange={(e) => setNamaUsaha(e.target.value)}
           />
+
+          {/* Pilihan baku: dari sinilah rekomendasi distributor pertama kali
+              dibuat, sebelum ada riwayat pesanan apa pun. */}
+          <Pilihan
+            label="Jenis Usaha"
+            wajib
+            value={jenisUsaha}
+            galat={galat.jenisUsaha}
+            bantuan={
+              jenisUsaha
+                ? `Contoh: ${LABEL_JENIS_USAHA[jenisUsaha].contoh}.`
+                : 'Dipakai untuk memilihkan distributor yang menjual barang untuk usahamu.'
+            }
+            onChange={(e) => {
+              setJenisUsaha(e.target.value as JenisUsaha | '')
+              setGalat((g) => ({ ...g, jenisUsaha: undefined }))
+            }}
+          >
+            <option value="" disabled>
+              Pilih jenis usaha
+            </option>
+            {URUTAN_JENIS_USAHA.map((j) => (
+              <option key={j} value={j}>
+                {LABEL_JENIS_USAHA[j].judul}
+              </option>
+            ))}
+          </Pilihan>
 
           <div>
             <AreaTeks

@@ -23,7 +23,7 @@ import {
   IkonTelepon,
 } from '@/icons'
 import { angka, jumlahSatuan, nomorHp, rupiah, waktuLalu } from '@/lib/format'
-import { LABEL_PESANAN_MASUK, NADA_PESANAN_MASUK } from '@/lib/label'
+import { LABEL_JENIS_USAHA, LABEL_PESANAN_MASUK, NADA_PESANAN_MASUK } from '@/lib/label'
 import type { PesananMasuk, StatusPesananMasuk } from '@/lib/types'
 import { distributorAktif, penawaranById, umkmById } from '@/data/dummy'
 import { useAplikasi, useTitikPeta } from '@/store/aplikasi'
@@ -185,7 +185,7 @@ export default function PetaSebaranBarang() {
                 <>
                   <h3 className="text-[1rem] font-extrabold text-ink leading-snug">{umkm.nama}</h3>
                   <p className="mt-0.5 text-[0.8125rem] text-ink-2">
-                    {umkm.jenisUsaha} &middot; {umkm.kota}
+                    {LABEL_JENIS_USAHA[umkm.jenisUsaha].judul} &middot; {umkm.kota}
                   </p>
 
                   <dl className="mt-3 space-y-2">

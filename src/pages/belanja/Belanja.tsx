@@ -26,7 +26,7 @@ import {
 } from '@/icons'
 import { angka, cx, waktuLalu } from '@/lib/format'
 import { isiKemasan } from '@/lib/satuan'
-import { JUDUL } from '@/lib/label'
+import { JUDUL, LABEL_JENIS_USAHA } from '@/lib/label'
 import type { Barang, Distributor, Penawaran } from '@/lib/types'
 import {
   daftarDistributor,
@@ -36,6 +36,7 @@ import {
   promoUntukPenawaran,
   rincianHarga,
 } from '@/data/dummy'
+import { rekomendasiDistributor, type AspekUlasan, type DistributorDirekomendasikan } from '@/data/rekomendasi'
 import { useAplikasi } from '@/store/aplikasi'
 
 /**
@@ -223,6 +224,83 @@ function KartuDistributor({ distributor, jumlahPenawaran }: { distributor: Distr
 }
 
 /* ================================================================== */
+/* Kartu rekomendasi distributor                                      */
+/* ================================================================== */
+
+const LABEL_ASPEK: Record<AspekUlasan, string> = {
+  ketepatanWaktu: 'ketepatan waktu',
+  jumlahSesuai: 'kesesuaian jumlah',
+  kondisiBarang: 'kondisi barang',
+}
+
+function KartuRekomendasi({
+  rekomendasi,
+  urutan,
+  mitra,
+}: {
+  rekomendasi: DistributorDirekomendasikan
+  urutan: number
+  mitra: boolean
+}) {
+  const d = rekomendasi.distributor
+  const belumDiulas = d.baru || d.rating == null
+  const terkuat = (Object.keys(d.subRating) as AspekUlasan[]).reduce((a, b) =>
+    d.subRating[b] > d.subRating[a] ? b : a,
+  )
+  /* Satu alasan per kartu, yang paling membedakan distributor ini dari yang
+     lain. Daftar alasan yang panjang cuma memindahkan kerja memilih ke
+     pemilik usaha lagi. */
+  const alasan =
+    rekomendasi.termurah.length > 0
+      ? `Harga termurah: ${rekomendasi.termurah.join(', ')}`
+      : belumDiulas
+        ? 'Dinilai setara rata-rata distributor lain sampai ada ulasan'
+        : `Terbaik di ${LABEL_ASPEK[terkuat]}: ${nilaiBintang(d.subRating[terkuat])}\u00a0dari\u00a05`
+
+  return (
+    <Link
+      to={`/distributor/${d.id}`}
+      className="flex h-full items-start gap-3 bg-surface border border-line rounded-lg p-4 shadow-e1 transition-[border-color,box-shadow] hover:border-line-strong hover:shadow-e2"
+    >
+      {/* Nomor urut cukup untuk mata; pembaca layar sudah mendengarnya dari <ol>. */}
+      <span
+        aria-hidden="true"
+        className="shrink-0 size-7 mt-0.5 rounded-full bg-brand text-ink-inverse grid place-items-center text-[0.8125rem] font-extrabold tabular"
+      >
+        {urutan}
+      </span>
+      <div className="min-w-0 grow">
+        <p className="text-[1rem] font-semibold text-ink leading-snug">{d.nama}</p>
+        <p className="text-[0.8125rem] text-ink-3">
+          {d.kota} &middot; {rekomendasi.kategoriCocok.join(', ')}
+        </p>
+        <div className="mt-1.5">
+          {belumDiulas ? (
+            <Lencana nada="netral">Distributor Baru &middot; belum ada ulasan</Lencana>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 text-[0.8125rem] font-semibold text-ink">
+              <IkonBintangIsi size={14} className="text-menipis" />
+              {nilaiBintang(d.rating ?? 0)}
+              <HanyaPembacaLayar> dari 5 bintang</HanyaPembacaLayar>
+              <span className="font-normal text-ink-3">&middot; {d.jumlahUlasan} ulasan</span>
+            </span>
+          )}
+        </div>
+        <p className="mt-1.5 text-[0.8125rem] text-ink-2 leading-snug">{alasan}</p>
+        {mitra && (
+          <div className="mt-2">
+            <Lencana nada="merek" ikon={<IkonKontrak size={13} />}>
+              Mitra kamu
+            </Lencana>
+          </div>
+        )}
+      </div>
+      <IkonPanahKanan size={18} className="shrink-0 text-ink-3 mt-1" />
+    </Link>
+  )
+}
+
+/* ================================================================== */
 /* Halaman                                                            */
 /* ================================================================== */
 
@@ -308,6 +386,23 @@ export default function Belanja() {
       baru: semua.filter((d) => d.baru),
     }
   }, [cari, kotaSaring])
+
+  /* Rekomendasi dihitung dari profil, bukan dari saringan di layar: ia
+     menjawab "distributor mana yang cocok untuk usahaku", jadi hanya tampil
+     selama daftar belum dipersempit kata kunci atau kota. */
+  const rekomendasi = useMemo(
+    () => rekomendasiDistributor({ jenisUsaha: profil.jenisUsaha, kota: profil.kota, barang: barangGudang }),
+    [profil.jenisUsaha, profil.kota, barangGudang],
+  )
+  const tampilkanRekomendasi = tab === 'distributor' && !cari && !kotaSaring
+  const rekomendasiTeratas = tampilkanRekomendasi ? rekomendasi.direkomendasikan.slice(0, 3) : []
+  /* Seperti "Perlu kamu isi ulang": distributor yang sudah naik ke atas tidak
+     diulang di daftar di bawahnya. */
+  const idTeratas = new Set(rekomendasiTeratas.map((r) => r.distributor.id))
+  const distributorLama = hasilDistributor.lama.filter((d) => !idTeratas.has(d.id))
+  const distributorBaru = hasilDistributor.baru.filter((d) => !idTeratas.has(d.id))
+  const wilayahProfil = profil.kota.split(',')[0].trim()
+  const jenisProfil = LABEL_JENIS_USAHA[profil.jenisUsaha].judul.toLowerCase()
 
   /* Tanpa kata kunci, layar tidak boleh kosong. Yang paling berguna dibuka
      duluan: barang yang stoknya sedang tipis di gudang sendiri. */
@@ -605,6 +700,46 @@ export default function Belanja() {
           </>
         ) : (
           <div className="space-y-6">
+            {tampilkanRekomendasi && (
+              <section aria-labelledby="judul-rekomendasi">
+                <JudulBagian
+                  id="judul-rekomendasi"
+                  judul="Rekomendasi untuk usahamu"
+                  keterangan={
+                    profil.jenisUsaha === 'lainnya'
+                      ? `Mengirim ke ${wilayahProfil}. Diurutkan dari penilaian UMKM lain dan harga.`
+                      : `Cocok untuk ${jenisProfil} dan mengirim ke ${wilayahProfil}. Diurutkan dari penilaian UMKM lain dan harga.`
+                  }
+                />
+                {rekomendasiTeratas.length > 0 ? (
+                  <ol className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 [&>*]:min-w-0">
+                    {rekomendasiTeratas.map((r, i) => (
+                      <li key={r.distributor.id}>
+                        <KartuRekomendasi
+                          rekomendasi={r}
+                          urutan={i + 1}
+                          mitra={idMitra.has(r.distributor.id)}
+                        />
+                      </li>
+                    ))}
+                  </ol>
+                ) : (
+                  <Kartu padat>
+                    <p className="text-[0.875rem] text-ink-2 leading-relaxed">
+                      Belum ada distributor yang mengirim ke {wilayahProfil} dan menjual barang untuk {jenisProfil}.
+                      Semua distributor tetap bisa kamu lihat di daftar di bawah.
+                    </p>
+                  </Kartu>
+                )}
+                <p className="mt-2.5 text-[0.8125rem] text-ink-3">
+                  Jenis usaha atau kotamu berubah?{' '}
+                  <Link to="/akun/profil" className="font-semibold text-brand hover:underline">
+                    Perbarui di Profil Usaha
+                  </Link>
+                </p>
+              </section>
+            )}
+
             {hasilDistributor.lama.length === 0 && hasilDistributor.baru.length === 0 ? (
               <Kartu>
                 <h2 className="sr-only">Hasil pencarian distributor</h2>
@@ -621,17 +756,21 @@ export default function Belanja() {
               </Kartu>
             ) : (
               <>
-                {hasilDistributor.lama.length > 0 && (
+                {distributorLama.length > 0 && (
                   <section aria-label="Daftar distributor">
                     <JudulBagian
                       /* Bukan "Distributor" saja: judul halaman sudah memakai
                          kata itu, dan dua judul kembar dalam satu layar
                          membuat orang kehilangan jejak posisinya. */
                       judul="Daftar Distributor"
-                      keterangan={`${hasilDistributor.lama.length} distributor${kotaSaring ? ` di ${kotaSaring}` : ` yang mengirim ke ${profil.kota.split(',')[0]} dan sekitarnya`}`}
+                      keterangan={
+                        idTeratas.size > 0
+                          ? `${distributorLama.length} distributor lain yang mengirim ke ${wilayahProfil} dan sekitarnya`
+                          : `${distributorLama.length} distributor${kotaSaring ? ` di ${kotaSaring}` : ` yang mengirim ke ${wilayahProfil} dan sekitarnya`}`
+                      }
                     />
                     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 [&>*]:min-w-0">
-                      {hasilDistributor.lama.map((d) => (
+                      {distributorLama.map((d) => (
                         <KartuDistributor
                           key={d.id}
                           distributor={d}
@@ -642,14 +781,14 @@ export default function Belanja() {
                   </section>
                 )}
 
-                {hasilDistributor.baru.length > 0 && (
+                {distributorBaru.length > 0 && (
                   <section aria-label="Distributor baru di kotamu">
                     <JudulBagian
                       judul="Distributor Baru di Kotamu"
                       keterangan="Belum ada ulasan dari UMKM lain. Mulai dari pesanan kecil dulu kalau kamu ingin mencoba."
                     />
                     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 [&>*]:min-w-0">
-                      {hasilDistributor.baru.map((d) => (
+                      {distributorBaru.map((d) => (
                         <KartuDistributor
                           key={d.id}
                           distributor={d}

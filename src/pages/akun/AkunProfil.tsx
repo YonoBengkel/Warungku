@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Kartu, Lencana, Pemisah, Tombol, TombolTautan } from '@/components/ui/dasar'
-import { AreaTeks, Kolom } from '@/components/ui/formulir'
+import { AreaTeks, Kolom, Pilihan } from '@/components/ui/formulir'
 import { BilahAksi, KepalaHalaman } from '@/components/ui/navigasi'
 import { Peringatan } from '@/components/ui/umpanBalik'
 import {
@@ -12,6 +12,8 @@ import {
   IkonPeringatan,
 } from '@/icons'
 import { cx, inisial, tanggalPanjang } from '@/lib/format'
+import { LABEL_JENIS_USAHA, URUTAN_JENIS_USAHA } from '@/lib/label'
+import type { JenisUsaha } from '@/lib/types'
 import { useAplikasi } from '@/store/aplikasi'
 
 /**
@@ -88,7 +90,7 @@ export default function AkunProfil() {
     if (Object.keys(galat).length > 0) return
     ubahProfil({
       namaUsaha: namaUsaha.trim(),
-      jenisUsaha: jenisUsaha.trim(),
+      jenisUsaha,
       bio: bio.trim(),
       alamat: alamat.trim(),
       kota: kota.trim(),
@@ -165,13 +167,21 @@ export default function AkunProfil() {
                   galat={tampilkan('nama')}
                   bantuan="Tulis seperti yang tertera di papan nama atau spanduk."
                 />
-                <Kolom
+                {/* Pilihan baku, bukan isian bebas: rekomendasi distributor
+                    mencocokkannya dengan kategori barang lewat aturan tetap. */}
+                <Pilihan
                   label="Jenis Usaha"
                   wajib
                   value={jenisUsaha}
-                  onChange={(e) => setJenisUsaha(e.target.value)}
-                  bantuan="Contoh: Kedai kopi & camilan, Warung makan, Toko kelontong."
-                />
+                  onChange={(e) => setJenisUsaha(e.target.value as JenisUsaha)}
+                  bantuan={`Contoh: ${LABEL_JENIS_USAHA[jenisUsaha].contoh}. Dipakai untuk memilihkan distributor yang menjual barang untuk usahamu.`}
+                >
+                  {URUTAN_JENIS_USAHA.map((j) => (
+                    <option key={j} value={j}>
+                      {LABEL_JENIS_USAHA[j].judul}
+                    </option>
+                  ))}
+                </Pilihan>
                 <div>
                   <AreaTeks
                     label="Bio"

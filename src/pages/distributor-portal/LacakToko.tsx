@@ -36,7 +36,7 @@ import {
   waktuLalu,
   waktuNanti,
 } from '@/lib/format'
-import { LABEL_PESANAN_MASUK, NADA_PESANAN_MASUK, TAHAP_PESANAN_MASUK } from '@/lib/label'
+import { LABEL_JENIS_USAHA, LABEL_PESANAN_MASUK, NADA_PESANAN_MASUK, TAHAP_PESANAN_MASUK } from '@/lib/label'
 import type { JejakPesananMasuk, PesananMasuk, StatusPesananMasuk, UlasanPelanggan } from '@/lib/types'
 import { umkmById } from '@/data/dummy'
 import { useAplikasi } from '@/store/aplikasi'
@@ -438,7 +438,7 @@ export default function LacakToko() {
     <div className="pb-6">
       <KepalaHalaman
         judul={umkm.nama}
-        keterangan={`${umkm.kota} · ${umkm.jenisUsaha}`}
+        keterangan={`${umkm.kota} · ${LABEL_JENIS_USAHA[umkm.jenisUsaha].judul}`}
         kembaliKe={kembaliKe}
       />
 

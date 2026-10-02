@@ -163,7 +163,17 @@ export function Pilihan({
   return (
     <Bungkus id={id} label={label} wajib={wajib} bantuan={bantuan} galat={galat} className={className}>
       <div className="relative">
-        <select id={id} className={cx(KELAS_DASAR, 'appearance-none pr-10 cursor-pointer')} {...rest}>
+        <select
+          id={id}
+          aria-invalid={galat ? true : undefined}
+          aria-describedby={galat ? `${id}-galat` : bantuan ? `${id}-bantuan` : undefined}
+          className={cx(
+            KELAS_DASAR,
+            'appearance-none pr-10 cursor-pointer',
+            galat && 'border-kritis focus:border-kritis focus:ring-[var(--c-kritis-soft)]',
+          )}
+          {...rest}
+        >
           {children}
         </select>
         <svg

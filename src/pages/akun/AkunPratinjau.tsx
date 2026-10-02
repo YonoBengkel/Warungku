@@ -10,6 +10,7 @@ import {
   IkonToko,
 } from '@/icons'
 import { inisial, nomorHp, tanggalPanjang } from '@/lib/format'
+import { LABEL_JENIS_USAHA } from '@/lib/label'
 import { useAplikasi } from '@/store/aplikasi'
 
 /**
@@ -64,7 +65,7 @@ export default function AkunPratinjau() {
                 </span>
                 <div className="min-w-0 grow">
                   <h2 className="text-[1.0625rem] font-extrabold text-ink leading-tight">{profil.namaUsaha}</h2>
-                  <p className="mt-0.5 text-[0.8125rem] text-ink-2">{profil.jenisUsaha}</p>
+                  <p className="mt-0.5 text-[0.8125rem] text-ink-2">{LABEL_JENIS_USAHA[profil.jenisUsaha].judul}</p>
                   <p className="mt-1 inline-flex items-center gap-1.5 text-[0.8125rem] text-ink-3">
                     <IkonLokasi size={14} className="shrink-0" />
                     {profil.kota}
