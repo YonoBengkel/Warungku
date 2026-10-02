@@ -35,7 +35,7 @@ import { useAplikasi } from '@/store/aplikasi'
  * - Nama yang mirip barang lama dicegat lebih dulu. Duplikat tidak cuma
  *   mengacaukan angka stok, ia memecah riwayat dan membuat perkiraan meleset.
  * - Angka stok tidak boleh diedit diam-diam saat mengubah barang; perubahan
- *   stok harus lewat Koreksi Stok supaya alasannya ikut tercatat.
+ *   stok harus lewat Koreksi Stok supaya tercatat di riwayat pergerakan.
  */
 
 const SATUAN_PAKAI = ['gram', 'kg', 'ml', 'liter', 'pcs', 'butir', 'lembar', 'roll', 'galon', 'ikat']
@@ -575,7 +575,7 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
 
         {barang ? (
           /* Angka stok sengaja tidak bisa diedit di sini: setiap perubahan stok
-             harus punya alasan yang tercatat, dan itu tugas Koreksi Stok. */
+             harus tercatat di riwayat, dan itu tugas Koreksi Stok. */
           <div className="flex items-center gap-3 rounded-md border border-line bg-surface-2 p-3.5">
             {/* Latar surface-2 menaikkan ambang keterbacaan: ink-3 di atasnya
                 jatuh di bawah 4,5:1, jadi teks di dalam panel ini pakai ink-2. */}
@@ -585,7 +585,7 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
                 {jumlahTampil(barang, Math.max(0, barang.stok))}
               </p>
               <p className="mt-1 text-[0.8125rem] text-ink-2 leading-snug">
-                Angka stok diubah lewat Koreksi Stok supaya alasannya ikut tercatat di riwayat.
+                Angka stok diubah lewat Koreksi Stok supaya perubahannya tercatat di riwayat.
               </p>
             </div>
             <TombolTautan ke={`/stok/${barang.id}/koreksi`} ragam="garis" ukuran="kecil">

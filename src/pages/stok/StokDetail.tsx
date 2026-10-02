@@ -1,10 +1,9 @@
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import type { Barang, Pergerakan } from '@/lib/types'
-import { ALASAN_KOREKSI } from '@/lib/types'
 import { ChipKedaluwarsa, ChipStok, KartuPerkiraan } from '@/components/domain'
 import { KartuStruk } from '@/components/domain/KartuStruk'
-import { Kartu, Lencana, Pemisah, TombolTautan } from '@/components/ui/dasar'
+import { Kartu, Lencana, TombolTautan } from '@/components/ui/dasar'
 import { KepalaHalaman, TabSegmen } from '@/components/ui/navigasi'
 import { KeadaanKosong } from '@/components/ui/umpanBalik'
 import { GrafikTren } from '@/components/grafik/GrafikTren'
@@ -19,7 +18,7 @@ import {
   IkonPena,
   IkonPeringatan,
 } from '@/icons'
-import { cx, hariLagi, jam, jumlahSatuan, rupiah, tanggalRingkas, waktuNanti } from '@/lib/format'
+import { cx, hariLagi, jam, tanggalRingkas, waktuNanti } from '@/lib/format'
 import { angkaTampil, jumlahTampil, satuanTampil, trenTampil } from '@/lib/satuan'
 import { BANTUAN } from '@/lib/label'
 import {
@@ -82,29 +81,6 @@ export default function StokDetail() {
     [pergerakan, id],
   )
 
-  /* Pembongkaran penyusutan bulan berjalan. Terjual dipisah dari basi/rusak/susut
-     karena hanya yang terjual boleh dibaca sebagai permintaan. */
-  const bulanIni = useMemo(() => {
-    const awal = new Date()
-    awal.setDate(1)
-    awal.setHours(0, 0, 0, 0)
-    const dalamBulan = riwayat.filter((g) => +new Date(g.waktu) >= +awal)
-    let terjual = 0
-    let basi = 0
-    let rusak = 0
-    let susut = 0
-    let rugiSatuan = 0
-    for (const g of dalamBulan) {
-      const keluar = g.jumlah < 0 ? -g.jumlah : 0
-      if (g.jenis === 'terjual') terjual += keluar
-      if (g.alasan === 'basi') basi += keluar
-      if (g.alasan === 'rusak') rusak += keluar
-      if (g.alasan === 'susut') susut += keluar
-      if (g.alasan && ALASAN_KOREKSI[g.alasan].kerugian) rugiSatuan += keluar
-    }
-    return { terjual, basi, rusak, susut, rugiSatuan }
-  }, [riwayat])
-
   if (!barang) {
     return (
       <>
@@ -132,7 +108,6 @@ export default function StokDetail() {
   const penawaran = penawaranUntukBarang(barang.id)
   const kurangCatatan = barang.stok < 0 ? Math.abs(barang.stok) : 0
   const stokTampil = Math.max(0, barang.stok)
-  const rugi = bulanIni.rugiSatuan * barang.hargaBeliTerakhir
   const pesananDikirim = dikirim.pesananId ? pesanan.find((p) => p.id === dikirim.pesananId) : undefined
 
   const lencanaBatas =
@@ -373,72 +348,6 @@ export default function StokDetail() {
                 </Kartu>
               )}
 
-              {/* ---- Kenapa stok berkurang bulan ini ---- */}
-              <Kartu>
-                <h2 className="text-[0.9375rem] font-bold text-ink leading-tight">
-                  Kenapa stok berkurang bulan ini
-                </h2>
-                <p className="text-[0.8125rem] text-ink-3 mt-0.5 leading-snug">
-                  Yang terjual dipisah dari yang terbuang. Hanya angka terjual yang kami pakai menyusun
-                  perkiraan.
-                </p>
-
-                {bulanIni.terjual + bulanIni.basi + bulanIni.rusak + bulanIni.susut === 0 ? (
-                  <p className="mt-3 text-[0.875rem] text-ink-3 leading-relaxed">
-                    Belum ada pengurangan stok yang tercatat bulan ini. Angka akan muncul setelah ada penjualan
-                    dari kasir atau koreksi yang kamu simpan.
-                  </p>
-                ) : (
-                  <div className="mt-3.5 space-y-2.5">
-                    <BatangAlasan
-                      label="Terjual"
-                      nilai={bulanIni.terjual}
-                      maks={Math.max(bulanIni.terjual, bulanIni.basi, bulanIni.rusak, bulanIni.susut)}
-                      satuan={barang.satuan}
-                      warna="bg-seri-1"
-                    />
-                    <BatangAlasan
-                      label="Basi"
-                      nilai={bulanIni.basi}
-                      maks={Math.max(bulanIni.terjual, bulanIni.basi, bulanIni.rusak, bulanIni.susut)}
-                      satuan={barang.satuan}
-                      warna="bg-kritis"
-                    />
-                    <BatangAlasan
-                      label="Rusak"
-                      nilai={bulanIni.rusak}
-                      maks={Math.max(bulanIni.terjual, bulanIni.basi, bulanIni.rusak, bulanIni.susut)}
-                      satuan={barang.satuan}
-                      warna="bg-menipis"
-                    />
-                    <BatangAlasan
-                      label="Susut"
-                      nilai={bulanIni.susut}
-                      maks={Math.max(bulanIni.terjual, bulanIni.basi, bulanIni.rusak, bulanIni.susut)}
-                      satuan={barang.satuan}
-                      warna="bg-ink-3"
-                    />
-                  </div>
-                )}
-
-                <Pemisah className="my-3.5" />
-                <div className="flex items-baseline justify-between gap-3">
-                  <span className="text-[0.875rem] font-semibold text-ink-2">Kerugian bulan ini</span>
-                  <span
-                    className={cx(
-                      'text-[1.125rem] font-extrabold tabular',
-                      rugi > 0 ? 'text-kritis' : 'text-ink',
-                    )}
-                  >
-                    {rupiah(rugi)}
-                  </span>
-                </div>
-                <p className="mt-1 text-[0.75rem] text-ink-3 leading-relaxed">
-                  Dihitung dari basi, rusak, hilang, dan susut dikalikan harga beli terakhir (
-                  {rupiah(barang.hargaBeliTerakhir)} per {barang.satuan}). &ldquo;Salah catat&rdquo; dan
-                  &ldquo;dipakai sendiri&rdquo; tidak dihitung sebagai kerugian.
-                </p>
-              </Kartu>
             </div>
           ) : (
             <div role="tabpanel" aria-label="Riwayat pergerakan" className="mt-4">
@@ -479,38 +388,6 @@ function nomorPesanan(
   return daftar.find((p) => p.id === gerak.pesananId)?.nomor ?? null
 }
 
-function BatangAlasan({
-  label,
-  nilai,
-  maks,
-  satuan,
-  warna,
-}: {
-  label: string
-  nilai: number
-  maks: number
-  satuan: string
-  warna: string
-}) {
-  const rasio = maks > 0 ? nilai / maks : 0
-  return (
-    <div>
-      <div className="flex items-baseline justify-between gap-3">
-        <span className="text-[0.8125rem] font-semibold text-ink-2">{label}</span>
-        <span className="text-[0.8125rem] font-bold text-ink tabular">
-          {nilai > 0 ? jumlahSatuan(nilai, satuan) : `0 ${satuan}`}
-        </span>
-      </div>
-      <div className="mt-1 h-2 w-full rounded-full bg-sunken overflow-hidden">
-        <div
-          className={cx('h-full rounded-full transition-[width] duration-500', warna)}
-          style={{ width: `${Math.max(nilai > 0 ? 3 : 0, rasio * 100)}%` }}
-        />
-      </div>
-    </div>
-  )
-}
-
 /**
  * Riwayat ditulis dalam bahasa bisnis, bukan bahasa basis data.
  * "Terjual dari kasir -5 kg" bisa dipahami tanpa penjelasan; "jenis: terjual,
@@ -545,8 +422,8 @@ function BarisRiwayat({
   if (gerak.jenis === 'terjual') judul = dicatatManual ? 'Pemakaian dicatat manual' : 'Terjual dari kasir'
   else if (gerak.jenis === 'masuk') judul = nomorPesanan ? `Masuk dari pesanan ${nomorPesanan}` : 'Barang masuk'
   else if (gerak.jenis === 'hitung-fisik') judul = 'Hasil hitung fisik'
-  else if (gerak.jenis === 'koreksi')
-    judul = `Koreksi manual: ${gerak.alasan ? ALASAN_KOREKSI[gerak.alasan].label.toLowerCase() : 'tanpa alasan'}`
+  else if (gerak.jenis === 'koreksi') judul = 'Koreksi stok'
+
 
   const isi = (
     <>
@@ -572,12 +449,6 @@ function BarisRiwayat({
           stok jadi {jumlahTampil(barang, Math.max(0, gerak.stokSesudah))}
         </span>
       </div>
-      {gerak.keterangan && gerak.jenis === 'koreksi' && (
-        <p className="mt-1 text-[0.8125rem] text-ink-2 leading-relaxed">{gerak.keterangan}</p>
-      )}
-      {gerak.alasan && !ALASAN_KOREKSI[gerak.alasan].kerugian && (
-        <p className="mt-1 text-[0.75rem] text-ink-3">Tidak dihitung sebagai kerugian.</p>
-      )}
     </>
   )
 

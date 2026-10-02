@@ -1,7 +1,6 @@
 import { useMemo } from 'react'
 import { create } from 'zustand'
 import type {
-  AlasanKoreksi,
   AlasanSelisih,
   Barang,
   BarisKeranjang,
@@ -97,7 +96,8 @@ interface KeadaanAplikasi {
   catatPemakaianHarian: (pemakaian: Record<string, number>) => void
 
   /* Stok */
-  koreksiStok: (barangId: string, selisih: number, alasan: AlasanKoreksi, catatan: string) => void
+  /** Menyimpan sisa hasil hitung di rak. Selisihnya dicatat sebagai pergerakan berjenis koreksi. */
+  koreksiStok: (barangId: string, stokBaru: number) => void
   aturBatasAman: (barangId: string, batas: number, sumber: 'sistem' | 'sendiri') => void
   aturBatasAmanMassal: (barangIds: string[]) => void
   tambahBarang: (b: Barang) => void
@@ -260,7 +260,6 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
         jenis: 'terjual',
         jumlah: -pakai,
         stokSesudah: stokBaru,
-        alasan: null,
         keterangan: 'Pemakaian dicatat manual',
         pesananId: null,
         transaksiId: null,
@@ -272,19 +271,24 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
     get().tampilkanRacun(`Pemakaian ${catatan.length} barang tersimpan.`, 'aman')
   },
 
-  koreksiStok: (barangId, selisih, alasan, catatan) => {
+  koreksiStok: (barangId, stokBaruMentah) => {
     const barang = get().barang.find((b) => b.id === barangId)
-    if (!barang || selisih === 0) return
-    const stokBaru = Math.max(0, Math.round((barang.stok + selisih) * 100) / 100)
+    if (!barang) return
+    const stokBaru = Math.max(0, Math.round(stokBaruMentah * 100) / 100)
+    // Selisih dari angka yang tampil (stok minus ditampilkan 0), supaya riwayat
+    // berbunyi sama dengan yang dilihat pemilik usaha saat mengoreksi.
+    const selisih = Math.round((stokBaru - Math.max(0, barang.stok)) * 100) / 100
+    if (selisih === 0) return
     const jejak: Pergerakan = {
       id: `pg-${Date.now()}`,
       barangId,
       waktu: stempel(),
+      // Jenis inilah yang mengeluarkan baris ini dari data permintaan untuk
+      // model perkiraan — tanpa perlu bertanya kenapa stoknya berubah.
       jenis: 'koreksi',
       jumlah: selisih,
       stokSesudah: stokBaru,
-      alasan,
-      keterangan: catatan,
+      keterangan: 'Koreksi stok',
       pesananId: null,
       transaksiId: null,
       oleh: get().profil.namaPemilik,
@@ -543,7 +547,6 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
         jenis: 'masuk',
         jumlah: tambah,
         stokSesudah: stokBaru,
-        alasan: null,
         keterangan: `Masuk dari pesanan ${pesanan.nomor}`,
         pesananId: pesanan.id,
         transaksiId: null,

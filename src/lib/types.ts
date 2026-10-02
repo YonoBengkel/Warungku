@@ -164,43 +164,14 @@ export interface Barang {
   catatan: string | null
 }
 
+/**
+ * Jenis pergerakan. Hanya `terjual` yang masuk ke data permintaan untuk model
+ * perkiraan; `koreksi`, `masuk`, dan `hitung-fisik` tidak pernah ikut. Itulah
+ * sebabnya koreksi tidak perlu bertanya "kenapa": jenisnya sendiri sudah cukup
+ * memisahkan barang yang laku dari barang yang dibuang atau salah hitung.
+ * (`hitung-fisik` tersisa untuk riwayat lama; layarnya sudah tidak ada.)
+ */
 export type JenisPergerakan = 'terjual' | 'masuk' | 'koreksi' | 'hitung-fisik'
-
-/** Alasan terstruktur supaya bisa dipisahkan dari data permintaan yang dikirim ke model. */
-export type AlasanKoreksi =
-  | 'basi'
-  | 'rusak'
-  | 'susut'
-  | 'dipakai-sendiri'
-  | 'hilang'
-  | 'diretur'
-  | 'salah-catat'
-  | 'barang-datang'
-  | 'retur-pelanggan'
-  | 'pindahan'
-  | 'lainnya'
-
-export interface InfoAlasan {
-  label: string
-  arah: 'kurang' | 'tambah'
-  /** Dihitung sebagai kerugian memakai harga beli terakhir. */
-  kerugian: boolean
-  wajibCatatan?: boolean
-}
-
-export const ALASAN_KOREKSI: Record<AlasanKoreksi, InfoAlasan> = {
-  basi: { label: 'Basi / kedaluwarsa', arah: 'kurang', kerugian: true },
-  rusak: { label: 'Rusak / pecah / tumpah', arah: 'kurang', kerugian: true },
-  susut: { label: 'Susut saat diolah', arah: 'kurang', kerugian: true },
-  'dipakai-sendiri': { label: 'Dipakai sendiri', arah: 'kurang', kerugian: false },
-  hilang: { label: 'Hilang', arah: 'kurang', kerugian: true },
-  diretur: { label: 'Diretur ke distributor', arah: 'kurang', kerugian: false },
-  'salah-catat': { label: 'Salah catat sebelumnya', arah: 'kurang', kerugian: false },
-  'barang-datang': { label: 'Barang datang belum tercatat', arah: 'tambah', kerugian: false },
-  'retur-pelanggan': { label: 'Retur dari pelanggan', arah: 'tambah', kerugian: false },
-  pindahan: { label: 'Pindahan dari gudang lain', arah: 'tambah', kerugian: false },
-  lainnya: { label: 'Alasan lain', arah: 'kurang', kerugian: false, wajibCatatan: true },
-}
 
 export interface Pergerakan {
   id: string
@@ -210,7 +181,6 @@ export interface Pergerakan {
   /** Positif untuk masuk, negatif untuk keluar. Dalam satuan pakai. */
   jumlah: number
   stokSesudah: number
-  alasan: AlasanKoreksi | null
   keterangan: string
   /** Pesanan asal, supaya riwayat bisa diketuk balik ke pesanannya. */
   pesananId: string | null
