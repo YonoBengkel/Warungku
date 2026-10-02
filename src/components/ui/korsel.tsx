@@ -1,23 +1,31 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
-import { IkonJeda, IkonPanahKanan, IkonPanahKiri, IkonPutar } from '@/icons'
+import { HanyaPembacaLayar } from '@/components/ui/dasar'
+import { IkonPanahKanan, IkonPanahKiri } from '@/icons'
 import { cx } from '@/lib/format'
 
 /**
  * Korsel: deretan kartu yang digeser ke samping, satu kartu per langkah.
  *
  * Dua mode, dipilih per pemakaian:
- * - `otomatis` — berjalan sendiri (promo). Aturan WCAG 2.2.2 dipegang ketat:
- *   ada tombol jeda yang selalu terlihat, korsel berhenti saat disentuh,
- *   disorot tetikus, atau fokus keyboard ada di dalamnya, saat tab peramban
- *   tidak terlihat, dan TIDAK PERNAH berjalan kalau pengguna meminta gerak
- *   dikurangi (`prefers-reduced-motion`).
+ * - `otomatis` — berjalan sendiri (promo), tapi berhenti pada kesempatan
+ *   pertama pengguna menunjukkan ia sedang membaca: saat kartunya disentuh,
+ *   disorot tetikus, atau fokus keyboard masuk ke dalamnya, saat tab peramban
+ *   tidak terlihat, dan selamanya begitu panahnya ditekan atau kartunya
+ *   digeser. Ia TIDAK PERNAH berjalan kalau pengguna meminta gerak dikurangi
+ *   (`prefers-reduced-motion`).
  * - manual — hanya bergeser kalau digeser atau tombol panahnya ditekan. Dipakai
  *   untuk daftar tugas: kartu yang berpindah sendiri bisa membuat tugas
  *   terlewat, atau tombol kartu lain tertekan saat ia sedang bergerak.
  *
- * Penanda "2 dari 5" selalu ada, supaya orang tahu masih ada kartu lain.
- * Kalau semua kartu sudah muat di layar, panah dan penandanya disembunyikan
- * dan mode otomatis tidak berjalan — tidak ada yang perlu digeser.
+ * Tidak ada tombol jeda: pemilik proyek memintanya dihapus supaya bilah
+ * kendalinya bersih. Gantinya, sekali pengguna mengambil alih, korsel berhenti
+ * dan tidak pernah berjalan sendiri lagi sampai halaman dibuka ulang.
+ *
+ * Titik penanda berada tepat di tengah bawah, panah di kedua tepinya. Titiknya
+ * hiasan untuk mata; posisi "2 dari 5" dibawa teks pembaca layar dan oleh
+ * `aria-label` tiap kartunya. Kalau semua kartu sudah muat di layar, panah dan
+ * penandanya disembunyikan dan mode otomatis tidak berjalan — tidak ada yang
+ * perlu digeser.
  */
 export function Korsel({
   label,
@@ -38,7 +46,8 @@ export function Korsel({
   const wadah = useRef<HTMLDivElement>(null)
   const [aktif, setAktif] = useState(0)
   const [bisaGeser, setBisaGeser] = useState(false)
-  const [dijeda, setDijeda] = useState(false)
+  /** Pengguna sudah mengambil alih (menekan panah atau menggeser kartunya). */
+  const [diambilAlih, setDiambilAlih] = useState(false)
   const [disentuh, setDisentuh] = useState(false)
   const [kurangiGerak, setKurangiGerak] = useState(false)
   const jumlah = isi.length
@@ -95,7 +104,13 @@ export function Korsel({
     [kurangiGerak],
   )
 
-  const berjalan = otomatis && bisaGeser && !dijeda && !disentuh && !kurangiGerak
+  /** Dipanggil saat pengguna menggeser atau menekan panah: korsel berhenti sendiri. */
+  const ambilAlih = useCallback((i: number) => {
+    setDiambilAlih(true)
+    keKartu(i)
+  }, [keKartu])
+
+  const berjalan = otomatis && bisaGeser && !diambilAlih && !disentuh && !kurangiGerak
 
   useEffect(() => {
     if (!berjalan) return
@@ -128,7 +143,10 @@ export function Korsel({
       <div
         ref={wadah}
         onScroll={bacaAktif}
-        onTouchStart={() => setDisentuh(true)}
+        onTouchStart={() => {
+          setDisentuh(true)
+          setDiambilAlih(true)
+        }}
         className="flex gap-3 overflow-x-auto no-scrollbar snap-x snap-mandatory -mx-4 px-4 sm:mx-0 sm:px-0"
       >
         {isi.map((x, i) => (
@@ -145,47 +163,36 @@ export function Korsel({
       </div>
 
       {bisaGeser && (
-        <div className="mt-2.5 flex items-center gap-2">
-          {/* Penanda posisi: titik untuk mata, teks untuk semua orang. */}
-          <div className="flex items-center gap-1.5" aria-hidden="true">
-            {isi.map((x, i) => (
-              <span
-                key={x.kunci}
-                className={cx(
-                  'h-1.5 rounded-full transition-[width,background-color]',
-                  i === aktif ? 'w-4 bg-brand' : 'w-1.5 bg-line-strong',
-                )}
-              />
-            ))}
-          </div>
-          <span className="text-[0.75rem] font-semibold text-ink-3 tabular">
-            {aktif + 1} dari {jumlah}
-          </span>
-
-          <div className="ml-auto flex items-center gap-1">
-            {otomatis && !kurangiGerak && (
-              <button
-                type="button"
-                onClick={() => setDijeda((v) => !v)}
-                aria-pressed={dijeda}
-                aria-label={dijeda ? 'Jalankan lagi pergantian otomatis' : 'Jeda pergantian otomatis'}
-                className="size-11 grid place-items-center rounded-md text-ink-2 hover:bg-sunken hover:text-ink"
-              >
-                {dijeda ? <IkonPutar size={18} /> : <IkonJeda size={18} />}
-              </button>
-            )}
+        <div className="mt-2.5">
+          {/* Tiga kolom: panah mengisi kedua tepi, titiknya di kolom tengah.
+              Kedua panah berukuran sama, jadi titiknya jatuh tepat di tengah
+              korsel, bukan sekadar di tengah sisa ruang. */}
+          <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2">
             <button
               type="button"
-              onClick={() => keKartu(Math.max(0, aktif - 1))}
+              onClick={() => ambilAlih(Math.max(0, aktif - 1))}
               disabled={aktif === 0}
               aria-label="Kartu sebelumnya"
               className="size-11 grid place-items-center rounded-md text-ink-2 hover:bg-sunken hover:text-ink disabled:opacity-30 disabled:pointer-events-none"
             >
               <IkonPanahKiri size={18} />
             </button>
+
+            <div className="flex items-center justify-center gap-1.5" aria-hidden="true">
+              {isi.map((x, i) => (
+                <span
+                  key={x.kunci}
+                  className={cx(
+                    'h-1.5 rounded-full transition-[width,background-color]',
+                    i === aktif ? 'w-4 bg-brand' : 'w-1.5 bg-line-strong',
+                  )}
+                />
+              ))}
+            </div>
+
             <button
               type="button"
-              onClick={() => keKartu(Math.min(jumlah - 1, aktif + 1))}
+              onClick={() => ambilAlih(Math.min(jumlah - 1, aktif + 1))}
               disabled={aktif >= jumlah - 1}
               aria-label="Kartu berikutnya"
               className="size-11 grid place-items-center rounded-md text-ink-2 hover:bg-sunken hover:text-ink disabled:opacity-30 disabled:pointer-events-none"
@@ -193,6 +200,10 @@ export function Korsel({
               <IkonPanahKanan size={18} />
             </button>
           </div>
+
+          <HanyaPembacaLayar>
+            Kartu {aktif + 1} dari {jumlah}.
+          </HanyaPembacaLayar>
         </div>
       )}
     </div>

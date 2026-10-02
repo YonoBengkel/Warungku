@@ -462,7 +462,7 @@ export default function Beranda() {
           <JudulBagian
             id="judul-promo"
             judul="Promo dari Distributor"
-            keterangan="Berganti sendiri. Geser, atau tekan jeda kalau mau membaca lebih lama."
+            keterangan="Berganti sendiri sampai kamu menggesernya. Setelah itu ia berhenti dan menunggu kamu."
           />
           <Korsel
             label="Promo dari distributor"

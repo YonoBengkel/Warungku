@@ -393,16 +393,3 @@ export const IkonTanpaSinyal = (p: Props) => (
   </Svg>
 )
 
-/* ---------- Korsel ---------- */
-
-export const IkonJeda = (p: Props) => (
-  <Svg {...p}>
-    <path d="M9 5v14M15 5v14" />
-  </Svg>
-)
-
-export const IkonPutar = (p: Props) => (
-  <Svg {...p}>
-    <path d="M8 5.5v13a.6.6 0 0 0 .9.5l10.2-6.5a.6.6 0 0 0 0-1L8.9 5a.6.6 0 0 0-.9.5Z" />
-  </Svg>
-)
