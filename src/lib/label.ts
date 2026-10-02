@@ -269,7 +269,6 @@ export const NAV_DISTRIBUTOR = {
   pesanan: 'Pesanan',
   kontrak: 'Kontrak',
   promo: 'Promo',
-  lacak: 'Lacak Pesanan',
   profil: 'Profil',
 } as const
 

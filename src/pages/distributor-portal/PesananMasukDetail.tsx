@@ -208,7 +208,7 @@ export default function PesananMasukDetail() {
                       </p>
                     </div>
                     <Link
-                      to={`/distributor-portal/lacak/barang/${b.penawaranId}`}
+                      to={`/distributor-portal/sebaran/${b.penawaranId}`}
                       className="inline-flex items-center gap-1.5 min-h-11 text-[0.8125rem] font-semibold text-brand hover:underline"
                     >
                       <IkonLokasi size={15} />

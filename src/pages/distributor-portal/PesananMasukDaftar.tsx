@@ -6,6 +6,7 @@ import { Lembar } from '@/components/ui/lembar'
 import { BarisChip, Chip, TabSegmen } from '@/components/ui/navigasi'
 import { KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
 import {
+  IkonBintangIsi,
   IkonCentang,
   IkonCentangLingkaran,
   IkonGudang,
@@ -13,7 +14,7 @@ import {
   IkonKirim,
   IkonSilang,
 } from '@/icons'
-import { cx, rupiah, waktuLalu } from '@/lib/format'
+import { angka, cx, rupiah, waktuLalu } from '@/lib/format'
 import {
   ALASAN_TOLAK,
   LABEL_PESANAN_MASUK,
@@ -389,6 +390,24 @@ function BarisPesanan({
         <span className="text-[0.75rem] text-ink-3">Masuk {waktuLalu(pesanan.dibuatPada)}</span>
         <span className="text-[1rem] font-bold text-ink">{rupiah(totalPesananMasuk(pesanan))}</span>
       </div>
+
+      {/* Pengganti tampilan "Selesai" di menu Lacak yang sudah dihapus: penilaian
+          pemesan dan ada-tidaknya bukti antar terbaca tanpa membuka rinciannya. */}
+      {pesanan.status === 'selesai' && (
+        <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[0.8125rem]">
+          {pesanan.ulasan ? (
+            <span className="inline-flex items-center gap-1 font-semibold text-ink">
+              <IkonBintangIsi size={13} className="text-menipis" />
+              {angka(pesanan.ulasan.rating, 1)} dari 5
+            </span>
+          ) : (
+            <span className="text-ink-3">Belum dinilai</span>
+          )}
+          <span className={pesanan.pengiriman ? 'text-ink-2' : 'text-ink-3'}>
+            {pesanan.pengiriman ? 'Bukti antar tersimpan' : 'Tanpa bukti antar'}
+          </span>
+        </p>
+      )}
 
       {/* Tombol duduk di atas lapisan tautan kartu, jadi ketukannya tidak
           pernah nyasar ke halaman rincian. */}

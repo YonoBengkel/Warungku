@@ -1,5 +1,5 @@
 import { Suspense, lazy } from 'react'
-import { Route, Routes, useLocation } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom'
 import KerangkaAplikasi from '@/layouts/KerangkaAplikasi'
 import KerangkaDistributor from '@/layouts/KerangkaDistributor'
 import { KerangkaBaris } from '@/components/ui/dasar'
@@ -99,8 +99,6 @@ const PesananMasukDaftar = lazy(() => import('@/pages/distributor-portal/Pesanan
 const PesananMasukDetail = lazy(() => import('@/pages/distributor-portal/PesananMasukDetail'))
 const KontrakDistributor = lazy(() => import('@/pages/distributor-portal/KontrakDistributor'))
 const PromoDistributor = lazy(() => import('@/pages/distributor-portal/PromoDistributor'))
-const LacakPesanan = lazy(() => import('@/pages/distributor-portal/LacakPesanan'))
-const LacakToko = lazy(() => import('@/pages/distributor-portal/LacakToko'))
 const PetaSebaran = lazy(() => import('@/pages/distributor-portal/PetaSebaran'))
 const ProfilDistributor = lazy(() => import('@/pages/distributor-portal/ProfilDistributor'))
 
@@ -201,9 +199,13 @@ export default function App() {
           <Route path="pesanan/:id" element={<PesananMasukDetail />} />
           <Route path="kontrak" element={<KontrakDistributor />} />
           <Route path="promo" element={<PromoDistributor />} />
-          <Route path="lacak" element={<LacakPesanan />} />
-          <Route path="lacak/toko/:umkmId" element={<LacakToko />} />
-          <Route path="lacak/barang/:penawaranId" element={<PetaSebaran />} />
+          <Route path="sebaran" element={<PetaSebaran />} />
+          <Route path="sebaran/:penawaranId" element={<PetaSebaran />} />
+          {/* Menu Lacak Pesanan sudah dilebur ke Pesanan dan Sebaran (catatan
+              B6). Tautan lama diarahkan, bukan dibiarkan jadi halaman kosong. */}
+          <Route path="lacak" element={<Navigate to="/distributor-portal/pesanan" replace />} />
+          <Route path="lacak/toko/:umkmId" element={<Navigate to="/distributor-portal/pesanan" replace />} />
+          <Route path="lacak/barang/:penawaranId" element={<AlihKeSebaran />} />
           <Route path="profil" element={<ProfilDistributor />} />
           <Route path="*" element={<TidakDitemukan />} />
         </Route>
@@ -211,4 +213,10 @@ export default function App() {
       </Suspense>
     </BatasGalat>
   )
+}
+
+/** Alamat lama peta per barang (`/lacak/barang/:id`) dibawa ke alamat barunya. */
+function AlihKeSebaran() {
+  const { penawaranId = '' } = useParams()
+  return <Navigate to={`/distributor-portal/sebaran/${penawaranId}`} replace />
 }

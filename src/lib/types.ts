@@ -668,7 +668,7 @@ export interface JejakPesananMasuk {
   keterangan: string
 }
 
-/** Bukti bahwa barang benar-benar diantar, ditampilkan pada lacak yang sudah Selesai. */
+/** Bukti bahwa barang benar-benar diantar; dibaca di rincian pesanan yang sudah selesai, oleh kedua sisi. */
 export interface BuktiPengiriman {
   kurir: string
   namaPengantar: string

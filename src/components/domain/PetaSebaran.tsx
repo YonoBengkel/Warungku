@@ -11,9 +11,9 @@
  *    berbeda per status (penuh / putus-putus / ganda tipis), angka pesanan
  *    tertulis di dalamnya, dan keterangan lengkap dibawa `aria-label` serta
  *    `<title>`.
- * 3. Badan halaman tidak boleh bergeser horizontal. Svg-nya `width="100%"` dan
- *    `height="auto"`, jadi ia mengecil mengikuti induknya di layar 360px alih-
- *    alih memaksa halaman melebar.
+ * 3. Badan halaman tidak boleh bergeser horizontal. Svg-nya selebar induknya
+ *    (`w-full`) dan tingginya mengikuti `viewBox`, jadi ia mengecil di layar
+ *    360px alih-alih memaksa halaman melebar.
  */
 import { useMemo, useState } from 'react'
 import { BATAS_PETA, umkmById } from '@/data/dummy'
@@ -209,13 +209,12 @@ export function PetaSebaran({
 
   return (
     <div>
-      {/* w-full/h-auto mengulang atribut width/height lewat CSS. Sebagian
-          peramban lama mengabaikan height="auto" sebagai atribut svg dan
-          jatuh ke tinggi bawaan 150px; aturan CSS-nya dipatuhi semua. */}
+      {/* Ukurannya diatur CSS (w-full h-auto) dari rasio viewBox. Atribut
+          height="auto" sengaja tidak dipakai: itu bukan panjang yang sah untuk
+          svg, dan peramban mencatatnya sebagai galat di konsol. */}
       <svg
         viewBox={`0 0 ${LEBAR} ${TINGGI}`}
         width="100%"
-        height="auto"
         role="group"
         aria-label={`Peta sebaran ${angka(posisi.length)} toko`}
         className="block w-full h-auto rounded-md border border-line"

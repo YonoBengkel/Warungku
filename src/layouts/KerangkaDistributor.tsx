@@ -7,7 +7,6 @@ import {
   IkonBintang,
   IkonKembali,
   IkonKontrak,
-  IkonLokasi,
   IkonLonceng,
   IkonPasokan,
   IkonProfil,
@@ -32,7 +31,6 @@ const TAB = [
   { ke: '/distributor-portal/pesanan', label: NAV_DISTRIBUTOR.pesanan, Ikon: IkonPasokan },
   { ke: '/distributor-portal/kontrak', label: NAV_DISTRIBUTOR.kontrak, Ikon: IkonKontrak },
   { ke: '/distributor-portal/promo', label: NAV_DISTRIBUTOR.promo, Ikon: IkonBintang },
-  { ke: '/distributor-portal/lacak', label: NAV_DISTRIBUTOR.lacak, Ikon: IkonLokasi },
   { ke: '/distributor-portal/profil', label: NAV_DISTRIBUTOR.profil, Ikon: IkonProfil },
 ]
 

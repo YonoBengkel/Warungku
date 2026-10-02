@@ -189,7 +189,7 @@ export default function Dashboard() {
           keterangan="Jumlah titik di peta. Satu pemilik usaha dihitung satu titik."
           aksi={
             <TombolTautan
-              ke="/distributor-portal/lacak"
+              ke="/distributor-portal/sebaran"
               ragam="garis"
               ukuran="kecil"
               ikonKiri={<IkonLokasi size={15} />}
