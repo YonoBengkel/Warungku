@@ -88,6 +88,29 @@ function toDate(d: Date | string | number): Date {
   return d instanceof Date ? d : new Date(d)
 }
 
+/** "Okt '26" — label sumbu grafik bulanan yang muat di layar sempit. */
+export function bulanRingkas(d: Date | string | number): string {
+  const t = toDate(d)
+  return `${BULAN_SINGKAT[t.getMonth()]} '${String(t.getFullYear()).slice(2)}`
+}
+
+/** "Oktober 2026" */
+export function bulanTahun(d: Date | string | number): string {
+  const t = toDate(d)
+  return `${BULAN[t.getMonth()]} ${t.getFullYear()}`
+}
+
+/**
+ * Rupiah untuk label sumbu: "4,2 jt", "850 rb". Tanpa "Rp" karena judul
+ * grafiknya sudah menyebut Rupiah, dan ruang sumbu di layar 360px sempit.
+ */
+export function rupiahSumbu(n: number): string {
+  const abs = Math.abs(n)
+  if (abs >= 1_000_000) return `${angka(n / 1_000_000, 1)} jt`
+  if (abs >= 1000) return `${angka(n / 1000, 0)} rb`
+  return angka(n)
+}
+
 /** "13 September 2026" */
 export function tanggalPanjang(d: Date | string | number): string {
   const t = toDate(d)

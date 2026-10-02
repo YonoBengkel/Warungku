@@ -8,7 +8,6 @@ import { BilahAksi, KepalaHalaman } from '@/components/ui/navigasi'
 import { Lembar } from '@/components/ui/lembar'
 import { KuotaBulanIni } from '@/components/domain'
 import {
-  IkonBantuan,
   IkonJam,
   IkonKeranjang,
   IkonKontrak,
@@ -104,7 +103,6 @@ export default function PesanCepat() {
 
   const [keadaan, setKeadaan] = useState<Record<string, KeadaanBaris>>(() => keadaanAwal(saran))
   const [lembarPemasok, setLembarPemasok] = useState<string | null>(null)
-  const [lembarAlasan, setLembarAlasan] = useState<string | null>(null)
   const [lembarIngat, setLembarIngat] = useState<string | null>(null)
 
   const terpilih = useMemo(() => {
@@ -451,18 +449,9 @@ export default function PesanCepat() {
                       )}
                     </p>
 
-                    {/* Lapis 3: chip alasan. Kalau butirnya tidak ada, chipnya pun tidak ada. */}
+                    {/* Lapis 3: tunda. Penjelasan "kenapa segini" sengaja tidak ada:
+                        angka saran berdiri sendiri, dan jumlahnya boleh diubah. */}
                     <div className="mt-3 flex flex-wrap gap-2">
-                      {r.alasanJumlah.length > 0 && (
-                        <Tombol
-                          ragam="halus"
-                          ukuran="kecil"
-                          ikonKiri={<IkonBantuan size={15} />}
-                          onClick={() => setLembarAlasan(r.barangId)}
-                        >
-                          Kenapa segini?
-                        </Tombol>
-                      )}
                       <Tombol
                         ragam="sunyi"
                         ukuran="kecil"
@@ -593,35 +582,6 @@ export default function PesanCepat() {
                 berubah.
               </p>
             </div>
-          </Lembar>
-        )
-      })}
-
-      {/* ---------------- Lembar: kenapa segini ---------------- */}
-      {saran.baris.map((r) => {
-        const b = barangDari(r.barangId)
-        if (!b || r.alasanJumlah.length === 0) return null
-        return (
-          <Lembar
-            key={`alasan-${r.barangId}`}
-            terbuka={lembarAlasan === r.barangId}
-            tutup={() => setLembarAlasan(null)}
-            judul="Kenapa segini?"
-            keterangan={`Dasar angka saran untuk ${b.nama}.`}
-            lebar="sempit"
-          >
-            <ul className="pb-4 space-y-2.5">
-              {r.alasanJumlah.slice(0, 3).map((a) => (
-                <li key={a} className="flex items-start gap-2.5 text-[0.9375rem] text-ink-2 leading-relaxed">
-                  <span className="mt-2 size-1.5 rounded-full bg-brand shrink-0" aria-hidden="true" />
-                  {a}
-                </li>
-              ))}
-              <li className="pt-1 text-[0.8125rem] text-ink-3 leading-relaxed">
-                Perkiraan bisa meleset. Kalau angkanya terasa keliru, ubah saja &mdash; jumlah yang kamu pilih yang
-                dipakai.
-              </li>
-            </ul>
           </Lembar>
         )
       })}

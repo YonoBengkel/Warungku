@@ -26,25 +26,35 @@ export function GrafikBatang({
   satuan,
   tinggi = 160,
   warna = 'var(--c-seri-1)',
+  format,
+  formatSumbu = (n: number) => angka(n),
+  lebarSumbu = SISI.kiri,
 }: {
   data: BatangData[]
   satuan: string
   tinggi?: number
   warna?: string
+  /** Nilai lengkap beserta satuannya untuk label batang. Bawaan: angka saja. */
+  format?: (n: number) => string
+  /** Label sumbu tegak, sebaiknya ringkas. */
+  formatSumbu?: (n: number) => string
+  lebarSumbu?: number
 }) {
+  const tulis = format ?? ((n: number) => angka(n))
+  const sisi = { ...SISI, kiri: lebarSumbu }
   const [wadahRef, lebar] = useLebarWadah<HTMLDivElement>()
   const [sorot, setSorot] = useState<number | null>(null)
 
   const g = useMemo(() => {
     const w = Math.max(lebar, 240)
-    const pw = w - SISI.kiri - SISI.kanan
-    const ph = tinggi - SISI.atas - SISI.bawah
+    const pw = w - sisi.kiri - sisi.kanan
+    const ph = tinggi - sisi.atas - sisi.bawah
     const maks = batasRapi(Math.max(1, ...data.map((d) => d.nilai)) * 1.12)
     const slot = pw / Math.max(1, data.length)
     // Jarak 2px di kedua sisi menjadi pemisah antar batang yang bersentuhan.
     const tebal = Math.min(24, Math.max(6, slot - 8))
     return { w, ph, maks, slot, tebal, pw }
-  }, [data, lebar, tinggi])
+  }, [data, lebar, tinggi, lebarSumbu])
 
   const indeksTertinggi = data.reduce((a, d, i) => (d.nilai > data[a].nilai ? i : a), 0)
 
@@ -54,24 +64,26 @@ export function GrafikBatang({
         width={g.w}
         height={tinggi}
         role="img"
-        aria-label={`Grafik batang ${data.length} periode dalam ${satuan}. Nilai tertinggi ${angka(data[indeksTertinggi]?.nilai ?? 0)} ${satuan} pada ${data[indeksTertinggi]?.label ?? '-'}.`}
+        aria-label={`Grafik batang ${data.length} isian dalam ${satuan}. Nilai tertinggi ${
+          format ? format(data[indeksTertinggi]?.nilai ?? 0) : `${angka(data[indeksTertinggi]?.nilai ?? 0)} ${satuan}`
+        } pada ${data[indeksTertinggi]?.label ?? '-'}.`}
         onPointerLeave={() => setSorot(null)}
       >
         <line
-          x1={SISI.kiri}
-          x2={g.w - SISI.kanan}
-          y1={SISI.atas + g.ph}
-          y2={SISI.atas + g.ph}
+          x1={sisi.kiri}
+          x2={g.w - sisi.kanan}
+          y1={sisi.atas + g.ph}
+          y2={sisi.atas + g.ph}
           stroke="var(--c-grid)"
           strokeWidth="1"
         />
         {[0.5, 1].map((f) => (
           <line
             key={f}
-            x1={SISI.kiri}
-            x2={g.w - SISI.kanan}
-            y1={SISI.atas + g.ph - g.ph * f}
-            y2={SISI.atas + g.ph - g.ph * f}
+            x1={sisi.kiri}
+            x2={g.w - sisi.kanan}
+            y1={sisi.atas + g.ph - g.ph * f}
+            y2={sisi.atas + g.ph - g.ph * f}
             stroke="var(--c-grid)"
             strokeWidth="1"
           />
@@ -79,35 +91,35 @@ export function GrafikBatang({
         {[0.5, 1].map((f) => (
           <text
             key={f}
-            x={SISI.kiri - 7}
-            y={SISI.atas + g.ph - g.ph * f + 4}
+            x={sisi.kiri - 7}
+            y={sisi.atas + g.ph - g.ph * f + 4}
             textAnchor="end"
             fontSize="10.5"
             fill="var(--c-sumbu)"
             className="tabular"
           >
-            {angka(g.maks * f)}
+            {formatSumbu(g.maks * f)}
           </text>
         ))}
 
         {data.map((d, i) => {
           const t = (d.nilai / g.maks) * g.ph
-          const x = SISI.kiri + g.slot * i + (g.slot - g.tebal) / 2
-          const y = SISI.atas + g.ph - t
+          const x = sisi.kiri + g.slot * i + (g.slot - g.tebal) / 2
+          const y = sisi.atas + g.ph - t
           const aktif = sorot === i
           const r = Math.min(4, t / 2)
           return (
             <g key={d.label + i} onPointerEnter={() => setSorot(i)}>
               {/* Sasaran sentuh lebih lebar daripada batangnya */}
               <rect
-                x={SISI.kiri + g.slot * i}
-                y={SISI.atas}
+                x={sisi.kiri + g.slot * i}
+                y={sisi.atas}
                 width={g.slot}
                 height={g.ph}
                 fill="transparent"
               />
               <path
-                d={`M${x},${SISI.atas + g.ph} L${x},${y + r} Q${x},${y} ${x + r},${y} L${x + g.tebal - r},${y} Q${x + g.tebal},${y} ${x + g.tebal},${y + r} L${x + g.tebal},${SISI.atas + g.ph} Z`}
+                d={`M${x},${sisi.atas + g.ph} L${x},${y + r} Q${x},${y} ${x + r},${y} L${x + g.tebal - r},${y} Q${x + g.tebal},${y} ${x + g.tebal},${y + r} L${x + g.tebal},${sisi.atas + g.ph} Z`}
                 fill={warna}
                 opacity={d.sorot || aktif ? 1 : sorot != null ? 0.45 : 0.82}
                 style={{ transition: 'opacity .15s' }}
@@ -122,7 +134,7 @@ export function GrafikBatang({
                   fill="var(--c-ink-2)"
                   className="tabular"
                 >
-                  {angka(d.nilai)}
+                  {tulis(d.nilai)}
                 </text>
               )}
               <text

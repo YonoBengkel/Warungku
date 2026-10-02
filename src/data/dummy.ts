@@ -1022,17 +1022,24 @@ function perkiraanBulanDepan(b: Barang): number {
   return Math.max(0, Math.round(bulanIni * Math.min(1.25, Math.max(0.85, laju))))
 }
 
-/** Bentuk baku semua grafik bulanan: 6 bulan aktual + 1 bulan perkiraan. */
-function trenDari(kumpulan: Barang[]): TitikTren[] {
+/** Berapa bulan riwayat yang digambar: setahun penuh, lalu satu bulan perkiraan. */
+const BULAN_RIWAYAT = 12
+
+/**
+ * Bentuk baku semua grafik bulanan: 12 bulan aktual + 1 bulan perkiraan.
+ * `nilai` mengubah pemakaian satu barang menjadi angka yang digambar — satuan
+ * barangnya sendiri, atau Rupiah untuk grafik yang menjumlahkan lintas barang.
+ */
+function trenDari(kumpulan: Barang[], nilai: (b: Barang, jumlah: number) => number = (_b, n) => n): TitikTren[] {
   const titik: TitikTren[] = []
-  for (let i = 5; i >= 0; i--) {
+  for (let i = BULAN_RIWAYAT - 1; i >= 0; i--) {
     titik.push({
       tanggal: awalBulan(-i),
-      aktual: kumpulan.reduce((t, b) => t + pemakaianBulan(b, i), 0),
+      aktual: kumpulan.reduce((t, b) => t + nilai(b, pemakaianBulan(b, i)), 0),
       prediksi: null,
     })
   }
-  const p = kumpulan.reduce((t, b) => t + perkiraanBulanDepan(b), 0)
+  const p = kumpulan.reduce((t, b) => t + nilai(b, perkiraanBulanDepan(b)), 0)
   titik.push({
     tanggal: awalBulan(1),
     aktual: null,
@@ -1043,49 +1050,32 @@ function trenDari(kumpulan: Barang[]): TitikTren[] {
   return titik
 }
 
+/** Tren satu barang dalam satuan simpannya; layar mengubahnya ke satuan tampil. */
 export function trenBulanan(barangId: string): TitikTren[] {
   const b = daftarBarang.find((x) => x.id === barangId)
   return b ? trenDari([b]) : []
 }
 
 /**
- * Tren satu kategori. Angkanya penjumlahan satuan pakai yang berbeda-beda
- * (gram, pcs, lembar), jadi yang dibaca pemilik usaha adalah bentuk kurvanya,
- * bukan nilai mutlaknya — dan layar wajib menuliskannya begitu.
+ * Nilai pemakaian dalam Rupiah: jumlah dikali harga beli terakhir per satuan
+ * simpan. Ini HARGA BELI dari distributor, bukan harga jual — aplikasi ini
+ * tidak pernah menampilkan omzet.
  */
-export function trenKategori(kategori: string): TitikTren[] {
-  // Hanya barang yang layak diperkirakan. Kalau tidak disaring, grafik
-  // kategori menghitung barang yang halaman yang sama nyatakan datanya
-  // belum cukup — dua pernyataan bertentangan di satu layar.
-  return trenDari(daftarBarang.filter((b) => b.kategori === kategori && layakDiperkirakan(b)))
+export function nilaiPemakaian(b: Barang, jumlah: number): number {
+  return Math.round(jumlah * b.hargaBeliTerakhir)
 }
 
-export function trenKeseluruhan(): TitikTren[] {
-  return trenDari(daftarBarang.filter(layakDiperkirakan))
-}
-
-export function ringkasanKategori(): Array<{
-  kategori: string
-  pemakaianBulanIni: number
-  perkiraanBulanDepan: number
-  jumlahBarang: number
-  jumlahDiperkirakan: number
-}> {
-  return kategoriBarang.map((kategori) => {
-    const isi = daftarBarang.filter((b) => b.kategori === kategori)
-    // Angkanya hanya dari barang yang layak diperkirakan, tapi `jumlahBarang`
-    // tetap seluruh isi kategori — itu memang jumlah barangnya. Selisihnya
-    // dibaca dari `jumlahDiperkirakan` supaya layar bisa berterus terang
-    // berapa barang yang benar-benar ikut dihitung.
-    const diperkirakan = isi.filter(layakDiperkirakan)
-    return {
-      kategori,
-      pemakaianBulanIni: diperkirakan.reduce((t, b) => t + pemakaianBulan(b, 0), 0),
-      perkiraanBulanDepan: diperkirakan.reduce((t, b) => t + perkiraanBulanDepan(b), 0),
-      jumlahBarang: isi.length,
-      jumlahDiperkirakan: diperkirakan.length,
-    }
-  })
+/**
+ * Tren satu kategori dalam Rupiah. Barang dalam satu kategori bisa bersatuan
+ * gram, ml, dan pcs sekaligus; menjumlahkan satuannya tidak berarti apa-apa,
+ * jadi yang dijumlahkan adalah nilai belinya.
+ *
+ * `kumpulan` diisi dari store oleh layar, dan hanya barang yang layak
+ * diperkirakan: barang yang datanya belum cukup tidak boleh ikut menyusun
+ * angka di halaman yang sama yang menyatakan datanya belum cukup.
+ */
+export function trenKategoriRupiah(kumpulan: Barang[]): TitikTren[] {
+  return trenDari(kumpulan.filter(layakDiperkirakan), nilaiPemakaian)
 }
 
 /* ================================================================== */

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { PointerEvent } from 'react'
 import type { TitikTren } from '@/lib/types'
-import { angka, tanggalRingkas, tanggalLengkapHari } from '@/lib/format'
+import { angka, bulanRingkas, bulanTahun, tanggalRingkas, tanggalLengkapHari } from '@/lib/format'
 import { useLebarWadah, batasRapi, tandaSumbu, garisHalus } from './dasarGrafik'
 
 /**
@@ -27,26 +27,42 @@ export function GrafikTren({
   tinggi = 190,
   labelAktual = 'Pemakaian tercatat',
   labelPrediksi = 'Perkiraan',
+  format,
+  formatSumbu = (n: number) => angka(n),
+  lebarSumbu = SISI.kiri,
+  bulanan = false,
 }: {
   data: TitikTren[]
   satuan: string
   tinggi?: number
   labelAktual?: string
   labelPrediksi?: string
+  /** Nilai lengkap beserta satuannya, untuk keterangan sentuh dan tabel. Bawaan: "12 kg". */
+  format?: (n: number) => string
+  /** Label sumbu tegak, sebaiknya ringkas. */
+  formatSumbu?: (n: number) => string
+  /** Lebar ruang label sumbu tegak, untuk label yang lebih panjang dari angka biasa. */
+  lebarSumbu?: number
+  /** Titik data per bulan: sumbu mendatar menulis nama bulan, bukan tanggal. */
+  bulanan?: boolean
 }) {
+  const tulis = format ?? ((n: number) => `${angka(n)} ${satuan}`)
+  const tulisTanggal = bulanan ? bulanRingkas : tanggalRingkas
+  const tulisTanggalPanjang = bulanan ? bulanTahun : tanggalLengkapHari
+  const sisi = { ...SISI, kiri: lebarSumbu }
   const [wadahRef, lebar] = useLebarWadah<HTMLDivElement>()
   const [sorot, setSorot] = useState<number | null>(null)
   const [tampilTabel, setTampilTabel] = useState(false)
 
   const g = useMemo(() => {
     const w = Math.max(lebar, 260)
-    const pw = w - SISI.kiri - SISI.kanan
-    const ph = tinggi - SISI.atas - SISI.bawah
+    const pw = w - sisi.kiri - sisi.kanan
+    const ph = tinggi - sisi.atas - sisi.bawah
 
     const semuaNilai = data.flatMap((d) => [d.aktual, d.prediksi, d.batasAtas].filter((n): n is number => n != null))
     const maks = batasRapi(Math.max(1, ...semuaNilai) * 1.08)
-    const x = (i: number) => SISI.kiri + (data.length <= 1 ? pw / 2 : (pw * i) / (data.length - 1))
-    const y = (v: number) => SISI.atas + ph - (v / maks) * ph
+    const x = (i: number) => sisi.kiri + (data.length <= 1 ? pw / 2 : (pw * i) / (data.length - 1))
+    const y = (v: number) => sisi.atas + ph - (v / maks) * ph
 
     const titikAktual: Array<[number, number]> = []
     const titikPrediksi: Array<[number, number]> = []
@@ -92,7 +108,8 @@ export function GrafikTren({
       ujungAktual: titikAktual[titikAktual.length - 1],
       ujungPrediksi: titikPrediksi[titikPrediksi.length - 1],
     }
-  }, [data, lebar, tinggi])
+    // `sisi` lahir dari `lebarSumbu`, jadi cukup itu yang dipantau.
+  }, [data, lebar, tinggi, lebarSumbu])
 
   const nilaiTerakhirPrediksi = [...data].reverse().find((d) => d.prediksi != null)?.prediksi
   const langkahLabel = Math.max(1, Math.ceil(data.length / 6))
@@ -100,7 +117,7 @@ export function GrafikTren({
   function saatGerak(e: PointerEvent<SVGSVGElement>) {
     const kotak = e.currentTarget.getBoundingClientRect()
     const px = e.clientX - kotak.left
-    const rel = (px - SISI.kiri) / Math.max(1, g.w - SISI.kiri - SISI.kanan)
+    const rel = (px - sisi.kiri) / Math.max(1, g.w - sisi.kiri - sisi.kanan)
     const i = Math.round(rel * (data.length - 1))
     setSorot(i >= 0 && i < data.length ? i : null)
   }
@@ -123,22 +140,22 @@ export function GrafikTren({
           {tandaSumbu(g.maks).map((t) => (
             <g key={t}>
               <line
-                x1={SISI.kiri}
-                x2={g.w - SISI.kanan}
+                x1={sisi.kiri}
+                x2={g.w - sisi.kanan}
                 y1={g.y(t)}
                 y2={g.y(t)}
                 stroke="var(--c-grid)"
                 strokeWidth="1"
               />
               <text
-                x={SISI.kiri - 8}
+                x={sisi.kiri - 8}
                 y={g.y(t) + 4}
                 textAnchor="end"
                 className="tabular"
                 fontSize="10.5"
                 fill="var(--c-sumbu)"
               >
-                {angka(t)}
+                {formatSumbu(t)}
               </text>
             </g>
           ))}
@@ -152,8 +169,8 @@ export function GrafikTren({
               <line
                 x1={g.x(g.indeksSambung)}
                 x2={g.x(g.indeksSambung)}
-                y1={SISI.atas}
-                y2={SISI.atas + g.ph}
+                y1={sisi.atas}
+                y2={sisi.atas + g.ph}
                 stroke="var(--c-sumbu)"
                 strokeWidth="1"
                 strokeDasharray="3 3"
@@ -161,7 +178,7 @@ export function GrafikTren({
               />
               <text
                 x={g.x(g.indeksSambung) + 5}
-                y={SISI.atas + 9}
+                y={sisi.atas + 9}
                 fontSize="10"
                 fontWeight="700"
                 fill="var(--c-sumbu)"
@@ -210,8 +227,8 @@ export function GrafikTren({
               <line
                 x1={g.x(sorot)}
                 x2={g.x(sorot)}
-                y1={SISI.atas}
-                y2={SISI.atas + g.ph}
+                y1={sisi.atas}
+                y2={sisi.atas + g.ph}
                 stroke="var(--c-ink-3)"
                 strokeWidth="1"
               />
@@ -237,7 +254,7 @@ export function GrafikTren({
                 fontSize="10.5"
                 fill="var(--c-sumbu)"
               >
-                {tanggalRingkas(t.tanggal)}
+                {tulisTanggal(t.tanggal)}
               </text>
             ) : null,
           )}
@@ -251,15 +268,15 @@ export function GrafikTren({
               left: Math.min(Math.max(g.x(sorot!) - 60, 0), Math.max(0, g.w - 130)),
             }}
           >
-            <div className="font-bold">{tanggalLengkapHari(d.tanggal)}</div>
+            <div className="font-bold">{tulisTanggalPanjang(d.tanggal)}</div>
             <div className="mt-0.5 opacity-90 tabular">
               {d.aktual != null
-                ? `${labelAktual}: ${angka(d.aktual)} ${satuan}`
-                : `${labelPrediksi}: ${angka(d.prediksi ?? 0)} ${satuan}`}
+                ? `${labelAktual}: ${tulis(d.aktual)}`
+                : `${labelPrediksi}: ${tulis(d.prediksi ?? 0)}`}
             </div>
             {d.aktual == null && d.batasBawah != null && d.batasAtas != null && (
               <div className="opacity-70 tabular">
-                Rentang {angka(d.batasBawah)}&ndash;{angka(d.batasAtas)} {satuan}
+                Rentang {tulis(d.batasBawah)}&ndash;{tulis(d.batasAtas)}
               </div>
             )}
           </div>
@@ -290,7 +307,7 @@ export function GrafikTren({
           {labelPrediksi}
           {nilaiTerakhirPrediksi != null && (
             <span className="font-semibold text-ink-2 tabular">
-              &middot; {angka(nilaiTerakhirPrediksi)} {satuan}
+              &middot; {tulis(nilaiTerakhirPrediksi)}
             </span>
           )}
         </span>
@@ -313,7 +330,7 @@ export function GrafikTren({
             <thead className="sticky top-0 bg-surface-2">
               <tr className="text-ink-3 text-left">
                 <th scope="col" className="py-2 px-3 font-semibold">
-                  Tanggal
+                  {bulanan ? 'Bulan' : 'Tanggal'}
                 </th>
                 <th scope="col" className="py-2 px-3 font-semibold text-right">
                   {labelAktual}
@@ -326,12 +343,12 @@ export function GrafikTren({
             <tbody>
               {data.map((t) => (
                 <tr key={t.tanggal} className="border-t border-line">
-                  <td className="py-1.5 px-3 text-ink-2">{tanggalRingkas(t.tanggal)}</td>
+                  <td className="py-1.5 px-3 text-ink-2">{tulisTanggalPanjang(t.tanggal)}</td>
                   <td className="py-1.5 px-3 text-right tabular text-ink font-semibold">
-                    {t.aktual != null ? angka(t.aktual) : '–'}
+                    {t.aktual != null ? tulis(t.aktual) : '–'}
                   </td>
                   <td className="py-1.5 px-3 text-right tabular text-ink-2">
-                    {t.prediksi != null ? angka(t.prediksi) : '–'}
+                    {t.prediksi != null ? tulis(t.prediksi) : '–'}
                   </td>
                 </tr>
               ))}
