@@ -77,7 +77,6 @@ export const LABEL_STOK: Record<StatusStok, string> = {
   aman: 'Aman',
   menipis: 'Menipis',
   habis: 'Habis',
-  kebanyakan: 'Kebanyakan',
 }
 
 /** Nada visual. Warna tidak pernah berdiri sendiri: selalu ikon + teks + warna. */
@@ -85,7 +84,6 @@ export const NADA_STOK: Record<StatusStok, 'aman' | 'menipis' | 'kritis' | 'info
   aman: 'aman',
   menipis: 'menipis',
   habis: 'kritis',
-  kebanyakan: 'info',
 }
 
 /* ------------------------------------------------------------------ */

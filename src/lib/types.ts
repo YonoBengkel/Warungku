@@ -114,8 +114,9 @@ export interface Transaksi {
 /* Stok                                                                */
 /* ------------------------------------------------------------------ */
 
-export type StatusStok = 'aman' | 'menipis' | 'habis' | 'kebanyakan'
-export type SumberBatasAman = 'sistem' | 'sendiri' | 'belum-diatur'
+export type StatusStok = 'aman' | 'menipis' | 'habis'
+/** `bawaan` = pemilik usaha belum mengatur sendiri, jadi dipakai batas bawaan 10. */
+export type SumberBatasAman = 'sistem' | 'sendiri' | 'bawaan'
 
 export interface Kemasan {
   nama: string

@@ -28,7 +28,7 @@ import type {
   WarnaTitik,
 } from '@/lib/types'
 import { angka } from '@/lib/format'
-import { jumlahTampil, satuanTampil, satuanTampilBawaan } from '@/lib/satuan'
+import { dariTampil, jumlahTampil, satuanTampil, satuanTampilBawaan } from '@/lib/satuan'
 import { JAM_TITIK_BIRU } from '@/lib/label'
 
 /**
@@ -597,9 +597,9 @@ export const daftarBarang: Barang[] = [
     satuan: 'roll',
     kemasan: [],
     stok: 5,
-    batasAman: 0,
+    batasAman: 10,
     batasAmanSaran: 3,
-    sumberBatasAman: 'belum-diatur',
+    sumberBatasAman: 'bawaan',
     hariKirim: 2,
     hargaBeliTerakhir: 115000,
     pemakaianHarian: 0.12,
@@ -681,16 +681,31 @@ export const daftarBarang: Barang[] = [
 export const kategoriBarang = Array.from(new Set(daftarBarang.map((b) => b.kategori))).sort()
 
 /**
- * Status stok. "Kebanyakan" muncul kalau stok melebihi 6x batas aman dan
- * pemakaiannya lambat, karena menumpuk barang juga sebuah masalah biaya.
+ * Batas aman bawaan, dalam SATUAN TAMPIL barangnya: 10 kg, 10 liter, 10 pcs.
+ * Dipakai selama pemilik usaha belum mengatur angkanya sendiri.
+ */
+export const BATAS_AMAN_BAWAAN = 10
+
+/** Batas aman bawaan dalam satuan simpan barang ini. */
+export function batasAmanBawaan(b: Pick<Barang, 'satuan' | 'kemasan' | 'satuanTampil'>): number {
+  return dariTampil(b, BATAS_AMAN_BAWAAN)
+}
+
+/**
+ * Status stok: tiga tingkat, IF-ELSE dengan ambang yang diatur pemilik usaha.
+ *
+ *   sisa ≤ 0            → habis
+ *   sisa < batas aman   → menipis
+ *   selain itu          → aman
+ *
+ * Tidak ada tingkat keempat. Batas aman yang belum diatur pun tetap punya
+ * angka (bawaan 10), jadi tidak ada barang yang diam-diam tidak pernah
+ * menipis sampai tiba-tiba habis.
  */
 export function statusStok(b: Barang): StatusStok {
   if (b.stok <= 0) return 'habis'
-  if (b.batasAman > 0 && b.stok < b.batasAman) return 'menipis'
-  if (b.batasAman > 0 && b.stok > b.batasAman * 6 && b.pemakaianHarian > 0) {
-    const hari = b.stok / b.pemakaianHarian
-    if (hari > 120) return 'kebanyakan'
-  }
+  const batas = b.batasAman > 0 ? b.batasAman : batasAmanBawaan(b)
+  if (b.stok < batas) return 'menipis'
   return 'aman'
 }
 

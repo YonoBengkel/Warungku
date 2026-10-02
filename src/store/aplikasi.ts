@@ -913,7 +913,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
 /* Pembaca turunan                                                     */
 /* ------------------------------------------------------------------ */
 
-const URUT_STATUS = { habis: 0, menipis: 1, kebanyakan: 2, aman: 3 } as const
+const URUT_STATUS = { habis: 0, menipis: 1, aman: 2 } as const
 
 export function useBarangPerluPerhatian(): Barang[] {
   return useAplikasi((s) =>

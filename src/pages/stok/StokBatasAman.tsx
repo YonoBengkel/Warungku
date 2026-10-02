@@ -16,6 +16,7 @@ import {
   satuanTampil,
 } from '@/lib/satuan'
 import { BANTUAN, JUDUL } from '@/lib/label'
+import { BATAS_AMAN_BAWAAN } from '@/data/dummy'
 import { useAplikasi } from '@/store/aplikasi'
 
 /**
@@ -68,7 +69,7 @@ export default function StokBatasAman() {
       ? { nada: 'info' as const, teks: 'Disarankan sistem' }
       : barang.sumberBatasAman === 'sendiri'
         ? { nada: 'netral' as const, teks: 'Diatur sendiri' }
-        : { nada: 'menipis' as const, teks: 'Belum diatur' }
+        : { nada: 'menipis' as const, teks: `Bawaan ${BATAS_AMAN_BAWAAN}` }
 
   /* Kalau pemakaian belakangan naik jauh dari angka yang diatur sendiri, kami
      bertanya sekali dengan tenang. Mengubahnya diam-diam akan membuat pemilik

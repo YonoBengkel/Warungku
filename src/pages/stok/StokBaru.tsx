@@ -18,7 +18,7 @@ import {
   satuanTampilBawaan,
 } from '@/lib/satuan'
 import { BANTUAN } from '@/lib/label'
-import { kategoriBarang } from '@/data/dummy'
+import { BATAS_AMAN_BAWAAN, batasAmanBawaan, kategoriBarang } from '@/data/dummy'
 import { useAplikasi } from '@/store/aplikasi'
 
 /**
@@ -103,8 +103,10 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
     barang ? teksAngka(keTampil(barang, barang.pemakaianHarian)) : '',
   )
   const [hariKirim, setHariKirim] = useState(() => String(barang?.hariKirim ?? 2))
+  /* Barang baru langsung membawa batas bawaan 10 (satuan tampil), supaya
+     statusnya bisa menipis sejak hari pertama. */
   const [batasAman, setBatasAman] = useState(() =>
-    barang ? teksAngka(keTampil(barang, barang.batasAman)) : '',
+    barang ? teksAngka(keTampil(barang, barang.batasAman)) : String(BATAS_AMAN_BAWAAN),
   )
   const [ingatkanKedaluwarsa, setIngatkanKedaluwarsa] = useState(
     () => barang?.ingatkanKedaluwarsa ?? false,
@@ -183,7 +185,7 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
       ? `Stok awal harus berupa angka, boleh 0 kalau barangnya belum ada. Contoh: 12.`
       : undefined,
     batas: dicoba && (Number(batasAman) < 0 || !Number.isFinite(Number(batasAman)))
-      ? 'Batas aman harus berupa angka, mulai dari 0. Contoh: 8.'
+      ? `Batas aman harus berupa angka. Kosongkan kalau mau memakai angka bawaan ${BATAS_AMAN_BAWAAN}. Contoh: 8.`
       : undefined,
     kemasan:
       dicoba &&
@@ -248,8 +250,15 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
   }
 
   function terapkan() {
-    const batas = batasDiketik
-    const sumber: SumberBatasAman = batas <= 0 ? 'belum-diatur' : ikutSaran ? 'sistem' : 'sendiri'
+    /* Kosong atau 0 berarti pemilik usaha belum memutuskan: pakai bawaan 10,
+       bukan 0 — batas 0 membuat barang tidak pernah menipis sampai habis.
+       Angka 10 yang dibiarkan apa adanya pada barang yang masih memakai bawaan
+       tetap tercatat sebagai bawaan, bukan pilihan sendiri. */
+    const kosong = batasDiketik <= 0
+    const masihBawaan =
+      kosong || (Number(batasAman) === BATAS_AMAN_BAWAAN && (!barang || barang.sumberBatasAman === 'bawaan'))
+    const batas = kosong ? batasAmanBawaan(sumberSatuan) : batasDiketik
+    const sumber: SumberBatasAman = ikutSaran && !kosong ? 'sistem' : masihBawaan ? 'bawaan' : 'sendiri'
 
     if (barang) {
       ubahBarang(barang.id, {
@@ -620,7 +629,7 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
             onChange={(e) => setBatasAman(e.target.value)}
             akhiran={tampil.nama}
             galat={galat.batas}
-            bantuan={BANTUAN.batasAman}
+            bantuan={`${BANTUAN.batasAman} Kalau dikosongkan, dipakai angka bawaan ${BATAS_AMAN_BAWAAN} ${tampil.nama}.`}
           />
           {saranBatas > 0 && !ikutSaran && (
             <button

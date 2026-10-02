@@ -23,6 +23,7 @@ import { cx, hariLagi, jam, jumlahSatuan, rupiah, tanggalRingkas, waktuNanti } f
 import { angkaTampil, jumlahTampil, satuanTampil, trenTampil } from '@/lib/satuan'
 import { BANTUAN } from '@/lib/label'
 import {
+  BATAS_AMAN_BAWAAN,
   dalamKemasan,
   penawaranUntukBarang,
   perkiraanUntuk,
@@ -139,7 +140,7 @@ export default function StokDetail() {
       ? { nada: 'info' as const, teks: 'Disarankan sistem' }
       : barang.sumberBatasAman === 'sendiri'
         ? { nada: 'netral' as const, teks: 'Diatur sendiri' }
-        : { nada: 'menipis' as const, teks: 'Belum diatur' }
+        : { nada: 'menipis' as const, teks: `Bawaan ${BATAS_AMAN_BAWAAN}` }
 
   return (
     <div className="pb-8">

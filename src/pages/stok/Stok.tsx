@@ -24,7 +24,7 @@ import {
 } from '@/icons'
 import { angka, cx } from '@/lib/format'
 import { jumlahTampil } from '@/lib/satuan'
-import { hariCukup, kategoriBarang, penawaranUntukBarang, statusStok } from '@/data/dummy'
+import { BATAS_AMAN_BAWAAN, hariCukup, kategoriBarang, penawaranUntukBarang, statusStok } from '@/data/dummy'
 import { PESANAN_BERJALAN } from '@/lib/label'
 import { useAplikasi } from '@/store/aplikasi'
 
@@ -51,7 +51,7 @@ type Penyaring =
   | 'habis'
   | 'aman'
   | 'kedaluwarsa'
-  | 'batas-belum-diatur'
+  | 'batas-bawaan'
   | 'tidak-bergerak'
 
 type Urutan = 'genting' | 'nama' | 'terakhir' | 'sisa' | 'kategori' | 'batas' | 'status' | 'cukup'
@@ -66,7 +66,7 @@ const LABEL_PENYARING: Record<Penyaring, string> = {
   habis: 'Habis',
   aman: 'Aman',
   kedaluwarsa: 'Segera kedaluwarsa',
-  'batas-belum-diatur': 'Batas aman belum diatur',
+  'batas-bawaan': 'Masih batas bawaan',
   'tidak-bergerak': 'Tidak bergerak',
 }
 
@@ -225,11 +225,11 @@ export default function Stok() {
         case 'habis':
           return s === 'habis'
         case 'aman':
-          return s === 'aman' || s === 'kebanyakan'
+          return s === 'aman'
         case 'kedaluwarsa':
           return segeraKedaluwarsa(b)
-        case 'batas-belum-diatur':
-          return b.sumberBatasAman === 'belum-diatur' || b.batasAman <= 0
+        case 'batas-bawaan':
+          return b.sumberBatasAman === 'bawaan'
         case 'tidak-bergerak':
           return tidakBergerak(b)
         default:
@@ -246,10 +246,10 @@ export default function Stok() {
       if (s === 'habis') return 0
       if (s === 'menipis') return 1
       if (segeraKedaluwarsa(b)) return 2
-      if (b.sumberBatasAman === 'belum-diatur' || b.batasAman <= 0) return 3
+      if (b.sumberBatasAman === 'bawaan') return 3
       return 4
     }
-    const urutStatus: Record<string, number> = { habis: 0, menipis: 1, kebanyakan: 2, aman: 3 }
+    const urutStatus: Record<string, number> = { habis: 0, menipis: 1, aman: 2 }
 
     return hasil.slice().sort((a, b) => {
       switch (urut) {
@@ -275,9 +275,7 @@ export default function Stok() {
     })
   }, [barang, filter, kategori, cari, urut, dikirimPerBarang, terakhirTerjual, terakhirBerubah])
 
-  const belumDiaturIds = tersaring
-    .filter((b) => b.sumberBatasAman === 'belum-diatur' || b.batasAman <= 0)
-    .map((b) => b.id)
+  const belumDiaturIds = tersaring.filter((b) => b.sumberBatasAman === 'bawaan').map((b) => b.id)
 
   /** Menekan chip yang sedang aktif berarti melepasnya, bukan memilihnya lagi. */
   const chipAktif = (n: Penyaring): string | null => (filter === n ? null : n)
@@ -370,10 +368,10 @@ export default function Stok() {
             Segera kedaluwarsa
           </Chip>
           <Chip
-            aktif={filter === 'batas-belum-diatur'}
-            onClick={() => aturParam({ filter: chipAktif('batas-belum-diatur') })}
+            aktif={filter === 'batas-bawaan'}
+            onClick={() => aturParam({ filter: chipAktif('batas-bawaan') })}
           >
-            Batas aman belum diatur
+            Masih batas bawaan
           </Chip>
           <Chip
             aktif={filter === 'tidak-bergerak'}
@@ -411,10 +409,10 @@ export default function Stok() {
       )}
 
       {/* Aksi massal hanya muncul di penyaring yang memang butuh keputusan borongan */}
-      {filter === 'batas-belum-diatur' && belumDiaturIds.length > 0 && (
+      {filter === 'batas-bawaan' && belumDiaturIds.length > 0 && (
         <Peringatan
           nada="info"
-          judul={`${belumDiaturIds.length} barang belum punya batas aman`}
+          judul={`${belumDiaturIds.length} barang masih memakai batas bawaan ${BATAS_AMAN_BAWAAN}`}
           className="mt-3"
           aksi={
             <Tombol ukuran="kecil" onClick={() => aturBatasAmanMassal(belumDiaturIds)}>
@@ -424,8 +422,8 @@ export default function Stok() {
             </Tombol>
           }
         >
-          Tanpa batas aman kami tidak bisa mengingatkan kamu sebelum barangnya habis. Saran sistem dihitung dari
-          pemakaian harian dan berapa lama kiriman biasanya sampai.
+          Angka {BATAS_AMAN_BAWAAN} dipakai sampai kamu mengaturnya sendiri, dan belum tentu cocok untuk tiap barang.
+          Saran sistem dihitung dari pemakaian harian dan berapa lama kiriman biasanya sampai.
         </Peringatan>
       )}
 
@@ -462,8 +460,8 @@ export default function Stok() {
             judul={
               filter === 'semua'
                 ? `Belum ada barang di kategori ${kategori}`
-                : filter === 'batas-belum-diatur'
-                  ? 'Semua barang sudah punya batas aman'
+                : filter === 'batas-bawaan'
+                  ? 'Semua barang sudah punya batas aman sendiri'
                   : `Tidak ada barang yang ${LABEL_PENYARING[filter].toLowerCase()}`
             }
             /* Layar kosong sesudah aksi massal harus terbaca sebagai hasil
@@ -471,8 +469,8 @@ export default function Stok() {
             pesan={
               filter === 'perlu-dibeli'
                 ? 'Semua barang masih di atas batas aman, atau yang kurang sudah dalam perjalanan. Tidak ada yang perlu dibeli hari ini.'
-                : filter === 'batas-belum-diatur'
-                  ? 'Tiap barang di daftar sudah punya angka batas aman, jadi kami bisa mengingatkan kamu sebelum stoknya habis.'
+                : filter === 'batas-bawaan'
+                  ? 'Tidak ada lagi barang yang memakai batas bawaan. Semua angkanya sudah kamu atur atau mengikuti saran sistem.'
                   : 'Penyaring yang kamu pilih tidak menemukan barang apa pun. Coba lepas penyaringnya untuk melihat seluruh daftar.'
             }
             aksi={
@@ -574,18 +572,9 @@ export default function Stok() {
                         </span>
                       </td>
                       <td className="py-3.5 px-4 align-middle text-right">
-                        {b.sumberBatasAman === 'belum-diatur' || b.batasAman <= 0 ? (
-                          <Link
-                            to={`/stok/${b.id}/batas-aman`}
-                            className="text-[0.8125rem] font-semibold text-brand hover:underline"
-                          >
-                            Belum diatur
-                          </Link>
-                        ) : (
-                          <span className="text-[0.875rem] text-ink-2 tabular">
-                            {jumlahTampil(b, b.batasAman)}
-                          </span>
-                        )}
+                        <span className="text-[0.875rem] text-ink-2 tabular">
+                          {jumlahTampil(b, b.batasAman)}
+                        </span>
                       </td>
                       <td className="py-3.5 px-4 align-middle">
                         <ChipStok status={s} />
@@ -637,7 +626,7 @@ export default function Stok() {
               setBukaSortir(false)
             }}
             judul="Paling genting dulu"
-            keterangan="Habis, lalu menipis, lalu yang segera kedaluwarsa, lalu yang batas amannya belum diatur."
+            keterangan="Habis, lalu menipis, lalu yang segera kedaluwarsa, lalu yang masih memakai batas bawaan."
           />
           <PilihanKartu
             terpilih={urut === 'nama'}

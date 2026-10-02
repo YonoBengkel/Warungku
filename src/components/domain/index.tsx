@@ -27,7 +27,6 @@ import {
   IkonCentangLingkaran,
   IkonPeringatan,
   IkonSilang,
-  IkonInfo,
   IkonJam,
   IkonPasokan,
   IkonSinkron,
@@ -58,7 +57,6 @@ const IKON_STOK: Record<StatusStok, ReactNode> = {
   aman: <IkonCentangLingkaran size={13} />,
   menipis: <IkonPeringatan size={13} />,
   habis: <IkonSilang size={13} />,
-  kebanyakan: <IkonInfo size={13} />,
 }
 
 /**
@@ -589,7 +587,7 @@ export function BarisStok({ barang, sedangDikirim }: { barang: Barang; sedangDik
 
   const rasio = barang.batasAman > 0 ? Math.min(1, barang.stok / barang.batasAman) : 1
   const warnaMeter =
-    status === 'habis' ? 'bg-kritis' : status === 'menipis' ? 'bg-menipis' : status === 'kebanyakan' ? 'bg-info' : 'bg-aman'
+    status === 'habis' ? 'bg-kritis' : status === 'menipis' ? 'bg-menipis' : 'bg-aman'
 
   return (
     <Link
