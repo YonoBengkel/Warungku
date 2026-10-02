@@ -597,7 +597,9 @@ export function BarisStok({ barang, sedangDikirim }: { barang: Barang; sedangDik
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 grow">
           <p className="text-[1rem] font-semibold text-ink leading-snug line-clamp-2">{barang.nama}</p>
-          <p className="mt-0.5 text-[0.75rem] text-ink-3">{barang.kategori}</p>
+          <p className="mt-0.5 text-[0.75rem] text-ink-3">
+            {barang.deskripsi ? `${barang.deskripsi} · ${barang.kategori}` : barang.kategori}
+          </p>
         </div>
         <div className="shrink-0 text-right">
           <p

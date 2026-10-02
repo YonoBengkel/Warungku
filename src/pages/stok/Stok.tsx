@@ -2,29 +2,15 @@ import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import type { Barang } from '@/lib/types'
 import { BarisStok, ChipStok } from '@/components/domain'
-import { Lencana, Tombol, TombolIkon, TombolTautan } from '@/components/ui/dasar'
+import { Lencana, Tombol, TombolTautan } from '@/components/ui/dasar'
 import { BarisChip, Chip } from '@/components/ui/navigasi'
 import { KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
 import { Lembar } from '@/components/ui/lembar'
 import { PilihanKartu } from '@/components/ui/formulir'
-import {
-  IkonCari,
-  IkonGudang,
-  IkonKeranjang,
-  IkonKotak,
-  IkonPanahBawah,
-  IkonPanahAtas,
-  IkonPanahKanan,
-  IkonPena,
-  IkonPeringatan,
-  IkonSaring,
-  IkonSilang,
-  IkonTambah,
-  IkonTiga,
-} from '@/icons'
+import { IkonCari, IkonKotak, IkonPanahBawah, IkonPanahAtas, IkonSaring, IkonSilang, IkonTambah } from '@/icons'
 import { angka, cx } from '@/lib/format'
-import { jumlahTampil } from '@/lib/satuan'
-import { BATAS_AMAN_BAWAAN, hariCukup, kategoriBarang, penawaranUntukBarang, statusStok } from '@/data/dummy'
+import { angkaTampil, jumlahTampil, satuanTampil } from '@/lib/satuan'
+import { BATAS_AMAN_BAWAAN, hariCukup, kategoriBarang, statusStok } from '@/data/dummy'
 import { PESANAN_BERJALAN } from '@/lib/label'
 import { useAplikasi } from '@/store/aplikasi'
 
@@ -42,6 +28,11 @@ import { useAplikasi } from '@/store/aplikasi'
  *
  * Seluruh penyaring hidup di query string supaya kartu di Beranda dan
  * pemberitahuan cukup jadi tautan biasa (/stok?filter=menipis).
+ *
+ * Di layar lebar halaman ini TIDAK digulir. Semua yang di atas tabel plus
+ * nama kolomnya terkunci; yang bergerak hanya baris barang di dalam wadah
+ * tabelnya sendiri. Sisa dan batas aman ditulis sebagai angka saja, satuannya
+ * punya kolom sendiri, dan aksi per barang hanya ada di Detail Barang.
  */
 
 type Penyaring =
@@ -129,7 +120,6 @@ export default function Stok() {
   const [param, setParam] = useSearchParams()
   const [bukaSortir, setBukaSortir] = useState(false)
   const [bukaKategori, setBukaKategori] = useState(false)
-  const [menuUntuk, setMenuUntuk] = useState<Barang | null>(null)
 
   const cari = param.get('cari') ?? ''
   const kategori = param.get('kategori') ?? ''
@@ -281,14 +271,15 @@ export default function Stok() {
   const chipAktif = (n: Penyaring): string | null => (filter === n ? null : n)
 
   return (
-    <div className="pb-6">
+    /* Tinggi di layar lebar = layar dikurangi kepala aplikasi (3,5rem + garis
+       bawah 1px) dan jarak atas-bawah <main> (1rem + 2rem). Dengan begitu
+       halaman pas satu layar, dan satu-satunya yang bisa digulir adalah wadah
+       tabel. */
+    <div className="pb-6 lg:pb-0 lg:h-[calc(100dvh-6.5rem-1px)] lg:flex lg:flex-col">
       {/* ---------------- Kepala lengket ---------------- */}
-      <div className="sticky top-14 z-20 -mx-4 px-4 sm:-mx-6 sm:px-6 pt-1 pb-3 bg-bg/96 backdrop-blur-sm border-b border-line">
+      <div className="sticky top-14 z-20 -mx-4 px-4 sm:-mx-6 sm:px-6 pt-1 pb-3 bg-bg/96 backdrop-blur-sm border-b border-line lg:shrink-0">
         <div className="flex items-center gap-2 flex-wrap mb-3">
           <h1 className="text-[1.25rem] font-extrabold text-ink tracking-tight mr-auto">Stok</h1>
-          <TombolTautan ke="/stok/hitung" ragam="garis" ukuran="kecil" ikonKiri={<IkonGudang size={15} />}>
-            Hitung Stok
-          </TombolTautan>
           <TombolTautan ke="/stok/baru" ukuran="kecil" ikonKiri={<IkonTambah size={15} />}>
             Tambah Barang
           </TombolTautan>
@@ -390,7 +381,7 @@ export default function Stok() {
 
       {/* ---------------- Ringkasan penyaring aktif ---------------- */}
       {(filter !== 'semua' || kategori || cari) && (
-        <div className="mt-3 flex items-center gap-2 flex-wrap text-[0.8125rem] text-ink-2">
+        <div className="mt-3 flex items-center gap-2 flex-wrap text-[0.8125rem] text-ink-2 lg:shrink-0">
           <span>
             Menampilkan <strong className="text-ink tabular">{angka(tersaring.length)}</strong> dari{' '}
             {angka(barang.length)} barang
@@ -413,7 +404,7 @@ export default function Stok() {
         <Peringatan
           nada="info"
           judul={`${belumDiaturIds.length} barang masih memakai batas bawaan ${BATAS_AMAN_BAWAAN}`}
-          className="mt-3"
+          className="mt-3 lg:shrink-0"
           aksi={
             <Tombol ukuran="kecil" onClick={() => aturBatasAmanMassal(belumDiaturIds)}>
               {belumDiaturIds.length === 1
@@ -480,48 +471,44 @@ export default function Stok() {
         )
       ) : (
         <>
-          {/* Mobile & tablet: daftar keputusan. Tombol aksi berdiri di kolom
-              sendiri supaya tidak bertumpuk di atas kartu yang seluruhnya bisa
-              ditekan menuju Detail Barang. */}
+          {/* Mobile & tablet: daftar keputusan. Seluruh kartu menuju Detail
+              Barang; aksi (koreksi, pesan, batas aman) hanya ada di sana. */}
           <ul className="mt-3 space-y-2.5 lg:hidden">
             {tersaring.map((b) => (
-              <li key={b.id} className="flex items-stretch gap-2">
-                <div className="min-w-0 grow">
-                  <BarisStok barang={b} sedangDikirim={dikirimPerBarang.get(b.id)} />
-                </div>
-                <TombolIkon
-                  label={`Aksi cepat untuk ${b.nama}`}
-                  ragam="garis"
-                  className="self-center"
-                  onClick={() => setMenuUntuk(b)}
-                >
-                  <IkonTiga size={18} />
-                </TombolIkon>
+              <li key={b.id}>
+                <BarisStok barang={b} sedangDikirim={dikirimPerBarang.get(b.id)} />
               </li>
             ))}
           </ul>
 
-          {/* Desktop: tabel kerja yang bisa diurutkan */}
-          {/* `relative` bukan hiasan: tanpa blok penampung sendiri, teks
-              sr-only di dalam tabel (yang diposisikan absolut) lolos dari
-              kliping wadah ini dan membuat SELURUH halaman bisa digeser
-              menyamping di lebar 1024-1200px. */}
-          <div className="relative hidden lg:block mt-4 bg-surface border border-line rounded-lg shadow-e1 overflow-x-auto">
-            <table className="w-full min-w-[52rem] border-collapse">
+          {/* Desktop: tabel kerja yang bisa diurutkan. Wadah inilah satu-satunya
+              yang digulir; nama kolom lengket di puncaknya.
+              `relative` bukan hiasan: tanpa blok penampung sendiri, teks sr-only
+              di dalam tabel (yang diposisikan absolut) lolos dari kliping wadah
+              ini dan membuat SELURUH halaman bisa digeser menyamping. */}
+          <div className="relative hidden lg:block lg:flex-1 lg:min-h-[14rem] mt-4 bg-surface border border-line rounded-lg shadow-e1 overflow-auto">
+            <table className="w-full min-w-[60rem] border-separate border-spacing-0">
               <caption className="sr-only">
-                Daftar stok barang beserta sisa, batas aman, status, dan perkiraan berapa hari lagi cukup
+                Daftar stok barang beserta deskripsi, sisa, satuan, batas aman, status, dan perkiraan berapa hari
+                lagi cukup
               </caption>
               <thead>
-                <tr className="border-b border-line bg-surface-2">
+                <tr>
                   <KepalaKolom kunci="nama" urut={urut} atur={aturParam} rata="kiri">
                     Nama
                   </KepalaKolom>
+                  <th scope="col" className={cx(KELAS_KEPALA, 'text-left')}>
+                    <span className={KELAS_TEKS_KEPALA}>Deskripsi</span>
+                  </th>
                   <KepalaKolom kunci="kategori" urut={urut} atur={aturParam} rata="kiri">
                     Kategori
                   </KepalaKolom>
                   <KepalaKolom kunci="sisa" urut={urut} atur={aturParam} rata="kanan">
                     Sisa
                   </KepalaKolom>
+                  <th scope="col" className={cx(KELAS_KEPALA, 'text-left')}>
+                    <span className={KELAS_TEKS_KEPALA}>Satuan</span>
+                  </th>
                   <KepalaKolom kunci="batas" urut={urut} atur={aturParam} rata="kanan">
                     Batas aman
                   </KepalaKolom>
@@ -531,9 +518,6 @@ export default function Stok() {
                   <KepalaKolom kunci="cukup" urut={urut} atur={aturParam} rata="kanan">
                     Cukup berapa hari
                   </KepalaKolom>
-                  <th scope="col" className="px-4 py-2.5">
-                    <span className="sr-only">Aksi cepat</span>
-                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -542,7 +526,7 @@ export default function Stok() {
                   const cukup = hariCukup(b)
                   const dikirim = dikirimPerBarang.get(b.id)
                   return (
-                    <tr key={b.id} className="border-b border-line last:border-0 hover:bg-sunken/60">
+                    <tr key={b.id} className="hover:bg-sunken/60 [&>td]:border-b [&>td]:border-line last:[&>td]:border-b-0">
                       <td className="py-3.5 px-4 align-middle">
                         <Link
                           to={`/stok/${b.id}`}
@@ -550,17 +534,21 @@ export default function Stok() {
                         >
                           {b.nama}
                         </Link>
-                        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.75rem] text-ink-3">
-                          {b.namaLain.length > 0 && <span>{b.namaLain.join(', ')}</span>}
-                          {(dikirim?.jumlah ?? 0) > 0 && (
-                            <Lencana nada="info">
-                              Sedang dikirim {jumlahTampil(b, dikirim!.jumlah)}
-                            </Lencana>
-                          )}
-                          {b.dicatatManual && <Lencana nada="netral">Dicatat manual</Lencana>}
-                        </div>
+                        {((dikirim?.jumlah ?? 0) > 0 || b.dicatatManual) && (
+                          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                            {(dikirim?.jumlah ?? 0) > 0 && (
+                              <Lencana nada="info">Sedang dikirim {jumlahTampil(b, dikirim!.jumlah)}</Lencana>
+                            )}
+                            {b.dicatatManual && <Lencana nada="netral">Dicatat manual</Lencana>}
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-4 align-middle text-[0.875rem] text-ink-2">
+                        {b.deskripsi || <span className="text-ink-3">&mdash;</span>}
                       </td>
                       <td className="py-3.5 px-4 align-middle text-[0.875rem] text-ink-2">{b.kategori}</td>
+                      {/* Angka saja. Satuannya di kolom sebelah, dan berlaku juga
+                          untuk kolom batas aman — satu barang, satu satuan. */}
                       <td className="py-3.5 px-4 align-middle text-right">
                         <span
                           className={cx(
@@ -568,13 +556,12 @@ export default function Stok() {
                             s === 'habis' ? 'text-kritis' : 'text-ink',
                           )}
                         >
-                          {jumlahTampil(b, Math.max(0, b.stok))}
+                          {angkaTampil(b, Math.max(0, b.stok))}
                         </span>
                       </td>
+                      <td className="py-3.5 px-4 align-middle text-[0.875rem] text-ink-2">{satuanTampil(b).nama}</td>
                       <td className="py-3.5 px-4 align-middle text-right">
-                        <span className="text-[0.875rem] text-ink-2 tabular">
-                          {jumlahTampil(b, b.batasAman)}
-                        </span>
+                        <span className="text-[0.875rem] text-ink-2 tabular">{angkaTampil(b, b.batasAman)}</span>
                       </td>
                       <td className="py-3.5 px-4 align-middle">
                         <ChipStok status={s} />
@@ -594,11 +581,6 @@ export default function Stok() {
                         ) : (
                           <span className="tabular">{angka(cukup)} hari</span>
                         )}
-                      </td>
-                      <td className="py-2 px-2 align-middle text-right">
-                        <TombolIkon label={`Aksi cepat untuk ${b.nama}`} onClick={() => setMenuUntuk(b)}>
-                          <IkonTiga size={18} />
-                        </TombolIkon>
                       </td>
                     </tr>
                   )
@@ -715,8 +697,6 @@ export default function Stok() {
         </div>
       </Lembar>
 
-      {/* ---------------- Lembar aksi per baris ---------------- */}
-      <LembarAksiBaris barang={menuUntuk} tutup={() => setMenuUntuk(null)} />
     </div>
   )
 }
@@ -754,7 +734,7 @@ function TombolAngka({
         aktif ? 'Ketuk untuk melepas penyaring ini.' : 'Ketuk untuk menyaring daftar.'
       }`}
       className={cx(
-        'min-h-[3rem] rounded-md border px-3 py-2 text-left transition-colors lg:w-[7.5rem]',
+        'min-h-[3rem] rounded-md border px-3 py-2 text-center transition-colors lg:w-[7.5rem]',
         aktif ? 'border-brand bg-brand-soft/50' : 'border-line bg-surface hover:border-line-strong',
       )}
     >
@@ -767,6 +747,14 @@ function TombolAngka({
     </button>
   )
 }
+
+/**
+ * Kepala kolom yang lengket di puncak wadah tabel. Garis bawahnya bayangan,
+ * bukan border: border pada sel lengket ikut tergulir pergi di sebagian
+ * peramban, sehingga kepala kolom terlihat melayang tanpa batas.
+ */
+const KELAS_KEPALA = 'sticky top-0 z-10 bg-surface-2 shadow-[inset_0_-1px_0_var(--c-border)] px-4 py-2.5'
+const KELAS_TEKS_KEPALA = 'text-[0.75rem] font-bold uppercase tracking-wide text-ink-2'
 
 function KepalaKolom({
   kunci,
@@ -787,7 +775,7 @@ function KepalaKolom({
     <th
       scope="col"
       aria-sort={aktif ? (menurun ? 'descending' : 'ascending') : 'none'}
-      className={cx('px-4 py-2.5', rata === 'kanan' ? 'text-right' : 'text-left')}
+      className={cx(KELAS_KEPALA, rata === 'kanan' ? 'text-right' : 'text-left')}
     >
       <button
         type="button"
@@ -809,67 +797,5 @@ function KepalaKolom({
         )}
       </button>
     </th>
-  )
-}
-
-/**
- * Tiga aksi yang paling sering dibutuhkan dari daftar, tanpa harus membuka
- * Detail Barang lebih dulu. Semuanya berpindah halaman, tidak ada yang bekerja
- * diam-diam di belakang layar.
- */
-function LembarAksiBaris({ barang, tutup }: { barang: Barang | null; tutup: () => void }) {
-  if (!barang) return null
-  const penawaran = penawaranUntukBarang(barang.id)
-  const kePesan =
-    penawaran.length > 0
-      ? `/penawaran/${penawaran[0].id}`
-      : `/belanja?cari=${encodeURIComponent(barang.nama)}`
-
-  const aksi = [
-    {
-      ke: `/stok/${barang.id}/koreksi`,
-      ikon: <IkonPena size={18} />,
-      judul: 'Koreksi Stok',
-      bantuan: 'Catat barang yang basi, rusak, susut, atau datang tanpa pesanan.',
-    },
-    {
-      ke: kePesan,
-      ikon: <IkonKeranjang size={18} />,
-      judul: 'Pesan',
-      bantuan:
-        penawaran.length > 0
-          ? 'Buka penawaran distributor untuk barang ini.'
-          : 'Belum ada penawaran tersimpan, kami carikan di Distributor.',
-    },
-    {
-      ke: `/stok/${barang.id}/batas-aman`,
-      ikon: <IkonPeringatan size={18} />,
-      judul: 'Atur batas aman',
-      bantuan: 'Tentukan kapan kami mulai mengingatkan kamu.',
-    },
-  ]
-
-  return (
-    <Lembar terbuka tutup={tutup} judul={barang.nama} keterangan="Pilih satu tindakan" lebar="sempit">
-      <div className="pb-4 space-y-2">
-        {aksi.map((a) => (
-          <Link
-            key={a.judul}
-            to={a.ke}
-            onClick={tutup}
-            className="flex items-center gap-3 min-h-[3.5rem] px-3.5 py-3 rounded-md border border-line bg-surface hover:border-line-strong hover:bg-sunken transition-colors"
-          >
-            <span className="shrink-0 size-9 rounded-md bg-sunken text-ink-2 grid place-items-center">
-              {a.ikon}
-            </span>
-            <span className="min-w-0 grow">
-              <span className="block text-[0.9375rem] font-bold text-ink leading-snug">{a.judul}</span>
-              <span className="block text-[0.8125rem] text-ink-3 leading-snug mt-0.5">{a.bantuan}</span>
-            </span>
-            <IkonPanahKanan size={18} className="shrink-0 text-ink-3" />
-          </Link>
-        ))}
-      </div>
-    </Lembar>
   )
 }

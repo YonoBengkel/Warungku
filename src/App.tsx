@@ -48,8 +48,6 @@ const StokKoreksi = lazy(() => import('@/pages/stok/StokKoreksi'))
 const StokBatasAman = lazy(() => import('@/pages/stok/StokBatasAman'))
 const StokRapor = lazy(() => import('@/pages/stok/StokRapor'))
 const CatatPemakaian = lazy(() => import('@/pages/stok/CatatPemakaian'))
-const HitungStok = lazy(() => import('@/pages/stok/HitungStok'))
-const HitungRingkasan = lazy(() => import('@/pages/stok/HitungRingkasan'))
 const KelolaKategori = lazy(() => import('@/pages/stok/KelolaKategori'))
 
 /* Tab 3 */
@@ -145,8 +143,6 @@ export default function App() {
           <Route path="/stok" element={<Stok />} />
           <Route path="/stok/baru" element={<StokBaru />} />
           <Route path="/stok/pemakaian" element={<CatatPemakaian />} />
-          <Route path="/stok/hitung" element={<HitungStok />} />
-          <Route path="/stok/hitung/ringkasan" element={<HitungRingkasan />} />
           <Route path="/stok/kategori" element={<KelolaKategori />} />
           <Route path="/stok/:id" element={<StokDetail />} />
           <Route path="/stok/:id/ubah" element={<StokUbah />} />

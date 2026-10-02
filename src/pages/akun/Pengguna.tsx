@@ -59,7 +59,6 @@ const HAK: Record<PeranDiberikan, { boleh: string[]; tidakBoleh: string[] }> = {
     boleh: [
       'Melihat daftar stok dan sisa tiap barang',
       'Mencatat pemakaian dan mengoreksi stok',
-      'Melakukan hitung stok',
       'Menekan Barang Sudah Sampai saat kiriman datang',
     ],
     tidakBoleh: [

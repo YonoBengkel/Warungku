@@ -102,7 +102,6 @@ interface KeadaanAplikasi {
   aturBatasAmanMassal: (barangIds: string[]) => void
   tambahBarang: (b: Barang) => void
   ubahBarang: (barangId: string, p: Partial<Barang>) => void
-  terapkanHitungFisik: (hasil: Record<string, number>) => void
 
   /* Keranjang */
   tambahKeKeranjang: (
@@ -318,32 +317,6 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
 
   ubahBarang: (barangId, p) =>
     set((s) => ({ barang: s.barang.map((b) => (b.id === barangId ? { ...b, ...p } : b)) })),
-
-  terapkanHitungFisik: (hasil) => {
-    const s = get()
-    const catatan: Pergerakan[] = []
-    const barangBaru = s.barang.map((b) => {
-      if (!(b.id in hasil)) return b
-      const nyata = hasil[b.id]
-      if (nyata === b.stok) return b
-      catatan.push({
-        id: `pg-${Date.now()}-${b.id}`,
-        barangId: b.id,
-        waktu: stempel(),
-        jenis: 'hitung-fisik',
-        jumlah: nyata - b.stok,
-        stokSesudah: nyata,
-        alasan: null,
-        keterangan: 'Hasil hitung fisik',
-        pesananId: null,
-        transaksiId: null,
-        oleh: s.profil.namaPemilik,
-      })
-      return { ...b, stok: nyata }
-    })
-    set({ barang: barangBaru, pergerakan: [...catatan, ...s.pergerakan] })
-    get().tampilkanRacun(`Hasil hitung diterapkan pada ${catatan.length} barang.`, 'aman')
-  },
 
   tambahKeKeranjang: (distributorId, penawaranId, jumlah, saranSistem = null, kontrakId = null) => {
     set((s) => {

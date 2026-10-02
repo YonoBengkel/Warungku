@@ -320,11 +320,7 @@ export default function KasirPasangkan() {
               </li>
               <li>
                 {angka(menu.jumlahTerjual)} penjualan yang sudah lewat <strong>tidak</strong> ditarik ulang. Kalau sisa
-                di rak sudah tidak cocok, betulkan lewat{' '}
-                <Link to="/stok/hitung" className="font-bold underline underline-offset-2">
-                  Hitung Stok
-                </Link>
-                .
+                di rak sudah tidak cocok, betulkan lewat Koreksi Stok di detail barangnya.
               </li>
               <li>Kamu bisa mengubah takarannya kapan saja dari detail barang.</li>
             </ul>
@@ -333,8 +329,8 @@ export default function KasirPasangkan() {
           <div className="rounded-md bg-sunken p-3.5">
             <p className="flex items-start gap-2 text-[0.8125rem] text-ink-2 leading-relaxed">
               <IkonInfo size={16} className="shrink-0 mt-px text-ink-3" />
-              Menu ini campuran dan bahannya tidak tetap? Pasangkan bahan utamanya saja. Sisa selisihnya akan muncul
-              saat kamu menghitung stok fisik, dan itu lebih baik daripada tidak berkurang sama sekali.
+              Menu ini campuran dan bahannya tidak tetap? Pasangkan bahan utamanya saja. Sisa selisihnya bisa kamu
+              luruskan lewat Koreksi Stok, dan itu lebih baik daripada tidak berkurang sama sekali.
             </p>
           </div>
 

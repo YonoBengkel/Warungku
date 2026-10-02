@@ -84,6 +84,7 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
   const mengubah = barang != null
 
   const [nama, setNama] = useState(() => barang?.nama ?? param.get('nama') ?? '')
+  const [deskripsi, setDeskripsi] = useState(() => barang?.deskripsi ?? '')
   const [namaLain, setNamaLain] = useState<string[]>(() => barang?.namaLain ?? [])
   const [sebutanBaru, setSebutanBaru] = useState('')
   const [kategori, setKategori] = useState(() => barang?.kategori ?? '')
@@ -263,6 +264,7 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
     if (barang) {
       ubahBarang(barang.id, {
         nama: nama.trim(),
+        deskripsi: deskripsi.trim() || null,
         namaLain,
         kategori: kategoriTerpakai,
         kodeBarang: kode.trim(),
@@ -286,6 +288,7 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
     const baru: Barang = {
       id: `b-baru-${Date.now()}`,
       nama: nama.trim(),
+      deskripsi: deskripsi.trim() || null,
       namaLain,
       kategori: kategoriTerpakai,
       kodeBarang: kode.trim(),
@@ -325,6 +328,16 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
           galat={galat.nama}
           bantuan="Pakai nama yang kamu sebut sehari-hari, bukan nama di faktur distributor."
         />
+
+        <div className="mt-4">
+          <Kolom
+            label="Deskripsi"
+            value={deskripsi}
+            onChange={(e) => setDeskripsi(e.target.value)}
+            placeholder="Contoh: Botol 1 liter"
+            bantuan="Ukuran, jenis, atau tipenya. Ukuran lain dicatat sebagai barang sendiri: minyak 1 liter dan minyak jeriken jadi dua baris."
+          />
+        </div>
 
         {/* Cegat duplikat sebelum lahir, bukan sesudah stoknya terlanjur pecah dua. */}
         {kembar && (
@@ -735,7 +748,7 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
             </p>
             <p className="mt-2.5">
               Isi kemasan yang baru berlaku untuk penerimaan berikutnya. Kalau angka stok sekarang memang
-              sudah tidak cocok, luruskan lewat Hitung Stok.
+              sudah tidak cocok, luruskan lewat Koreksi Stok.
             </p>
           </>
         }

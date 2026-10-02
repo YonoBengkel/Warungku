@@ -23,7 +23,7 @@ const PERAN: Record<Peran, { nama: string; ringkas: string; boleh: string[]; tid
   kasir: {
     nama: 'Kasir',
     ringkas: 'Untuk yang menjaga warung tiap hari.',
-    boleh: ['Lihat stok', 'Catat pemakaian & koreksi stok', 'Hitung stok', 'Terima kiriman yang datang'],
+    boleh: ['Lihat stok', 'Catat pemakaian & koreksi stok', 'Terima kiriman yang datang'],
     tidakBoleh: ['Buat pesanan', 'Ajukan kontrak', 'Ubah pengaturan usaha'],
   },
   manajer: {

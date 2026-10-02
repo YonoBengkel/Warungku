@@ -742,11 +742,8 @@ function TabPerluDibereskan({
 
       {menu.length > 0 && (
         <p className="mt-4 text-[0.8125rem] text-ink-3 leading-relaxed max-w-[70ch]">
-          Penjualan yang sudah lewat tidak ikut dikurangi otomatis. Setelah memasangkan, cocokkan sisa stok lewat{' '}
-          <Link to="/stok/hitung" className="font-semibold text-brand hover:underline">
-            Hitung Stok
-          </Link>
-          .
+          Penjualan yang sudah lewat tidak ikut dikurangi otomatis. Setelah memasangkan, cocokkan sisa stok lewat
+          Koreksi Stok di detail tiap barang.
         </p>
       )}
 

@@ -42,7 +42,7 @@ import { useAplikasi } from '@/store/aplikasi'
  * 1. "Sedang dikirim" berdiri sendiri dan TIDAK PERNAH dijumlahkan dengan sisa.
  *    Kiriman bisa batal; menjumlahkannya membuat pemilik merasa aman palsu.
  * 2. Stok minus tidak pernah ditulis negatif. Angka minus artinya catatan yang
- *    salah, bukan gudang yang berutang, jadi jalan keluarnya hitung fisik.
+ *    salah, bukan gudang yang berutang, jadi jalan keluarnya Koreksi Stok.
  */
 type TabDetail = 'ringkasan' | 'riwayat'
 
@@ -146,7 +146,7 @@ export default function StokDetail() {
     <div className="pb-8">
       <KepalaHalaman
         judul={barang.nama}
-        keterangan={barang.kategori}
+        keterangan={barang.deskripsi ? `${barang.deskripsi} · ${barang.kategori}` : barang.kategori}
         kembaliKe="/stok"
         aksi={
           <Link
@@ -193,17 +193,17 @@ export default function StokDetail() {
                   0 {satuanTampil(barang).nama} (catatan kurang {jumlahTampil(barang, kurangCatatan)})
                 </p>
                 <p className="mt-1 text-[0.8125rem] leading-relaxed opacity-90">
-                  Kasir mencatat pemakaian lebih banyak daripada stok yang pernah masuk. Hitung fisik akan
-                  meluruskan angkanya tanpa mengubah riwayat penjualan.
+                  Kasir mencatat pemakaian lebih banyak daripada stok yang pernah masuk. Hitung barangnya di rak,
+                  lalu tulis jumlahnya lewat Koreksi Stok — riwayat penjualannya tidak ikut berubah.
                 </p>
                 <TombolTautan
-                  ke={`/stok/hitung?barang=${barang.id}`}
+                  ke={`/stok/${barang.id}/koreksi`}
                   ragam="garis"
                   ukuran="kecil"
                   className="mt-2.5"
                   ikonKiri={<IkonGudang size={15} />}
                 >
-                  Hitung fisik sekarang
+                  Koreksi Stok sekarang
                 </TombolTautan>
               </div>
             ) : (

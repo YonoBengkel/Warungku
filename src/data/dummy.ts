@@ -277,6 +277,7 @@ export const daftarBarang: Barang[] = [
   {
     id: 'b-01',
     nama: 'Biji Kopi Arabika Gayo',
+    deskripsi: 'Biji utuh, sangrai medium',
     namaLain: ['kopi gayo', 'arabika'],
     kategori: 'Kopi & Teh',
     kodeBarang: 'KP-001',
@@ -299,6 +300,7 @@ export const daftarBarang: Barang[] = [
   {
     id: 'b-02',
     nama: 'Susu UHT Full Cream',
+    deskripsi: 'Kotak 1 liter',
     namaLain: ['susu', 'uht'],
     kategori: 'Susu & Olahan',
     kodeBarang: 'SS-002',
@@ -324,6 +326,7 @@ export const daftarBarang: Barang[] = [
   {
     id: 'b-03',
     nama: 'Gula Aren Cair',
+    deskripsi: 'Jeriken 5 liter',
     namaLain: ['gula aren', 'aren'],
     kategori: 'Pemanis',
     kodeBarang: 'GA-003',
@@ -346,6 +349,7 @@ export const daftarBarang: Barang[] = [
   {
     id: 'b-04',
     nama: 'Es Batu Kristal',
+    deskripsi: 'Karung 20 kg',
     namaLain: ['es', 'es balok'],
     kategori: 'Pendukung',
     kodeBarang: 'ES-004',
@@ -368,6 +372,7 @@ export const daftarBarang: Barang[] = [
   {
     id: 'b-05',
     nama: 'Gelas Plastik 16 oz',
+    deskripsi: '16 oz, bening',
     namaLain: ['gelas', 'cup'],
     kategori: 'Kemasan',
     kodeBarang: 'KM-005',
@@ -390,6 +395,7 @@ export const daftarBarang: Barang[] = [
   {
     id: 'b-06',
     nama: 'Sedotan Kertas',
+    deskripsi: 'Diameter 6 mm',
     namaLain: ['sedotan', 'straw'],
     kategori: 'Kemasan',
     kodeBarang: 'KM-006',
@@ -412,6 +418,7 @@ export const daftarBarang: Barang[] = [
   {
     id: 'b-07',
     nama: 'Teh Hitam Premium',
+    deskripsi: 'Daun kering, curah',
     namaLain: ['teh'],
     kategori: 'Kopi & Teh',
     kodeBarang: 'TH-007',
@@ -434,6 +441,7 @@ export const daftarBarang: Barang[] = [
   {
     id: 'b-08',
     nama: 'Roti Tawar Gandum',
+    deskripsi: 'Bungkus isi 20 lembar',
     namaLain: ['roti'],
     kategori: 'Bahan Makanan',
     kodeBarang: 'RT-008',
@@ -456,6 +464,7 @@ export const daftarBarang: Barang[] = [
   {
     id: 'b-09',
     nama: 'Telur Ayam Negeri',
+    deskripsi: 'Ukuran sedang',
     namaLain: ['telor', 'telur'],
     kategori: 'Protein',
     kodeBarang: 'TL-009',
@@ -478,6 +487,7 @@ export const daftarBarang: Barang[] = [
   {
     id: 'b-10',
     nama: 'Keju Cheddar Lembaran',
+    deskripsi: 'Pak isi 50 lembar',
     namaLain: ['keju'],
     kategori: 'Susu & Olahan',
     kodeBarang: 'KJ-010',
@@ -503,6 +513,7 @@ export const daftarBarang: Barang[] = [
   {
     id: 'b-11',
     nama: 'Sirup Vanila',
+    deskripsi: 'Botol 750 ml',
     namaLain: ['vanila', 'sirup'],
     kategori: 'Pemanis',
     kodeBarang: 'SR-011',
@@ -525,6 +536,7 @@ export const daftarBarang: Barang[] = [
   {
     id: 'b-12',
     nama: 'Air Mineral Galon',
+    deskripsi: 'Galon 19 liter',
     namaLain: ['galon', 'air'],
     kategori: 'Pendukung',
     kodeBarang: 'AR-012',
@@ -547,6 +559,7 @@ export const daftarBarang: Barang[] = [
   {
     id: 'b-13',
     nama: 'Kentang Beku Shoestring',
+    deskripsi: 'Pak 1 kg',
     namaLain: ['kentang', 'french fries'],
     kategori: 'Bahan Makanan',
     kodeBarang: 'KT-013',
@@ -569,6 +582,7 @@ export const daftarBarang: Barang[] = [
   {
     id: 'b-14',
     nama: 'Minyak Goreng Kemasan',
+    deskripsi: 'Jeriken 5 liter',
     namaLain: ['minyak'],
     kategori: 'Bahan Makanan',
     kodeBarang: 'MG-014',
@@ -591,6 +605,7 @@ export const daftarBarang: Barang[] = [
   {
     id: 'b-15',
     nama: 'Cup Sealer Film',
+    deskripsi: 'Gulungan untuk cup 16–22 oz',
     namaLain: ['film', 'sealer'],
     kategori: 'Kemasan',
     kodeBarang: 'KM-015',
@@ -613,6 +628,7 @@ export const daftarBarang: Barang[] = [
   {
     id: 'b-16',
     nama: 'Bubuk Cokelat',
+    deskripsi: 'Bubuk murni, kantong 1 kg',
     namaLain: ['coklat', 'cokelat'],
     kategori: 'Kopi & Teh',
     kodeBarang: 'CK-016',
@@ -635,6 +651,7 @@ export const daftarBarang: Barang[] = [
   {
     id: 'b-17',
     nama: 'Matcha Bubuk',
+    deskripsi: 'Grade latte',
     namaLain: ['matcha', 'greentea'],
     kategori: 'Kopi & Teh',
     kodeBarang: 'MC-017',
@@ -657,6 +674,7 @@ export const daftarBarang: Barang[] = [
   {
     id: 'b-18',
     nama: 'Gelas Plastik 22 oz',
+    deskripsi: '22 oz, bening',
     namaLain: ['gelas besar'],
     kategori: 'Kemasan',
     kodeBarang: 'KM-018',

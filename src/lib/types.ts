@@ -126,6 +126,11 @@ export interface Kemasan {
 export interface Barang {
   id: string
   nama: string
+  /**
+   * Ukuran, jenis, atau tipe: "1 liter", "jeriken 5 L", "16 oz". Tiap varian
+   * dicatat sebagai barang sendiri, jadi tiga ukuran minyak = tiga baris stok.
+   */
+  deskripsi?: string | null
   /** Sebutan sehari-hari di warung. Ikut dicari supaya "skm" menemukan susu kental manis. */
   namaLain: string[]
   kategori: string
