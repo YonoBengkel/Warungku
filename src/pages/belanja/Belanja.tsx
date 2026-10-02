@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dasar'
 import { Kolom } from '@/components/ui/formulir'
 import { Lembar } from '@/components/ui/lembar'
-import { BarisChip, Chip, TabSegmen } from '@/components/ui/navigasi'
+import { Chip, TabSegmen } from '@/components/ui/navigasi'
 import { KeadaanKosong } from '@/components/ui/umpanBalik'
 import { HargaBeli, LencanaPromo } from '@/components/domain/KartuPromo'
 import {
@@ -19,8 +19,8 @@ import {
   IkonCari,
   IkonKontrak,
   IkonKotak,
-  IkonLokasi,
   IkonPanahKanan,
+  IkonSaring,
   IkonSilang,
   IkonToko,
 } from '@/icons'
@@ -53,6 +53,9 @@ import { useAplikasi } from '@/store/aplikasi'
  */
 
 type TabBelanja = 'barang' | 'distributor'
+
+/** Satu saringan yang sedang berlaku; `kunci` sama dengan nama parameter URL-nya. */
+type Saringan = { kunci: 'kota' | 'stok' | 'kontrak'; label: string }
 
 /* Nilai bintang selalu satu desimal. `angka(4, 1)` menghasilkan "4", dan "4"
    berdampingan dengan "4,8" terbaca seperti dua skala yang berbeda. */
@@ -236,7 +239,7 @@ export default function Belanja() {
   const hanyaAdaStok = params.get('stok') === 'ada'
   const hanyaAdaKontrak = params.get('kontrak') === 'ada'
 
-  const [lembarKota, setLembarKota] = useState(false)
+  const [lembarSaring, setLembarSaring] = useState(false)
 
   function aturParam(ubahan: Record<string, string | null>) {
     const baru = new URLSearchParams(params)
@@ -323,7 +326,13 @@ export default function Belanja() {
     return hasil.lama.filter((x) => !sudah.has(x.penawaran.id))
   }, [hasil.lama, perluDiisi])
 
-  const adaSaringAktif = Boolean(kotaSaring) || hanyaAdaStok || hanyaAdaKontrak
+  /* Saringan yang sedang berlaku. Stok dan kontrak hanya berarti di tab
+     barang, jadi di tab distributor yang dihitung cuma kota. */
+  const saringAktif: Saringan[] = []
+  if (kotaSaring) saringAktif.push({ kunci: 'kota', label: kotaSaring })
+  if (tab === 'barang' && hanyaAdaStok) saringAktif.push({ kunci: 'stok', label: 'Stok tersedia' })
+  if (tab === 'barang' && hanyaAdaKontrak) saringAktif.push({ kunci: 'kontrak', label: 'Tersedia kontrak' })
+  const adaSaringAktif = saringAktif.length > 0
 
   const panelSaring = (
     <div className="space-y-4">
@@ -379,7 +388,7 @@ export default function Belanja() {
           ikonKiri={<IkonSilang size={14} />}
           onClick={() => aturParam({ kota: null, stok: null, kontrak: null })}
         >
-          Hapus semua saringan
+          Hapus semua
         </Tombol>
       )}
     </div>
@@ -395,8 +404,11 @@ export default function Belanja() {
         dari distributor, bukan dari gudang kamu.
       </p>
 
+      {/* Kolom cari dan tombol Filter sebaris: saringan dipindah ke atas,
+          dekat tempat orang mulai mencari, bukan di rail samping atau baris
+          chip yang tenggelam di bawah tab. */}
       <form
-        className="mt-3"
+        className="mt-3 flex items-start gap-2"
         onSubmit={(e) => {
           e.preventDefault()
         }}
@@ -404,12 +416,36 @@ export default function Belanja() {
       >
         <Kolom
           type="search"
-          aria-label="Cari barang"
-          placeholder="Cari barang, misal: gula pasir"
+          aria-label={tab === 'barang' ? 'Cari barang atau kategori' : 'Cari distributor, kota, atau kategori'}
+          placeholder={tab === 'barang' ? 'Cari barang atau kategori, misal: gula' : 'Cari distributor atau kota'}
           value={cari}
           onChange={(e) => aturParam({ cari: e.target.value })}
           awalan={<IkonCari size={18} />}
+          className="min-w-0 grow"
         />
+        <button
+          type="button"
+          onClick={() => setLembarSaring(true)}
+          aria-haspopup="dialog"
+          aria-label={adaSaringAktif ? `Filter, ${saringAktif.length} sedang dipakai` : 'Filter'}
+          className={cx(
+            'relative shrink-0 inline-flex items-center gap-2 h-12 px-4 rounded-md border text-[0.9375rem] font-semibold transition-colors',
+            adaSaringAktif
+              ? 'border-brand bg-brand-soft text-brand-soft-ink'
+              : 'border-line-strong bg-surface text-ink-2 hover:border-brand hover:text-brand',
+          )}
+        >
+          <IkonSaring size={18} />
+          <span className="hidden sm:inline">Filter</span>
+          {adaSaringAktif && (
+            <span
+              aria-hidden="true"
+              className="min-w-5 h-5 px-1 rounded-full bg-brand text-ink-inverse text-[0.6875rem] font-bold grid place-items-center tabular"
+            >
+              {saringAktif.length}
+            </span>
+          )}
+        </button>
       </form>
 
       <TabSegmen<TabBelanja>
@@ -426,245 +462,237 @@ export default function Belanja() {
         ]}
       />
 
-      {/* Di HP penyaring jadi chip geser; di layar lebar ia pindah ke rail kiri */}
-      <BarisChip className="mt-3 lg:hidden">
-        <Chip aktif={Boolean(kotaSaring)} ikon={<IkonLokasi size={14} />} onClick={() => setLembarKota(true)}>
-          {kotaSaring || 'Kota'}
-        </Chip>
-        {tab === 'barang' && (
-          <>
-            <Chip aktif={hanyaAdaStok} onClick={() => aturParam({ stok: hanyaAdaStok ? null : 'ada' })}>
-              Stok tersedia
-            </Chip>
-            <Chip aktif={hanyaAdaKontrak} onClick={() => aturParam({ kontrak: hanyaAdaKontrak ? null : 'ada' })}>
-              Tersedia kontrak
-            </Chip>
-          </>
-        )}
-      </BarisChip>
-
-      <div className="mt-4 lg:grid lg:grid-cols-[280px_1fr] lg:gap-6 lg:items-start">
-        <aside className="hidden lg:block sticky top-20">
-          <Kartu padat>{panelSaring}</Kartu>
-        </aside>
-
-        <div className="min-w-0">
-          {tab === 'barang' ? (
-            <>
-              {/* Jumlah hasil hanya ditulis kalau memang ada hasilnya. Saat nol,
-                  kalimat ini persis mengulang judul keadaan kosong di bawahnya. */}
-              {cari && hasil.jumlah > 0 && (
-                <p className="text-[0.875rem] text-ink-2 mb-3">
-                  <strong className="text-ink">{hasil.jumlah} penawaran</strong> cocok dengan &ldquo;{cari}&rdquo;
-                  {kotaSaring && ` di ${kotaSaring}`}.
-                </p>
-              )}
-
-              {hasil.jumlah === 0 ? (
-                <Kartu>
-                  <h2 className="sr-only">Hasil pencarian barang</h2>
-                  <KeadaanKosong
-                    ikon={<IkonCari size={26} />}
-                    judul={cari ? `Belum ada yang cocok dengan "${cari}"` : 'Belum ada penawaran yang cocok'}
-                    pesan={
-                      adaSaringAktif
-                        ? 'Saringan yang kamu pasang mempersempit hasilnya. Coba lepas salah satu, atau ganti kata kunci dengan nama yang lebih umum.'
-                        : 'Coba kata yang lebih umum, misalnya "kopi" saja tanpa merek, atau lihat daftar distributor di kotamu.'
-                    }
-                    aksi={
-                      adaSaringAktif ? (
-                        <Tombol onClick={() => aturParam({ kota: null, stok: null, kontrak: null })}>
-                          Hapus semua saringan
-                        </Tombol>
-                      ) : (
-                        <Tombol onClick={() => aturParam({ tab: 'distributor' })}>
-                          Lihat Daftar Distributor
-                        </Tombol>
-                      )
-                    }
-                    aksiKedua={
-                      cari ? (
-                        <Tombol ragam="garis" onClick={() => aturParam({ cari: null })}>
-                          Kosongkan pencarian
-                        </Tombol>
-                      ) : undefined
-                    }
-                  />
-                </Kartu>
-              ) : (
-                <div className="space-y-6">
-                  {!cari && perluDiisi.length > 0 && (
-                    <section aria-label="Perlu kamu isi ulang">
-                      <JudulBagian
-                        judul="Perlu kamu isi ulang"
-                        keterangan="Barang yang stoknya sudah di bawah batas aman gudangmu"
-                      />
-                      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                        {perluDiisi.map((x) => (
-                          <KartuPenawaran
-                            key={x.penawaran.id}
-                            penawaran={x.penawaran}
-                            distributor={x.distributor}
-                            barang={x.barang}
-                            mitra={idMitra.has(x.distributor.id)}
-                          />
-                        ))}
-                      </div>
-                    </section>
-                  )}
-
-                  {sisaHasil.length > 0 && (
-                    <section aria-label="Hasil pencarian">
-                      <JudulBagian
-                        judul={cari ? 'Hasil pencarian' : 'Semua penawaran di kotamu'}
-                        /* Jumlahnya sudah disebut sebaris di atas saat ada kata
-                           kunci, jadi di sini cukup penjelasan isinya. */
-                        keterangan={
-                          cari
-                            ? 'Dari distributor yang sudah punya rekam jejak di aplikasi'
-                            : `${sisaHasil.length} penawaran dari distributor yang sudah punya rekam jejak`
-                        }
-                      />
-                      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                        {sisaHasil.map((x) => (
-                          <KartuPenawaran
-                            key={x.penawaran.id}
-                            penawaran={x.penawaran}
-                            distributor={x.distributor}
-                            barang={x.barang}
-                            mitra={idMitra.has(x.distributor.id)}
-                          />
-                        ))}
-                      </div>
-                    </section>
-                  )}
-
-                  {hasil.baru.length > 0 && (
-                    <section aria-label="Distributor baru di kotamu">
-                      <JudulBagian
-                        judul="Distributor Baru di Kotamu"
-                        keterangan="Belum punya ulasan, jadi belum bisa diurutkan berdasarkan penilaian. Kami tampilkan apa adanya."
-                      />
-                      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                        {hasil.baru.map((x) => (
-                          <KartuPenawaran
-                            key={x.penawaran.id}
-                            penawaran={x.penawaran}
-                            distributor={x.distributor}
-                            barang={x.barang}
-                            mitra={false}
-                          />
-                        ))}
-                      </div>
-                    </section>
-                  )}
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="space-y-6">
-              {hasilDistributor.lama.length === 0 && hasilDistributor.baru.length === 0 ? (
-                <Kartu>
-                  <h2 className="sr-only">Hasil pencarian distributor</h2>
-                  <KeadaanKosong
-                    ikon={<IkonToko size={26} />}
-                    judul="Belum ada distributor yang cocok"
-                    pesan={`Belum ada distributor yang namanya atau kategorinya cocok${kotaSaring ? ` di ${kotaSaring}` : ''}. Coba lepas saringan kota atau cari lewat nama barangnya.`}
-                    aksi={
-                      <Tombol onClick={() => aturParam({ kota: null, cari: null })}>
-                        Hapus saringan, tampilkan semua distributor
-                      </Tombol>
-                    }
-                  />
-                </Kartu>
-              ) : (
-                <>
-                  {hasilDistributor.lama.length > 0 && (
-                    <section aria-label="Daftar distributor">
-                      <JudulBagian
-                        /* Bukan "Distributor" saja: judul halaman sudah memakai
-                           kata itu, dan dua judul kembar dalam satu layar
-                           membuat orang kehilangan jejak posisinya. */
-                        judul="Daftar Distributor"
-                        keterangan={`${hasilDistributor.lama.length} distributor${kotaSaring ? ` di ${kotaSaring}` : ` yang mengirim ke ${profil.kota.split(',')[0]} dan sekitarnya`}`}
-                      />
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        {hasilDistributor.lama.map((d) => (
-                          <KartuDistributor
-                            key={d.id}
-                            distributor={d}
-                            jumlahPenawaran={daftarPenawaran.filter((p) => p.distributorId === d.id).length}
-                          />
-                        ))}
-                      </div>
-                    </section>
-                  )}
-
-                  {hasilDistributor.baru.length > 0 && (
-                    <section aria-label="Distributor baru di kotamu">
-                      <JudulBagian
-                        judul="Distributor Baru di Kotamu"
-                        keterangan="Belum ada ulasan dari UMKM lain. Mulai dari pesanan kecil dulu kalau kamu ingin mencoba."
-                      />
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        {hasilDistributor.baru.map((d) => (
-                          <KartuDistributor
-                            key={d.id}
-                            distributor={d}
-                            jumlahPenawaran={daftarPenawaran.filter((p) => p.distributorId === d.id).length}
-                          />
-                        ))}
-                      </div>
-                    </section>
-                  )}
-                </>
-              )}
-            </div>
+      {/* Saringan yang sedang berlaku, satu chip per saringan. Mengetuk chip
+          melepasnya, jadi tidak perlu membuka pop-up hanya untuk menghapus. */}
+      {adaSaringAktif && (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          {saringAktif.map((s) => (
+            <button
+              key={s.kunci}
+              type="button"
+              onClick={() => aturParam({ [s.kunci]: null })}
+              aria-label={`Lepas saringan ${s.label}`}
+              className="inline-flex items-center gap-1.5 h-11 pl-3.5 pr-3 rounded-full bg-brand-soft text-brand-soft-ink text-[0.8125rem] font-semibold hover:brightness-97"
+            >
+              {s.label}
+              <IkonSilang size={14} className="shrink-0" />
+            </button>
+          ))}
+          {saringAktif.length > 1 && (
+            <button
+              type="button"
+              onClick={() => aturParam({ kota: null, stok: null, kontrak: null })}
+              className="inline-flex items-center h-11 px-2 text-[0.8125rem] font-semibold text-brand hover:underline"
+            >
+              Hapus semua
+            </button>
           )}
+        </div>
+      )}
 
-          <div className="mt-8 flex flex-wrap gap-2.5">
-            <TombolTautan ke="/stok?filter=menipis" ragam="garis" ukuran="kecil" ikonKiri={<IkonKotak size={15} />}>
-              Lihat stok yang menipis
-            </TombolTautan>
-            <TombolTautan ke="/keranjang" ragam="sunyi" ukuran="kecil">
-              Buka keranjang
-            </TombolTautan>
+      <div className="mt-4">
+        {tab === 'barang' ? (
+          <>
+            {/* Jumlah hasil hanya ditulis kalau memang ada hasilnya. Saat nol,
+                kalimat ini persis mengulang judul keadaan kosong di bawahnya. */}
+            {cari && hasil.jumlah > 0 && (
+              <p className="text-[0.875rem] text-ink-2 mb-3">
+                <strong className="text-ink">{hasil.jumlah} penawaran</strong> cocok dengan &ldquo;{cari}&rdquo;
+                {kotaSaring && ` di ${kotaSaring}`}.
+              </p>
+            )}
+
+            {hasil.jumlah === 0 ? (
+              <Kartu>
+                <h2 className="sr-only">Hasil pencarian barang</h2>
+                <KeadaanKosong
+                  ikon={<IkonCari size={26} />}
+                  judul={cari ? `Belum ada yang cocok dengan "${cari}"` : 'Belum ada penawaran yang cocok'}
+                  pesan={
+                    adaSaringAktif
+                      ? 'Saringan yang kamu pasang mempersempit hasilnya. Coba lepas salah satu, atau ganti kata kunci dengan nama yang lebih umum.'
+                      : 'Coba kata yang lebih umum, misalnya "kopi" saja tanpa merek, atau lihat daftar distributor di kotamu.'
+                  }
+                  aksi={
+                    adaSaringAktif ? (
+                      <Tombol onClick={() => aturParam({ kota: null, stok: null, kontrak: null })}>
+                        Hapus semua saringan
+                      </Tombol>
+                    ) : (
+                      <Tombol onClick={() => aturParam({ tab: 'distributor' })}>
+                        Lihat Daftar Distributor
+                      </Tombol>
+                    )
+                  }
+                  aksiKedua={
+                    cari ? (
+                      <Tombol ragam="garis" onClick={() => aturParam({ cari: null })}>
+                        Kosongkan pencarian
+                      </Tombol>
+                    ) : undefined
+                  }
+                />
+              </Kartu>
+            ) : (
+              <div className="space-y-6">
+                {!cari && perluDiisi.length > 0 && (
+                  <section aria-label="Perlu kamu isi ulang">
+                    <JudulBagian
+                      judul="Perlu kamu isi ulang"
+                      keterangan="Barang yang stoknya sudah di bawah batas aman gudangmu"
+                    />
+                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 [&>*]:min-w-0">
+                      {perluDiisi.map((x) => (
+                        <KartuPenawaran
+                          key={x.penawaran.id}
+                          penawaran={x.penawaran}
+                          distributor={x.distributor}
+                          barang={x.barang}
+                          mitra={idMitra.has(x.distributor.id)}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {sisaHasil.length > 0 && (
+                  <section aria-label="Hasil pencarian">
+                    <JudulBagian
+                      judul={cari ? 'Hasil pencarian' : 'Semua penawaran di kotamu'}
+                      /* Jumlahnya sudah disebut sebaris di atas saat ada kata
+                         kunci, jadi di sini cukup penjelasan isinya. */
+                      keterangan={
+                        cari
+                          ? 'Dari distributor yang sudah punya rekam jejak di aplikasi'
+                          : `${sisaHasil.length} penawaran dari distributor yang sudah punya rekam jejak`
+                      }
+                    />
+                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 [&>*]:min-w-0">
+                      {sisaHasil.map((x) => (
+                        <KartuPenawaran
+                          key={x.penawaran.id}
+                          penawaran={x.penawaran}
+                          distributor={x.distributor}
+                          barang={x.barang}
+                          mitra={idMitra.has(x.distributor.id)}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {hasil.baru.length > 0 && (
+                  <section aria-label="Distributor baru di kotamu">
+                    <JudulBagian
+                      judul="Distributor Baru di Kotamu"
+                      keterangan="Belum punya ulasan, jadi belum bisa diurutkan berdasarkan penilaian. Kami tampilkan apa adanya."
+                    />
+                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 [&>*]:min-w-0">
+                      {hasil.baru.map((x) => (
+                        <KartuPenawaran
+                          key={x.penawaran.id}
+                          penawaran={x.penawaran}
+                          distributor={x.distributor}
+                          barang={x.barang}
+                          mitra={false}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                )}
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="space-y-6">
+            {hasilDistributor.lama.length === 0 && hasilDistributor.baru.length === 0 ? (
+              <Kartu>
+                <h2 className="sr-only">Hasil pencarian distributor</h2>
+                <KeadaanKosong
+                  ikon={<IkonToko size={26} />}
+                  judul="Belum ada distributor yang cocok"
+                  pesan={`Belum ada distributor yang namanya atau kategorinya cocok${kotaSaring ? ` di ${kotaSaring}` : ''}. Coba lepas saringan kota atau cari lewat nama barangnya.`}
+                  aksi={
+                    <Tombol onClick={() => aturParam({ kota: null, cari: null })}>
+                      Hapus saringan, tampilkan semua distributor
+                    </Tombol>
+                  }
+                />
+              </Kartu>
+            ) : (
+              <>
+                {hasilDistributor.lama.length > 0 && (
+                  <section aria-label="Daftar distributor">
+                    <JudulBagian
+                      /* Bukan "Distributor" saja: judul halaman sudah memakai
+                         kata itu, dan dua judul kembar dalam satu layar
+                         membuat orang kehilangan jejak posisinya. */
+                      judul="Daftar Distributor"
+                      keterangan={`${hasilDistributor.lama.length} distributor${kotaSaring ? ` di ${kotaSaring}` : ` yang mengirim ke ${profil.kota.split(',')[0]} dan sekitarnya`}`}
+                    />
+                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 [&>*]:min-w-0">
+                      {hasilDistributor.lama.map((d) => (
+                        <KartuDistributor
+                          key={d.id}
+                          distributor={d}
+                          jumlahPenawaran={daftarPenawaran.filter((p) => p.distributorId === d.id).length}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {hasilDistributor.baru.length > 0 && (
+                  <section aria-label="Distributor baru di kotamu">
+                    <JudulBagian
+                      judul="Distributor Baru di Kotamu"
+                      keterangan="Belum ada ulasan dari UMKM lain. Mulai dari pesanan kecil dulu kalau kamu ingin mencoba."
+                    />
+                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 [&>*]:min-w-0">
+                      {hasilDistributor.baru.map((d) => (
+                        <KartuDistributor
+                          key={d.id}
+                          distributor={d}
+                          jumlahPenawaran={daftarPenawaran.filter((p) => p.distributorId === d.id).length}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                )}
+              </>
+            )}
           </div>
+        )}
+
+        <div className="mt-8 flex flex-wrap gap-2.5">
+          <TombolTautan ke="/stok?filter=menipis" ragam="garis" ukuran="kecil" ikonKiri={<IkonKotak size={15} />}>
+            Lihat stok yang menipis
+          </TombolTautan>
+          <TombolTautan ke="/keranjang" ragam="sunyi" ukuran="kecil">
+            Buka keranjang
+          </TombolTautan>
         </div>
       </div>
 
-      <Lembar terbuka={lembarKota} tutup={() => setLembarKota(false)} judul="Pilih kota" lebar="sempit">
-        <div className="pb-4 flex flex-col gap-1">
-          <button
-            type="button"
-            onClick={() => {
-              aturParam({ kota: null })
-              setLembarKota(false)
-            }}
-            className={cx(
-              'text-left h-12 px-3.5 rounded-md text-[0.9375rem] font-semibold transition-colors',
-              !kotaSaring ? 'bg-brand-soft text-brand-soft-ink' : 'text-ink-2 hover:bg-sunken',
-            )}
-          >
-            Semua kota
-          </button>
-          {daftarKota.map((k) => (
-            <button
-              key={k}
-              type="button"
-              onClick={() => {
-                aturParam({ kota: k })
-                setLembarKota(false)
-              }}
-              className={cx(
-                'text-left h-12 px-3.5 rounded-md text-[0.9375rem] font-semibold transition-colors',
-                kotaSaring === k ? 'bg-brand-soft text-brand-soft-ink' : 'text-ink-2 hover:bg-sunken',
-              )}
-            >
-              {k}
-            </button>
-          ))}
-        </div>
+      {/* Satu pop-up untuk semua saringan: lembar bawah di HP, panel di layar
+          lebar. Perubahan langsung berlaku, jadi tombolnya cukup "Selesai". */}
+      <Lembar
+        terbuka={lembarSaring}
+        tutup={() => setLembarSaring(false)}
+        judul="Filter"
+        keterangan={
+          adaSaringAktif
+            ? `${saringAktif.length} saringan sedang dipakai.`
+            : 'Belum ada saringan yang dipakai. Pilih yang kamu perlukan.'
+        }
+        lebar="sempit"
+        kaki={
+          <Tombol penuh onClick={() => setLembarSaring(false)}>
+            Selesai
+          </Tombol>
+        }
+      >
+        <div className="pb-4">{panelSaring}</div>
       </Lembar>
     </div>
   )

@@ -191,35 +191,45 @@ export default function PenawaranDetail() {
               />
               <BarisData label="Area kirim" nilai={distributor.areaKirim.join(', ')} />
             </dl>
-          </Kartu>
 
-          {/* Distributor */}
-          <Link
-            to={`/distributor/${distributor.id}`}
-            className="flex items-center gap-3 bg-surface border border-line rounded-lg p-4 min-h-[72px] shadow-e1 hover:border-line-strong"
-          >
-            <Avatar nama={distributor.nama} warna={distributor.warna} ukuran={44} />
-            <div className="min-w-0 grow">
-              <p className="text-[0.9375rem] font-bold text-ink truncate">{distributor.nama}</p>
-              <p className="text-[0.8125rem] text-ink-3">{distributor.kota}</p>
-              <div className="mt-1.5">
-                {distributor.baru || distributor.rating == null ? (
-                  <Lencana nada="netral">
-                    Distributor Baru &middot; belum ada ulasan &middot; bergabung {distributor.sejak}
-                  </Lencana>
-                ) : (
-                  <span className="inline-flex items-center gap-1.5 text-[0.8125rem] text-ink-2">
-                    <IkonBintangIsi size={14} className="text-menipis" />
-                    <strong className="text-ink">{distributor.rating.toFixed(1).replace('.', ',')}</strong>
-                    <HanyaPembacaLayar>dari 5 bintang &middot;</HanyaPembacaLayar>
-                    {distributor.jumlahUlasan} ulasan dari {distributor.jumlahUmkmPengulas} UMKM &middot;{' '}
-                    {angka(distributor.jumlahPesananSelesai)} pesanan selesai
-                  </span>
-                )}
+            {/* Penjualnya dibaca di kartu yang sama dengan harganya: harga, stok,
+                dan area kirim di atas adalah janji distributor ini, jadi rekam
+                jejaknya ikut ditimbang di tempat yang sama, bukan di kartu
+                terpisah yang mudah terlewat. */}
+            <Pemisah className="my-3.5" />
+            <p className="text-[0.75rem] font-semibold uppercase tracking-wide text-ink-3">Dijual oleh</p>
+            <Link
+              to={`/distributor/${distributor.id}`}
+              className="-mx-2 mt-1 flex items-center gap-3 rounded-md px-2 py-2 min-h-14 hover:bg-sunken"
+            >
+              <Avatar nama={distributor.nama} warna={distributor.warna} ukuran={40} />
+              <div className="min-w-0 grow">
+                <p className="text-[0.9375rem] font-bold text-ink leading-snug">
+                  {distributor.nama}
+                  <span className="font-normal text-ink-3"> &middot; {distributor.kota}</span>
+                </p>
+                <div className="mt-1">
+                  {distributor.baru || distributor.rating == null ? (
+                    <Lencana nada="netral">
+                      Distributor Baru &middot; belum ada ulasan &middot; bergabung {distributor.sejak}
+                    </Lencana>
+                  ) : (
+                    <span className="inline-flex flex-wrap items-center gap-x-1.5 text-[0.8125rem] text-ink-2">
+                      <IkonBintangIsi size={14} className="text-menipis" />
+                      <strong className="text-ink">{distributor.rating.toFixed(1).replace('.', ',')}</strong>
+                      <HanyaPembacaLayar>dari 5 bintang &middot;</HanyaPembacaLayar>
+                      {distributor.jumlahUlasan} ulasan dari {distributor.jumlahUmkmPengulas} UMKM &middot;{' '}
+                      {angka(distributor.jumlahPesananSelesai)} pesanan selesai
+                    </span>
+                  )}
+                </div>
+                <span className="mt-1 inline-flex items-center gap-1 text-[0.8125rem] font-bold text-brand">
+                  Lihat profil distributor
+                  <IkonPanahKanan size={15} />
+                </span>
               </div>
-            </div>
-            <IkonPanahKanan size={18} className="shrink-0 text-ink-3" />
-          </Link>
+            </Link>
+          </Kartu>
         </div>
 
         <div className="lg:col-span-5 mt-4 lg:mt-0 space-y-4">
