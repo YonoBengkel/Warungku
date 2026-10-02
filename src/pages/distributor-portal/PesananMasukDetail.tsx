@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { BarisBukti, KartuBuktiPengiriman } from '@/components/domain'
 import { LencanaPromo } from '@/components/domain/KartuPromo'
 import { Avatar, Kartu, Lencana, Pemisah, Tombol, TombolTautan } from '@/components/ui/dasar'
 import { BilahAksi, KepalaHalaman } from '@/components/ui/navigasi'
@@ -8,7 +9,6 @@ import {
   IkonBintang,
   IkonBintangIsi,
   IkonCentang,
-  IkonKotak,
   IkonLokasi,
   IkonPanahKanan,
   IkonPasokan,
@@ -286,48 +286,9 @@ export default function PesananMasukDetail() {
             </Kartu>
           </section>
 
-          {/* 4. Bukti pengiriman, hanya setelah barang sampai */}
-          {p.status === 'selesai' && p.pengiriman && (
-            <section aria-labelledby="judul-bukti">
-              <Kartu>
-                <h2 id="judul-bukti" className="text-[0.9375rem] font-bold text-ink mb-3">
-                  Bukti Pengiriman
-                </h2>
-                <dl className="space-y-1.5">
-                  <BarisBukti label="Jasa kirim" nilai={p.pengiriman.kurir} />
-                  <BarisBukti label="Pengantar" nilai={p.pengiriman.namaPengantar} />
-                  <BarisBukti label="Nomor resi" nilai={p.pengiriman.nomorResi} />
-                  <BarisBukti label="Diterima oleh" nilai={p.pengiriman.diterimaOleh} />
-                  <BarisBukti
-                    label="Waktu sampai"
-                    nilai={`${tanggalPendek(p.pengiriman.waktuSampai)}, ${jam(p.pengiriman.waktuSampai)}`}
-                  />
-                </dl>
-
-                <p className="mt-3 text-[0.8125rem] text-ink-2 leading-relaxed max-w-[60ch]">
-                  {p.pengiriman.catatan}
-                </p>
-
-                {/* Bingkai berlabel, bukan gambar. Foto palsu akan membuat layar
-                    ini terlihat lebih jadi daripada keadaannya. */}
-                <div className="mt-3 grid grid-cols-2 gap-2.5">
-                  {p.pengiriman.foto.map((keterangan) => (
-                    <div
-                      key={keterangan}
-                      className="border-2 border-dashed border-line-strong rounded-md p-3 text-center"
-                    >
-                      <IkonKotak size={20} className="mx-auto text-ink-3" />
-                      <p className="mt-1.5 text-[0.75rem] text-ink-2 leading-snug">{keterangan}</p>
-                    </div>
-                  ))}
-                </div>
-                <p className="mt-2 text-[0.75rem] text-ink-3 leading-relaxed">
-                  Berkas fotonya belum ikut disimpan di purwarupa ini, yang tercatat baru
-                  keterangannya.
-                </p>
-              </Kartu>
-            </section>
-          )}
+          {/* 4. Bukti pengiriman, hanya setelah barang sampai. Komponen yang
+              sama dibaca pemilik usaha di detail pesanannya. */}
+          {p.status === 'selesai' && p.pengiriman && <KartuBuktiPengiriman bukti={p.pengiriman} />}
 
           {/* 5. Ulasan dari pemilik usaha */}
           {p.status === 'selesai' && p.ulasan && (
@@ -412,17 +373,6 @@ export default function PesananMasukDetail() {
 /* ------------------------------------------------------------------ */
 /* Potongan kecil                                                      */
 /* ------------------------------------------------------------------ */
-
-function BarisBukti({ label, nilai }: { label: string; nilai: string }) {
-  return (
-    <div className="flex items-baseline justify-between gap-4">
-      <dt className="text-[0.8125rem] text-ink-3 shrink-0">{label}</dt>
-      <dd className="text-[0.875rem] font-semibold text-ink text-right min-w-0 break-words">
-        {nilai}
-      </dd>
-    </div>
-  )
-}
 
 /** Bintang selalu ditemani angkanya, supaya tidak bergantung pada bentuk saja. */
 function Bintang({ nilai }: { nilai: number }) {

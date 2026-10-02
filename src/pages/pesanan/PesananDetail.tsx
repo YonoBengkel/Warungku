@@ -1,6 +1,6 @@
 import { useRef, useState, type ChangeEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ChipPesanan, TombolTerkunci, useTerkunci } from '@/components/domain'
+import { ChipPesanan, KartuBuktiPengiriman, TombolTerkunci, useTerkunci } from '@/components/domain'
 import { KALIMAT_PROMO, LencanaPromo } from '@/components/domain/KartuPromo'
 import { Avatar, Kartu, Lencana, Pemisah, Tombol, TombolIkon, TombolTautan } from '@/components/ui/dasar'
 import { BarisChip, BilahAksi, Chip, KepalaHalaman } from '@/components/ui/navigasi'
@@ -244,9 +244,11 @@ export default function PesananDetail() {
               <ol className="mt-1">
                 {LANGKAH.map((l, i) => {
                   const lewat = i <= langkahAktif
-                  const jejak = pesanan.jejak.find(
-                    (j) => j.status === l.status || (l.status === 'selesai' && j.status === 'selesai-catatan'),
-                  )
+                  // Kabar TERBARU di tahap ini: di tahap "Dikirim" itu bisa
+                  // berarti "distributor menandai barang sudah sampai".
+                  const jejak = [...pesanan.jejak]
+                    .reverse()
+                    .find((j) => j.status === l.status || (l.status === 'selesai' && j.status === 'selesai-catatan'))
                   const judul =
                     l.status === 'selesai' && pesanan.status === 'selesai-catatan' ? 'Selesai (ada catatan)' : l.judul
                   return (
@@ -284,6 +286,20 @@ export default function PesananDetail() {
               </ol>
             )}
           </section>
+
+          {/* 2c. Bukti antar dari distributor (catatan A5). Muncul begitu
+              distributor menandai barang sampai, sebelum pemilik usaha
+              menghitungnya, karena di saat itulah bukti ini paling berguna. */}
+          {pesanan.pengiriman && (
+            <KartuBuktiPengiriman
+              bukti={pesanan.pengiriman}
+              keterangan={
+                pesanan.status === 'dikirim'
+                  ? 'Distributor menandai barangnya sudah sampai. Hitung dulu barangnya, lalu tekan Barang Sudah Sampai supaya stok gudang bertambah.'
+                  : undefined
+              }
+            />
+          )}
 
           {/* 3. Rincian harga */}
           <section aria-labelledby="judul-rincian">
@@ -514,7 +530,13 @@ export default function PesananDetail() {
               <TombolTautan ke={`/pesanan/${pesanan.id}/terima`} penuh ukuran="besar" ikonKiri={<IkonPasokan size={18} />}>
                 Barang Sudah Sampai
               </TombolTautan>
-              {!pembatalanDiajukan && (
+              {/* Barang yang sudah diserahkan tidak bisa dibatalkan lagi; yang
+                  tersisa hanya menghitungnya dan mencatat selisih kalau ada. */}
+              {pesanan.pengiriman ? (
+                <p className="text-center text-[0.8125rem] text-ink-3 leading-snug">
+                  Barang sudah diserahkan. Kalau jumlahnya beda atau ada yang rusak, catat di langkah berikutnya.
+                </p>
+              ) : !pembatalanDiajukan && (
                 <>
                   <button
                     type="button"

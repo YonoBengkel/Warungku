@@ -1,6 +1,6 @@
-import { useState, type ReactNode } from 'react'
+import { useId, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import type { Barang, Kontrak, Perkiraan, Pesanan, StatusStok } from '@/lib/types'
+import type { Barang, BuktiPengiriman, Kontrak, Perkiraan, Pesanan, StatusStok } from '@/lib/types'
 import {
   BANTUAN,
   JUDUL,
@@ -17,6 +17,7 @@ import {
   angka,
   cx,
   hariLagi,
+  jam,
   rupiah,
   tanggalPendek,
   waktuLalu,
@@ -35,6 +36,7 @@ import {
   IkonKunci,
   IkonPena,
   IkonPetir,
+  IkonKotak,
 } from '@/icons'
 import { Kartu, Lencana, Tombol, TombolTautan, Avatar, type NadaLencana } from '@/components/ui/dasar'
 import { BilahProgres } from '@/components/ui/umpanBalik'
@@ -699,8 +701,12 @@ export function KartuPesanan({ pesanan }: { pesanan: Pesanan }) {
           </p>
           <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[0.75rem] text-ink-3">
             <span className="tabular">{rupiah(total)}</span>
-            {pesanan.perkiraanTiba && pesanan.status !== 'selesai' && pesanan.status !== 'batal' && (
-              <span>Perkiraan tiba {waktuNanti(pesanan.perkiraanTiba)}</span>
+            {pesanan.status === 'dikirim' && pesanan.pengiriman ? (
+              <span className="text-brand font-semibold">Sudah sampai, tinggal kamu hitung</span>
+            ) : (
+              pesanan.perkiraanTiba &&
+              pesanan.status !== 'selesai' &&
+              pesanan.status !== 'batal' && <span>Perkiraan tiba {waktuNanti(pesanan.perkiraanTiba)}</span>
             )}
             {pesanan.statusBayar === 'belum-dibayar' && pesanan.status !== 'draf' && (
               <span className="text-menipis-ink font-semibold">Belum dibayar</span>
@@ -718,3 +724,60 @@ export function KartuPesanan({ pesanan }: { pesanan: Pesanan }) {
   )
 }
 
+/* ================================================================== */
+/* Bukti pengiriman                                                   */
+/* ================================================================== */
+
+/** Satu baris label-nilai di kartu bukti dan ringkasan ulasan. */
+export function BarisBukti({ label, nilai }: { label: string; nilai: string }) {
+  return (
+    <div className="flex items-baseline justify-between gap-4">
+      <dt className="text-[0.8125rem] text-ink-3 shrink-0">{label}</dt>
+      <dd className="text-[0.875rem] font-semibold text-ink text-right min-w-0 break-words">{nilai}</dd>
+    </div>
+  )
+}
+
+/**
+ * Bukti antar dari distributor: siapa yang mengantar, kapan sampai, dan foto
+ * serah terima. Dipakai di DUA sisi, distributor yang mencatatnya dan pemilik
+ * usaha yang menerima barangnya, jadi keduanya selalu membaca bukti yang sama.
+ */
+export function KartuBuktiPengiriman({ bukti, keterangan }: { bukti: BuktiPengiriman; keterangan?: ReactNode }) {
+  const idJudul = useId()
+  return (
+    <section aria-labelledby={idJudul}>
+      <Kartu>
+        <h2 id={idJudul} className="text-[0.9375rem] font-bold text-ink mb-3">
+          Bukti Pengiriman
+        </h2>
+        {keterangan && (
+          <p className="-mt-1.5 mb-3 text-[0.8125rem] text-ink-2 leading-relaxed max-w-[60ch]">{keterangan}</p>
+        )}
+        <dl className="space-y-1.5">
+          <BarisBukti label="Jasa kirim" nilai={bukti.kurir} />
+          <BarisBukti label="Pengantar" nilai={bukti.namaPengantar} />
+          <BarisBukti label="Nomor resi" nilai={bukti.nomorResi} />
+          <BarisBukti label="Diterima oleh" nilai={bukti.diterimaOleh} />
+          <BarisBukti label="Waktu sampai" nilai={`${tanggalPendek(bukti.waktuSampai)}, ${jam(bukti.waktuSampai)}`} />
+        </dl>
+
+        <p className="mt-3 text-[0.8125rem] text-ink-2 leading-relaxed max-w-[60ch]">{bukti.catatan}</p>
+
+        {/* Bingkai berlabel, bukan gambar. Foto palsu akan membuat layar ini
+            terlihat lebih jadi daripada keadaannya. */}
+        <div className="mt-3 grid grid-cols-2 gap-2.5">
+          {bukti.foto.map((k) => (
+            <div key={k} className="border-2 border-dashed border-line-strong rounded-md p-3 text-center">
+              <IkonKotak size={20} className="mx-auto text-ink-3" />
+              <p className="mt-1.5 text-[0.75rem] text-ink-2 leading-snug">{k}</p>
+            </div>
+          ))}
+        </div>
+        <p className="mt-2 text-[0.75rem] text-ink-3 leading-relaxed">
+          Berkas fotonya belum ikut disimpan di purwarupa ini, yang tercatat baru keterangannya.
+        </p>
+      </Kartu>
+    </section>
+  )
+}
