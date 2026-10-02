@@ -9,6 +9,7 @@ import {
   PitaDataKasir,
 } from '@/components/domain'
 import { KartuPromo } from '@/components/domain/KartuPromo'
+import { Korsel } from '@/components/ui/korsel'
 import { JudulBagian, Kartu, Kerangka, Lencana, Tombol, TombolTautan } from '@/components/ui/dasar'
 import { PengaturJumlah } from '@/components/ui/formulir'
 import { Lembar } from '@/components/ui/lembar'
@@ -83,6 +84,23 @@ export default function Beranda() {
   const tugas = useMemo(() => {
     const hasil: Array<{ kunci: string; urutan: number; elemen: ReactNode }> = []
 
+    /* Tombol di kartu langsung memasukkan saran ke keranjang; kartunya sendiri
+       membuka Lembar Pesan Cepat untuk yang mau memeriksa dulu. Pemberitahuan
+       sesudahnya membawa tautan "Ubah jumlah", karena jumlah saran bisa saja
+       tidak cocok dengan rencana pemilik usaha hari itu. */
+    function masukkanSaran(
+      namaBarang: string,
+      isi: { penawaranId: string; jumlah: number; kontrakId: string | null },
+    ) {
+      const pw = penawaranById(isi.penawaranId)
+      if (!pw) return
+      tambahKeKeranjang(pw.distributorId, pw.id, isi.jumlah, isi.jumlah, isi.kontrakId)
+      tampilkanRacun(`${namaBarang} masuk keranjang: ${angka(isi.jumlah)} ${pw.satuan}.`, 'aman', {
+        label: 'Ubah jumlah',
+        ke: '/keranjang',
+      })
+    }
+
     /* Dipakai dua kali: sebagai tujuan kartu "habis" (kalau barangnya memang
        ada di dalamnya) dan sebagai kartu saran belanja sendiri. */
     const saran = saranBelanja[0]
@@ -106,11 +124,24 @@ export default function Beranda() {
          memberi tahu. Urutannya: daftar saran kalau barangnya memang di sana,
          lalu penawaran langsung, lalu pencarian di Distributor. */
       const penawaranPertama = penawaranUntukBarang(b.id)[0]
-      const kePesan = saran?.baris.some((r) => r.barangId === b.id)
+      const barisSaran = saran?.baris.find((r) => r.barangId === b.id)
+      const kePesan = barisSaran
         ? `/pesan-cepat/${saran.id}`
         : penawaranPertama
           ? `/penawaran/${penawaranPertama.id}`
           : `/belanja?cari=${encodeURIComponent(b.nama)}`
+
+      /* Jumlah yang dimasukkan tombol: baris saran belanja kalau barangnya ada
+         di sana, lalu saran model kalau datanya cukup. Tanpa keduanya tidak ada
+         angka yang bisa dipertanggungjawabkan, jadi tombolnya membuka pilihan
+         distributor, bukan menebak jumlah. */
+      const rekomendasi = layakDiperkirakan(b) ? rekomendasiDari(b) : undefined
+      const isiPesan =
+        barisSaran?.penawaranId
+          ? { penawaranId: barisSaran.penawaranId, jumlah: Math.max(1, barisSaran.jumlahSaran), kontrakId: barisSaran.kontrakId }
+          : rekomendasi?.arah === 'tambah' && rekomendasi.penawaranId
+            ? { penawaranId: rekomendasi.penawaranId, jumlah: Math.max(1, rekomendasi.jumlah), kontrakId: rekomendasi.kontrakId }
+            : null
 
       hasil.push({
         kunci: `habis-${b.id}`,
@@ -126,8 +157,10 @@ export default function Beranda() {
                 ? `Stok tercatat 0. ${jumlahTampil(b, dikirim)} sedang dikirim.`
                 : `Stok tercatat 0. Rata-rata terpakai ${jumlahTampil(b, b.pemakaianHarian)} per hari.`
             }
-            aksiLabel={dikirim > 0 ? 'Lihat Stok' : 'Pesan Sekarang'}
-            aksiKe={dikirim > 0 ? `/stok/${b.id}` : kePesan}
+            aksiLabel={dikirim > 0 ? 'Lihat Stok' : isiPesan ? 'Pesan Sekarang' : 'Pilih Distributor'}
+            aksiKe={dikirim > 0 ? `/stok/${b.id}` : isiPesan ? undefined : kePesan}
+            onAksi={isiPesan && dikirim <= 0 ? () => masukkanSaran(b.nama, isiPesan) : undefined}
+            keKartu={dikirim > 0 ? undefined : kePesan}
           />
         ),
       })
@@ -149,8 +182,19 @@ export default function Beranda() {
               .filter(Boolean)
               .join(', ')
               .concat(saran.baris.length > 3 ? `, dan ${saran.baris.length - 3} lainnya` : '')}
-            aksiLabel="Lihat Saran Belanja"
-            aksiKe={`/pesan-cepat/${saran.id}`}
+            aksiLabel="Masukkan Saran ke Keranjang"
+            onAksi={() => {
+              const bisa = saran.baris.filter((r) => r.penawaranId != null)
+              for (const r of bisa) {
+                const pw = penawaranById(r.penawaranId!)
+                if (pw) tambahKeKeranjang(pw.distributorId, pw.id, Math.max(1, r.jumlahSaran), r.jumlahSaran, r.kontrakId)
+              }
+              tampilkanRacun(`${bisa.length} barang dari saran belanja masuk keranjang.`, 'aman', {
+                label: 'Lihat keranjang',
+                ke: '/keranjang',
+              })
+            }}
+            keKartu={`/pesan-cepat/${saran.id}`}
           />
         ),
       })
@@ -257,7 +301,7 @@ export default function Beranda() {
     }
 
     return hasil.sort((a, b) => a.urutan - b.urutan).slice(0, 5)
-  }, [barang, kontrak, pesanan])
+  }, [barang, kontrak, pesanan, tambahKeKeranjang, tampilkanRacun])
 
   const berjalan = pesanan.filter((p) => PESANAN_BERJALAN.includes(p.status))
   const isiKeranjang = keranjang.reduce((a, k) => a + k.baris.length, 0)
@@ -413,23 +457,14 @@ export default function Beranda() {
         <JudulBagian
           id="judul-promo"
           judul="Promo dari Distributor"
-          keterangan="Geser ke samping untuk melihat promo lainnya."
+          keterangan="Berganti sendiri. Geser, atau tekan jeda kalau mau membaca lebih lama."
         />
-        {/* Baris geser punya wadah gulirnya sendiri. Tarikan tepi negatif hanya
-            di layar sempit supaya kartu tidak terlihat terpotong paksa, dan
-            badan halaman tetap tidak bergeser di 360px. */}
-        <div
-          aria-label="Promo dari distributor, geser ke samping"
-          className={cx(
-            'flex gap-3 overflow-x-auto no-scrollbar snap-x snap-mandatory',
-            '-mx-4 px-4 sm:mx-0 sm:px-0',
-            'lg:grid lg:grid-cols-3 lg:overflow-visible',
-          )}
-        >
-          {daftarPromo.map((p) => (
-            <KartuPromo key={p.id} promo={p} />
-          ))}
-        </div>
+        <Korsel
+          label="Promo dari distributor"
+          otomatis
+          kelasItem="w-[85%] sm:w-[20rem] lg:w-[calc((100%-1.5rem)/3)]"
+          isi={daftarPromo.map((p) => ({ kunci: p.id, elemen: <KartuPromo promo={p} lebar /> }))}
+        />
       </section>
 
       {/* Perlu Tindakan: pintasan penyaring, bukan tindakan itu sendiri */}
@@ -498,11 +533,15 @@ export default function Beranda() {
             Semua aman hari ini.
           </p>
         ) : (
-          <div className="grid gap-3 lg:grid-cols-2 [&>*]:min-w-0">
-            {tugas.map((t) => (
-              <div key={t.kunci}>{t.elemen}</div>
-            ))}
-          </div>
+          /* Geser manual, tidak pernah berjalan sendiri: isinya tugas, termasuk
+             satu-satunya jalan cepat ke "Barang Sudah Sampai". Kartu yang
+             berpindah sendiri bisa membuat tugas terlewat, atau tombol kartu lain
+             tertekan saat ia sedang bergerak. */
+          <Korsel
+            label="Yang perlu kamu urus hari ini"
+            kelasItem="w-[88%] sm:w-[22rem] lg:w-[calc((100%-0.75rem)/2)]"
+            isi={tugas.map((t) => ({ kunci: t.kunci, elemen: t.elemen }))}
+          />
         )}
       </section>
 

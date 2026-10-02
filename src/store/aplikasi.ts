@@ -53,6 +53,8 @@ export interface Racun {
   id: number
   pesan: string
   nada: 'aman' | 'info' | 'menipis' | 'kritis'
+  /** Satu tautan lanjutan, mis. "Ubah jumlah" setelah barang masuk keranjang. */
+  aksi?: { label: string; ke: string }
 }
 
 export interface HasilKirim {
@@ -144,7 +146,7 @@ interface KeadaanAplikasi {
   tundaNotifikasi: (id: string, hari: number) => void
 
   /* Umpan balik */
-  tampilkanRacun: (pesan: string, nada?: Racun['nada']) => void
+  tampilkanRacun: (pesan: string, nada?: Racun['nada'], aksi?: Racun['aksi']) => void
   tutupRacun: (id: number) => void
 }
 
@@ -876,10 +878,12 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
     )
   },
 
-  tampilkanRacun: (pesan, nada = 'aman') => {
+  tampilkanRacun: (pesan, nada = 'aman', aksi) => {
     const id = (nomorRacun += 1)
-    set((s) => ({ racun: [...s.racun, { id, pesan, nada }] }))
-    window.setTimeout(() => get().tutupRacun(id), 4200)
+    set((s) => ({ racun: [...s.racun, { id, pesan, nada, aksi }] }))
+    // Pemberitahuan yang membawa tautan diberi waktu lebih lama: orang perlu
+    // membaca DAN memutuskan menekan tautannya.
+    window.setTimeout(() => get().tutupRacun(id), aksi ? 7000 : 4200)
   },
 
   tutupRacun: (id) => set((s) => ({ racun: s.racun.filter((r) => r.id !== id) })),

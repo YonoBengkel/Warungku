@@ -307,7 +307,14 @@ export function TombolTerkunci({ label, penuh }: { label: string; penuh?: boolea
 /* Kartu tindakan (Beranda)                                           */
 /* ================================================================== */
 
-/** Satu kartu, satu tombol besar, dan hanya satu. */
+/**
+ * Satu kartu, satu tombol besar, dan hanya satu.
+ *
+ * Dengan `keKartu`, permukaan kartu ikut jadi tautan (lewat judulnya), dan
+ * tombolnya mengerjakan hal yang berbeda — mis. kartu membuka Lembar Pesan
+ * Cepat, tombol langsung memasukkan saran ke keranjang. Tombolnya diangkat ke
+ * atas lapisan tautan supaya dua sasaran itu tidak saling rebut.
+ */
 export function KartuTindakan({
   nada = 'netral',
   ikon,
@@ -317,6 +324,7 @@ export function KartuTindakan({
   aksiKe,
   onAksi,
   lencana,
+  keKartu,
 }: {
   nada?: NadaLencana
   ikon?: ReactNode
@@ -326,6 +334,7 @@ export function KartuTindakan({
   aksiKe?: string
   onAksi?: () => void
   lencana?: ReactNode
+  keKartu?: string
 }) {
   const garis = {
     netral: 'border-line',
@@ -337,7 +346,13 @@ export function KartuTindakan({
   }[nada]
 
   return (
-    <div className={cx('bg-surface border rounded-lg p-4 shadow-e1', garis)}>
+    <div
+      className={cx(
+        'relative h-full flex flex-col bg-surface border rounded-lg p-4 shadow-e1',
+        keKartu && 'hover:shadow-e2 transition-shadow',
+        garis,
+      )}
+    >
       <div className="flex items-start gap-3">
         {ikon && (
           <span
@@ -357,13 +372,21 @@ export function KartuTindakan({
         )}
         <div className="min-w-0 grow">
           <div className="flex items-start gap-2 flex-wrap">
-            <h3 className="text-[0.9375rem] font-bold text-ink leading-snug">{judul}</h3>
+            <h3 className="text-[0.9375rem] font-bold text-ink leading-snug">
+              {keKartu ? (
+                <Link to={keKartu} className="after:absolute after:inset-0 after:rounded-lg hover:text-brand">
+                  {judul}
+                </Link>
+              ) : (
+                judul
+              )}
+            </h3>
             {lencana}
           </div>
           <div className="mt-1 text-[0.8125rem] text-ink-2 leading-relaxed">{detail}</div>
         </div>
       </div>
-      <div className="mt-3">
+      <div className="relative z-10 mt-auto pt-3">
         {aksiKe ? (
           <TombolTautan ke={aksiKe} penuh ukuran="sedang">
             {aksiLabel}

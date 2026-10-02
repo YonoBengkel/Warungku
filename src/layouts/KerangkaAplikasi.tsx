@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { cx, inisial } from '@/lib/format'
 import { NAV } from '@/lib/label'
 import {
@@ -57,6 +57,7 @@ export default function KerangkaAplikasi() {
   const profil = useAplikasi((s) => s.profil)
   const racun = useAplikasi((s) => s.racun)
   const tutupRacun = useAplikasi((s) => s.tutupRacun)
+  const navigate = useNavigate()
   const tema = useAplikasi((s) => s.tema)
   const perluTindakan = useJumlahPerluTindakan()
   const isiKeranjang = useJumlahKeranjang()
@@ -238,7 +239,21 @@ export default function KerangkaAplikasi() {
       {/* Pemberitahuan singkat */}
       <div className="fixed left-1/2 -translate-x-1/2 bottom-[calc(var(--nav-h)+1rem)] lg:bottom-6 z-50 flex flex-col gap-2 w-[min(30rem,calc(100vw-2rem))] pointer-events-none">
         {racun.map((r) => (
-          <Toast key={r.id} pesan={r.pesan} nada={r.nada} tutup={() => tutupRacun(r.id)} />
+          <Toast
+            key={r.id}
+            pesan={r.pesan}
+            nada={r.nada}
+            aksiLabel={r.aksi?.label}
+            aksi={
+              r.aksi
+                ? () => {
+                    navigate(r.aksi!.ke)
+                    tutupRacun(r.id)
+                  }
+                : undefined
+            }
+            tutup={() => tutupRacun(r.id)}
+          />
         ))}
       </div>
     </div>

@@ -326,7 +326,7 @@ export const daftarBarang: Barang[] = [
   {
     id: 'b-03',
     nama: 'Gula Aren Cair',
-    deskripsi: 'Jeriken 5 liter',
+    deskripsi: 'Jerigen 5 liter',
     namaLain: ['gula aren', 'aren'],
     kategori: 'Pemanis',
     kodeBarang: 'GA-003',
@@ -582,7 +582,7 @@ export const daftarBarang: Barang[] = [
   {
     id: 'b-14',
     nama: 'Minyak Goreng Kemasan',
-    deskripsi: 'Jeriken 5 liter',
+    deskripsi: 'Jerigen 5 liter',
     namaLain: ['minyak'],
     kategori: 'Bahan Makanan',
     kodeBarang: 'MG-014',

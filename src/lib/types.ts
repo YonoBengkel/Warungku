@@ -127,7 +127,7 @@ export interface Barang {
   id: string
   nama: string
   /**
-   * Ukuran, jenis, atau tipe: "1 liter", "jeriken 5 L", "16 oz". Tiap varian
+   * Ukuran, jenis, atau tipe: "1 liter", "jerigen 5 L", "16 oz". Tiap varian
    * dicatat sebagai barang sendiri, jadi tiga ukuran minyak = tiga baris stok.
    */
   deskripsi?: string | null

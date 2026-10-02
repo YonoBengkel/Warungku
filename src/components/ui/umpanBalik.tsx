@@ -289,7 +289,7 @@ export function Toast({
         <button
           type="button"
           onClick={aksi}
-          className="text-[0.8125rem] font-bold underline underline-offset-2 shrink-0 opacity-90 hover:opacity-100"
+          className="min-h-11 px-1 text-[0.8125rem] font-bold underline underline-offset-2 shrink-0 opacity-90 hover:opacity-100"
         >
           {aksiLabel}
         </button>

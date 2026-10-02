@@ -335,7 +335,7 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
             value={deskripsi}
             onChange={(e) => setDeskripsi(e.target.value)}
             placeholder="Contoh: Botol 1 liter"
-            bantuan="Ukuran, jenis, atau tipenya. Ukuran lain dicatat sebagai barang sendiri: minyak 1 liter dan minyak jeriken jadi dua baris."
+            bantuan="Ukuran, jenis, atau tipenya. Ukuran lain dicatat sebagai barang sendiri: minyak 1 liter dan minyak jerigen jadi dua baris."
           />
         </div>
 
