@@ -16,7 +16,7 @@ import { angka, jumlahSatuan } from '@/lib/format'
 import { LABEL_PESANAN_MASUK, NADA_PESANAN_MASUK } from '@/lib/label'
 import type { PesananMasuk, StatusPesananMasuk } from '@/lib/types'
 import { daftarPenawaran, distributorAktif, umkmById } from '@/data/dummy'
-import { useAplikasi, useTitikPeta } from '@/store/aplikasi'
+import { usePesananMasuk, useTitikPeta } from '@/store/aplikasi'
 
 /**
  * Lacak Pesanan: dua keadaan saja, Sedang Diproses dan Selesai.
@@ -72,7 +72,7 @@ export default function LacakPesanan() {
   const [params, setParams] = useSearchParams()
   const keadaan: Keadaan = params.get('status') === 'selesai' ? 'selesai' : 'proses'
 
-  const pesananMasuk = useAplikasi((s) => s.pesananMasuk)
+  const pesananMasuk = usePesananMasuk()
   const titik = useTitikPeta()
 
   const perKeadaan = useMemo(() => {

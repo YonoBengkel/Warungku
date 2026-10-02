@@ -12,7 +12,7 @@ import {
 } from '@/icons'
 import { angka, cx, rupiah, tanggalPendek } from '@/lib/format'
 import { daftarPenawaran, distributorAktif, umkmById } from '@/data/dummy'
-import { useAplikasi } from '@/store/aplikasi'
+import { useAplikasi, usePesananMasuk } from '@/store/aplikasi'
 
 /**
  * Profil toko distributor.
@@ -38,7 +38,7 @@ export default function ProfilDistributor() {
   const tema = useAplikasi((s) => s.tema)
   const aturTema = useAplikasi((s) => s.aturTema)
   const aturPeran = useAplikasi((s) => s.aturPeran)
-  const pesananMasuk = useAplikasi((s) => s.pesananMasuk)
+  const pesananMasuk = usePesananMasuk()
 
   /* Lima penilaian terbaru. Lebih dari itu halaman berubah jadi daftar ulasan,
      padahal ini halaman profil. */
@@ -261,9 +261,11 @@ export default function ProfilDistributor() {
                             </span>
                           </span>
                         </div>
-                        <p className="mt-1 text-[0.8125rem] text-ink-2 leading-relaxed max-w-[60ch]">
-                          &ldquo;{u.isi}&rdquo;
-                        </p>
+                        {u.isi && (
+                          <p className="mt-1 text-[0.8125rem] text-ink-2 leading-relaxed max-w-[60ch]">
+                            &ldquo;{u.isi}&rdquo;
+                          </p>
+                        )}
                         <p className="mt-1 text-[0.75rem] text-ink-3">
                           {p.nomor} &middot; {tanggalPendek(u.waktu)}
                         </p>

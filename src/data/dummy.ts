@@ -1,6 +1,7 @@
 import type {
   ArahPrediksi,
   Barang,
+  BarisPesanan,
   BarisPesananMasuk,
   BarisTransaksi,
   DataKasir,
@@ -11,6 +12,7 @@ import type {
   Penawaran,
   Pergerakan,
   Perkiraan,
+  JejakPesananMasuk,
   Pesanan,
   PesananMasuk,
   ProfilUsaha,
@@ -20,6 +22,8 @@ import type {
   RiwayatKasir,
   SaranBelanja,
   StatusKuota,
+  StatusPesanan,
+  StatusPesananMasuk,
   StatusStok,
   TitikTren,
   Transaksi,
@@ -2042,10 +2046,30 @@ export function rekomendasiUntuk(barangId: string): RekomendasiPrediksi | undefi
 /* Pesanan                                                            */
 /* ================================================================== */
 
+/** Baris pesanan UMKM dari satu penawaran, dengan harga yang berlaku (kontrak > promo > normal). */
+function barisPS(penawaranId: string, jumlah: number, kontrakId: string | null = null): BarisPesanan {
+  const p = penawaranById(penawaranId)!
+  const harga = rincianHarga(penawaranId, kontrakId)
+  return {
+    penawaranId,
+    barangId: p.barangIdTerkait,
+    nama: p.nama,
+    jumlah,
+    satuan: p.satuan,
+    hargaSatuan: harga.harga,
+    hargaNormal: harga.hargaNormal,
+    promoId: harga.promo?.id ?? null,
+    isiPerSatuan: p.kemasanJual?.isi ?? 1,
+    jumlahDiterima: null,
+    alasanSelisih: null,
+    catatanPenerimaan: null,
+  }
+}
+
 export const daftarPesanan: Pesanan[] = [
   {
     id: 'ps-01',
-    nomor: 'PS-260913-08',
+    nomor: `PS-${kodeTanggal(0)}-08`,
     distributorId: 'd-02',
     kontrakId: 'k-03',
     dibuatPada: hariKe(0, 8, 12),
@@ -2077,7 +2101,7 @@ export const daftarPesanan: Pesanan[] = [
   },
   {
     id: 'ps-02',
-    nomor: 'PS-260912-06',
+    nomor: `PS-${kodeTanggal(-1)}-12`,
     distributorId: 'd-05',
     kontrakId: 'k-05',
     dibuatPada: hariKe(-1, 16, 40),
@@ -2113,7 +2137,7 @@ export const daftarPesanan: Pesanan[] = [
   },
   {
     id: 'ps-03',
-    nomor: 'PS-260910-03',
+    nomor: `PS-${kodeTanggal(-3)}-04`,
     distributorId: 'd-04',
     kontrakId: 'k-04',
     dibuatPada: hariKe(-3, 10, 15),
@@ -2161,7 +2185,7 @@ export const daftarPesanan: Pesanan[] = [
   },
   {
     id: 'ps-04',
-    nomor: 'PS-260907-04',
+    nomor: `PS-${kodeTanggal(-6)}-04`,
     distributorId: 'd-01',
     kontrakId: 'k-01',
     dibuatPada: hariKe(-6, 9, 0),
@@ -2195,10 +2219,19 @@ export const daftarPesanan: Pesanan[] = [
     catatanUntukDistributor: '',
     sudahDiulas: false,
     kodeBelanja: null,
+    pengiriman: {
+      kurir: 'Armada sendiri',
+      namaPengantar: 'Wahyu Nugroho',
+      nomorResi: 'STN-0914-0177',
+      diterimaOleh: 'Bagas Prasetyo',
+      waktuSampai: hariKe(-4, 9, 50),
+      catatan: 'Ditimbang ulang di tempat, jumlahnya pas.',
+      foto: ['Barang diturunkan di depan kedai', 'Timbangan diperlihatkan ke pemilik', 'Tanda terima ditandatangani'],
+    },
   },
   {
     id: 'ps-05',
-    nomor: 'PS-260901-02',
+    nomor: `PS-${kodeTanggal(-12)}-02`,
     distributorId: 'd-06',
     kontrakId: null,
     dibuatPada: hariKe(-12, 14, 30),
@@ -2234,7 +2267,7 @@ export const daftarPesanan: Pesanan[] = [
   },
   {
     id: 'ps-06',
-    nomor: 'PS-260913-09',
+    nomor: `PS-${kodeTanggal(0)}-09`,
     distributorId: 'd-01',
     kontrakId: 'k-01',
     dibuatPada: hariKe(0, 6, 0),
@@ -2260,6 +2293,52 @@ export const daftarPesanan: Pesanan[] = [
     jumlahBukti: 0,
     dariSaran: false,
     dariRutin: true,
+    catatanUntukDistributor: '',
+    sudahDiulas: false,
+    kodeBelanja: null,
+  },
+  /* Dua pesanan ke Sumber Tani Nusantara, distributor yang membuka portal
+     distributor di purwarupa ini. Portal itu membaca pesanan YANG SAMA lewat
+     gabungPesananMasuk, jadi menerimanya di sana langsung mengubah status di
+     sini, dan sebaliknya. */
+  {
+    id: 'ps-07',
+    nomor: `PS-${kodeTanggal(0)}-07`,
+    distributorId: 'd-01',
+    kontrakId: null,
+    dibuatPada: jamLalu(1.5),
+    status: 'menunggu-konfirmasi',
+    baris: [barisPS('pw-02', 2), barisPS('pw-03', 1)],
+    ongkosKirim: 25000,
+    perkiraanTiba: hariKe(2),
+    jejak: [{ waktu: jamLalu(1.5), status: 'menunggu-konfirmasi', keterangan: 'Pesanan dikirim ke distributor.' }],
+    statusBayar: 'belum-dibayar',
+    jumlahBukti: 0,
+    dariSaran: false,
+    dariRutin: false,
+    catatanUntukDistributor: 'Kirim siang saja, pagi kedai masih ramai.',
+    sudahDiulas: false,
+    kodeBelanja: null,
+  },
+  {
+    id: 'ps-08',
+    nomor: `PS-${kodeTanggal(-2)}-01`,
+    distributorId: 'd-01',
+    kontrakId: null,
+    dibuatPada: hariKe(-2, 7, 45),
+    status: 'dikirim',
+    baris: [barisPS('pw-03', 4)],
+    ongkosKirim: 20000,
+    perkiraanTiba: hariKe(0, 15, 0),
+    jejak: [
+      { waktu: hariKe(-2, 7, 45), status: 'menunggu-konfirmasi', keterangan: 'Pesanan dikirim ke distributor.' },
+      { waktu: hariKe(-2, 8, 30), status: 'disiapkan', keterangan: 'Distributor menerima pesanan dan menyiapkan barang.' },
+      { waktu: hariKe(-1, 7, 20), status: 'dikirim', keterangan: 'Barang berangkat dari gudang distributor.' },
+    ],
+    statusBayar: 'bukti-terkirim',
+    jumlahBukti: 1,
+    dariSaran: true,
+    dariRutin: false,
     catatanUntukDistributor: '',
     sudahDiulas: false,
     kodeBelanja: null,
@@ -2794,27 +2873,8 @@ function barisPM(penawaranId: string, jumlah: number): BarisPesananMasuk {
 export const daftarPesananMasuk: PesananMasuk[] = [
   /* --- Menunggu konfirmasi (baru, umurnya dihitung dalam jam) --- */
   {
-    id: 'pm-01',
-    nomor: `PM-${kodeTanggal(0)}-07`,
-    umkmId: 'u-01',
-    distributorId: 'd-01',
-    dibuatPada: jamLalu(1.5),
-    status: 'menunggu-konfirmasi',
-    baris: [barisPM('pw-01', 12)],
-    ongkosKirim: 25000,
-    perkiraanTiba: null,
-    jejak: [
-      { waktu: jamLalu(1.6), status: 'menunggu-konfirmasi', keterangan: 'Pesanan dikirim dari aplikasi pemilik usaha.' },
-      { waktu: jamLalu(1.5), status: 'menunggu-konfirmasi', keterangan: 'Masuk ke daftarmu, menunggu diterima atau ditolak.' },
-    ],
-    alasanTolak: null,
-    catatanDariUmkm: 'Tolong sangrai medium seperti biasa.',
-    pengiriman: null,
-    ulasan: null,
-  },
-  {
     id: 'pm-02',
-    nomor: `PM-${kodeTanggal(0)}-06`,
+    nomor: `PS-${kodeTanggal(0)}-06`,
     umkmId: 'u-05',
     distributorId: 'd-01',
     dibuatPada: jamLalu(3),
@@ -2833,7 +2893,7 @@ export const daftarPesananMasuk: PesananMasuk[] = [
   },
   {
     id: 'pm-03',
-    nomor: `PM-${kodeTanggal(0)}-05`,
+    nomor: `PS-${kodeTanggal(0)}-05`,
     umkmId: 'u-03',
     distributorId: 'd-01',
     dibuatPada: jamLalu(6),
@@ -2852,7 +2912,7 @@ export const daftarPesananMasuk: PesananMasuk[] = [
   },
   {
     id: 'pm-04',
-    nomor: `PM-${kodeTanggal(0)}-04`,
+    nomor: `PS-${kodeTanggal(0)}-04`,
     umkmId: 'u-09',
     distributorId: 'd-01',
     dibuatPada: jamLalu(9),
@@ -2871,7 +2931,7 @@ export const daftarPesananMasuk: PesananMasuk[] = [
   },
   {
     id: 'pm-05',
-    nomor: `PM-${kodeTanggal(-1)}-11`,
+    nomor: `PS-${kodeTanggal(-1)}-11`,
     umkmId: 'u-12',
     distributorId: 'd-01',
     dibuatPada: jamLalu(14),
@@ -2890,7 +2950,7 @@ export const daftarPesananMasuk: PesananMasuk[] = [
   },
   {
     id: 'pm-06',
-    nomor: `PM-${kodeTanggal(-1)}-09`,
+    nomor: `PS-${kodeTanggal(-1)}-09`,
     umkmId: 'u-14',
     distributorId: 'd-01',
     dibuatPada: jamLalu(19),
@@ -2911,7 +2971,7 @@ export const daftarPesananMasuk: PesananMasuk[] = [
   /* --- Disiapkan di gudang --- */
   {
     id: 'pm-07',
-    nomor: `PM-${kodeTanggal(-1)}-03`,
+    nomor: `PS-${kodeTanggal(-1)}-03`,
     umkmId: 'u-02',
     distributorId: 'd-01',
     dibuatPada: hariKe(-1, 9, 20),
@@ -2930,7 +2990,7 @@ export const daftarPesananMasuk: PesananMasuk[] = [
   },
   {
     id: 'pm-08',
-    nomor: `PM-${kodeTanggal(-1)}-06`,
+    nomor: `PS-${kodeTanggal(-1)}-06`,
     umkmId: 'u-05',
     distributorId: 'd-01',
     dibuatPada: hariKe(-1, 14, 5),
@@ -2949,7 +3009,7 @@ export const daftarPesananMasuk: PesananMasuk[] = [
   },
   {
     id: 'pm-09',
-    nomor: `PM-${kodeTanggal(-1)}-08`,
+    nomor: `PS-${kodeTanggal(-1)}-08`,
     umkmId: 'u-07',
     distributorId: 'd-01',
     dibuatPada: hariKe(-1, 16, 40),
@@ -2968,7 +3028,7 @@ export const daftarPesananMasuk: PesananMasuk[] = [
   },
   {
     id: 'pm-10',
-    nomor: `PM-${kodeTanggal(-2)}-02`,
+    nomor: `PS-${kodeTanggal(-2)}-02`,
     umkmId: 'u-10',
     distributorId: 'd-01',
     dibuatPada: hariKe(-2, 8, 15),
@@ -2987,7 +3047,7 @@ export const daftarPesananMasuk: PesananMasuk[] = [
   },
   {
     id: 'pm-11',
-    nomor: `PM-${kodeTanggal(-2)}-05`,
+    nomor: `PS-${kodeTanggal(-2)}-05`,
     umkmId: 'u-13',
     distributorId: 'd-01',
     dibuatPada: hariKe(-2, 11, 30),
@@ -3007,28 +3067,8 @@ export const daftarPesananMasuk: PesananMasuk[] = [
 
   /* --- Sedang dikirim --- */
   {
-    id: 'pm-12',
-    nomor: `PM-${kodeTanggal(-2)}-01`,
-    umkmId: 'u-01',
-    distributorId: 'd-01',
-    dibuatPada: hariKe(-2, 7, 45),
-    status: 'dikirim',
-    baris: [barisPM('pw-03', 4)],
-    ongkosKirim: 20000,
-    perkiraanTiba: hariKe(0, 15, 0),
-    jejak: [
-      { waktu: hariKe(-2, 7, 45), status: 'menunggu-konfirmasi', keterangan: 'Pesanan masuk.' },
-      { waktu: hariKe(-2, 8, 30), status: 'disiapkan', keterangan: 'Kamu terima. Barang disiapkan di gudang.' },
-      { waktu: hariKe(-1, 7, 20), status: 'dikirim', keterangan: 'Berangkat dari gudang bersama armada pagi.' },
-    ],
-    alasanTolak: null,
-    catatanDariUmkm: '',
-    pengiriman: null,
-    ulasan: null,
-  },
-  {
     id: 'pm-13',
-    nomor: `PM-${kodeTanggal(-2)}-07`,
+    nomor: `PS-${kodeTanggal(-2)}-07`,
     umkmId: 'u-04',
     distributorId: 'd-01',
     dibuatPada: hariKe(-2, 13, 10),
@@ -3048,7 +3088,7 @@ export const daftarPesananMasuk: PesananMasuk[] = [
   },
   {
     id: 'pm-14',
-    nomor: `PM-${kodeTanggal(-3)}-02`,
+    nomor: `PS-${kodeTanggal(-3)}-02`,
     umkmId: 'u-06',
     distributorId: 'd-01',
     dibuatPada: hariKe(-3, 9, 0),
@@ -3068,7 +3108,7 @@ export const daftarPesananMasuk: PesananMasuk[] = [
   },
   {
     id: 'pm-15',
-    nomor: `PM-${kodeTanggal(-3)}-06`,
+    nomor: `PS-${kodeTanggal(-3)}-06`,
     umkmId: 'u-11',
     distributorId: 'd-01',
     dibuatPada: hariKe(-3, 15, 25),
@@ -3088,7 +3128,7 @@ export const daftarPesananMasuk: PesananMasuk[] = [
   },
   {
     id: 'pm-16',
-    nomor: `PM-${kodeTanggal(-4)}-01`,
+    nomor: `PS-${kodeTanggal(-4)}-01`,
     umkmId: 'u-13',
     distributorId: 'd-01',
     dibuatPada: hariKe(-4, 8, 30),
@@ -3110,7 +3150,7 @@ export const daftarPesananMasuk: PesananMasuk[] = [
   /* --- Selesai, baru sampai (titik biru masih hidup) --- */
   {
     id: 'pm-17',
-    nomor: `PM-${kodeTanggal(-3)}-03`,
+    nomor: `PS-${kodeTanggal(-3)}-03`,
     umkmId: 'u-05',
     distributorId: 'd-01',
     dibuatPada: hariKe(-3, 10, 0),
@@ -3144,7 +3184,7 @@ export const daftarPesananMasuk: PesananMasuk[] = [
   },
   {
     id: 'pm-18',
-    nomor: `PM-${kodeTanggal(-4)}-02`,
+    nomor: `PS-${kodeTanggal(-4)}-02`,
     umkmId: 'u-02',
     distributorId: 'd-01',
     dibuatPada: hariKe(-4, 9, 30),
@@ -3178,7 +3218,7 @@ export const daftarPesananMasuk: PesananMasuk[] = [
   },
   {
     id: 'pm-19',
-    nomor: `PM-${kodeTanggal(-4)}-05`,
+    nomor: `PS-${kodeTanggal(-4)}-05`,
     umkmId: 'u-08',
     distributorId: 'd-01',
     dibuatPada: hariKe(-4, 14, 0),
@@ -3208,42 +3248,8 @@ export const daftarPesananMasuk: PesananMasuk[] = [
 
   /* --- Selesai, sudah lewat 12 jam (titik birunya hilang) --- */
   {
-    id: 'pm-20',
-    nomor: `PM-${kodeTanggal(-6)}-04`,
-    umkmId: 'u-01',
-    distributorId: 'd-01',
-    dibuatPada: hariKe(-6, 8, 0),
-    status: 'selesai',
-    baris: [barisPM('pw-01', 10), barisPM('pw-02', 2)],
-    ongkosKirim: 25000,
-    perkiraanTiba: hariKe(-4, 10, 0),
-    jejak: [
-      { waktu: hariKe(-6, 8, 0), status: 'menunggu-konfirmasi', keterangan: 'Pesanan masuk.' },
-      { waktu: hariKe(-6, 9, 0), status: 'disiapkan', keterangan: 'Kamu terima. Barang disiapkan di gudang.' },
-      { waktu: hariKe(-5, 7, 15), status: 'dikirim', keterangan: 'Berangkat dari gudang.' },
-      { waktu: hariKe(-4, 11, 20), status: 'selesai', keterangan: 'Barang sampai dan diterima di tempat.' },
-    ],
-    alasanTolak: null,
-    catatanDariUmkm: '',
-    pengiriman: {
-      kurir: 'Armada sendiri',
-      namaPengantar: 'Wahyu Nugroho',
-      nomorResi: 'STN-0914-0177',
-      diterimaOleh: 'Bagas Prasetyo',
-      waktuSampai: hariKe(-4, 11, 20),
-      catatan: 'Ditimbang ulang di tempat, jumlahnya pas.',
-      foto: ['Barang diturunkan di depan kedai', 'Timbangan diperlihatkan ke pemilik', 'Tanda terima ditandatangani'],
-    },
-    ulasan: {
-      rating: 5,
-      isi: 'Sudah langganan lama, belum pernah mengecewakan.',
-      waktu: hariKe(-4, 15, 0),
-      aspek: { ketepatanWaktu: 5, jumlahSesuai: 5, kondisiBarang: 5 },
-    },
-  },
-  {
     id: 'pm-21',
-    nomor: `PM-${kodeTanggal(-8)}-03`,
+    nomor: `PS-${kodeTanggal(-8)}-03`,
     umkmId: 'u-03',
     distributorId: 'd-01',
     dibuatPada: hariKe(-8, 9, 15),
@@ -3277,7 +3283,7 @@ export const daftarPesananMasuk: PesananMasuk[] = [
   },
   {
     id: 'pm-22',
-    nomor: `PM-${kodeTanggal(-11)}-06`,
+    nomor: `PS-${kodeTanggal(-11)}-06`,
     umkmId: 'u-04',
     distributorId: 'd-01',
     dibuatPada: hariKe(-11, 10, 30),
@@ -3306,7 +3312,7 @@ export const daftarPesananMasuk: PesananMasuk[] = [
   },
   {
     id: 'pm-23',
-    nomor: `PM-${kodeTanggal(-14)}-02`,
+    nomor: `PS-${kodeTanggal(-14)}-02`,
     umkmId: 'u-07',
     distributorId: 'd-01',
     dibuatPada: hariKe(-14, 13, 0),
@@ -3340,7 +3346,7 @@ export const daftarPesananMasuk: PesananMasuk[] = [
   },
   {
     id: 'pm-24',
-    nomor: `PM-${kodeTanggal(-18)}-04`,
+    nomor: `PS-${kodeTanggal(-18)}-04`,
     umkmId: 'u-09',
     distributorId: 'd-01',
     dibuatPada: hariKe(-18, 8, 45),
@@ -3369,7 +3375,7 @@ export const daftarPesananMasuk: PesananMasuk[] = [
   },
   {
     id: 'pm-25',
-    nomor: `PM-${kodeTanggal(-23)}-01`,
+    nomor: `PS-${kodeTanggal(-23)}-01`,
     umkmId: 'u-10',
     distributorId: 'd-01',
     dibuatPada: hariKe(-23, 11, 0),
@@ -3405,7 +3411,7 @@ export const daftarPesananMasuk: PesananMasuk[] = [
   /* --- Ditolak --- */
   {
     id: 'pm-26',
-    nomor: `PM-${kodeTanggal(-5)}-08`,
+    nomor: `PS-${kodeTanggal(-5)}-08`,
     umkmId: 'u-12',
     distributorId: 'd-01',
     dibuatPada: hariKe(-5, 16, 20),
@@ -3424,7 +3430,7 @@ export const daftarPesananMasuk: PesananMasuk[] = [
   },
   {
     id: 'pm-27',
-    nomor: `PM-${kodeTanggal(-9)}-03`,
+    nomor: `PS-${kodeTanggal(-9)}-03`,
     umkmId: 'u-14',
     distributorId: 'd-01',
     dibuatPada: hariKe(-9, 10, 10),
@@ -3443,8 +3449,113 @@ export const daftarPesananMasuk: PesananMasuk[] = [
   },
 ]
 
-export function pesananMasukById(id: string): PesananMasuk | undefined {
-  return daftarPesananMasuk.find((p) => p.id === id)
+/* ------------------------------------------------------------------ */
+/* Satu pesanan, dua tampilan                                          */
+/* ------------------------------------------------------------------ */
+
+/** UMKM pemilik aplikasi di daftar pelanggan distributor; sama dengan profilAwal. */
+export const ID_UMKM_SENDIRI = 'u-01'
+
+/** Kalimat jejak dari sudut pandang distributor, per tahap. */
+const JEJAK_DISTRIBUTOR: Record<StatusPesananMasuk, string> = {
+  'menunggu-konfirmasi': 'Pesanan masuk dari pemilik usaha.',
+  disiapkan: 'Kamu terima. Barang disiapkan di gudang.',
+  dikirim: 'Barang berangkat dari gudang.',
+  selesai: 'Pemilik usaha sudah menghitung dan menerima barangnya.',
+  ditolak: 'Ditolak.',
+}
+
+function statusDiDistributor(s: StatusPesanan): StatusPesananMasuk | null {
+  if (s === 'draf') return null
+  if (s === 'batal') return 'ditolak'
+  if (s === 'selesai' || s === 'selesai-catatan') return 'selesai'
+  return s
+}
+
+/**
+ * Pesanan pemilik usaha seperti yang dilihat distributornya.
+ *
+ * `null` untuk draf (belum pernah dikirim) dan untuk pesanan yang dibatalkan
+ * pemilik usaha sebelum dijawab: dua-duanya tidak pernah jadi urusan
+ * distributor. Pesanan yang sudah ditandai sampai oleh distributor (ada
+ * `pengiriman`) sudah selesai di sisinya, walau pemilik usaha belum selesai
+ * menghitung barangnya.
+ */
+export function cerminPesanan(p: Pesanan): PesananMasuk | null {
+  const dasar = statusDiDistributor(p.status)
+  if (!dasar) return null
+  if (dasar === 'ditolak' && !p.alasanTolak) return null
+  const status: StatusPesananMasuk = dasar === 'dikirim' && p.pengiriman ? 'selesai' : dasar
+
+  // Satu baris jejak per tahap. Tahap 'dikirim' kedua di sisi pemilik usaha
+  // ("distributor menandai sampai") di sisi distributor adalah tahap selesai,
+  // dan baris itu dibuat dari bukti pengirimannya.
+  const jejak: JejakPesananMasuk[] = []
+  const sudah = new Set<StatusPesananMasuk>()
+  for (const j of p.jejak) {
+    const s = statusDiDistributor(j.status)
+    if (!s || sudah.has(s)) continue
+    sudah.add(s)
+    jejak.push({
+      waktu: j.waktu,
+      status: s,
+      keterangan: s === 'ditolak' ? `Ditolak: ${p.alasanTolak}` : JEJAK_DISTRIBUTOR[s],
+    })
+  }
+  if (p.pengiriman) {
+    const sampai: JejakPesananMasuk = {
+      waktu: p.pengiriman.waktuSampai,
+      status: 'selesai',
+      keterangan: 'Barang sampai di pemilik usaha.',
+    }
+    const i = jejak.findIndex((j) => j.status === 'selesai')
+    if (i < 0) jejak.push(sampai)
+    else jejak.splice(i, 0, sampai)
+  }
+
+  return {
+    id: p.id,
+    nomor: p.nomor,
+    umkmId: ID_UMKM_SENDIRI,
+    distributorId: p.distributorId,
+    dibuatPada: p.dibuatPada,
+    status,
+    baris: p.baris.map((b) => ({
+      penawaranId: b.penawaranId,
+      nama: b.nama,
+      jumlah: b.jumlah,
+      satuan: b.satuan,
+      hargaSatuan: b.hargaSatuan,
+      hargaNormal: b.hargaNormal,
+      promoId: b.promoId,
+    })),
+    ongkosKirim: p.ongkosKirim,
+    perkiraanTiba: status === 'menunggu-konfirmasi' ? null : p.perkiraanTiba,
+    jejak,
+    alasanTolak: p.alasanTolak ?? null,
+    catatanDariUmkm: p.catatanUntukDistributor,
+    pengiriman: p.pengiriman ?? null,
+    ulasan: p.ulasan ?? null,
+  }
+}
+
+/**
+ * Kotak masuk satu distributor: pesanan pemilik aplikasi ini (dibaca dari
+ * daftar pesanannya sendiri) ditambah pesanan dari UMKM lain. Urut terbaru
+ * dulu, karena daftar per tahap di portal memakai urutan ini apa adanya.
+ */
+export function gabungPesananMasuk(
+  pesanan: Pesanan[],
+  pesananUmkmLain: PesananMasuk[],
+  distributorId: string = distributorAktif.id,
+): PesananMasuk[] {
+  const cermin = pesanan
+    .filter((p) => p.distributorId === distributorId)
+    .map(cerminPesanan)
+    .filter((x): x is PesananMasuk => x != null)
+  return [...cermin, ...pesananUmkmLain.filter((p) => p.distributorId === distributorId)].sort(
+    (a, b) => +new Date(b.dibuatPada) - +new Date(a.dibuatPada),
+  )
 }
 
 /**

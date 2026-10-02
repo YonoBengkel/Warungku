@@ -160,7 +160,11 @@ export default function TerimaBarang() {
   function simpan() {
     /* Kolom tanggal bisa dikosongkan pengguna. Tanpa penjagaan ini, tanggal
        kosong akan diteruskan sebagai waktu yang tidak sah ke catatan stok. */
-    const waktuTerima = new Date(`${tanggal}T09:00:00`)
+    // Hari ini memakai jam sekarang, supaya jejaknya tetap berurutan setelah
+    // distributor menandai barang sampai. Tanggal yang dimundurkan memakai jam
+    // 09.00 supaya tidak melompat ke hari sebelumnya saat diubah ke waktu
+    // universal.
+    const waktuTerima = tanggal === hariIni ? new Date() : new Date(`${tanggal}T09:00:00`)
     if (!tanggal || Number.isNaN(waktuTerima.getTime())) {
       setGalat(
         `Tanggal barang diterima belum terisi. Ketuk kolom tanggal lalu pilih hari barangnya datang. Contoh: ${hariIni}.`,
@@ -189,8 +193,6 @@ export default function TerimaBarang() {
       }
     }
 
-    // Jam 09.00 dipakai supaya tanggal yang dimundurkan tidak melompat balik
-    // ke hari sebelumnya saat diubah jadi waktu universal.
     terimaBarang(ps.id, diterima, waktuTerima.toISOString())
     navigate(`/pesanan/${ps.id}`)
   }

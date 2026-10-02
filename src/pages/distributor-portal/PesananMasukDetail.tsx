@@ -20,7 +20,7 @@ import { angka, cx, jam, nomorHp, rupiah, tanggalPendek, waktuLalu } from '@/lib
 import { LABEL_JENIS_USAHA, LABEL_PESANAN_MASUK, NADA_PESANAN_MASUK } from '@/lib/label'
 import { promoById, umkmById } from '@/data/dummy'
 import type { StatusPesananMasuk } from '@/lib/types'
-import { useAplikasi } from '@/store/aplikasi'
+import { useAplikasi, usePesananMasuk } from '@/store/aplikasi'
 import { LembarTolak, totalPesananMasuk } from './PesananMasukDaftar'
 
 /**
@@ -56,7 +56,7 @@ const TITIK_JEJAK: Record<StatusPesananMasuk, { latar: string; Ikon: typeof Ikon
 
 export default function PesananMasukDetail() {
   const { id = '' } = useParams()
-  const pesanan = useAplikasi((s) => s.pesananMasuk.find((p) => p.id === id))
+  const pesanan = usePesananMasuk().find((p) => p.id === id)
   const terimaPesananMasuk = useAplikasi((s) => s.terimaPesananMasuk)
   const majukanPesananMasuk = useAplikasi((s) => s.majukanPesananMasuk)
   const [lembarTolak, setLembarTolak] = useState(false)
@@ -337,9 +337,12 @@ export default function PesananMasukDetail() {
                   Penilaian dari Pemesan
                 </h2>
                 <Bintang nilai={p.ulasan.rating} />
-                <p className="mt-2 text-[0.875rem] text-ink-2 leading-relaxed max-w-[60ch]">
-                  &ldquo;{p.ulasan.isi}&rdquo;
-                </p>
+                {/* Cerita ulasan boleh dikosongkan pemesan; kutipan kosong tidak ditampilkan. */}
+                {p.ulasan.isi && (
+                  <p className="mt-2 text-[0.875rem] text-ink-2 leading-relaxed max-w-[60ch]">
+                    &ldquo;{p.ulasan.isi}&rdquo;
+                  </p>
+                )}
                 <p className="mt-1 text-[0.75rem] text-ink-3">Ditulis {waktuLalu(p.ulasan.waktu)}</p>
 
                 <Pemisah className="my-3" />

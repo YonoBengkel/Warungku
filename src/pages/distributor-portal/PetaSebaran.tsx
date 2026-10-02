@@ -26,7 +26,7 @@ import { angka, jumlahSatuan, nomorHp, rupiah, waktuLalu } from '@/lib/format'
 import { LABEL_JENIS_USAHA, LABEL_PESANAN_MASUK, NADA_PESANAN_MASUK } from '@/lib/label'
 import type { PesananMasuk, StatusPesananMasuk } from '@/lib/types'
 import { distributorAktif, penawaranById, umkmById } from '@/data/dummy'
-import { useAplikasi, useTitikPeta } from '@/store/aplikasi'
+import { usePesananMasuk, useTitikPeta } from '@/store/aplikasi'
 
 /**
  * Sebaran satu barang: siapa saja yang memesannya, dan sedang di tahap mana.
@@ -68,7 +68,7 @@ export default function PetaSebaranBarang() {
   const penawaran = kandidat?.distributorId === distributorAktif.id ? kandidat : undefined
 
   const titik = useTitikPeta(penawaranId)
-  const pesananMasuk = useAplikasi((s) => s.pesananMasuk)
+  const pesananMasuk = usePesananMasuk()
   const [dipilih, setDipilih] = useState<string | null>(null)
 
   const terpilih = titik.find((t) => t.umkmId === dipilih) ?? null

@@ -39,7 +39,7 @@ import {
 import { LABEL_JENIS_USAHA, LABEL_PESANAN_MASUK, NADA_PESANAN_MASUK, TAHAP_PESANAN_MASUK } from '@/lib/label'
 import type { JejakPesananMasuk, PesananMasuk, StatusPesananMasuk, UlasanPelanggan } from '@/lib/types'
 import { umkmById } from '@/data/dummy'
-import { useAplikasi } from '@/store/aplikasi'
+import { usePesananMasuk } from '@/store/aplikasi'
 
 /**
  * Satu toko, dilihat dari sisi distributor.
@@ -291,7 +291,7 @@ function Penilaian({ ulasan }: { ulasan: UlasanPelanggan | null }) {
         <Bintang nilai={ulasan.rating} />
         <span className="text-[0.8125rem] text-ink-3">{waktuLalu(ulasan.waktu)}</span>
       </div>
-      <p className="mt-2 text-[0.875rem] text-ink-2 leading-relaxed max-w-[68ch]">{ulasan.isi}</p>
+      {ulasan.isi && <p className="mt-2 text-[0.875rem] text-ink-2 leading-relaxed max-w-[68ch]">{ulasan.isi}</p>}
       <ul className="mt-3 space-y-2.5">
         {ASPEK.map(({ kunci, label }) => (
           <li key={kunci}>
@@ -392,7 +392,7 @@ export default function LacakToko() {
   const keadaan: Keadaan = params.get('status') === 'selesai' ? 'selesai' : 'proses'
 
   const umkm = umkmById(umkmId)
-  const pesananMasuk = useAplikasi((s) => s.pesananMasuk)
+  const pesananMasuk = usePesananMasuk()
 
   const daftar = useMemo(() => {
     const diterima: StatusPesananMasuk[] = keadaan === 'selesai' ? ['selesai'] : STATUS_PROSES

@@ -130,7 +130,16 @@ export default function BeriPenilaian() {
       return
     }
     const rata = (nilai.ketepatanWaktu + nilai.jumlahSesuai + nilai.kondisiBarang) / 3
-    tandaiSudahDiulas(ps.id)
+    tandaiSudahDiulas(ps.id, {
+      rating: Math.round(rata),
+      isi: isi.trim(),
+      waktu: new Date().toISOString(),
+      aspek: {
+        ketepatanWaktu: nilai.ketepatanWaktu,
+        jumlahSesuai: nilai.jumlahSesuai,
+        kondisiBarang: nilai.kondisiBarang,
+      },
+    })
     tampilkanRacun(
       `Penilaian ${angka(rata, 1)} bintang untuk ${distributor?.nama ?? 'distributor'} terkirim${
         isi.trim() ? ' bersama ceritamu' : ''

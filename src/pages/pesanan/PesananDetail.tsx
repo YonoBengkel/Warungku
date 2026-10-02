@@ -195,10 +195,13 @@ export default function PesananDetail() {
         </Peringatan>
       )}
 
+      {/* Ditolak distributor dan dibatalkan sendiri sama-sama berakhir "batal",
+          tapi yang perlu dilakukan berbeda: penolakan membawa alasan dari
+          distributor, jadi kalimat itulah yang dibaca lebih dulu. */}
       {pesanan.status === 'batal' && (
         <Peringatan
           nada="netral"
-          judul="Pesanan ini dibatalkan"
+          judul={pesanan.alasanTolak ? 'Distributor menolak pesanan ini' : 'Pesanan ini dibatalkan'}
           className="mt-3 lg:max-w-[70ch]"
           aksi={
             <TombolTautan ke="/belanja" ragam="garis" ukuran="kecil">
@@ -206,8 +209,11 @@ export default function PesananDetail() {
             </TombolTautan>
           }
         >
-          {jejakTerakhir.keterangan} Jumlahnya sudah dikeluarkan dari hitungan barang yang sedang dikirim, jadi
-          peringatan stok tipis muncul lagi seperti seharusnya.
+          {pesanan.alasanTolak
+            ? `Alasannya: ${pesanan.alasanTolak.replace(/[.\s]+$/, '')}.`
+            : jejakTerakhir.keterangan} Jumlahnya sudah
+          dikeluarkan dari hitungan barang yang sedang dikirim, jadi peringatan stok tipis muncul lagi seperti
+          seharusnya.
         </Peringatan>
       )}
 

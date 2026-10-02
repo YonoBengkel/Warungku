@@ -21,7 +21,7 @@ import {
 } from '@/lib/label'
 import { distributorAktif, umkmById } from '@/data/dummy'
 import type { StatusPesananMasuk, WarnaTitik } from '@/lib/types'
-import { useAplikasi, useJumlahPerluKonfirmasi, useTitikPeta } from '@/store/aplikasi'
+import { useJumlahPerluKonfirmasi, usePesananMasuk, useTitikPeta } from '@/store/aplikasi'
 
 /**
  * Halaman pertama portal distributor.
@@ -61,7 +61,7 @@ const REKAP: StatusPesananMasuk[] = [...TAHAP_PESANAN_MASUK, 'ditolak']
 const URUT_TITIK: WarnaTitik[] = ['merah', 'oren', 'biru']
 
 export default function Dashboard() {
-  const pesananMasuk = useAplikasi((s) => s.pesananMasuk)
+  const pesananMasuk = usePesananMasuk()
   const perluKonfirmasi = useJumlahPerluKonfirmasi()
   const titik = useTitikPeta()
 

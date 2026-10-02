@@ -400,6 +400,17 @@ export interface Pesanan {
   sudahDiulas: boolean
   /** Kode induk belanja saat satu keranjang melahirkan beberapa pesanan. */
   kodeBelanja: string | null
+  /*
+   * Tiga isian di bawah diisi dari sisi DISTRIBUTOR atau dibaca olehnya.
+   * Pesanan disimpan sekali saja; portal distributor membaca pesanan yang sama
+   * lewat `gabungPesananMasuk`, jadi tidak ada salinan yang bisa saling selisih.
+   */
+  /** Alasan distributor saat menolak. Terisi hanya kalau pesanan batal karena ditolak. */
+  alasanTolak?: string | null
+  /** Bukti antar dari distributor, terisi saat distributor menandai barang sudah sampai. */
+  pengiriman?: BuktiPengiriman | null
+  /** Penilaian yang dikirim pemilik usaha setelah pesanan selesai. */
+  ulasan?: UlasanPelanggan | null
 }
 
 /* ------------------------------------------------------------------ */

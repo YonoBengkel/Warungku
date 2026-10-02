@@ -17,6 +17,7 @@ import type {
   SubKeranjang,
   TitikPeta,
   Transaksi,
+  UlasanPelanggan,
   WarnaTitik,
 } from '@/lib/types'
 import { PESANAN_BERJALAN } from '@/lib/label'
@@ -31,6 +32,7 @@ import {
   daftarPesananMasuk,
   daftarTransaksi,
   dataKasirAwal,
+  gabungPesananMasuk,
   paketById,
   penawaranById,
   profilAwal,
@@ -75,8 +77,13 @@ interface KeadaanAplikasi {
   keranjang: SubKeranjang[]
   /** Portal yang sedang dilihat. Alat uji demo, bukan hak akses sungguhan. */
   peran: 'umkm' | 'distributor'
-  /** Pesanan yang masuk ke distributor aktif. Isi portal distributor. */
-  pesananMasuk: PesananMasuk[]
+  /**
+   * Pesanan dari UMKM LAIN ke distributor aktif. Pesanan milik pemilik aplikasi
+   * ini tidak disalin ke sini: portal distributor membacanya langsung dari
+   * `pesanan` lewat `usePesananMasuk`, supaya satu pesanan tidak punya dua
+   * versi yang bisa saling selisih.
+   */
+  pesananUmkmLain: PesananMasuk[]
   tema: 'terang' | 'gelap'
   /** Mensimulasikan layanan perkiraan yang sedang tidak sehat, untuk menguji turun derajat. */
   layananPerkiraan: 'sehat' | 'tersimpan' | 'mati'
@@ -128,7 +135,7 @@ interface KeadaanAplikasi {
   batalkanPesanan: (pesananId: string, alasan: string) => void
   unggahBukti: (pesananId: string) => void
   tandaiBayarTunai: (pesananId: string) => void
-  tandaiSudahDiulas: (pesananId: string) => void
+  tandaiSudahDiulas: (pesananId: string, ulasan?: UlasanPelanggan) => void
 
   /* Pesanan masuk (portal distributor) */
   terimaPesananMasuk: (id: string) => void
@@ -169,6 +176,38 @@ function stempel(): string {
   return new Date().toISOString()
 }
 
+/** Pesanan masuk distributor aktif, termasuk pesanan pemilik aplikasi ini. */
+function cariPesananMasuk(s: KeadaanAplikasi, id: string): PesananMasuk | undefined {
+  return gabungPesananMasuk(s.pesanan, s.pesananUmkmLain).find((p) => p.id === id)
+}
+
+/** Pesanan ini milik pemilik aplikasi, jadi yang diubah adalah pesanan aslinya. */
+function adalahPesananSendiri(s: KeadaanAplikasi, id: string): boolean {
+  return s.pesanan.some((p) => p.id === id)
+}
+
+/** Satu langkah jejak pada pesanan pemilik usaha, dilakukan dari sisi distributor. */
+function majukanPesananSendiri(
+  pesanan: Pesanan[],
+  id: string,
+  langkah: { status: StatusPesanan; keterangan: string; waktu?: string },
+  tambahan: Partial<Pesanan> = {},
+): Pesanan[] {
+  return pesanan.map((p) =>
+    p.id !== id
+      ? p
+      : {
+          ...p,
+          ...tambahan,
+          status: langkah.status,
+          jejak: [
+            ...p.jejak,
+            { waktu: langkah.waktu ?? stempel(), status: langkah.status, keterangan: langkah.keterangan },
+          ],
+        },
+  )
+}
+
 function nomorPesananBaru(): string {
   const d = new Date()
   const t = `${String(d.getFullYear()).slice(2)}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`
@@ -187,7 +226,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
   notifikasi: daftarNotifikasi,
   keranjang: [],
   peran: 'umkm',
-  pesananMasuk: daftarPesananMasuk,
+  pesananUmkmLain: daftarPesananMasuk,
   tema: temaAwal(),
   layananPerkiraan: 'sehat',
   // Dimulai dari keadaan belum masuk supaya "/" benar-benar memperlihatkan
@@ -658,16 +697,32 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
     get().tampilkanRacun('Ditandai sudah dibayar tunai.', 'aman')
   },
 
-  tandaiSudahDiulas: (pesananId) =>
-    set((s) => ({ pesanan: s.pesanan.map((p) => (p.id !== pesananId ? p : { ...p, sudahDiulas: true })) })),
+  /* Isi penilaiannya ikut disimpan di pesanan, supaya distributor membaca
+     penilaian yang sama di pesanan yang sama. */
+  tandaiSudahDiulas: (pesananId, ulasan) =>
+    set((s) => ({
+      pesanan: s.pesanan.map((p) =>
+        p.id !== pesananId ? p : { ...p, sudahDiulas: true, ulasan: ulasan ?? p.ulasan ?? null },
+      ),
+    })),
 
   terimaPesananMasuk: (id) => {
-    const pesanan = get().pesananMasuk.find((p) => p.id === id)
+    const pesanan = cariPesananMasuk(get(), id)
     // Hanya pesanan yang belum dijawab yang boleh diterima. Menekan tombol dua
     // kali tidak boleh memundurkan pesanan yang sudah berjalan.
     if (!pesanan || pesanan.status !== 'menunggu-konfirmasi') return
+    if (adalahPesananSendiri(get(), id)) {
+      set((s) => ({
+        pesanan: majukanPesananSendiri(s.pesanan, id, {
+          status: 'disiapkan',
+          keterangan: 'Distributor menerima pesanan dan mulai menyiapkan barang.',
+        }),
+      }))
+      get().tampilkanRacun(`Pesanan ${pesanan.nomor} kamu terima. Sekarang masuk antrean gudang.`, 'aman')
+      return
+    }
     set((s) => ({
-      pesananMasuk: s.pesananMasuk.map((p) =>
+      pesananUmkmLain: s.pesananUmkmLain.map((p) =>
         p.id !== id
           ? p
           : {
@@ -692,10 +747,32 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
     // kenapa pesanannya batal, dan alasan kosong membuat jejaknya tidak berguna.
     const alasanBersih = alasan.trim()
     if (!alasanBersih) return
-    const pesanan = get().pesananMasuk.find((p) => p.id === id)
+    const pesanan = cariPesananMasuk(get(), id)
     if (!pesanan || pesanan.status !== 'menunggu-konfirmasi') return
+    if (adalahPesananSendiri(get(), id)) {
+      const asal = get().pesanan.find((p) => p.id === id)
+      set((s) => ({
+        pesanan: majukanPesananSendiri(
+          s.pesanan,
+          id,
+          { status: 'batal', keterangan: `Ditolak distributor: ${alasanBersih}` },
+          { alasanTolak: alasanBersih },
+        ),
+        // Sama seperti pembatalan: jumlah yang tadinya "sedang dikirim" pada
+        // kuota kontrak dikembalikan, supaya peringatan stok tipis muncul lagi.
+        kontrak: s.kontrak.map((k) => {
+          if (!asal || k.id !== asal.kontrakId) return k
+          const dipesan = asal.baris
+            .filter((b) => b.penawaranId === k.penawaranId)
+            .reduce((a, b) => a + b.jumlah, 0)
+          return { ...k, dalamPerjalanan: Math.max(0, k.dalamPerjalanan - dipesan) }
+        }),
+      }))
+      get().tampilkanRacun(`Pesanan ${pesanan.nomor} ditolak. Alasannya ikut terkirim ke pemilik usaha.`, 'menipis')
+      return
+    }
     set((s) => ({
-      pesananMasuk: s.pesananMasuk.map((p) =>
+      pesananUmkmLain: s.pesananUmkmLain.map((p) =>
         p.id !== id
           ? p
           : {
@@ -721,8 +798,9 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
    * distributor tidak pernah boleh melompati pengiriman.
    */
   majukanPesananMasuk: (id) => {
-    const pesanan = get().pesananMasuk.find((p) => p.id === id)
+    const pesanan = cariPesananMasuk(get(), id)
     if (!pesanan) return
+    const sendiri = adalahPesananSendiri(get(), id)
 
     if (pesanan.status === 'disiapkan') {
       // Perkiraan yang sudah dijanjikan ke pemilik usaha tidak boleh mundur
@@ -734,8 +812,23 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
         masihDiDepan && pesanan.perkiraanTiba
           ? pesanan.perkiraanTiba
           : new Date(Date.now() + 2 * 86_400_000).toISOString()
+      if (sendiri) {
+        set((s) => ({
+          pesanan: majukanPesananSendiri(
+            s.pesanan,
+            id,
+            { status: 'dikirim', keterangan: 'Barang berangkat dari gudang distributor.' },
+            { perkiraanTiba: tiba },
+          ),
+        }))
+        get().tampilkanRacun(
+          `Pesanan ${pesanan.nomor} ditandai sedang dikirim. Perkiraan sampai ${waktuNanti(tiba)}.`,
+          'info',
+        )
+        return
+      }
       set((s) => ({
-        pesananMasuk: s.pesananMasuk.map((p) =>
+        pesananUmkmLain: s.pesananUmkmLain.map((p) =>
           p.id !== id
             ? p
             : {
@@ -768,13 +861,32 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
       kurir: 'Kirim Cepat Jogja',
       namaPengantar: 'Sigit Nugroho',
       nomorResi: `KCJ-${pesanan.nomor}`,
-      diterimaOleh: umkmById(pesanan.umkmId)?.nama ?? 'Pemilik usaha',
+      diterimaOleh: sendiri ? get().profil.namaPemilik : (umkmById(pesanan.umkmId)?.nama ?? 'Pemilik usaha'),
       waktuSampai,
       catatan: 'Barang diserahkan langsung di tempat dan dihitung bersama penerima.',
       foto: ['Foto barang saat diturunkan', 'Foto tanda terima yang sudah ditandatangani'],
     }
+    if (sendiri) {
+      // Di sisi distributor pesanan ini selesai. Di sisi pemilik usaha ia tetap
+      // "dikirim" sampai barangnya dihitung lewat Terima Barang: stok gudang
+      // hanya boleh bertambah dari hitungan pemilik usaha sendiri.
+      set((s) => ({
+        pesanan: majukanPesananSendiri(
+          s.pesanan,
+          id,
+          {
+            status: 'dikirim',
+            keterangan: 'Distributor menandai barang sudah sampai. Hitung barangnya, lalu konfirmasi penerimaan.',
+            waktu: waktuSampai,
+          },
+          { pengiriman: bukti },
+        ),
+      }))
+      get().tampilkanRacun(`Pesanan ${pesanan.nomor} sudah sampai. Bukti pengirimannya tersimpan.`, 'aman')
+      return
+    }
     set((s) => ({
-      pesananMasuk: s.pesananMasuk.map((p) =>
+      pesananUmkmLain: s.pesananUmkmLain.map((p) =>
         p.id !== id
           ? p
           : {
@@ -965,9 +1077,23 @@ export function useSedangDikirim(barangId: string): { jumlah: number; pesananId:
 /* Pembaca turunan — portal distributor                                */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Kotak masuk distributor aktif: pesanan pemilik aplikasi ini (dibaca langsung
+ * dari daftar pesanannya) ditambah pesanan UMKM lain. Satu-satunya pintu
+ * portal distributor untuk membaca pesanan.
+ */
+export function usePesananMasuk(): PesananMasuk[] {
+  const pesanan = useAplikasi((s) => s.pesanan)
+  const lain = useAplikasi((s) => s.pesananUmkmLain)
+  return useMemo(() => gabungPesananMasuk(pesanan, lain), [pesanan, lain])
+}
+
 /** Angka merah pada lonceng distributor: pesanan yang menunggu dijawab. */
 export function useJumlahPerluKonfirmasi(): number {
-  return useAplikasi((s) => s.pesananMasuk.filter((p) => p.status === 'menunggu-konfirmasi').length)
+  return useAplikasi(
+    (s) =>
+      gabungPesananMasuk(s.pesanan, s.pesananUmkmLain).filter((p) => p.status === 'menunggu-konfirmasi').length,
+  )
 }
 
 /**
@@ -977,7 +1103,7 @@ export function useJumlahPerluKonfirmasi(): number {
  * Object.is, jadi objek baru dari dalam selektor akan memicu render tanpa henti.
  */
 export function usePesananMasukPerStatus(): Record<StatusPesananMasuk, PesananMasuk[]> {
-  const pesananMasuk = useAplikasi((s) => s.pesananMasuk)
+  const pesananMasuk = usePesananMasuk()
   return useMemo(() => {
     const per: Record<StatusPesananMasuk, PesananMasuk[]> = {
       'menunggu-konfirmasi': [],
@@ -1003,7 +1129,7 @@ const URUT_WARNA_TITIK: Record<WarnaTitik, number> = { merah: 0, oren: 1, biru: 
  * dihitung pada angka di atas titik.
  */
 export function useTitikPeta(penawaranId?: string): TitikPeta[] {
-  const pesananMasuk = useAplikasi((s) => s.pesananMasuk)
+  const pesananMasuk = usePesananMasuk()
   return useMemo(() => {
     const perUmkm = new Map<string, TitikPeta>()
     for (const p of pesananMasuk) {
