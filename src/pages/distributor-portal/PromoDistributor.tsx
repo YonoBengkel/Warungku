@@ -8,7 +8,7 @@ import { IkonBintang, IkonPena, IkonTambah } from '@/icons'
 import { bacaAngkaIndonesia, tanggalRingkas } from '@/lib/format'
 import { LABEL_PROMO } from '@/lib/label'
 import { distributorAktif, promoMasihBerlaku } from '@/data/dummy'
-import type { JenisPromo, Promo } from '@/lib/types'
+import type { JenisPromo, Promo, TingkatKeanggotaan } from '@/lib/types'
 import { useAplikasi } from '@/store/aplikasi'
 
 /**
@@ -36,6 +36,13 @@ function tanggalInput(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
+/** Tiga tingkat bawaan untuk promo keanggotaan baru; isinya diubah sendiri oleh distributor. */
+const TINGKAT_BAWAAN: TingkatKeanggotaan[] = [
+  { nama: 'Perunggu', syarat: '', manfaat: '' },
+  { nama: 'Perak', syarat: '', manfaat: '' },
+  { nama: 'Emas', syarat: '', manfaat: '' },
+]
+
 function duaMingguLagi(): string {
   return tanggalInput(new Date(Date.now() + 14 * 86_400_000))
 }
@@ -62,7 +69,14 @@ function FormPromo({ promo, tutup }: { promo: Promo | null; tutup: () => void })
   const [tanggal, setTanggal] = useState(
     promo?.berakhir && masihBerlaku ? tanggalInput(new Date(promo.berakhir)) : duaMingguLagi(),
   )
+  const [tingkat, setTingkat] = useState<TingkatKeanggotaan[]>(
+    promo?.tingkat && promo.tingkat.length > 0 ? promo.tingkat : TINGKAT_BAWAAN,
+  )
   const [dicoba, setDicoba] = useState(false)
+
+  function ubahTingkat(i: number, ubahan: Partial<TingkatKeanggotaan>) {
+    setTingkat((lama) => lama.map((t, j) => (j === i ? { ...t, ...ubahan } : t)))
+  }
 
   const hariIni = tanggalInput(new Date())
   /** Promo lain milik toko ini yang sedang berjalan dan sudah memuat barang yang sama. */
@@ -107,6 +121,14 @@ function FormPromo({ promo, tutup }: { promo: Promo | null; tutup: () => void })
     berakhir: tanpaTenggat || !tanggal ? null : new Date(`${tanggal}T23:59:00`).toISOString(),
     penawaranIds: barang,
     potonganPersen: angkaPotongan != null && Number.isFinite(angkaPotongan) && angkaPotongan > 0 ? angkaPotongan : null,
+    // Tingkat yang belum diisi keuntungannya tidak ikut disimpan: pemilik usaha
+    // tidak perlu membaca tingkat kosong.
+    tingkat:
+      jenis === 'membership'
+        ? tingkat
+            .map((t) => ({ nama: t.nama.trim(), syarat: t.syarat.trim(), manfaat: t.manfaat.trim() }))
+            .filter((t) => t.nama && t.manfaat)
+        : undefined,
   }
 
   function simpan() {
@@ -186,6 +208,40 @@ function FormPromo({ promo, tutup }: { promo: Promo | null; tutup: () => void })
           galat={dicoba ? galat.potongan : undefined}
           bantuan="Berlaku untuk beli sekali, tidak untuk harga kontrak. Kosongkan kalau promo ini hanya kabar."
         />
+
+        {/* Keanggotaan: keuntungan per tingkat (catatan C3). Potongan di atas
+            tetap berlaku untuk semua anggota; tingkat menambah keuntungan lain. */}
+        {jenis === 'membership' && (
+          <fieldset>
+            <legend className="text-[0.875rem] font-semibold text-ink-2 mb-1">Keuntungan per tingkat</legend>
+            <p className="text-[0.8125rem] text-ink-3 leading-snug mb-2.5">
+              Boleh dikosongkan. Tingkat tanpa keuntungan tidak ditampilkan ke pemilik usaha.
+            </p>
+            <div className="space-y-3">
+              {tingkat.map((t, i) => (
+                <div key={i} className="rounded-md border border-line p-3 space-y-2.5">
+                  <Kolom
+                    label={`Nama tingkat ${i + 1}`}
+                    value={t.nama}
+                    onChange={(e) => ubahTingkat(i, { nama: e.target.value })}
+                  />
+                  <Kolom
+                    label="Syarat"
+                    value={t.syarat}
+                    placeholder="Belanja minimal Rp 1,5 jt per bulan"
+                    onChange={(e) => ubahTingkat(i, { syarat: e.target.value })}
+                  />
+                  <Kolom
+                    label="Keuntungan"
+                    value={t.manfaat}
+                    placeholder="Gratis ongkos kirim"
+                    onChange={(e) => ubahTingkat(i, { manfaat: e.target.value })}
+                  />
+                </div>
+              ))}
+            </div>
+          </fieldset>
+        )}
 
         <fieldset>
           <legend className="text-[0.875rem] font-semibold text-ink-2 mb-1">

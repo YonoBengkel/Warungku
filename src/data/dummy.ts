@@ -1640,6 +1640,13 @@ export const daftarPromo: Promo[] = [
     berakhir: null,
     penawaranIds: ['pw-04', 'pw-05'],
     potonganPersen: 8,
+    // Potongan 8% berlaku untuk semua anggota (itulah yang dihitung
+    // rincianHarga); tingkat menambah keuntungan lain, bukan potongan kedua.
+    tingkat: [
+      { nama: 'Perunggu', syarat: 'Langganan kirim dua kali seminggu', manfaat: 'Potongan 8% dan harga tetap sebulan' },
+      { nama: 'Perak', syarat: 'Belanja minimal Rp 1,5 jt per bulan', manfaat: 'Semua di Perunggu, plus kirim pagi sebelum jam 8' },
+      { nama: 'Emas', syarat: 'Belanja minimal Rp 3 jt per bulan', manfaat: 'Semua di Perak, plus gratis ongkos kirim' },
+    ],
   },
   {
     id: 'pr-07',
@@ -1650,6 +1657,11 @@ export const daftarPromo: Promo[] = [
     berakhir: null,
     penawaranIds: ['pw-12', 'pw-13'],
     potonganPersen: 5,
+    tingkat: [
+      { nama: 'Perunggu', syarat: 'Langganan kirim harian 1 bulan', manfaat: 'Potongan 5% untuk es dan air' },
+      { nama: 'Perak', syarat: 'Langganan 3 bulan', manfaat: 'Semua di Perunggu, plus kirim dua kali sehari saat ramai' },
+      { nama: 'Emas', syarat: 'Langganan 6 bulan', manfaat: 'Semua di Perak, plus satu galon cadangan gratis' },
+    ],
   },
 ]
 

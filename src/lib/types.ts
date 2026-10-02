@@ -571,6 +571,20 @@ export interface Promo {
   penawaranIds: string[]
   /** Potongan dalam persen. Null untuk promo yang tidak memotong harga. */
   potonganPersen: number | null
+  /**
+   * Khusus promo keanggotaan: keuntungan per tingkat, diisi distributor.
+   * Potongan harganya tetap `potonganPersen` (berlaku untuk semua anggota);
+   * tingkat menambahkan keuntungan lain, bukan potongan kedua.
+   */
+  tingkat?: TingkatKeanggotaan[]
+}
+
+export interface TingkatKeanggotaan {
+  nama: string
+  /** Syarat naik ke tingkat ini, mis. "Belanja minimal Rp 1,5 jt per bulan". */
+  syarat: string
+  /** Keuntungan di tingkat ini, mis. "Gratis ongkos kirim". */
+  manfaat: string
 }
 
 /**
