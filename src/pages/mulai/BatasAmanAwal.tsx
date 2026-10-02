@@ -4,7 +4,8 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Tombol, TombolTautan } from '@/components/ui/dasar'
 import { KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
 import { IkonCentangLingkaran, IkonPetir, IkonStok } from '@/icons'
-import { angka, cx, jumlahSatuan } from '@/lib/format'
+import { bacaAngkaIndonesia, cx } from '@/lib/format'
+import { angkaTampil, dariTampil, desimalTampil, jumlahTampil, keTampilBulat, satuanTampil } from '@/lib/satuan'
 import { BANTUAN } from '@/lib/label'
 import type { Barang } from '@/lib/types'
 import { useAplikasi } from '@/store/aplikasi'
@@ -20,6 +21,16 @@ import { useAplikasi } from '@/store/aplikasi'
  * Taruhannya besar: tanpa batas aman, pengingat stok tipis tidak pernah
  * berbunyi, dan pemilik usaha menyimpulkan fiturnya tidak bekerja.
  */
+/** Saran sistem dalam satuan tampil, persis seperti yang akan diketik di kolomnya. */
+function teksSaran(b: Barang): string {
+  return String(keTampilBulat(b, b.batasAmanSaran)).replace('.', ',')
+}
+
+/** Isian sama dengan saran kalau ANGKANYA sama, bukan cuma teksnya ("3,4" = "3.4"). */
+function ikutSaran(b: Barang, teks: string): boolean {
+  return Math.abs(bacaAngkaIndonesia(teks) - keTampilBulat(b, b.batasAmanSaran)) < 1e-9
+}
+
 export default function BatasAmanAwal() {
   const navigate = useNavigate()
   const barang = useAplikasi((s) => s.barang)
@@ -32,25 +43,30 @@ export default function BatasAmanAwal() {
   const daftar = useMemo(() => barang.filter((b) => !b.dicatatManual), [barang])
   const jumlahManual = barang.length - daftar.length
 
+  /* Isian berisi angka dalam SATUAN TAMPIL (kg, liter, dus), sama dengan yang
+     dibaca di daftar Stok. Konversi ke satuan simpan hanya saat disimpan. */
   const [nilai, setNilai] = useState<Record<string, string>>(() =>
-    Object.fromEntries(daftar.map((b) => [b.id, String(b.batasAmanSaran)])),
+    Object.fromEntries(daftar.map((b) => [b.id, teksSaran(b)])),
   )
   const [galat, setGalat] = useState<Record<string, string>>({})
   const [semuaSaran, setSemuaSaran] = useState(false)
 
-  const jumlahIkutSaran = daftar.filter((b) => nilai[b.id] === String(b.batasAmanSaran)).length
+  const jumlahIkutSaran = daftar.filter((b) => ikutSaran(b, nilai[b.id] ?? '')).length
 
   function pakaiSemuaSaran() {
-    setNilai(Object.fromEntries(daftar.map((b) => [b.id, String(b.batasAmanSaran)])))
+    setNilai(Object.fromEntries(daftar.map((b) => [b.id, teksSaran(b)])))
     setGalat({})
     setSemuaSaran(true)
     aturBatasAmanMassal(daftar.map((b) => b.id))
   }
 
   function ubahNilai(id: string, v: string) {
-    /* Hanya angka bulat: batas aman selalu ditulis dalam satuan pakai, dan
-       titik pemisah ribuan yang ikut terketik akan terbaca sebagai desimal. */
-    setNilai((n) => ({ ...n, [id]: v.replace(/\D/g, '') }))
+    /* Satuan hitungan (pcs, dus) hanya menerima angka bulat, supaya titik
+       pemisah ribuan yang ikut terketik tidak terbaca sebagai desimal. Satuan
+       kg/liter menerima koma desimal, yang disimpan sebagai titik. */
+    const b = daftar.find((x) => x.id === id)
+    const bersih = b && desimalTampil(b) > 0 ? v.replace(/[^\d.,]/g, '') : v.replace(/\D/g, '')
+    setNilai((n) => ({ ...n, [id]: bersih }))
     setGalat((g) => {
       if (!g[id]) return g
       const sisa = { ...g }
@@ -63,10 +79,10 @@ export default function BatasAmanAwal() {
   function simpan() {
     const baru: Record<string, string> = {}
     for (const b of daftar) {
-      const n = Number(nilai[b.id] ?? '')
+      const n = bacaAngkaIndonesia(nilai[b.id] ?? '')
       if (!Number.isFinite(n) || n <= 0) {
         baru[b.id] =
-          `Angka pengingat ${b.nama} belum terisi benar. Tulis angka lebih dari nol dalam satuan ${b.satuan}. Contoh: ${b.batasAmanSaran}.`
+          `Angka pengingat ${b.nama} belum terisi benar. Tulis angka lebih dari nol dalam satuan ${satuanTampil(b).nama}. Contoh: ${angkaTampil(b, b.batasAmanSaran)}.`
       }
     }
     setGalat(baru)
@@ -78,8 +94,9 @@ export default function BatasAmanAwal() {
     }
 
     for (const b of daftar) {
-      const n = Number(nilai[b.id] ?? '')
-      aturBatasAman(b.id, n, n === b.batasAmanSaran ? 'sistem' : 'sendiri')
+      const teks = nilai[b.id] ?? ''
+      const sama = ikutSaran(b, teks)
+      aturBatasAman(b.id, sama ? b.batasAmanSaran : dariTampil(b, bacaAngkaIndonesia(teks)), sama ? 'sistem' : 'sendiri')
     }
     tampilkanRacun(`Pengingat stok tipis menyala untuk ${daftar.length} barang.`, 'aman')
     navigate('/beranda')
@@ -220,7 +237,7 @@ function BarisBatas({
   kembalikanSaran: () => void
 }) {
   const id = `batas-${barang.id}`
-  const berbeda = nilai !== String(barang.batasAmanSaran)
+  const berbeda = !ikutSaran(barang, nilai)
 
   return (
     <div
@@ -234,9 +251,9 @@ function BarisBatas({
         <p className="text-[0.75rem] text-ink-2 shrink-0">{barang.kategori}</p>
       </div>
       <p className="mt-0.5 text-[0.8125rem] text-ink-2">
-        sisa sekarang {jumlahSatuan(barang.stok, barang.satuan)}
+        sisa sekarang {jumlahTampil(barang, barang.stok)}
         {barang.pemakaianHarian > 0 && (
-          <> &middot; rata-rata pakai {jumlahSatuan(barang.pemakaianHarian, barang.satuan)}/hari</>
+          <> &middot; rata-rata pakai {jumlahTampil(barang, barang.pemakaianHarian)}/hari</>
         )}
       </p>
 
@@ -248,7 +265,7 @@ function BarisBatas({
           <input
             id={id}
             type="text"
-            inputMode="numeric"
+            inputMode={desimalTampil(barang) > 0 ? 'decimal' : 'numeric'}
             value={nilai}
             aria-invalid={galat ? true : undefined}
             aria-describedby={galat ? `${id}-galat` : undefined}
@@ -261,7 +278,7 @@ function BarisBatas({
               galat ? 'border-kritis' : 'border-line-strong',
             )}
           />
-          <span className="text-[0.8125rem] font-semibold text-ink-2">{barang.satuan}</span>
+          <span className="text-[0.8125rem] font-semibold text-ink-2">{satuanTampil(barang).nama}</span>
         </span>
       </div>
 
@@ -281,7 +298,7 @@ function BarisBatas({
             onClick={kembalikanSaran}
             className="inline-flex items-center h-11 -ml-1 px-1 text-[0.8125rem] font-semibold text-brand hover:underline underline-offset-2"
           >
-            Pakai saran sistem: {angka(barang.batasAmanSaran)} {barang.satuan}
+            Pakai saran sistem: {jumlahTampil(barang, barang.batasAmanSaran)}
           </button>
         ) : (
           <p className="inline-flex items-center gap-1.5 text-[0.75rem] text-ink-2">

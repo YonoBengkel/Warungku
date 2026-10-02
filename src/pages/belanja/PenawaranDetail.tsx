@@ -24,7 +24,8 @@ import {
   IkonPanahKanan,
   IkonToko,
 } from '@/icons'
-import { angka, jumlahSatuan, rupiah, waktuLalu } from '@/lib/format'
+import { angka, rupiah, waktuLalu } from '@/lib/format'
+import { isiKemasan, jumlahBawaan, jumlahTampil } from '@/lib/satuan'
 import { BANTUAN } from '@/lib/label'
 import {
   distributorById,
@@ -182,7 +183,7 @@ export default function PenawaranDetail() {
                 label="Kelipatan pemesanan"
                 nilai={
                   kelipatan && barang
-                    ? `1 ${kelipatan.nama} = ${angka(kelipatan.isi)} ${barang.satuan}`
+                    ? (isiKemasan(barang, kelipatan.nama, kelipatan.isi) ?? `per 1 ${kelipatan.nama}`)
                     : kelipatan
                       ? `1 ${kelipatan.nama} = ${angka(kelipatan.isi)} satuan pakai`
                       : `per 1 ${penawaran.satuan}`
@@ -230,7 +231,7 @@ export default function PenawaranDetail() {
                 <ChipStok status={statusStok(barang)} />
               </div>
               <p className="mt-2 text-[0.875rem] text-ink-2">
-                Sisa <strong className="text-ink">{jumlahSatuan(barang.stok, barang.satuan)}</strong>
+                Sisa <strong className="text-ink">{jumlahTampil(barang, barang.stok)}</strong>
                 {barang.pemakaianHarian > 0 && hariCukup(barang) != null && (
                   <> &middot; cukup &plusmn;{hariCukup(barang)} hari</>
                 )}
@@ -410,7 +411,7 @@ export default function PenawaranDetail() {
             <p className="mt-2 text-[0.8125rem] text-ink-3">
               {kelipatan && barang ? (
                 <>
-                  = {angka(jumlah * kelipatan.isi)} {barang.satuan} &middot; kelipatan 1 {kelipatan.nama}
+                  = {jumlahBawaan(barang, jumlah * kelipatan.isi)} &middot; kelipatan 1 {kelipatan.nama}
                 </>
               ) : (
                 <>Pemesanan naik turun per 1 {penawaran.satuan}.</>
@@ -453,7 +454,7 @@ export default function PenawaranDetail() {
           {barang && (
             <p className="text-[0.8125rem] text-ink-3 leading-relaxed flex items-start gap-2">
               <IkonKotak size={15} className="shrink-0 mt-px" />
-              Stok gudang kamu sekarang {jumlahSatuan(barang.stok, barang.satuan)}. Angka ini baru bertambah
+              Stok gudang kamu sekarang {jumlahTampil(barang, barang.stok)}. Angka ini baru bertambah
               setelah barang kamu terima dan kamu periksa.
             </p>
           )}

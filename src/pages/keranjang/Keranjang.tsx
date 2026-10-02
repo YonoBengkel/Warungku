@@ -8,7 +8,8 @@ import { BilahAksi, KepalaHalaman } from '@/components/ui/navigasi'
 import { TombolTerkunci, useTerkunci } from '@/components/domain'
 import { HargaBeli, LencanaPromo } from '@/components/domain/KartuPromo'
 import { IkonKeranjang, IkonKontrak, IkonSampah, IkonToko } from '@/icons'
-import { angka, cx, hariLagi, jumlahSatuan, rupiah } from '@/lib/format'
+import { angka, cx, hariLagi, rupiah } from '@/lib/format'
+import { jumlahTampil } from '@/lib/satuan'
 import { JUDUL } from '@/lib/label'
 import {
   distributorById,
@@ -34,12 +35,6 @@ import { useAplikasi } from '@/store/aplikasi'
  * bilah lengket di bawah. Dua tempat, satu tombol — tidak pernah dua-duanya.
  */
 
-/** ml dan gram terlalu kecil untuk dibaca cepat; naikkan ke liter/kg begitu masuk akal. */
-function satuanPakai(total: number, satuan: string): string {
-  if (satuan === 'ml' && total >= 1000) return `${angka(total / 1000, 1)} liter`
-  if (satuan === 'gram' && total >= 1000) return `${angka(total / 1000, 1)} kg`
-  return jumlahSatuan(total, satuan)
-}
 
 /** Toggle "simpan untuk nanti" hidup di bentuk data, bukan di aksi store. */
 function ubahSimpan(distributorId: string, simpan: boolean) {
@@ -312,7 +307,7 @@ export default function Keranjang() {
 
                         {brg && isi > 1 && (
                           <p className="mt-1 text-[0.75rem] text-ink-3">
-                            = {satuanPakai(baris.jumlah * isi, brg.satuan)} masuk ke stok {brg.nama}
+                            = {jumlahTampil(brg, baris.jumlah * isi)} masuk ke stok {brg.nama}
                           </p>
                         )}
 
@@ -397,7 +392,7 @@ export default function Keranjang() {
                     <div className="min-w-0">
                       <h3 className="text-[0.9375rem] font-semibold text-ink truncate">{b.nama}</h3>
                       <p className="text-[0.8125rem] text-ink-3">
-                        Sisa {satuanPakai(b.stok, b.satuan)} &middot; {b.kategori}
+                        Sisa {jumlahTampil(b, b.stok)} &middot; {b.kategori}
                       </p>
                     </div>
                     <TombolTautan

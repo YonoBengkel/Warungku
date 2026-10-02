@@ -208,6 +208,7 @@ export function PengaturJumlah({
   saranModel,
   label = 'Jumlah',
   ukuran = 'sedang',
+  desimal = 0,
 }: {
   nilai: number
   ubah: (n: number) => void
@@ -218,8 +219,13 @@ export function PengaturJumlah({
   saranModel?: number | null
   label?: string
   ukuran?: 'kecil' | 'sedang'
+  /** Angka di belakang koma yang boleh diketik, mis. 2 untuk kg dan liter. */
+  desimal?: number
 }) {
-  const batasi = (n: number) => Math.min(maks, Math.max(min, n))
+  /* Dibulatkan ke presisi satuannya: tanpa ini 0,1 + 0,2 kg tampil sebagai
+     0,30000000000000004 di kolomnya. */
+  const pengali = 10 ** desimal
+  const batasi = (n: number) => Math.min(maks, Math.max(min, Math.round(n * pengali) / pengali))
   const tinggi = ukuran === 'kecil' ? 'h-10' : 'h-12'
   const sisi = ukuran === 'kecil' ? 'w-10' : 'w-12'
   const berbedaDariSaran = saranModel != null && saranModel !== nilai
@@ -251,7 +257,8 @@ export function PengaturJumlah({
         <input
           id={`jumlah-${label}`}
           type="number"
-          inputMode="numeric"
+          inputMode={desimal > 0 ? 'decimal' : 'numeric'}
+          step={desimal > 0 ? 'any' : undefined}
           value={nilai}
           min={min}
           max={maks}
@@ -288,7 +295,7 @@ export function PengaturJumlah({
           onClick={() => ubah(saranModel)}
           className="mt-1.5 block text-[0.75rem] text-brand font-semibold hover:underline"
         >
-          Saran sistem {angka(saranModel)}
+          Saran sistem {angka(saranModel, desimal)}
           {satuan ? ` ${satuan}` : ''} &middot; pakai saran
         </button>
       )}

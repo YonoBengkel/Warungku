@@ -28,6 +28,7 @@ import type {
   WarnaTitik,
 } from '@/lib/types'
 import { angka } from '@/lib/format'
+import { jumlahTampil, satuanTampil, satuanTampilBawaan } from '@/lib/satuan'
 import { JAM_TITIK_BIRU } from '@/lib/label'
 
 /**
@@ -699,13 +700,24 @@ export function hariCukup(b: Barang): number | null {
 }
 
 /** Menampilkan stok sebagai kemasan beli, mis. "3 dus + 2 pcs". */
+/**
+ * Sisa stok dipecah ke kemasan terbesarnya: "3 dus + 6 liter".
+ *
+ * Kosong kalau satuan tampilnya memang kemasan itu (angkanya sudah dalam dus,
+ * jadi pecahan ini cuma mengulang), atau kalau isinya belum genap satu kemasan.
+ * Sisa pecahannya ditulis dalam satuan bawaan (kg/liter), bukan gram/ml.
+ */
 export function dalamKemasan(b: Barang): string | null {
   const k = b.kemasan[b.kemasan.length - 1]
   if (!k || k.isi <= 1) return null
+  if (satuanTampil(b).nama === k.nama) return null
   const utuh = Math.floor(b.stok / k.isi)
   const sisa = Math.round((b.stok - utuh * k.isi) * 10) / 10
   if (utuh === 0) return null
-  return sisa > 0 ? `${utuh} ${k.nama} + ${sisa} ${b.satuan}` : `${utuh} ${k.nama}`
+  if (sisa <= 0) return `${utuh} ${k.nama}`
+  const bawaan = satuanTampilBawaan(b)
+  const sisaTampil = sisa / bawaan.isi
+  return `${utuh} ${k.nama} + ${angka(sisaTampil, Number.isInteger(sisaTampil) ? 0 : 2)} ${bawaan.nama}`
 }
 
 /* ================================================================== */
@@ -872,7 +884,7 @@ export function perkiraanUntuk(b: Barang): Perkiraan {
 
   const alasan: string[] = []
   if (kematangan !== 'belum-bisa') {
-    alasan.push(`Rata-rata terpakai ${Math.round(b.pemakaianHarian)} ${b.satuan} per hari.`)
+    alasan.push(`Rata-rata terpakai ${jumlahTampil(b, b.pemakaianHarian)} per hari.`)
     if (b.id === 'b-02' || b.id === 'b-03') alasan.push('Akhir pekan lalu pemakaiannya naik 40%.')
     alasan.push(`Kiriman biasanya sampai ${b.hariKirim} hari setelah dipesan.`)
   }
@@ -1936,7 +1948,7 @@ function alasanUntuk(b: Barang, arah: ArahPrediksi, bulanIni: number, perkiraan:
   const alasan: string[] = []
   if (arah === 'tambah' && perkiraan > b.stok) {
     alasan.push(
-      `Kebutuhan bulan depan ${angka(perkiraan)} ${b.satuan}, stok sekarang cuma ${angka(Math.round(b.stok))} ${b.satuan}.`,
+      `Kebutuhan bulan depan ${jumlahTampil(b, perkiraan)}, stok sekarang cuma ${jumlahTampil(b, Math.max(0, b.stok))}.`,
     )
   }
   alasan.push(perubahan)

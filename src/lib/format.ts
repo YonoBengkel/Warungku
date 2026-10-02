@@ -38,6 +38,21 @@ export function rupiahRingkas(n: number): string {
   return rupiah(n)
 }
 
+/**
+ * Membaca angka yang diketik orang Indonesia: "3,5" dan "3.400" sama-sama sah.
+ * - Ada koma → koma desimal, titik pemisah ribuan ("1.234,5" → 1234,5).
+ * - Tanpa koma, titik yang memisah kelompok tiga angka → pemisah ribuan
+ *   ("3.400" → 3400). Titik lain → desimal ("0.5" → 0,5).
+ * Hasilnya NaN kalau teksnya bukan angka.
+ */
+export function bacaAngkaIndonesia(teks: string): number {
+  const t = teks.replace(/\s/g, '')
+  if (t === '') return NaN
+  if (t.includes(',')) return Number(t.replace(/\./g, '').replace(',', '.'))
+  if (/^\d{1,3}(\.\d{3})+$/.test(t)) return Number(t.replace(/\./g, ''))
+  return Number(t)
+}
+
 /** Jumlah + satuan, mis. 12.5 kg -> "12,5 kg" */
 export function jumlahSatuan(n: number, satuan: string): string {
   const desimal = Number.isInteger(n) ? 0 : n < 10 ? 2 : 1

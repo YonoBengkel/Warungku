@@ -40,6 +40,7 @@ import {
   umkmById,
   warnaTitikUntuk,
 } from '@/data/dummy'
+import { jumlahTampil } from '@/lib/satuan'
 
 /**
  * Satu tempat penyimpanan untuk seluruh keadaan portal.
@@ -293,7 +294,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
       barang: s.barang.map((b) => (b.id === barangId ? { ...b, stok: stokBaru } : b)),
       pergerakan: [jejak, ...s.pergerakan],
     }))
-    get().tampilkanRacun(`Stok ${barang.nama} jadi ${stokBaru} ${barang.satuan}.`, 'aman')
+    get().tampilkanRacun(`Stok ${barang.nama} jadi ${jumlahTampil(barang, stokBaru)}.`, 'aman')
   },
 
   aturBatasAman: (barangId, batas, sumber) =>

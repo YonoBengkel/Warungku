@@ -7,7 +7,16 @@ import { KepalaHalaman } from '@/components/ui/navigasi'
 import { Konfirmasi } from '@/components/ui/lembar'
 import { Peringatan } from '@/components/ui/umpanBalik'
 import { IkonPanahKanan, IkonSampah, IkonSilang, IkonTambah } from '@/icons'
-import { angka, cx, jumlahSatuan } from '@/lib/format'
+import { angka, cx } from '@/lib/format'
+import {
+  dariTampil,
+  desimalTampil,
+  jumlahTampil,
+  keTampil,
+  pilihanSatuanTampil,
+  satuanTampil,
+  satuanTampilBawaan,
+} from '@/lib/satuan'
 import { BANTUAN } from '@/lib/label'
 import { kategoriBarang } from '@/data/dummy'
 import { useAplikasi } from '@/store/aplikasi'
@@ -20,7 +29,9 @@ import { useAplikasi } from '@/store/aplikasi'
  * paling cepat melahirkan dua versi kebenaran untuk satu barang yang sama.
  *
  * Keputusan yang dipegang formulir ini:
- * - Satu Satuan Pakai per barang. Kemasan beli hanyalah lapisan tampilan.
+ * - Satu Satuan Pakai per barang, tempat angka stok disimpan. Yang dibaca dan
+ *   diketik pemilik usaha adalah SATUAN TAMPIL (lib/satuan): semua kolom angka
+ *   di formulir ini memakainya, lalu dikonversi saat disimpan.
  * - Nama yang mirip barang lama dicegat lebih dulu. Duplikat tidak cuma
  *   mengacaukan angka stok, ia memecah riwayat dan membuat perkiraan meleset.
  * - Angka stok tidak boleh diedit diam-diam saat mengubah barang; perubahan
@@ -55,6 +66,12 @@ interface BarisKemasan {
   isi: string
 }
 
+/** Angka dalam satuan tampil untuk mengisi kolom, tanpa ekor desimal yang tidak perlu. */
+function teksAngka(n: number): string {
+  if (!Number.isFinite(n)) return ''
+  return String(Math.round(n * 1000) / 1000)
+}
+
 export function FormulirBarang({ barang }: { barang?: Barang }) {
   const navigasi = useNavigate()
   const [param] = useSearchParams()
@@ -77,10 +94,18 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
   const [kemasan, setKemasan] = useState<BarisKemasan[]>(() =>
     (barang?.kemasan ?? []).map((k) => ({ nama: k.nama, isi: String(k.isi) })),
   )
+  /* Kosong = aturan bawaan (gram → kg, ml → liter). Tiga kolom angka di bawah
+     berisi angka dalam satuan TAMPIL; konversi ke satuan simpan terjadi sekali,
+     saat disimpan. */
+  const [satuanTampilDipilih, setSatuanTampilDipilih] = useState(() => barang?.satuanTampil ?? '')
   const [stokAwal, setStokAwal] = useState('0')
-  const [pemakaian, setPemakaian] = useState(() => String(barang?.pemakaianHarian ?? ''))
+  const [pemakaian, setPemakaian] = useState(() =>
+    barang ? teksAngka(keTampil(barang, barang.pemakaianHarian)) : '',
+  )
   const [hariKirim, setHariKirim] = useState(() => String(barang?.hariKirim ?? 2))
-  const [batasAman, setBatasAman] = useState(() => String(barang?.batasAman ?? ''))
+  const [batasAman, setBatasAman] = useState(() =>
+    barang ? teksAngka(keTampil(barang, barang.batasAman)) : '',
+  )
   const [ingatkanKedaluwarsa, setIngatkanKedaluwarsa] = useState(
     () => barang?.ingatkanKedaluwarsa ?? false,
   )
@@ -97,17 +122,44 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
     [semuaBarang],
   )
 
-  const angkaPemakaian = Number(pemakaian) || 0
+  const kemasanBersih: Kemasan[] = pakaiKemasan
+    ? kemasan
+        .filter((k) => k.nama.trim() && Number(k.isi) > 0)
+        .map((k) => ({ nama: k.nama.trim(), isi: Number(k.isi) }))
+    : []
+
+  /* Satuan yang sedang dipakai kolom-kolom angka. Kalau pilihan lama hilang
+     (kemasannya dihapus), ia jatuh ke bawaan, bukan ke satuan acak. */
+  const sumberSatuan = { satuan, kemasan: kemasanBersih, satuanTampil: satuanTampilDipilih || null }
+  const tampil = satuanTampil(sumberSatuan)
+  const pilihanTampil = pilihanSatuanTampil(sumberSatuan)
+  const modeAngka = desimalTampil(sumberSatuan) > 0 ? 'decimal' : 'numeric'
+
+  /** Ganti satuan tampil tanpa mengubah arti angka yang sudah diketik. */
+  function gantiSatuanTampil(nama: string) {
+    const baru = satuanTampil({ ...sumberSatuan, satuanTampil: nama || null })
+    const ubah = (teks: string) =>
+      teks.trim() === '' || !Number.isFinite(Number(teks)) ? teks : teksAngka((Number(teks) * tampil.isi) / baru.isi)
+    setStokAwal(ubah)
+    setPemakaian(ubah)
+    setBatasAman(ubah)
+    setSatuanTampilDipilih(nama)
+  }
+
+  const angkaPemakaian = dariTampil(sumberSatuan, Number(pemakaian) || 0)
   const angkaHariKirim = Math.max(0, Number(hariKirim) || 0)
 
   /* Saran batas aman untuk barang baru dihitung terbuka: pemakaian sehari
      dikali lama kiriman ditambah dua hari cadangan. Untuk barang lama kami
-     memakai angka saran yang sudah dihitung dari riwayat aslinya. */
+     memakai angka saran yang sudah dihitung dari riwayat aslinya. Semuanya
+     dalam satuan SIMPAN; yang ditampilkan dikonversi. */
   const saranBatas = barang
     ? barang.batasAmanSaran
     : angkaPemakaian > 0
       ? Math.ceil(angkaPemakaian * (angkaHariKirim + 2))
       : 0
+  const batasDiketik = dariTampil(sumberSatuan, Number(batasAman) || 0)
+  const ikutSaran = saranBatas > 0 && Math.abs(batasDiketik - saranBatas) < 0.5
 
   const kembar = useMemo(() => {
     if (nama.trim().length < 3) return undefined
@@ -161,12 +213,6 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
     .map((k) => LABEL_KOLOM[k])
   const adaGalat = kolomBelum.length > 0
 
-  const kemasanBersih: Kemasan[] = pakaiKemasan
-    ? kemasan
-        .filter((k) => k.nama.trim() && Number(k.isi) > 0)
-        .map((k) => ({ nama: k.nama.trim(), isi: Number(k.isi) }))
-    : []
-
   /* Mengubah isi kemasan tidak boleh menghitung ulang stok yang sudah tercatat:
      angka lama lahir dari penerimaan nyata, bukan dari konversi. */
   const isiKemasanBerubah =
@@ -202,9 +248,8 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
   }
 
   function terapkan() {
-    const batas = Number(batasAman) || 0
-    const sumber: SumberBatasAman =
-      batas <= 0 ? 'belum-diatur' : batas === saranBatas ? 'sistem' : 'sendiri'
+    const batas = batasDiketik
+    const sumber: SumberBatasAman = batas <= 0 ? 'belum-diatur' : ikutSaran ? 'sistem' : 'sendiri'
 
     if (barang) {
       ubahBarang(barang.id, {
@@ -214,6 +259,7 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
         kodeBarang: kode.trim(),
         satuan,
         kemasan: kemasanBersih,
+        satuanTampil: satuanTampilDipilih || null,
         batasAman: batas,
         sumberBatasAman: sumber,
         hariKirim: angkaHariKirim,
@@ -236,7 +282,8 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
       kodeBarang: kode.trim(),
       satuan,
       kemasan: kemasanBersih,
-      stok: Number(stokAwal) || 0,
+      satuanTampil: satuanTampilDipilih || null,
+      stok: dariTampil(sumberSatuan, Number(stokAwal) || 0),
       batasAman: batas,
       batasAmanSaran: saranBatas > 0 ? saranBatas : batas,
       sumberBatasAman: sumber,
@@ -278,7 +325,7 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
                 Sudah ada &lsquo;{kembar.nama}&rsquo;. Maksud kamu ini?
               </p>
               <p className="mt-0.5 text-[0.8125rem] opacity-90">
-                Sisa {jumlahSatuan(Math.max(0, kembar.stok), kembar.satuan)} &middot; {kembar.kategori}
+                Sisa {jumlahTampil(kembar, Math.max(0, kembar.stok))} &middot; {kembar.kategori}
               </p>
             </div>
             <Link
@@ -385,10 +432,10 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
 
       {/* ---------------- Satuan & kemasan ---------------- */}
       <Kartu>
-        <h2 className="text-[0.9375rem] font-bold text-ink">Satuan pakai</h2>
+        <h2 className="text-[0.9375rem] font-bold text-ink">Satuan</h2>
         <p className="mt-1 text-[0.8125rem] text-ink-3 leading-relaxed">
-          Stok disimpan hanya dalam satu satuan ini. Kemasan beli cuma cara menampilkannya, jadi angka di
-          daftar Stok tidak pernah berubah-ubah artinya.
+          Stok disimpan dalam satuan pakai, satuan terkecil yang dikurangi kasir per porsi. Yang kamu baca di
+          daftar Stok adalah satuan tampil di bawah.
         </p>
 
         <div className="mt-3.5">
@@ -478,6 +525,26 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
             </Tombol>
           </div>
         )}
+
+        <Pemisah className="my-4" />
+
+        {/* Satuan tampil dipilih di kartu yang sama dengan kemasan, karena
+            pilihannya memang lahir dari kemasan yang baru saja diisi. */}
+        <Pilihan
+          label="Ditampilkan sebagai"
+          value={satuanTampilDipilih}
+          onChange={(e) => gantiSatuanTampil(e.target.value)}
+          bantuan={`Angka sisa, batas aman, dan pemakaian dibaca dalam satuan ini. Penyimpanannya tetap dalam ${satuan}.`}
+        >
+          <option value="">{satuanTampilBawaan({ satuan }).nama} (otomatis)</option>
+          {pilihanTampil
+            .filter((s) => s.nama !== satuanTampilBawaan({ satuan }).nama)
+            .map((s) => (
+              <option key={s.nama} value={s.nama}>
+                {s.isi === 1 ? s.nama : `${s.nama} (isi ${angka(s.isi)} ${satuan})`}
+              </option>
+            ))}
+        </Pilihan>
       </Kartu>
 
       {/* ---------------- Angka ---------------- */}
@@ -493,7 +560,7 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
             <div className="min-w-0 grow">
               <p className="text-[0.8125rem] text-ink-2">Stok tercatat</p>
               <p className="mt-0.5 text-[1.125rem] font-bold text-ink">
-                {jumlahSatuan(Math.max(0, barang.stok), barang.satuan)}
+                {jumlahTampil(barang, Math.max(0, barang.stok))}
               </p>
               <p className="mt-1 text-[0.8125rem] text-ink-2 leading-snug">
                 Angka stok diubah lewat Koreksi Stok supaya alasannya ikut tercatat di riwayat.
@@ -507,11 +574,12 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
           <Kolom
             label="Stok awal"
             type="number"
-            inputMode="numeric"
+            inputMode={modeAngka}
+            step="any"
             min={0}
             value={stokAwal}
             onChange={(e) => setStokAwal(e.target.value)}
-            akhiran={satuan}
+            akhiran={tampil.nama}
             galat={galat.stok}
             bantuan="Berapa yang ada di gudang sekarang. Boleh 0 kalau barangnya belum datang."
           />
@@ -521,11 +589,12 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
           <Kolom
             label="Biasanya terpakai per hari"
             type="number"
-            inputMode="numeric"
+            inputMode={modeAngka}
+            step="any"
             min={0}
             value={pemakaian}
             onChange={(e) => setPemakaian(e.target.value)}
-            akhiran={satuan}
+            akhiran={tampil.nama}
             bantuan="Kira-kira saja. Angka ini dipakai menyusun saran batas aman sampai riwayat penjualannya terkumpul."
           />
           <Kolom
@@ -544,24 +613,25 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
           <Kolom
             label="Batas aman"
             type="number"
-            inputMode="numeric"
+            inputMode={modeAngka}
+            step="any"
             min={0}
             value={batasAman}
             onChange={(e) => setBatasAman(e.target.value)}
-            akhiran={satuan}
+            akhiran={tampil.nama}
             galat={galat.batas}
             bantuan={BANTUAN.batasAman}
           />
-          {saranBatas > 0 && Number(batasAman) !== saranBatas && (
+          {saranBatas > 0 && !ikutSaran && (
             <button
               type="button"
-              onClick={() => setBatasAman(String(saranBatas))}
-              className="mt-2 text-[0.8125rem] font-bold text-brand hover:underline"
+              onClick={() => setBatasAman(teksAngka(keTampil(sumberSatuan, saranBatas)))}
+              className="mt-2 inline-flex items-center min-h-11 text-[0.8125rem] font-bold text-brand hover:underline"
             >
-              Pakai saran {jumlahSatuan(saranBatas, satuan)}
+              Pakai saran {jumlahTampil(sumberSatuan, saranBatas)}
             </button>
           )}
-          {saranBatas > 0 && Number(batasAman) === saranBatas && (
+          {ikutSaran && (
             <Lencana nada="info" className="mt-2">
               Mengikuti saran sistem
             </Lencana>

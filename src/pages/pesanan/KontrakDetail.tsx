@@ -15,6 +15,7 @@ import {
   IkonSalin,
 } from '@/icons'
 import { angka, jam, jumlahSatuan, rupiah, tanggalPanjang, tanggalPendek, waktuNanti } from '@/lib/format'
+import { jumlahTampil } from '@/lib/satuan'
 import { BANTUAN, LABEL_KONTRAK } from '@/lib/label'
 import { distributorById, penawaranById, sisaHariPeriode } from '@/data/dummy'
 import type { Barang, Kontrak } from '@/lib/types'
@@ -55,7 +56,7 @@ function konversiAwam(kontrak: Kontrak, barang: Barang | undefined, jumlah: numb
     return `${jumlahSatuan(jumlah, kontrak.satuan)} = ${angka(totalSatuanPakai / kandidat.isi, 1)} ${kandidat.nama} lagi`
   }
   if (barang.satuan === kontrak.satuan || isi <= 1) return null
-  return `${jumlahSatuan(jumlah, kontrak.satuan)} = ${jumlahSatuan(totalSatuanPakai, barang.satuan)}`
+  return `${jumlahSatuan(jumlah, kontrak.satuan)} = ${jumlahTampil(barang, totalSatuanPakai)}`
 }
 
 export default function KontrakDetail() {

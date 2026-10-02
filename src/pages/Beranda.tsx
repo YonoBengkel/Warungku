@@ -25,7 +25,8 @@ import {
   IkonTrenNaik,
   IkonTrenTurun,
 } from '@/icons'
-import { angka, cx, hariLagi, jumlahSatuan, tanggalLengkapHari } from '@/lib/format'
+import { angka, cx, hariLagi, tanggalLengkapHari } from '@/lib/format'
+import { jumlahTampil } from '@/lib/satuan'
 import {
   daftarPromo,
   layakDiperkirakan,
@@ -122,8 +123,8 @@ export default function Beranda() {
             lencana={dikirim > 0 ? <Lencana nada="info">Sudah dipesan, sedang dikirim</Lencana> : undefined}
             detail={
               dikirim > 0
-                ? `Stok tercatat 0. ${jumlahSatuan(dikirim, b.satuan)} sedang dikirim.`
-                : `Stok tercatat 0. Rata-rata terpakai ${jumlahSatuan(b.pemakaianHarian, b.satuan)} per hari.`
+                ? `Stok tercatat 0. ${jumlahTampil(b, dikirim)} sedang dikirim.`
+                : `Stok tercatat 0. Rata-rata terpakai ${jumlahTampil(b, b.pemakaianHarian)} per hari.`
             }
             aksiLabel={dikirim > 0 ? 'Lihat Stok' : 'Pesan Sekarang'}
             aksiKe={dikirim > 0 ? `/stok/${b.id}` : kePesan}
@@ -534,7 +535,6 @@ export default function Beranda() {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 [&>*]:min-w-0">
             {rekomendasi.map((r) => {
               const b = barang.find((x) => x.id === r.barangId)
-              const satuanPakai = b?.satuan ?? ''
               const nada = NADA_ARAH_PREDIKSI[r.arah]
               const kelasArah = {
                 menipis: 'text-menipis-ink',
@@ -595,7 +595,7 @@ export default function Beranda() {
                           <div className="flex items-baseline justify-between gap-2 text-[0.75rem]">
                             <span className="text-ink-3">{x.label}</span>
                             <span className="font-semibold text-ink-2 tabular">
-                              {jumlahSatuan(x.nilai, satuanPakai)}
+                              {b ? jumlahTampil(b, x.nilai) : angka(x.nilai)}
                             </span>
                           </div>
                           <div className="mt-1 h-2 rounded-full bg-sunken overflow-hidden" aria-hidden="true">

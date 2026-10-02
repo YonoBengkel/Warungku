@@ -13,6 +13,7 @@ import {
   IkonTambah,
 } from '@/icons'
 import { angka, cx, jumlahSatuan, tanggalPendek, waktuLalu } from '@/lib/format'
+import { jumlahTampil } from '@/lib/satuan'
 import { useAplikasi } from '@/store/aplikasi'
 
 interface BahanTerpilih {
@@ -217,7 +218,7 @@ export default function KasirPasangkan() {
                           <span className="min-w-0 grow">
                             <span className="block text-[0.9375rem] font-semibold text-ink truncate">{b.nama}</span>
                             <span className="block text-[0.75rem] text-ink-3">
-                              {b.kategori} &middot; sisa {jumlahSatuan(b.stok, b.satuan)}
+                              {b.kategori} &middot; sisa {jumlahTampil(b, b.stok)}
                             </span>
                           </span>
                           <span className="shrink-0 text-brand">

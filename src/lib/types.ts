@@ -133,6 +133,12 @@ export interface Barang {
   satuan: string
   /** Kemasan beli sebagai lapisan tampilan, boleh lebih dari satu. */
   kemasan: Kemasan[]
+  /**
+   * Satuan yang DITAMPILKAN di seluruh aplikasi: nama salah satu pilihan dari
+   * `pilihanSatuanTampil` di lib/satuan. Kosong berarti aturan bawaan
+   * (gram → kg, ml → liter, barang hitungan tetap).
+   */
+  satuanTampil?: string | null
   stok: number
   batasAman: number
   batasAmanSaran: number

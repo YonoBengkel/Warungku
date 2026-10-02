@@ -7,6 +7,7 @@ import { KepalaHalaman } from '@/components/ui/navigasi'
 import { BilahProgres, KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
 import { IkonCentang, IkonKotak, IkonPeringatan, IkonSilang } from '@/icons'
 import { angka, cx, jumlahSatuan, namaHariSingkat, tanggalRingkas } from '@/lib/format'
+import { satuanTampil } from '@/lib/satuan'
 import { perkiraanUntuk, trenBarang } from '@/data/dummy'
 import { useAplikasi } from '@/store/aplikasi'
 
@@ -47,7 +48,7 @@ function acak(semai: number) {
 
 /** Batas toleransi dibulatkan ke angka yang enak diucapkan, bukan 78 gram. */
 function bulatRapi(n: number): number {
-  const skala = [1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000]
+  const skala = [0.05, 0.1, 0.2, 0.25, 0.5, 1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000]
   return skala.find((s) => s >= n) ?? 1000
 }
 
@@ -90,17 +91,14 @@ export default function StokRapor() {
       }
     }
 
-    // Satuan tampil dipilih sebesar mungkin selama pemakaian sehari masih >= 1,
-    // supaya kalimatnya berbunyi "1 liter", bukan "1.000 ml".
-    const kemasan = [...barang.kemasan]
-      .reverse()
-      .find((k) => k.isi > 1 && barang.pemakaianHarian / k.isi >= 1)
-    const faktor = kemasan?.isi ?? 1
-    const unit = kemasan?.nama ?? barang.satuan
+    // Satuan yang sama dengan daftar Stok dan detail barang (lib/satuan). Rapor
+    // dengan satuannya sendiri membuat angka yang sama terbaca berbeda di dua
+    // layar yang dibuka berurutan.
+    const { isi: faktor, nama: unit } = satuanTampil(barang)
 
     const dipakai = baris.filter((x) => !x.habis)
     const rataTampil = dipakai.reduce((a, x) => a + x.kenyataan, 0) / Math.max(1, dipakai.length) / faktor
-    const toleransi = bulatRapi(Math.max(1, rataTampil * 0.12))
+    const toleransi = bulatRapi(Math.max(faktor > 1 ? 0.05 : 1, rataTampil * 0.12))
     const tepat = dipakai.filter(
       (x) => Math.abs(x.perkiraan - x.kenyataan) / faktor < toleransi,
     ).length
@@ -194,7 +192,7 @@ export default function StokRapor() {
     )
   }
 
-  const tampil = (n: number) => Math.round((n / rapor.faktor) * 10) / 10
+  const tampil = (n: number) => Math.round((n / rapor.faktor) * 100) / 100
   const tujuhTerakhir = rapor.baris.slice(-7)
 
   /* Grafik memakai satuan tampil yang sama dengan tabel. Dua satuan berbeda

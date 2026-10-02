@@ -5,7 +5,16 @@ import { Kolom, PengaturJumlah } from '@/components/ui/formulir'
 import { KepalaHalaman } from '@/components/ui/navigasi'
 import { KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
 import { IkonKotak, IkonPetir, IkonCentang } from '@/icons'
-import { angka, jumlahSatuan } from '@/lib/format'
+import { angka } from '@/lib/format'
+import {
+  angkaTampil,
+  dariTampil,
+  desimalTampil,
+  jumlahTampil,
+  keTampilBulat,
+  langkahTampil,
+  satuanTampil,
+} from '@/lib/satuan'
 import { BANTUAN, JUDUL } from '@/lib/label'
 import { useAplikasi } from '@/store/aplikasi'
 
@@ -26,7 +35,9 @@ export default function StokBatasAman() {
   const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
 
   const [aturSendiri, setAturSendiri] = useState(false)
-  const [nilai, setNilai] = useState(() => barang?.batasAman ?? 0)
+  /* Angka di kolom ini dalam SATUAN TAMPIL (kg, liter, dus); dikonversi ke
+     satuan simpan hanya saat disimpan. */
+  const [nilai, setNilai] = useState(() => (barang ? keTampilBulat(barang, barang.batasAman) : 0))
   const [hariKirim, setHariKirim] = useState(() => String(barang?.hariKirim ?? 2))
   const [saranDitutup, setSaranDitutup] = useState(false)
   const [dicoba, setDicoba] = useState(false)
@@ -70,18 +81,18 @@ export default function StokBatasAman() {
 
   const kalimatSaran =
     barang.pemakaianHarian > 0
-      ? `Disarankan ${jumlahSatuan(saran, barang.satuan)}. Biasanya habis ${jumlahSatuan(
+      ? `Disarankan ${jumlahTampil(barang, saran)}. Biasanya habis ${jumlahTampil(
+          barang,
           barang.pemakaianHarian,
-          barang.satuan,
         )} per hari, dan barang ini sampai ${barang.hariKirim} hari setelah dipesan.`
-      : `Disarankan ${jumlahSatuan(saran, barang.satuan)}. Pemakaian hariannya belum terbaca, jadi angka ini masih kasar dan akan kami perbarui setelah ada riwayat penjualan.`
+      : `Disarankan ${jumlahTampil(barang, saran)}. Pemakaian hariannya belum terbaca, jadi angka ini masih kasar dan akan kami perbarui setelah ada riwayat penjualan.`
 
   /* Ditulis sebagai const supaya penjagaan "barang tidak ditemukan" di atas
      tetap berlaku di dalam kedua penangan ini. */
   const pakaiSaran = () => {
     aturBatasAman(barang.id, saran, 'sistem')
     tampilkanRacun(
-      `Batas aman ${barang.nama} jadi ${jumlahSatuan(saran, barang.satuan)}, mengikuti saran sistem.`,
+      `Batas aman ${barang.nama} jadi ${jumlahTampil(barang, saran)}, mengikuti saran sistem.`,
       'aman',
     )
     navigasi(`/stok/${barang.id}`)
@@ -92,18 +103,18 @@ export default function StokBatasAman() {
      dimau, sakelar "dicatat manual" di Ubah Barang tempatnya, bukan di sini. */
   const nilaiGalat =
     dicoba && nilai <= 0
-      ? `Batas aman harus lebih dari 0, kalau tidak kami tidak punya angka untuk mengingatkan kamu. Contoh: ${angka(
-          saran > 0 ? saran : 8,
-        )}.`
+      ? `Batas aman harus lebih dari 0, kalau tidak kami tidak punya angka untuk mengingatkan kamu. Contoh: ${
+          saran > 0 ? angkaTampil(barang, saran) : 10
+        }.`
       : undefined
 
   const simpanSendiri = () => {
     setDicoba(true)
     if (hariKirimGalat || nilai <= 0) return
-    aturBatasAman(barang.id, nilai, 'sendiri')
+    aturBatasAman(barang.id, dariTampil(barang, nilai), 'sendiri')
     if (hariKirimAngka !== barang.hariKirim) ubahBarang(barang.id, { hariKirim: hariKirimAngka })
     tampilkanRacun(
-      `Batas aman ${barang.nama} kamu atur jadi ${jumlahSatuan(nilai, barang.satuan)}.`,
+      `Batas aman ${barang.nama} kamu atur jadi ${angkaTampil(barang, dariTampil(barang, nilai))} ${satuanTampil(barang).nama}.`,
       'aman',
     )
     navigasi(`/stok/${barang.id}`)
@@ -120,7 +131,7 @@ export default function StokBatasAman() {
             <div className="min-w-0">
               <p className="text-[0.8125rem] text-ink-3">Batas aman sekarang</p>
               <p className="mt-0.5 text-[1.75rem] font-extrabold text-ink leading-none">
-                {barang.batasAman > 0 ? jumlahSatuan(barang.batasAman, barang.satuan) : 'Belum diisi'}
+                {barang.batasAman > 0 ? jumlahTampil(barang, barang.batasAman) : 'Belum diisi'}
               </p>
             </div>
             <Lencana nada={lencanaSumber.nada} besar>
@@ -130,7 +141,7 @@ export default function StokBatasAman() {
           <p className="mt-2.5 text-[0.875rem] text-ink-2 leading-relaxed">{BANTUAN.batasAman}</p>
           <Pemisah className="my-3" />
           <p className="text-[0.8125rem] text-ink-3 leading-relaxed">
-            Sisa tercatat sekarang {jumlahSatuan(Math.max(0, barang.stok), barang.satuan)}.
+            Sisa tercatat sekarang {jumlahTampil(barang, Math.max(0, barang.stok))}.
           </p>
         </Kartu>
 
@@ -149,7 +160,7 @@ export default function StokBatasAman() {
               </div>
             }
           >
-            Naikkan batas aman jadi {jumlahSatuan(saran, barang.satuan)}? Kami tidak mengubahnya sendiri karena
+            Naikkan batas aman jadi {jumlahTampil(barang, saran)}? Kami tidak mengubahnya sendiri karena
             angka yang kamu atur biasanya punya alasan yang tidak terbaca dari data.
           </Peringatan>
         )}
@@ -176,7 +187,7 @@ export default function StokBatasAman() {
               aria-expanded={aturSendiri}
               onClick={() => {
                 setAturSendiri(true)
-                setNilai(barang.batasAman > 0 ? barang.batasAman : saran)
+                setNilai(keTampilBulat(barang, barang.batasAman > 0 ? barang.batasAman : saran))
               }}
             >
               Atur sendiri
@@ -196,10 +207,11 @@ export default function StokBatasAman() {
               <PengaturJumlah
                 nilai={nilai}
                 ubah={setNilai}
-                langkah={barang.satuan === 'gram' || barang.satuan === 'ml' ? 100 : 1}
+                langkah={langkahTampil(barang)}
+                desimal={desimalTampil(barang)}
                 min={0}
-                satuan={barang.satuan}
-                saranModel={saran}
+                satuan={satuanTampil(barang).nama}
+                saranModel={keTampilBulat(barang, saran)}
                 label="Batas aman"
               />
               {nilaiGalat && (
@@ -224,12 +236,15 @@ export default function StokBatasAman() {
             {barang.pemakaianHarian > 0 && nilai > 0 && (
               <p className="mt-3 text-[0.875rem] text-ink-2 leading-relaxed">
                 Dengan angka ini, kami mengingatkan kamu saat sisa tinggal{' '}
-                <strong className="text-ink">{jumlahSatuan(nilai, barang.satuan)}</strong> &mdash; kira-kira{' '}
                 <strong className="text-ink">
-                  {angka(Math.floor(nilai / barang.pemakaianHarian))} hari
+                  {angka(nilai, desimalTampil(barang))} {satuanTampil(barang).nama}
+                </strong>{' '}
+                &mdash; kira-kira{' '}
+                <strong className="text-ink">
+                  {angka(Math.floor(dariTampil(barang, nilai) / barang.pemakaianHarian))} hari
                 </strong>{' '}
                 sebelum benar-benar habis.
-                {hariKirimAngka > Math.floor(nilai / barang.pemakaianHarian) && (
+                {hariKirimAngka > Math.floor(dariTampil(barang, nilai) / barang.pemakaianHarian) && (
                   <>
                     {' '}
                     Kiriman butuh {hariKirimAngka} hari, jadi angka ini berisiko membuat kamu kehabisan

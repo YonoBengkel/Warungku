@@ -15,7 +15,8 @@ import {
   IkonPasokan,
   IkonToko,
 } from '@/icons'
-import { angka, cx, hariLagi, jumlahSatuan, rupiah } from '@/lib/format'
+import { angka, cx, hariLagi, rupiah } from '@/lib/format'
+import { jumlahTampil } from '@/lib/satuan'
 import {
   distributorById,
   hargaBerlaku,
@@ -66,12 +67,6 @@ function keadaanAwal(saran: SaranBelanja | undefined): Record<string, KeadaanBar
   return hasil
 }
 
-/** ml dan gram terlalu kecil untuk dibaca cepat; naikkan ke liter/kg begitu masuk akal. */
-function satuanPakai(total: number, satuan: string): string {
-  if (satuan === 'ml' && total >= 1000) return `${angka(total / 1000, 1)} liter`
-  if (satuan === 'gram' && total >= 1000) return `${angka(total / 1000, 1)} kg`
-  return jumlahSatuan(total, satuan)
-}
 
 function perkiraanHabis(b: Barang): string | null {
   const hari = hariCukup(b)
@@ -267,8 +262,8 @@ export default function PesanCepat() {
                     <h2 className="text-[1rem] font-semibold text-ink leading-snug">{b.nama}</h2>
                     <p className="mt-0.5 text-[0.8125rem] text-ink-2">
                       {status === 'habis'
-                        ? `Stok tercatat 0 ${b.satuan}`
-                        : `Sisa ${satuanPakai(b.stok, b.satuan)}`}
+                        ? `Stok tercatat ${jumlahTampil(b, 0)}`
+                        : `Sisa ${jumlahTampil(b, b.stok)}`}
                       {habis && status !== 'habis' && <> &middot; diperkirakan habis {habis}</>}
                     </p>
                     {r.sedangDikirim > 0 && (
@@ -435,7 +430,7 @@ export default function PesanCepat() {
                           {angka(k.jumlah)} <span className="text-[1rem] font-semibold">{pw.satuan}</span>
                         </p>
                         <p className="mt-1 text-[0.8125rem] text-ink-3">
-                          = {satuanPakai(k.jumlah * isi, b.satuan)}
+                          = {jumlahTampil(b, k.jumlah * isi)}
                         </p>
                       </div>
                     </div>

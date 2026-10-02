@@ -17,12 +17,12 @@ import {
   angka,
   cx,
   hariLagi,
-  jumlahSatuan,
   rupiah,
   tanggalPendek,
   waktuLalu,
   waktuNanti,
 } from '@/lib/format'
+import { angkaTampil, jumlahTampil, satuanTampil } from '@/lib/satuan'
 import {
   IkonCentangLingkaran,
   IkonPeringatan,
@@ -527,9 +527,9 @@ export function KartuPerkiraan({ barang, perkiraan }: { barang: Barang; perkiraa
           <Lencana nada={NADA_KEMATANGAN['belum-bisa']}>{LABEL_KEMATANGAN['belum-bisa']}</Lencana>
         </div>
         <p className="mt-1.5 text-[0.8125rem] text-ink-2">
-          sisa {jumlahSatuan(barang.stok, barang.satuan)}
+          sisa {jumlahTampil(barang, barang.stok)}
           {barang.pemakaianHarian > 0 && (
-            <> &middot; rata-rata pakai {jumlahSatuan(barang.pemakaianHarian, barang.satuan)}/hari</>
+            <> &middot; rata-rata pakai {jumlahTampil(barang, barang.pemakaianHarian)}/hari</>
           )}
         </p>
         <div className="mt-2.5">
@@ -558,8 +558,8 @@ export function KartuPerkiraan({ barang, perkiraan }: { barang: Barang; perkiraa
         Stok cukup untuk &plusmn;{perkiraan.hariCukup} hari
       </Link>
       <p className="mt-1 text-[0.8125rem] text-ink-3">
-        Perkiraan pakai 3 hari ke depan: {angka(perkiraan.pakaiTigaHariMin ?? 0)}&ndash;
-        {angka(perkiraan.pakaiTigaHariMaks ?? 0)} {barang.satuan}
+        Perkiraan pakai 3 hari ke depan: {angkaTampil(barang, perkiraan.pakaiTigaHariMin ?? 0)}&ndash;
+        {angkaTampil(barang, perkiraan.pakaiTigaHariMaks ?? 0)} {satuanTampil(barang).nama}
       </p>
       {perkiraan.dibuatPada && (
         <p className="mt-1 text-[0.75rem] text-ink-3">
@@ -608,9 +608,9 @@ export function BarisStok({ barang, sedangDikirim }: { barang: Barang; sedangDik
               status === 'habis' ? 'text-kritis' : 'text-ink',
             )}
           >
-            {angka(barang.stok, barang.stok < 10 && !Number.isInteger(barang.stok) ? 1 : 0)}
+            {angkaTampil(barang, barang.stok)}
           </p>
-          <p className="text-[0.75rem] text-ink-3 mt-0.5">{barang.satuan}</p>
+          <p className="text-[0.75rem] text-ink-3 mt-0.5">{satuanTampil(barang).nama}</p>
         </div>
       </div>
 
@@ -621,7 +621,7 @@ export function BarisStok({ barang, sedangDikirim }: { barang: Barang; sedangDik
       <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5">
         <ChipStok status={status} />
         <span className="text-[0.8125rem] text-ink-2">
-          sisa {jumlahSatuan(barang.stok, barang.satuan)}
+          sisa {jumlahTampil(barang, barang.stok)}
           {cukup != null && barang.pemakaianHarian > 0 && <> &middot; cukup &plusmn;{cukup} hari</>}
         </span>
       </div>
@@ -637,7 +637,7 @@ export function BarisStok({ barang, sedangDikirim }: { barang: Barang; sedangDik
           {kontrak && <Lencana nada="merek">Kontrak</Lencana>}
           {(sedangDikirim?.jumlah ?? 0) > 0 && (
             <Lencana nada="info" ikon={<IkonPasokan size={13} />}>
-              Sedang dikirim {jumlahSatuan(sedangDikirim!.jumlah, barang.satuan)}
+              Sedang dikirim {jumlahTampil(barang, sedangDikirim!.jumlah)}
               {sedangDikirim!.tiba ? ` (tiba ${tanggalPendek(sedangDikirim!.tiba)})` : ''}
             </Lencana>
           )}

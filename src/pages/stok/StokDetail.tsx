@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import type { Pergerakan } from '@/lib/types'
+import type { Barang, Pergerakan } from '@/lib/types'
 import { ALASAN_KOREKSI } from '@/lib/types'
 import { ChipKedaluwarsa, ChipStok, KartuPerkiraan } from '@/components/domain'
 import { KartuStruk } from '@/components/domain/KartuStruk'
@@ -19,7 +19,8 @@ import {
   IkonPena,
   IkonPeringatan,
 } from '@/icons'
-import { angka, cx, hariLagi, jam, jumlahSatuan, rupiah, tanggalRingkas, waktuNanti } from '@/lib/format'
+import { cx, hariLagi, jam, jumlahSatuan, rupiah, tanggalRingkas, waktuNanti } from '@/lib/format'
+import { angkaTampil, jumlahTampil, satuanTampil, trenTampil } from '@/lib/satuan'
 import { BANTUAN } from '@/lib/label'
 import {
   dalamKemasan,
@@ -171,8 +172,8 @@ export default function StokDetail() {
                     status === 'habis' ? 'text-kritis' : 'text-ink',
                   )}
                 >
-                  {angka(stokTampil, Number.isInteger(stokTampil) ? 0 : 1)}
-                  <span className="ml-1.5 text-[1rem] font-semibold text-ink-3">{barang.satuan}</span>
+                  {angkaTampil(barang, stokTampil)}
+                  <span className="ml-1.5 text-[1rem] font-semibold text-ink-3">{satuanTampil(barang).nama}</span>
                 </p>
                 {kemasan && <p className="mt-1.5 text-[0.8125rem] text-ink-2">= {kemasan}</p>}
               </div>
@@ -188,7 +189,7 @@ export default function StokDetail() {
               /* Angka minus berarti catatannya yang salah, bukan gudangnya. */
               <div className="mt-3 rounded-md bg-kritis-soft text-kritis-ink p-3.5">
                 <p className="text-[0.875rem] font-bold">
-                  0 {barang.satuan} (catatan kurang {jumlahSatuan(kurangCatatan, barang.satuan)})
+                  0 {satuanTampil(barang).nama} (catatan kurang {jumlahTampil(barang, kurangCatatan)})
                 </p>
                 <p className="mt-1 text-[0.8125rem] leading-relaxed opacity-90">
                   Kasir mencatat pemakaian lebih banyak daripada stok yang pernah masuk. Hitung fisik akan
@@ -215,13 +216,13 @@ export default function StokDetail() {
                 ) : status === 'habis' ? (
                   <>
                     Rata-rata terpakai{' '}
-                    <strong className="text-ink">{jumlahSatuan(barang.pemakaianHarian, barang.satuan)}</strong>{' '}
+                    <strong className="text-ink">{jumlahTampil(barang, barang.pemakaianHarian)}</strong>{' '}
                     per hari. Selama stoknya kosong, kira-kira sebanyak itu penjualan yang lepas setiap hari.
                   </>
                 ) : (
                   <>
                     Rata-rata terpakai{' '}
-                    <strong className="text-ink">{jumlahSatuan(barang.pemakaianHarian, barang.satuan)}</strong>{' '}
+                    <strong className="text-ink">{jumlahTampil(barang, barang.pemakaianHarian)}</strong>{' '}
                     per hari.{' '}
                     {barang.batasAman <= 0 ? (
                       'Batas amannya belum diatur, jadi kami belum bisa mengingatkan sebelum stoknya habis.'
@@ -274,7 +275,7 @@ export default function StokDetail() {
               <IkonPasokan size={18} className="shrink-0 mt-0.5" />
               <span className="min-w-0 grow">
                 <span className="block text-[0.9375rem] font-bold">
-                  Sedang dikirim {jumlahSatuan(dikirim.jumlah, barang.satuan)}
+                  Sedang dikirim {jumlahTampil(barang, dikirim.jumlah)}
                 </span>
                 <span className="block text-[0.8125rem] mt-0.5 opacity-90 leading-relaxed">
                   {pesananDikirim ? `${pesananDikirim.nomor} · ` : ''}
@@ -300,7 +301,7 @@ export default function StokDetail() {
             </span>
             <span className="shrink-0 text-right">
               <span className="block text-[1.125rem] font-bold text-ink tabular">
-                {barang.batasAman > 0 ? jumlahSatuan(barang.batasAman, barang.satuan) : 'Belum diisi'}
+                {barang.batasAman > 0 ? jumlahTampil(barang, barang.batasAman) : 'Belum diisi'}
               </span>
             </span>
             <IkonPanahKanan size={18} className="shrink-0 text-ink-3" />
@@ -367,7 +368,7 @@ export default function StokDetail() {
                       Rapor perkiraan
                     </Link>
                   </div>
-                  <GrafikTren data={tren} satuan={barang.satuan} />
+                  <GrafikTren data={trenTampil(barang, tren)} satuan={satuanTampil(barang).nama} />
                 </Kartu>
               )}
 
@@ -452,7 +453,7 @@ export default function StokDetail() {
                 <ul className="space-y-2">
                   {riwayat.map((g) => (
                     <li key={g.id}>
-                      <BarisRiwayat gerak={g} satuan={barang.satuan} nomorPesanan={nomorPesanan(pesanan, g)} />
+                      <BarisRiwayat gerak={g} barang={barang} nomorPesanan={nomorPesanan(pesanan, g)} />
                     </li>
                   ))}
                 </ul>
@@ -516,15 +517,15 @@ function BatangAlasan({
  */
 function BarisRiwayat({
   gerak,
-  satuan,
+  barang,
   nomorPesanan,
 }: {
   gerak: Pergerakan
-  satuan: string
+  barang: Barang
   nomorPesanan: string | null
 }) {
   const masuk = gerak.jumlah > 0
-  const besaran = `${masuk ? '+' : '−'}${jumlahSatuan(Math.abs(gerak.jumlah), satuan)}`
+  const besaran = `${masuk ? '+' : '−'}${jumlahTampil(barang, Math.abs(gerak.jumlah))}`
 
   /* Dibedakan lewat keterangannya, bukan lewat transaksiId: pergerakan dari
      kasir juga bisa tanpa struk kalau hari itu tidak ada yang tercetak, jadi
@@ -567,8 +568,7 @@ function BarisRiwayat({
         <span>oleh {gerak.oleh}</span>
         <span>&middot;</span>
         <span>
-          stok jadi {angka(Math.max(0, gerak.stokSesudah), Number.isInteger(gerak.stokSesudah) ? 0 : 1)}{' '}
-          {satuan}
+          stok jadi {jumlahTampil(barang, Math.max(0, gerak.stokSesudah))}
         </span>
       </div>
       {gerak.keterangan && gerak.jenis === 'koreksi' && (

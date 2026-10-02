@@ -5,7 +5,9 @@ import { Kolom } from '@/components/ui/formulir'
 import { BarisChip, BilahAksi, Chip, KepalaHalaman } from '@/components/ui/navigasi'
 import { KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
 import { IkonCentangLingkaran, IkonKotak } from '@/icons'
-import { angka, cx, jumlahSatuan, tanggalLengkapHari } from '@/lib/format'
+import { angka, bacaAngkaIndonesia, cx, tanggalLengkapHari } from '@/lib/format'
+import { angkaTampil, dariTampil, desimalTampil, jumlahTampil, satuanTampil } from '@/lib/satuan'
+import type { Barang } from '@/lib/types'
 import { kategoriBarang } from '@/data/dummy'
 import { useAplikasi } from '@/store/aplikasi'
 
@@ -43,16 +45,20 @@ interface Isian {
 interface Tercatat {
   id: string
   nama: string
-  terpakai: number
-  sisa: number
-  satuan: string
+  /** Sudah dalam satuan tampil, mis. "0,4 kg". */
+  terpakai: string
+  sisa: string
 }
 
-/** Menerima "3.400" maupun "3,5" seperti kebiasaan menulis angka di Indonesia. */
-function bacaIsian(teks: string, stok: number, satuan: string): Isian {
-  const bersih = teks.replace(/\s/g, '').replace(/\./g, '').replace(',', '.')
-  if (bersih === '') return { nilai: null, galat: null }
-  const n = Number(bersih)
+/**
+ * Menerima "3.400" maupun "3,5" seperti kebiasaan menulis angka di Indonesia.
+ * Angka yang diketik dalam SATUAN TAMPIL barangnya (kg, liter, dus); yang
+ * dikembalikan sudah dalam satuan simpan, siap dikurangkan dari stok.
+ */
+function bacaIsian(teks: string, b: Barang): Isian {
+  const stok = b.stok
+  if (teks.trim() === '') return { nilai: null, galat: null }
+  const n = dariTampil(b, bacaAngkaIndonesia(teks))
   if (!Number.isFinite(n)) {
     return { nilai: null, galat: 'Isi dengan angka saja, tanpa huruf. Contoh: 12.' }
   }
@@ -65,13 +71,13 @@ function bacaIsian(teks: string, stok: number, satuan: string): Isian {
   if (n > 0 && stok === 0) {
     return {
       nilai: null,
-      galat: `Sisa barang ini tercatat ${jumlahSatuan(0, satuan)}, jadi belum ada yang bisa dikurangi. Betulkan dulu sisanya lewat Koreksi Stok, baru catat pemakaiannya. Contoh setelah sisa dibetulkan: 12.`,
+      galat: `Sisa barang ini tercatat ${jumlahTampil(b, 0)}, jadi belum ada yang bisa dikurangi. Betulkan dulu sisanya lewat Koreksi Stok, baru catat pemakaiannya. Contoh setelah sisa dibetulkan: 12.`,
     }
   }
   if (n > stok) {
     return {
       nilai: null,
-      galat: `Terpakai tidak boleh lebih besar dari sisa ${jumlahSatuan(stok, satuan)}. Turunkan angkanya, atau tambah dulu stoknya lewat Koreksi Stok. Contoh: ${angka(Math.floor(stok))}.`,
+      galat: `Terpakai tidak boleh lebih besar dari sisa ${jumlahTampil(b, stok)}. Turunkan angkanya, atau tambah dulu stoknya lewat Koreksi Stok. Contoh: ${angkaTampil(b, stok)}.`,
     }
   }
   return { nilai: n, galat: null }
@@ -88,7 +94,7 @@ export default function CatatPemakaian() {
 
   const isian = useMemo(() => {
     const peta: Record<string, Isian> = {}
-    for (const b of barang) peta[b.id] = bacaIsian(teks[b.id] ?? '', b.stok, b.satuan)
+    for (const b of barang) peta[b.id] = bacaIsian(teks[b.id] ?? '', b)
     return peta
   }, [barang, teks])
 
@@ -124,9 +130,8 @@ export default function CatatPemakaian() {
         catatan.push({
           id: b.id,
           nama: b.nama,
-          terpakai: n,
-          sisa: Math.max(0, Math.round((b.stok - n) * 100) / 100),
-          satuan: b.satuan,
+          terpakai: jumlahTampil(b, n),
+          sisa: jumlahTampil(b, Math.max(0, Math.round((b.stok - n) * 100) / 100)),
         })
       }
     }
@@ -171,8 +176,7 @@ export default function CatatPemakaian() {
                   {t.nama}
                 </Link>
                 <span className="text-[0.8125rem] text-ink-2 shrink-0 tabular">
-                  terpakai {jumlahSatuan(t.terpakai, t.satuan)} &middot; sisa{' '}
-                  <strong className="text-ink">{jumlahSatuan(t.sisa, t.satuan)}</strong>
+                  terpakai {t.terpakai} &middot; sisa <strong className="text-ink">{t.sisa}</strong>
                 </span>
               </li>
             ))}
@@ -380,7 +384,7 @@ export default function CatatPemakaian() {
                             aktif ? 'text-ink-2' : 'text-ink-3',
                           )}
                         >
-                          {b.kategori} &middot; sisa {jumlahSatuan(b.stok, b.satuan)}
+                          {b.kategori} &middot; sisa {jumlahTampil(b, b.stok)}
                         </p>
                         {/* Barang bersisa 0 tidak bisa dikurangi lagi, jadi jalan
                             keluarnya ditawarkan sebelum pengguna mengetik. */}
@@ -396,10 +400,10 @@ export default function CatatPemakaian() {
                       {/* Satu-satunya kolom angka di layar ini. Jangan tambah kolom kedua. */}
                       <div className={cx('shrink-0', info?.galat ? 'w-full sm:w-56' : 'w-[8.5rem]')}>
                         <Kolom
-                          aria-label={`Terpakai hari ini untuk ${b.nama} dalam ${b.satuan}`}
-                          inputMode="numeric"
+                          aria-label={`Terpakai hari ini untuk ${b.nama} dalam ${satuanTampil(b).nama}`}
+                          inputMode={desimalTampil(b) > 0 ? 'decimal' : 'numeric'}
                           placeholder="0"
-                          akhiran={b.satuan}
+                          akhiran={satuanTampil(b).nama}
                           value={teks[b.id] ?? ''}
                           galat={info?.galat ?? undefined}
                           onChange={(e) => setTeks((lama) => ({ ...lama, [b.id]: e.target.value }))}

@@ -25,6 +25,7 @@ import {
   IkonToko,
 } from '@/icons'
 import { angka, cx, waktuLalu } from '@/lib/format'
+import { isiKemasan } from '@/lib/satuan'
 import { JUDUL } from '@/lib/label'
 import type { Barang, Distributor, Penawaran } from '@/lib/types'
 import {
@@ -69,7 +70,7 @@ function rentangDurasi(penawaranId: string): string | null {
 }
 
 function labelKemasan(p: Penawaran, b: Barang | undefined): string {
-  if (p.kemasanJual && b) return `1 ${p.kemasanJual.nama} = ${angka(p.kemasanJual.isi)} ${b.satuan}`
+  if (p.kemasanJual && b) return isiKemasan(b, p.kemasanJual.nama, p.kemasanJual.isi) ?? `dijual per ${p.kemasanJual.nama}`
   if (p.kemasanJual) return `1 ${p.kemasanJual.nama} = ${angka(p.kemasanJual.isi)} satuan pakai`
   return `dijual per ${p.satuan}`
 }

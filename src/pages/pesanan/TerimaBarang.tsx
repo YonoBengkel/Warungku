@@ -6,6 +6,7 @@ import { BarisChip, BilahAksi, Chip, KepalaHalaman } from '@/components/ui/navig
 import { KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
 import { IkonCentangLingkaran, IkonPasokan, IkonUnggah } from '@/icons'
 import { angka, cx, jumlahSatuan, rupiah, tanggalLengkapHari } from '@/lib/format'
+import { isiKemasan, jumlahTampil } from '@/lib/satuan'
 import { LABEL_SELISIH, type AlasanSelisih } from '@/lib/types'
 import { distributorById } from '@/data/dummy'
 import { useAplikasi } from '@/store/aplikasi'
@@ -140,17 +141,19 @@ export default function TerimaBarang() {
     return ps.baris.map((b) => {
       const diakui = koreksi[b.penawaranId]?.jumlah ?? b.jumlah
       const bar = barang.find((x) => x.id === b.barangId)
-      const satuan = bar?.satuan ?? b.satuan
+      /* Jumlah yang masuk ke stok ditulis dalam satuan tampil barangnya, sama
+         dengan angka yang akan dibaca di daftar Stok sesaat lagi. */
+      const tulis = (n: number) => (bar ? jumlahTampil(bar, n) : jumlahSatuan(n, b.satuan))
       const isi = bar ? diakui * b.isiPerSatuan : diakui
       const dipesanIsi = bar ? b.jumlah * b.isiPerSatuan : b.jumlah
       const asal =
         diakui === b.jumlah
           ? ''
-          : satuan === b.satuan
+          : !bar
             ? ` — dipesan ${jumlahSatuan(b.jumlah, b.satuan)}`
-            : ` — dipesan ${jumlahSatuan(b.jumlah, b.satuan)} = ${jumlahSatuan(dipesanIsi, satuan)}`
+            : ` — dipesan ${jumlahSatuan(b.jumlah, b.satuan)} = ${tulis(dipesanIsi)}`
       if (diakui <= 0) return `${b.nama}: tidak ada yang masuk${asal}`
-      return `${b.nama} ${jumlahSatuan(isi, satuan)}${asal}`
+      return `${b.nama} ${tulis(isi)}${asal}`
     })
   }
 
@@ -241,7 +244,9 @@ export default function TerimaBarang() {
                     <p className="text-[1rem] font-semibold text-ink leading-snug">{b.nama}</p>
                     <p className="mt-0.5 text-[0.8125rem] text-ink-3 tabular">
                       {rupiah(b.hargaSatuan)} per {b.satuan}
-                      {bar && b.isiPerSatuan > 1 && <> &middot; 1 {b.satuan} = {jumlahSatuan(b.isiPerSatuan, bar.satuan)}</>}
+                      {bar && b.isiPerSatuan > 1 && isiKemasan(bar, b.satuan, b.isiPerSatuan) && (
+                        <> &middot; {isiKemasan(bar, b.satuan, b.isiPerSatuan)}</>
+                      )}
                     </p>
                   </div>
                   <div className="shrink-0 text-right">

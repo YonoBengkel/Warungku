@@ -26,6 +26,7 @@ import {
   tanggalRingkas,
   waktuLalu,
 } from '@/lib/format'
+import { jumlahTampil } from '@/lib/satuan'
 import { JUDUL } from '@/lib/label'
 import type { Barang, RiwayatKasir } from '@/lib/types'
 import { POS_TUNGGAL, daftarTransaksi, riwayatKasir } from '@/data/dummy'
@@ -777,7 +778,7 @@ function TabPerluDibereskan({
               bantuan="Perkiraan kasar sudah cukup. Kamu bisa membetulkannya kapan saja dari detail barang."
             />
             <p className="mt-3 text-[0.8125rem] text-ink-3 leading-relaxed">
-              Sisa {jumlahSatuan(bahanPorsi.stok, bahanPorsi.satuan)} yang tercatat sekarang tidak ikut dihitung
+              Sisa {jumlahTampil(bahanPorsi, bahanPorsi.stok)} yang tercatat sekarang tidak ikut dihitung
               ulang. Takaran ini berlaku untuk penjualan berikutnya.
             </p>
           </div>

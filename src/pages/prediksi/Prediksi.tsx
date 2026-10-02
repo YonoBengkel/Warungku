@@ -18,7 +18,8 @@ import {
   IkonTrenNaik,
   IkonTrenTurun,
 } from '@/icons'
-import { angka, cx, jumlahSatuan, rupiah } from '@/lib/format'
+import { angka, cx, rupiah } from '@/lib/format'
+import { angkaTampil, jumlahTampil, satuanTampil, trenTampil } from '@/lib/satuan'
 import { JUDUL, LABEL_ARAH_PREDIKSI, NADA_ARAH_PREDIKSI } from '@/lib/label'
 import {
   hargaBerlaku,
@@ -412,7 +413,7 @@ function KartuBarangKategori({ barang, ke }: { barang: Barang; ke: string }) {
           <ChipStok status={statusStok(barang)} />
         </span>
         <span className="block mt-1 text-[0.8125rem] text-ink-3 leading-snug">
-          Sisa {jumlahSatuan(sisa, barang.satuan)}
+          Sisa {jumlahTampil(barang, sisa)}
         </span>
         {rekomendasi ? (
           <span className="mt-1.5 flex">
@@ -521,8 +522,8 @@ function DetailBarang({
               {/* Angka besar yang berdiri sendiri memakai lebar digit proporsional,
                   bukan tabular-nums: tidak ada kolom angka yang perlu disejajarkan. */}
               <p className="mt-1 text-[2rem] font-extrabold leading-none tracking-tight text-ink">
-                {angka(sisa, Number.isInteger(sisa) ? 0 : 1)}
-                <span className="ml-1.5 text-[1rem] font-semibold text-ink-3">{barang.satuan}</span>
+                {angkaTampil(barang, sisa)}
+                <span className="ml-1.5 text-[1rem] font-semibold text-ink-3">{satuanTampil(barang).nama}</span>
               </p>
             </div>
 
@@ -532,7 +533,7 @@ function DetailBarang({
                   Pemakaian enam bulan terakhir dan perkiraan bulan depan
                 </h3>
                 <div className="mt-2 min-w-0">
-                  <GrafikTren data={tren} satuan={barang.satuan} tinggi={200} />
+                  <GrafikTren data={trenTampil(barang, tren)} satuan={satuanTampil(barang).nama} tinggi={200} />
                 </div>
                 <p className="mt-2 text-[0.75rem] text-ink-3 leading-relaxed">
                   Garis putus-putus dan pita di sekelilingnya adalah perkiraan, bukan kenyataan. Ia
@@ -581,11 +582,11 @@ function DetailBarang({
 
                 <BarisData
                   label="Terpakai bulan ini"
-                  nilai={jumlahSatuan(rekomendasi.pemakaianBulanIni, barang.satuan)}
+                  nilai={jumlahTampil(barang, rekomendasi.pemakaianBulanIni)}
                 />
                 <BarisData
                   label="Perkiraan bulan depan"
-                  nilai={jumlahSatuan(rekomendasi.perkiraanBulanDepan, barang.satuan)}
+                  nilai={jumlahTampil(barang, rekomendasi.perkiraanBulanDepan)}
                   tebal
                 />
 

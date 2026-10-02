@@ -22,7 +22,8 @@ import {
   IkonTambah,
   IkonTiga,
 } from '@/icons'
-import { angka, cx, jumlahSatuan } from '@/lib/format'
+import { angka, cx } from '@/lib/format'
+import { jumlahTampil } from '@/lib/satuan'
 import { hariCukup, kategoriBarang, penawaranUntukBarang, statusStok } from '@/data/dummy'
 import { PESANAN_BERJALAN } from '@/lib/label'
 import { useAplikasi } from '@/store/aplikasi'
@@ -555,7 +556,7 @@ export default function Stok() {
                           {b.namaLain.length > 0 && <span>{b.namaLain.join(', ')}</span>}
                           {(dikirim?.jumlah ?? 0) > 0 && (
                             <Lencana nada="info">
-                              Sedang dikirim {jumlahSatuan(dikirim!.jumlah, b.satuan)}
+                              Sedang dikirim {jumlahTampil(b, dikirim!.jumlah)}
                             </Lencana>
                           )}
                           {b.dicatatManual && <Lencana nada="netral">Dicatat manual</Lencana>}
@@ -569,7 +570,7 @@ export default function Stok() {
                             s === 'habis' ? 'text-kritis' : 'text-ink',
                           )}
                         >
-                          {jumlahSatuan(Math.max(0, b.stok), b.satuan)}
+                          {jumlahTampil(b, Math.max(0, b.stok))}
                         </span>
                       </td>
                       <td className="py-3.5 px-4 align-middle text-right">
@@ -582,7 +583,7 @@ export default function Stok() {
                           </Link>
                         ) : (
                           <span className="text-[0.875rem] text-ink-2 tabular">
-                            {jumlahSatuan(b.batasAman, b.satuan)}
+                            {jumlahTampil(b, b.batasAman)}
                           </span>
                         )}
                       </td>
