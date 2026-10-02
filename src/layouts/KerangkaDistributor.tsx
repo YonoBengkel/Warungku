@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { cx, inisial } from '@/lib/format'
 import { NAV_DISTRIBUTOR } from '@/lib/label'
-import { IkonBeranda, IkonPasokan, IkonLokasi, IkonProfil, IkonLonceng, IkonKembali } from '@/icons'
+import { IkonBeranda, IkonPasokan, IkonKontrak, IkonLokasi, IkonProfil, IkonLonceng, IkonKembali } from '@/icons'
 import { distributorAktif } from '@/data/dummy'
 import { useAplikasi, useJumlahPerluKonfirmasi } from '@/store/aplikasi'
 import { Toast } from '@/components/ui/umpanBalik'
@@ -21,6 +21,7 @@ import { Toast } from '@/components/ui/umpanBalik'
 const TAB = [
   { ke: '/distributor-portal', label: NAV_DISTRIBUTOR.dashboard, Ikon: IkonBeranda },
   { ke: '/distributor-portal/pesanan', label: NAV_DISTRIBUTOR.pesanan, Ikon: IkonPasokan },
+  { ke: '/distributor-portal/kontrak', label: NAV_DISTRIBUTOR.kontrak, Ikon: IkonKontrak },
   { ke: '/distributor-portal/lacak', label: NAV_DISTRIBUTOR.lacak, Ikon: IkonLokasi },
   { ke: '/distributor-portal/profil', label: NAV_DISTRIBUTOR.profil, Ikon: IkonProfil },
 ]

@@ -54,7 +54,8 @@ export default function PenawaranDetail() {
 
   const penawaran = penawaranById(id)
   const distributor = penawaran ? distributorById(penawaran.distributorId) : undefined
-  const paket = useMemo(() => paketUntukPenawaran(id), [id])
+  const paketKontrak = useAplikasi((s) => s.paketKontrak)
+  const paket = useMemo(() => paketUntukPenawaran(id, paketKontrak), [id, paketKontrak])
 
   const daftarBarangGudang = useAplikasi((s) => s.barang)
   const daftarKontrakAktif = useAplikasi((s) => s.kontrak)

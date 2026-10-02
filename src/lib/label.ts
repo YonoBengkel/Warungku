@@ -124,7 +124,31 @@ export const LABEL_KONTRAK: Record<StatusKontrak, string> = {
   'akan-berakhir': 'Akan berakhir',
   selesai: 'Selesai',
   dihentikan: 'Dihentikan',
+  ditolak: 'Ditolak distributor',
 }
+
+/** Alasan siap pakai saat pemilik usaha mengajukan berhenti dari kontrak. */
+export const ALASAN_BERHENTI = [
+  'Usaha sedang sepi',
+  'Barang ini tidak lagi kami pakai',
+  'Kualitas barang tidak sesuai',
+  'Harga sudah tidak cocok',
+] as const
+
+/** Alasan siap pakai saat distributor menolak pengajuan kontrak. */
+export const ALASAN_TOLAK_KONTRAK = [
+  'Kuota di luar kemampuan kami',
+  'Stok untuk masa kontrak belum terjamin',
+  'Alamat di luar jadwal kirim rutin',
+  'Harga paket sedang kami tinjau',
+] as const
+
+/** Alasan siap pakai saat distributor menolak pengajuan berhenti. */
+export const ALASAN_TOLAK_BERHENTI = [
+  'Barang untuk masa kontrak sudah kami siapkan',
+  'Sisa masa kontrak tinggal sebentar',
+  'Kuota bulan ini belum diselesaikan',
+] as const
 
 export const LABEL_KUOTA: Record<StatusKuota, string> = {
   aman: 'Aman',
@@ -243,6 +267,7 @@ export const NAV_DISTRIBUTOR = {
   // ia membungkus jadi dua baris. Ikonnya pun sudah IkonBeranda.
   dashboard: 'Beranda',
   pesanan: 'Pesanan',
+  kontrak: 'Kontrak',
   lacak: 'Lacak Pesanan',
   profil: 'Profil',
 } as const

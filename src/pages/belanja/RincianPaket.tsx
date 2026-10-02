@@ -56,7 +56,8 @@ export default function RincianPaket() {
   const [params] = useSearchParams()
 
   const penawaran = penawaranById(id)
-  const paket = paketById(paketId)
+  const paketKontrak = useAplikasi((s) => s.paketKontrak)
+  const paket = paketById(paketId, paketKontrak)
   const distributor = penawaran ? distributorById(penawaran.distributorId) : undefined
 
   const daftarBarangGudang = useAplikasi((s) => s.barang)

@@ -7,6 +7,7 @@ import type {
   DataKasir,
   Distributor,
   Kontrak,
+  KontrakPelanggan,
   Notifikasi,
   PaketKontrak,
   Penawaran,
@@ -21,6 +22,7 @@ import type {
   RincianHarga,
   RiwayatKasir,
   SaranBelanja,
+  StatusKontrak,
   StatusKuota,
   StatusPesanan,
   StatusPesananMasuk,
@@ -1659,12 +1661,17 @@ export const daftarPaket: PaketKontrak[] = [
   ...buatPaket('d-08', 'pw-18', 398000, 8, null),
 ]
 
-export function paketUntukPenawaran(penawaranId: string): PaketKontrak[] {
-  return daftarPaket.filter((p) => p.penawaranId === penawaranId)
+/*
+ * Paket bisa diubah distributor saat aplikasi berjalan, jadi layar mengirim
+ * daftar dari store (`paketKontrak`). Bawaannya data contoh, untuk fungsi
+ * murni yang tidak punya akses ke store.
+ */
+export function paketUntukPenawaran(penawaranId: string, paketTersedia: PaketKontrak[] = daftarPaket): PaketKontrak[] {
+  return paketTersedia.filter((p) => p.penawaranId === penawaranId)
 }
 
-export function paketById(id: string): PaketKontrak | undefined {
-  return daftarPaket.find((p) => p.id === id)
+export function paketById(id: string, paketTersedia: PaketKontrak[] = daftarPaket): PaketKontrak | undefined {
+  return paketTersedia.find((p) => p.id === id)
 }
 
 /* ================================================================== */
@@ -1812,6 +1819,92 @@ export const daftarKontrak: Kontrak[] = [
   },
 ]
 
+/**
+ * Kontrak yang boleh dipakai untuk memesan dengan harga kontrak. Pengajuan yang
+ * belum disetujui distributor BELUM mengikat siapa pun, jadi ia tidak boleh
+ * menurunkan harga di keranjang.
+ */
+export function kontrakBisaDipakai(k: Pick<Kontrak, 'status'>): boolean {
+  return k.status === 'aktif' || k.status === 'akan-berakhir'
+}
+
+/** Kontrak dari satu paket, untuk data contoh: kuota dan harganya selalu ikut paket. */
+function kontrakDariPaket(
+  id: string,
+  umkmId: string,
+  paketId: string,
+  status: StatusKontrak,
+  mulaiHariKe: number,
+  diterima: number,
+  tambahan: Partial<KontrakPelanggan> = {},
+): KontrakPelanggan {
+  const paket = paketById(paketId)!
+  const pw = penawaranById(paket.penawaranId)!
+  const mulai = new Date(hariKe(mulaiHariKe, 8, 0))
+  const berakhir = new Date(mulai)
+  berakhir.setMonth(berakhir.getMonth() + paket.durasiBulan)
+  return {
+    id,
+    umkmId,
+    paketId,
+    distributorId: paket.distributorId,
+    penawaranId: paket.penawaranId,
+    barangId: pw.barangIdTerkait ?? '',
+    namaBarang: pw.nama,
+    durasiBulan: paket.durasiBulan,
+    kuotaMinPerBulan: paket.kuotaMinPerBulan,
+    hargaSatuan: paket.hargaSatuan,
+    satuan: pw.satuan,
+    mulai: mulai.toISOString(),
+    berakhir: berakhir.toISOString(),
+    status,
+    riwayat: [],
+    periodeBerjalan: {
+      periode: periode(0),
+      kuota: paket.kuotaMinPerBulan,
+      diterima,
+      selesai: diterima >= paket.kuotaMinPerBulan,
+    },
+    dalamPerjalanan: 0,
+    ketentuanKuotaKurang: paket.ketentuanKuotaKurang,
+    pesananRutinAktif: false,
+    pesananRutinBerikutnya: null,
+    ...tambahan,
+  }
+}
+
+/**
+ * Kontrak UMKM LAIN dengan Sumber Tani Nusantara, distributor yang membuka
+ * portal. Kontrak milik pemilik aplikasi ini tidak disalin ke sini: portal
+ * membacanya langsung dari `daftarKontrak` lewat gabungKontrakMasuk.
+ */
+export const daftarKontrakUmkmLain: KontrakPelanggan[] = [
+  /* --- Pengajuan yang menunggu jawaban --- */
+  kontrakDariPaket('kp-01', 'u-03', 'pk-pw-02-B', 'menunggu-persetujuan', 0, 0, { mulai: jamLalu(5) }),
+  kontrakDariPaket('kp-02', 'u-05', 'pk-pw-01-C', 'menunggu-persetujuan', 0, 0, { mulai: jamLalu(26) }),
+  /* --- Berjalan, dengan pemenuhan kuota yang berbeda-beda --- */
+  kontrakDariPaket('kp-03', 'u-02', 'pk-pw-01-D', 'aktif', -65, 22, {
+    riwayat: [
+      { periode: periode(-2), kuota: 30, diterima: 32, selesai: true },
+      { periode: periode(-1), kuota: 30, diterima: 30, selesai: true },
+    ],
+    dalamPerjalanan: 5,
+  }),
+  kontrakDariPaket('kp-04', 'u-07', 'pk-pw-03-B', 'aktif', -20, 2),
+  kontrakDariPaket('kp-05', 'u-10', 'pk-pw-02-C', 'aktif', -40, 10, {
+    riwayat: [{ periode: periode(-1), kuota: 10, diterima: 11, selesai: true }],
+  }),
+  kontrakDariPaket('kp-06', 'u-09', 'pk-pw-03-A', 'akan-berakhir', -22, 7),
+  /* --- Berjalan, tapi pemiliknya minta berhenti --- */
+  kontrakDariPaket('kp-07', 'u-13', 'pk-pw-02-B', 'aktif', -35, 3, {
+    riwayat: [{ periode: periode(-1), kuota: 10, diterima: 6, selesai: true }],
+    pengajuanBerhenti: {
+      waktu: hariKe(-1, 16, 0),
+      alasan: 'Usaha sedang sepi. Kami mau beli sekali dulu sampai ramai lagi.',
+    },
+  }),
+]
+
 export function kontrakUntukBarang(barangId: string): Kontrak[] {
   return daftarKontrak.filter((k) => k.barangId === barangId && (k.status === 'aktif' || k.status === 'akan-berakhir'))
 }
@@ -1869,7 +1962,7 @@ export function rincianHarga(
   pada?: string,
 ): RincianHarga {
   const hargaNormal = penawaranById(penawaranId)?.hargaSatuan ?? 0
-  const kontrak = kontrakId ? kontrakTersedia.find((k) => k.id === kontrakId) : undefined
+  const kontrak = kontrakId ? kontrakTersedia.find((k) => k.id === kontrakId && kontrakBisaDipakai(k)) : undefined
   if (kontrak) return { harga: kontrak.hargaSatuan, hargaNormal, promo: null, sumber: 'kontrak' }
 
   const promo = promoUntukPenawaran(penawaranId, pada, promoTersedia)
@@ -3537,6 +3630,18 @@ export function cerminPesanan(p: Pesanan): PesananMasuk | null {
     pengiriman: p.pengiriman ?? null,
     ulasan: p.ulasan ?? null,
   }
+}
+
+/** Semua kontrak satu distributor, milik pemilik aplikasi ini maupun UMKM lain. */
+export function gabungKontrakMasuk(
+  kontrak: Kontrak[],
+  kontrakUmkmLain: KontrakPelanggan[],
+  distributorId: string = distributorAktif.id,
+): KontrakPelanggan[] {
+  return [
+    ...kontrak.filter((k) => k.distributorId === distributorId).map((k) => ({ ...k, umkmId: ID_UMKM_SENDIRI })),
+    ...kontrakUmkmLain.filter((k) => k.distributorId === distributorId),
+  ]
 }
 
 /**

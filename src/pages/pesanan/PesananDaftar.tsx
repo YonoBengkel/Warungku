@@ -78,6 +78,7 @@ const NADA_KONTRAK: Record<Kontrak['status'], NadaLencana> = {
   'akan-berakhir': 'menipis',
   selesai: 'netral',
   dihentikan: 'netral',
+  ditolak: 'netral',
 }
 
 function sisaKuota(k: Kontrak): number {
@@ -90,7 +91,7 @@ function masihBerjalan(k: Kontrak): boolean {
 }
 
 function sudahSelesai(k: Kontrak): boolean {
-  return k.status === 'selesai' || k.status === 'dihentikan'
+  return k.status === 'selesai' || k.status === 'dihentikan' || k.status === 'ditolak'
 }
 
 /**

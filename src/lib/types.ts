@@ -292,7 +292,13 @@ export interface PaketKontrak {
   ketentuanBerhenti: string | null
 }
 
-export type StatusKontrak = 'menunggu-persetujuan' | 'aktif' | 'akan-berakhir' | 'selesai' | 'dihentikan'
+export type StatusKontrak =
+  | 'menunggu-persetujuan'
+  | 'aktif'
+  | 'akan-berakhir'
+  | 'selesai'
+  | 'dihentikan'
+  | 'ditolak'
 
 /** Tiga status netral. Tidak memblokir apa pun, hanya memberi tahu. */
 export type StatusKuota = 'aman' | 'perlu-dikejar' | 'kurang'
@@ -325,6 +331,17 @@ export interface Kontrak {
   ketentuanKuotaKurang: string | null
   pesananRutinAktif: boolean
   pesananRutinBerikutnya: string | null
+  /** Alasan distributor saat menolak pengajuan kontrak; statusnya menjadi 'ditolak'. */
+  alasanDitolak?: string | null
+  /** Pengajuan berhenti dari pemilik usaha yang belum dijawab distributor. */
+  pengajuanBerhenti?: { waktu: string; alasan: string } | null
+  /** Jawaban distributor atas pengajuan berhenti yang terakhir. */
+  jawabanBerhenti?: { waktu: string; disetujui: boolean; alasan: string | null } | null
+}
+
+/** Kontrak seperti yang dibaca distributor: selalu tahu milik toko yang mana. */
+export interface KontrakPelanggan extends Kontrak {
+  umkmId: string
 }
 
 /* ------------------------------------------------------------------ */

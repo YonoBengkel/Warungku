@@ -7,7 +7,9 @@ import type {
   BuktiPengiriman,
   DataKasir,
   Kontrak,
+  KontrakPelanggan,
   Notifikasi,
+  PaketKontrak,
   Pergerakan,
   Pesanan,
   PesananMasuk,
@@ -26,13 +28,17 @@ import {
   POS_TUNGGAL,
   daftarBarang,
   daftarKontrak,
+  daftarKontrakUmkmLain,
   daftarNotifikasi,
+  daftarPaket,
   daftarPergerakan,
   daftarPesanan,
   daftarPesananMasuk,
   daftarTransaksi,
   dataKasirAwal,
+  gabungKontrakMasuk,
   gabungPesananMasuk,
+  kontrakBisaDipakai,
   paketById,
   penawaranById,
   profilAwal,
@@ -84,6 +90,10 @@ interface KeadaanAplikasi {
    * versi yang bisa saling selisih.
    */
   pesananUmkmLain: PesananMasuk[]
+  /** Kontrak UMKM lain dengan distributor aktif; kontrak milik sendiri ada di `kontrak`. */
+  kontrakUmkmLain: KontrakPelanggan[]
+  /** Paket kontrak semua distributor. Distributor aktif bisa menambah, mengubah, dan menghapus miliknya. */
+  paketKontrak: PaketKontrak[]
   tema: 'terang' | 'gelap'
   /** Mensimulasikan layanan perkiraan yang sedang tidak sehat, untuk menguji turun derajat. */
   layananPerkiraan: 'sehat' | 'tersimpan' | 'mati'
@@ -144,6 +154,14 @@ interface KeadaanAplikasi {
 
   /* Kontrak */
   ajukanKontrak: (paketId: string) => string
+  ajukanBerhenti: (kontrakId: string, alasan: string) => void
+
+  // Portal distributor — kontrak
+  setujuiKontrak: (id: string) => void
+  tolakKontrak: (id: string, alasan: string) => void
+  jawabBerhenti: (id: string, setuju: boolean, alasan?: string) => void
+  simpanPaket: (paket: PaketKontrak) => void
+  hapusPaket: (id: string) => void
   ubahPesananRutin: (kontrakId: string, aktif: boolean) => void
 
   /* Pemberitahuan */
@@ -174,6 +192,21 @@ function temaAwal(): 'terang' | 'gelap' {
 
 function stempel(): string {
   return new Date().toISOString()
+}
+
+/**
+ * Mengubah satu kontrak di tempat ia disimpan: kontrak milik pemilik aplikasi
+ * ada di `kontrak`, kontrak UMKM lain di `kontrakUmkmLain`.
+ */
+function ubahKontrak(
+  s: KeadaanAplikasi,
+  id: string,
+  ubah: (k: Kontrak) => Kontrak,
+): Pick<KeadaanAplikasi, 'kontrak'> | Pick<KeadaanAplikasi, 'kontrakUmkmLain'> {
+  if (s.kontrak.some((k) => k.id === id)) {
+    return { kontrak: s.kontrak.map((k) => (k.id === id ? ubah(k) : k)) }
+  }
+  return { kontrakUmkmLain: s.kontrakUmkmLain.map((k) => (k.id === id ? { ...ubah(k), umkmId: k.umkmId } : k)) }
 }
 
 /** Pesanan masuk distributor aktif, termasuk pesanan pemilik aplikasi ini. */
@@ -227,6 +260,8 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
   keranjang: [],
   peran: 'umkm',
   pesananUmkmLain: daftarPesananMasuk,
+  kontrakUmkmLain: daftarKontrakUmkmLain,
+  paketKontrak: daftarPaket,
   tema: temaAwal(),
   layananPerkiraan: 'sehat',
   // Dimulai dari keadaan belum masuk supaya "/" benar-benar memperlihatkan
@@ -363,7 +398,11 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
   ubahBarang: (barangId, p) =>
     set((s) => ({ barang: s.barang.map((b) => (b.id === barangId ? { ...b, ...p } : b)) })),
 
-  tambahKeKeranjang: (distributorId, penawaranId, jumlah, saranSistem = null, kontrakId = null) => {
+  tambahKeKeranjang: (distributorId, penawaranId, jumlah, saranSistem = null, kontrakIdDiminta = null) => {
+    // Pengajuan yang belum disetujui (atau kontrak yang sudah berakhir) tidak
+    // boleh menurunkan harga: barisnya masuk sebagai beli sekali.
+    const kontrakDiminta = kontrakIdDiminta ? get().kontrak.find((k) => k.id === kontrakIdDiminta) : undefined
+    const kontrakId = kontrakDiminta && kontrakBisaDipakai(kontrakDiminta) ? kontrakDiminta.id : null
     set((s) => {
       const sub = s.keranjang.find((k) => k.distributorId === distributorId)
       if (!sub) {
@@ -916,7 +955,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
    */
   ajukanKontrak: (paketId) => {
     const id = `k-ajuan-${paketId}`
-    const paket = paketById(paketId)
+    const paket = paketById(paketId, get().paketKontrak)
     const penawaran = paket ? penawaranById(paket.penawaranId) : undefined
     // Menekan tombolnya dua kali tidak boleh melahirkan dua pengajuan kembar.
     const sudahAda = get().kontrak.some((k) => k.id === id)
@@ -956,6 +995,107 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
 
     get().tampilkanRacun('Pengajuan kontrak terkirim. Menunggu persetujuan distributor.', 'info')
     return id
+  },
+
+  /**
+   * Kontrak tidak bisa dihentikan sepihak: pengajuan ini hanya tersimpan dan
+   * menunggu jawaban distributor. Sampai dijawab, kewajiban kuota tetap ada.
+   */
+  ajukanBerhenti: (kontrakId, alasan) => {
+    set((s) => ({
+      kontrak: s.kontrak.map((k) =>
+        k.id !== kontrakId
+          ? k
+          : { ...k, pengajuanBerhenti: { waktu: stempel(), alasan: alasan.trim() }, jawabanBerhenti: null },
+      ),
+    }))
+    get().tampilkanRacun('Pengajuan penghentian terkirim. Kontrak tetap berjalan sampai distributor menjawab.', 'info')
+  },
+
+  setujuiKontrak: (id) => {
+    const k = gabungKontrakMasuk(get().kontrak, get().kontrakUmkmLain).find((x) => x.id === id)
+    if (!k || k.status !== 'menunggu-persetujuan') return
+    // Masa kontrak dihitung sejak disetujui, bukan sejak diajukan: sebelum
+    // disetujui belum ada kewajiban apa pun bagi kedua pihak.
+    const mulai = new Date()
+    const berakhir = new Date(mulai)
+    berakhir.setMonth(berakhir.getMonth() + k.durasiBulan)
+    set((s) =>
+      ubahKontrak(s, id, (x) => ({
+        ...x,
+        status: 'aktif',
+        mulai: mulai.toISOString(),
+        berakhir: berakhir.toISOString(),
+        periodeBerjalan: {
+          periode: `${mulai.getFullYear()}-${String(mulai.getMonth() + 1).padStart(2, '0')}`,
+          kuota: x.kuotaMinPerBulan,
+          diterima: 0,
+          selesai: false,
+        },
+      })),
+    )
+    get().tampilkanRacun(
+      `Kontrak ${k.namaBarang} untuk ${umkmById(k.umkmId)?.nama ?? 'pemilik usaha'} disetujui. Harga kontrak berlaku mulai hari ini.`,
+      'aman',
+    )
+  },
+
+  tolakKontrak: (id, alasan) => {
+    const alasanBersih = alasan.trim()
+    if (!alasanBersih) return
+    const k = gabungKontrakMasuk(get().kontrak, get().kontrakUmkmLain).find((x) => x.id === id)
+    if (!k || k.status !== 'menunggu-persetujuan') return
+    set((s) => ubahKontrak(s, id, (x) => ({ ...x, status: 'ditolak', alasanDitolak: alasanBersih })))
+    get().tampilkanRacun('Pengajuan kontrak ditolak. Alasannya ikut terkirim ke pemilik usaha.', 'menipis')
+  },
+
+  jawabBerhenti: (id, setuju, alasan = '') => {
+    const k = gabungKontrakMasuk(get().kontrak, get().kontrakUmkmLain).find((x) => x.id === id)
+    if (!k?.pengajuanBerhenti) return
+    const waktu = stempel()
+    if (setuju) {
+      set((s) =>
+        ubahKontrak(s, id, (x) => ({
+          ...x,
+          status: 'dihentikan',
+          berakhir: waktu,
+          pesananRutinAktif: false,
+          pesananRutinBerikutnya: null,
+          pengajuanBerhenti: null,
+          jawabanBerhenti: { waktu, disetujui: true, alasan: null },
+        })),
+      )
+      get().tampilkanRacun(`Kontrak ${k.namaBarang} dihentikan. Pemilik usaha kembali membeli dengan harga biasa.`, 'info')
+      return
+    }
+    const alasanBersih = alasan.trim()
+    if (!alasanBersih) return
+    set((s) =>
+      ubahKontrak(s, id, (x) => ({
+        ...x,
+        pengajuanBerhenti: null,
+        jawabanBerhenti: { waktu, disetujui: false, alasan: alasanBersih },
+      })),
+    )
+    get().tampilkanRacun('Pengajuan berhenti ditolak. Kontrak tetap berjalan sampai masanya habis.', 'menipis')
+  },
+
+  simpanPaket: (paket) => {
+    const ada = get().paketKontrak.some((p) => p.id === paket.id)
+    set((s) => ({
+      paketKontrak: ada ? s.paketKontrak.map((p) => (p.id === paket.id ? paket : p)) : [...s.paketKontrak, paket],
+    }))
+    get().tampilkanRacun(
+      ada ? `${paket.kode} diperbarui. Kontrak yang sudah berjalan tetap memakai ketentuan lamanya.` : `${paket.kode} ditambahkan.`,
+      'aman',
+    )
+  },
+
+  hapusPaket: (id) => {
+    const paket = get().paketKontrak.find((p) => p.id === id)
+    if (!paket) return
+    set((s) => ({ paketKontrak: s.paketKontrak.filter((p) => p.id !== id) }))
+    get().tampilkanRacun(`${paket.kode} dihapus. Kontrak yang sudah berjalan dengan paket ini tidak terpengaruh.`, 'info')
   },
 
   ubahPesananRutin: (kontrakId, aktif) =>
@@ -1086,6 +1226,13 @@ export function usePesananMasuk(): PesananMasuk[] {
   const pesanan = useAplikasi((s) => s.pesanan)
   const lain = useAplikasi((s) => s.pesananUmkmLain)
   return useMemo(() => gabungPesananMasuk(pesanan, lain), [pesanan, lain])
+}
+
+/** Semua kontrak distributor aktif, termasuk milik pemilik aplikasi ini. */
+export function useKontrakMasuk(): KontrakPelanggan[] {
+  const kontrak = useAplikasi((s) => s.kontrak)
+  const lain = useAplikasi((s) => s.kontrakUmkmLain)
+  return useMemo(() => gabungKontrakMasuk(kontrak, lain), [kontrak, lain])
 }
 
 /** Angka merah pada lonceng distributor: pesanan yang menunggu dijawab. */

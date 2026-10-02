@@ -3,8 +3,9 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { KuotaBulanIni, TombolTerkunci, useTerkunci } from '@/components/domain'
 import { Avatar, Kartu, Lencana, Pemisah, Tombol, TombolTautan } from '@/components/ui/dasar'
 import { BilahProgres, KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
-import { KepalaHalaman, TabSegmen } from '@/components/ui/navigasi'
-import { Konfirmasi } from '@/components/ui/lembar'
+import { BarisChip, Chip, KepalaHalaman, TabSegmen } from '@/components/ui/navigasi'
+import { AreaTeks } from '@/components/ui/formulir'
+import { Lembar } from '@/components/ui/lembar'
 import {
   IkonCentangLingkaran,
   IkonInfo,
@@ -16,9 +17,10 @@ import {
 } from '@/icons'
 import { angka, jam, jumlahSatuan, rupiah, tanggalPanjang, tanggalPendek, waktuNanti } from '@/lib/format'
 import { jumlahTampil } from '@/lib/satuan'
-import { BANTUAN, LABEL_KONTRAK } from '@/lib/label'
+import { ALASAN_BERHENTI, BANTUAN, LABEL_KONTRAK } from '@/lib/label'
 import { distributorById, penawaranById, sisaHariPeriode } from '@/data/dummy'
-import type { Barang, Kontrak } from '@/lib/types'
+import type { Barang, Kontrak, StatusKontrak } from '@/lib/types'
+import type { NadaLencana } from '@/components/ui/dasar'
 import { useAplikasi } from '@/store/aplikasi'
 
 /**
@@ -31,6 +33,15 @@ import { useAplikasi } from '@/store/aplikasi'
  */
 
 type Segmen = 'ringkasan' | 'riwayat' | 'dokumen'
+
+const NADA_STATUS: Record<StatusKontrak, NadaLencana> = {
+  'menunggu-persetujuan': 'info',
+  aktif: 'merek',
+  'akan-berakhir': 'menipis',
+  selesai: 'netral',
+  dihentikan: 'netral',
+  ditolak: 'netral',
+}
 
 function namaPeriode(periode: string): string {
   const [tahun, bulan] = periode.split('-')
@@ -69,11 +80,14 @@ export default function KontrakDetail() {
   const barang = useAplikasi((s) => s.barang.find((b) => b.id === kontrak?.barangId))
   const tambahKeKeranjang = useAplikasi((s) => s.tambahKeKeranjang)
   const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
+  const ajukanBerhenti = useAplikasi((s) => s.ajukanBerhenti)
 
+  /* Penghentian tidak pernah berlaku seketika: pengajuannya disimpan di
+     kontrak dan menunggu jawaban distributor, lalu statusnya baru berubah
+     kalau distributor menyetujui. */
   const [dialogHenti, setDialogHenti] = useState(false)
-  /* Penghentian tidak pernah berlaku seketika, jadi layar hanya boleh berubah
-     jadi "menunggu jawaban" — bukan mengubah status kontrak di penyimpanan. */
-  const [pengajuanHenti, setPengajuanHenti] = useState(false)
+  const [alasanHenti, setAlasanHenti] = useState<string | null>(null)
+  const [catatanHenti, setCatatanHenti] = useState('')
 
   const tabMentah = params.get('tab')
   const tab: Segmen = tabMentah === 'riwayat' || tabMentah === 'dokumen' ? tabMentah : 'ringkasan'
@@ -99,6 +113,16 @@ export default function KontrakDetail() {
 
   const kt = kontrak
   const distributor = distributorById(kontrak.distributorId)
+  /* Hanya kontrak yang berjalan punya kuota yang dikejar, pesanan rutin, dan
+     jalur berhenti. Pengajuan yang belum disetujui belum mengikat siapa pun. */
+  const berjalan = kontrak.status === 'aktif' || kontrak.status === 'akan-berakhir'
+  const menunggu = kontrak.status === 'menunggu-persetujuan'
+  const namaDistributor = distributor?.nama ?? 'Distributor'
+  const alasanHentiLengkap = alasanHenti
+    ? catatanHenti.trim()
+      ? `${alasanHenti}. ${catatanHenti.trim()}`
+      : alasanHenti
+    : catatanHenti.trim()
   const kurang = Math.max(0, kontrak.periodeBerjalan.kuota - kontrak.periodeBerjalan.diterima - kontrak.dalamPerjalanan)
   const sisaHari = sisaHariPeriode()
   const konversi = konversiAwam(kontrak, barang, kurang)
@@ -157,10 +181,38 @@ export default function KontrakDetail() {
           </Link>
           <p className="text-[0.8125rem] text-ink-3 truncate">{distributor?.kota}</p>
         </div>
-        <Lencana nada={kontrak.status === 'akan-berakhir' ? 'menipis' : 'merek'} besar>
+        <Lencana nada={NADA_STATUS[kontrak.status]} besar>
           {LABEL_KONTRAK[kontrak.status]}
         </Lencana>
       </div>
+
+      {menunggu && (
+        <Peringatan nada="info" judul={`Menunggu persetujuan ${namaDistributor}`} className="mt-3 lg:max-w-[70ch]">
+          Harga kontrak baru berlaku setelah disetujui. Sampai saat itu barang ini dipesan dengan harga beli sekali,
+          dan belum ada kuota yang perlu kamu kejar.
+        </Peringatan>
+      )}
+      {kontrak.status === 'ditolak' && (
+        <Peringatan
+          nada="netral"
+          judul="Pengajuan kontrak ditolak"
+          className="mt-3 lg:max-w-[70ch]"
+          aksi={
+            <TombolTautan ke={`/penawaran/${kontrak.penawaranId}/kontrak`} ragam="garis" ukuran="kecil">
+              Lihat paket lain
+            </TombolTautan>
+          }
+        >
+          {kontrak.alasanDitolak && `Alasan dari ${namaDistributor}: ${kontrak.alasanDitolak.replace(/[.\s]+$/, '')}. `}
+          Tidak ada kewajiban apa pun yang berjalan dari pengajuan ini.
+        </Peringatan>
+      )}
+      {kontrak.status === 'dihentikan' && kontrak.jawabanBerhenti?.disetujui && (
+        <Peringatan nada="netral" judul="Kontrak sudah dihentikan" className="mt-3 lg:max-w-[70ch]">
+          {namaDistributor} menyetujui pengajuan berhentimu pada {tanggalPanjang(kontrak.jawabanBerhenti.waktu)}.
+          Pesanan berikutnya untuk barang ini memakai harga beli sekali.
+        </Peringatan>
+      )}
 
       <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <p className="text-[0.8125rem] text-ink-3 max-w-[70ch]">{BANTUAN.satuKontrakSatuBarang}</p>
@@ -193,7 +245,13 @@ export default function KontrakDetail() {
               </h2>
               <KuotaBulanIni kontrak={kontrak} />
 
-              {kurang > 0 ? (
+              {!berjalan ? (
+                <p className="mt-4 border-t border-line pt-3.5 text-[0.875rem] text-ink-2 leading-relaxed">
+                  {menunggu
+                    ? 'Kuota mulai dihitung setelah distributor menyetujui kontrak ini.'
+                    : 'Kontrak ini sudah tidak berjalan, jadi tidak ada kuota yang perlu dikejar.'}
+                </p>
+              ) : kurang > 0 ? (
                 <div className="mt-4 border-t border-line pt-3.5">
                   <p className="text-[1rem] font-bold text-ink">
                     Kurang {angka(kurang)} {kontrak.satuan} &middot; sisa {sisaHari} hari di bulan ini
@@ -261,57 +319,68 @@ export default function KontrakDetail() {
               </Peringatan>
             </section>
 
-            <section aria-labelledby="judul-rutin">
-              <Kartu padat>
-                <h2 id="judul-rutin" className="sr-only">
-                  Pesanan rutin
-                </h2>
-                <div className="flex items-start gap-3">
-                  <span className="shrink-0 size-9 rounded-md grid place-items-center bg-brand-soft text-brand-soft-ink">
-                    <IkonPetir size={18} />
-                  </span>
-                  <div className="min-w-0 grow">
-                    <p className="text-[0.9375rem] font-bold text-ink leading-snug">
-                      Pesanan rutin:{' '}
-                      {kontrak.pesananRutinAktif ? (
-                        <>
-                          aktif, berikutnya{' '}
-                          {kontrak.pesananRutinBerikutnya ? tanggalPendek(kontrak.pesananRutinBerikutnya) : 'belum dijadwalkan'}
-                        </>
-                      ) : (
-                        'belum diatur'
-                      )}
-                    </p>
-                    <p className="mt-0.5 text-[0.8125rem] text-ink-3 leading-snug">
-                      Sistem cuma menyiapkan draf. Tidak ada pesanan yang terkirim tanpa kamu setujui.
-                    </p>
+            {berjalan && (
+              <section aria-labelledby="judul-rutin">
+                <Kartu padat>
+                  <h2 id="judul-rutin" className="sr-only">
+                    Pesanan rutin
+                  </h2>
+                  <div className="flex items-start gap-3">
+                    <span className="shrink-0 size-9 rounded-md grid place-items-center bg-brand-soft text-brand-soft-ink">
+                      <IkonPetir size={18} />
+                    </span>
+                    <div className="min-w-0 grow">
+                      <p className="text-[0.9375rem] font-bold text-ink leading-snug">
+                        Pesanan rutin:{' '}
+                        {kontrak.pesananRutinAktif ? (
+                          <>
+                            aktif, berikutnya{' '}
+                            {kontrak.pesananRutinBerikutnya ? tanggalPendek(kontrak.pesananRutinBerikutnya) : 'belum dijadwalkan'}
+                          </>
+                        ) : (
+                          'belum diatur'
+                        )}
+                      </p>
+                      <p className="mt-0.5 text-[0.8125rem] text-ink-3 leading-snug">
+                        Sistem cuma menyiapkan draf. Tidak ada pesanan yang terkirim tanpa kamu setujui.
+                      </p>
+                    </div>
                   </div>
-                </div>
-                <TombolTautan ke={`/kontrak/${kontrak.id}/rutin`} ragam="garis" ukuran="kecil" className="mt-3">
-                  {kontrak.pesananRutinAktif ? 'Atur Pesanan Rutin' : 'Nyalakan Pesanan Rutin'}
-                </TombolTautan>
-              </Kartu>
-            </section>
-
-            {pengajuanHenti ? (
-              <Peringatan nada="menipis" judul="Pengajuan penghentian sudah terkirim">
-                {distributor?.nama ?? 'Distributor'} akan menjawab lewat pemberitahuan. Sampai ada jawaban, kontrak ini
-                tetap berjalan dan kewajiban {angka(kontrak.kuotaMinPerBulan)} {kontrak.satuan} per bulan masih berlaku.
-              </Peringatan>
-            ) : (
-              /* Syaratnya turun ke baris bantuan, bukan ikut di dalam label.
-                 Tombol memakai whitespace-nowrap, jadi label sepanjang ini
-                 melebarkan seluruh halaman di layar 360px — dan label tombol
-                 memang tidak boleh berisi tanda kurung penjelas. */
-              <div>
-                <Tombol ragam="garis" penuh onClick={() => setDialogHenti(true)}>
-                  Ajukan Penghentian
-                </Tombol>
-                <p className="mt-1.5 text-center text-[0.8125rem] text-ink-3 leading-snug">
-                  Perlu persetujuan distributor.
-                </p>
-              </div>
+                  <TombolTautan ke={`/kontrak/${kontrak.id}/rutin`} ragam="garis" ukuran="kecil" className="mt-3">
+                    {kontrak.pesananRutinAktif ? 'Atur Pesanan Rutin' : 'Nyalakan Pesanan Rutin'}
+                  </TombolTautan>
+                </Kartu>
+              </section>
             )}
+
+            {berjalan &&
+              (kontrak.pengajuanBerhenti ? (
+                <Peringatan nada="menipis" judul="Pengajuan penghentian sudah terkirim">
+                  {namaDistributor} akan menjawabnya. Sampai ada jawaban, kontrak ini tetap berjalan dan kewajiban{' '}
+                  {angka(kontrak.kuotaMinPerBulan)} {kontrak.satuan} per bulan masih berlaku. Alasanmu: &ldquo;
+                  {kontrak.pengajuanBerhenti.alasan}&rdquo;
+                </Peringatan>
+              ) : (
+                /* Syaratnya turun ke baris bantuan, bukan ikut di dalam label.
+                   Tombol memakai whitespace-nowrap, jadi label sepanjang ini
+                   melebarkan seluruh halaman di layar 360px — dan label tombol
+                   memang tidak boleh berisi tanda kurung penjelas. */
+                <div>
+                  {kontrak.jawabanBerhenti && !kontrak.jawabanBerhenti.disetujui && (
+                    <Peringatan nada="menipis" judul="Pengajuan berhenti sebelumnya ditolak" className="mb-3">
+                      {kontrak.jawabanBerhenti.alasan &&
+                        `Alasan dari ${namaDistributor}: ${kontrak.jawabanBerhenti.alasan.replace(/[.\s]+$/, '')}. `}
+                      Kontrak tetap berjalan sampai {tanggalPanjang(kontrak.berakhir)}.
+                    </Peringatan>
+                  )}
+                  <Tombol ragam="garis" penuh onClick={() => setDialogHenti(true)}>
+                    Ajukan Penghentian
+                  </Tombol>
+                  <p className="mt-1.5 text-center text-[0.8125rem] text-ink-3 leading-snug">
+                    Perlu persetujuan distributor.
+                  </p>
+                </div>
+              ))}
           </div>
         </div>
       )}
@@ -392,11 +461,23 @@ export default function KontrakDetail() {
               Inilah kekuatan bukti kesepakatan ini: siapa menyetujui, kapan, dan versi teks yang mana.
             </p>
             <ol className="space-y-3">
-              <JejakDokumen
-                waktu={kontrak.mulai}
-                judul="Kesepakatan disetujui kedua pihak"
-                detail={`Disetujui dari akun pemilik usaha dan dikonfirmasi ${distributor?.nama ?? 'distributor'}.`}
-              />
+              {menunggu || kontrak.status === 'ditolak' ? (
+                <JejakDokumen
+                  waktu={kontrak.mulai}
+                  judul="Pengajuan dikirim ke distributor"
+                  detail={
+                    menunggu
+                      ? `Belum mengikat sampai ${namaDistributor} menyetujuinya.`
+                      : `${namaDistributor} menolak pengajuan ini, jadi kesepakatannya tidak pernah berlaku.`
+                  }
+                />
+              ) : (
+                <JejakDokumen
+                  waktu={kontrak.mulai}
+                  judul="Kesepakatan disetujui kedua pihak"
+                  detail={`Disetujui dari akun pemilik usaha dan dikonfirmasi ${namaDistributor}.`}
+                />
+              )}
               <JejakDokumen
                 waktu={kontrak.mulai}
                 judul="Teks ketentuan versi 1.0 dikunci"
@@ -417,27 +498,56 @@ export default function KontrakDetail() {
         </section>
       )}
 
-      <Konfirmasi
+      {/* Alasan ikut terkirim: distributor perlu tahu kenapa sebelum menjawab,
+          dan pengajuan tanpa alasan hanya akan dibalas dengan pertanyaan. */}
+      <Lembar
         terbuka={dialogHenti}
         tutup={() => setDialogHenti(false)}
         judul="Ajukan penghentian kontrak"
-        labelSetuju="Kirim Pengajuan"
-        labelBatal="Tidak jadi"
-        onSetuju={() => {
-          setPengajuanHenti(true)
-          tampilkanRacun('Pengajuan penghentian terkirim. Kontrak tetap berjalan sampai distributor menjawab.', 'info')
-        }}
-        pesan={
-          <>
-            Kontrak {kontrak.namaBarang} berjalan sampai {tanggalPanjang(kontrak.berakhir)} dan tidak bisa dihentikan
-            sepihak. Pengajuan ini dikirim ke {distributor?.nama ?? 'distributor'} untuk dijawab.
-            <span className="mt-2 block text-[0.875rem] text-ink-3">
-              Selama menunggu jawaban, kewajiban {angka(kontrak.kuotaMinPerBulan)} {kontrak.satuan} per bulan masih
-              berlaku.
-            </span>
-          </>
+        keterangan={`${kontrak.namaBarang} · ${namaDistributor}`}
+        lebar="sempit"
+        kaki={
+          <div className="flex gap-2.5">
+            <Tombol ragam="garis" penuh onClick={() => setDialogHenti(false)}>
+              Tidak jadi
+            </Tombol>
+            <Tombol
+              penuh
+              disabled={!alasanHentiLengkap}
+              onClick={() => {
+                ajukanBerhenti(kt.id, alasanHentiLengkap)
+                setDialogHenti(false)
+              }}
+            >
+              Kirim Pengajuan
+            </Tombol>
+          </div>
         }
-      />
+      >
+        <div className="pb-4 space-y-4">
+          <p className="text-[0.875rem] text-ink-2 leading-relaxed">
+            Kontrak ini berjalan sampai {tanggalPanjang(kontrak.berakhir)} dan tidak bisa dihentikan sepihak. Selama
+            menunggu jawaban, kewajiban {angka(kontrak.kuotaMinPerBulan)} {kontrak.satuan} per bulan masih berlaku.
+          </p>
+          <div>
+            <p className="text-[0.875rem] font-semibold text-ink-2 mb-2.5">Kenapa ingin berhenti?</p>
+            <BarisChip className="flex-wrap">
+              {ALASAN_BERHENTI.map((a) => (
+                <Chip key={a} aktif={alasanHenti === a} onClick={() => setAlasanHenti(alasanHenti === a ? null : a)}>
+                  {a}
+                </Chip>
+              ))}
+            </BarisChip>
+          </div>
+          <AreaTeks
+            label="Catatan untuk distributor"
+            bantuan="Boleh dikosongkan kalau sudah memilih alasan di atas."
+            placeholder="Misalnya: kedai tutup sementara selama renovasi bulan depan."
+            value={catatanHenti}
+            onChange={(e) => setCatatanHenti(e.target.value)}
+          />
+        </div>
+      </Lembar>
     </div>
   )
 }

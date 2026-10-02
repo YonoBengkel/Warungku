@@ -58,7 +58,8 @@ function nadaNilai(n: number): 'aman' | 'merek' | 'menipis' | 'kritis' {
 }
 
 function BarisPenawaran({ penawaran }: { penawaran: Penawaran }) {
-  const paket = paketUntukPenawaran(penawaran.id)
+  const paketKontrak = useAplikasi((s) => s.paketKontrak)
+  const paket = paketUntukPenawaran(penawaran.id, paketKontrak)
   return (
     <Link
       to={`/penawaran/${penawaran.id}`}

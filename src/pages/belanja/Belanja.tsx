@@ -27,7 +27,7 @@ import {
 import { angka, cx, waktuLalu } from '@/lib/format'
 import { isiKemasan } from '@/lib/satuan'
 import { JUDUL, LABEL_JENIS_USAHA } from '@/lib/label'
-import type { Barang, Distributor, Penawaran } from '@/lib/types'
+import type { Barang, Distributor, PaketKontrak, Penawaran } from '@/lib/types'
 import {
   daftarDistributor,
   daftarPenawaran,
@@ -64,8 +64,8 @@ function nilaiBintang(n: number): string {
   return n.toFixed(1).replace('.', ',')
 }
 
-function rentangDurasi(penawaranId: string): string | null {
-  const paket = paketUntukPenawaran(penawaranId)
+function rentangDurasi(penawaranId: string, paketTersedia: PaketKontrak[]): string | null {
+  const paket = paketUntukPenawaran(penawaranId, paketTersedia)
   if (paket.length === 0) return null
   const durasi = paket.map((p) => p.durasiBulan)
   const min = Math.min(...durasi)
@@ -106,7 +106,8 @@ function KartuPenawaran({
   barang: Barang | undefined
   mitra: boolean
 }) {
-  const durasi = rentangDurasi(penawaran.id)
+  const paketKontrak = useAplikasi((s) => s.paketKontrak)
+  const durasi = rentangDurasi(penawaran.id, paketKontrak)
   /* Promo dibaca di sini, bukan dikirim lewat prop: halaman induk tidak perlu
      tahu soal promo untuk bisa menampilkan kartunya. */
   const promo = promoUntukPenawaran(penawaran.id)
@@ -310,6 +311,7 @@ export default function Belanja() {
   const kontrak = useAplikasi((s) => s.kontrak)
   const pesanan = useAplikasi((s) => s.pesanan)
   const profil = useAplikasi((s) => s.profil)
+  const paketKontrak = useAplikasi((s) => s.paketKontrak)
 
   const cari = params.get('cari') ?? ''
   const tab: TabBelanja = params.get('tab') === 'distributor' ? 'distributor' : 'barang'
@@ -353,7 +355,7 @@ export default function Belanja() {
       .filter((x) => cocokKataKunci(x.penawaran, x.barang, x.distributor, cari))
       .filter((x) => (kotaSaring ? x.distributor.kota === kotaSaring : true))
       .filter((x) => (hanyaAdaStok ? x.penawaran.stokTersedia > 0 : true))
-      .filter((x) => (hanyaAdaKontrak ? paketUntukPenawaran(x.penawaran.id).length > 0 : true))
+      .filter((x) => (hanyaAdaKontrak ? paketUntukPenawaran(x.penawaran.id, paketKontrak).length > 0 : true))
 
     const lama = semua
       .filter((x) => !x.distributor.baru)
@@ -368,7 +370,7 @@ export default function Belanja() {
     // punya rating, dan memaksakan nol akan menenggelamkannya selamanya.
     const baru = semua.filter((x) => x.distributor.baru)
     return { lama, baru, jumlah: semua.length }
-  }, [barangGudang, cari, kotaSaring, hanyaAdaStok, hanyaAdaKontrak, idMitra])
+  }, [barangGudang, cari, kotaSaring, hanyaAdaStok, hanyaAdaKontrak, idMitra, paketKontrak])
 
   const hasilDistributor = useMemo(() => {
     const k = cari.trim().toLowerCase()
