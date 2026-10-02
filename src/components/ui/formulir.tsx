@@ -18,10 +18,23 @@ import { IkonKurang, IkonTambah, IkonCentang } from '@/icons'
 
 const KELAS_DASAR =
   'w-full h-12 px-3.5 rounded-md bg-surface text-ink text-[0.9375rem] ' +
-  'border border-line-strong placeholder:text-ink-3/70 ' +
+  'border placeholder:text-ink-3/70 ' +
   'transition-[border-color,box-shadow] duration-150 ' +
-  'focus:border-brand focus:outline-none focus:ring-4 focus:ring-[var(--c-brand-ring)] ' +
+  'focus:outline-none focus:ring-4 ' +
   'disabled:bg-sunken disabled:text-ink-3'
+
+/**
+ * Warna bingkai kolom isian: dipilih SALAH SATU, tidak pernah ditumpuk.
+ *
+ * Di CSS hasil Tailwind, `.border-line-strong` tercetak sesudah
+ * `.border-kritis`. Kalau keduanya terpasang bersamaan, yang menang selalu
+ * abu-abu, dan bingkai merah tanda galat tidak pernah terlihat.
+ */
+export function kelasBingkai(galat: unknown): string {
+  return galat
+    ? 'border-kritis focus:border-kritis focus:ring-[var(--c-kritis-soft)]'
+    : 'border-line-strong focus:border-brand focus:ring-[var(--c-brand-ring)]'
+}
 
 function Bungkus({
   id,
@@ -98,12 +111,7 @@ export function Kolom({
           id={id}
           aria-invalid={galat ? true : undefined}
           aria-describedby={galat ? `${id}-galat` : bantuan ? `${id}-bantuan` : undefined}
-          className={cx(
-            KELAS_DASAR,
-            awalan ? 'pl-10' : '',
-            akhiran ? 'pr-14' : '',
-            galat && 'border-kritis focus:border-kritis focus:ring-[var(--c-kritis-soft)]',
-          )}
+          className={cx(KELAS_DASAR, awalan ? 'pl-10' : '', akhiran ? 'pr-14' : '', kelasBingkai(galat))}
           {...rest}
         />
         {akhiran && (
@@ -137,7 +145,7 @@ export function AreaTeks({
         id={id}
         rows={3}
         aria-invalid={galat ? true : undefined}
-        className={cx(KELAS_DASAR, 'h-auto py-3 resize-y leading-relaxed', galat && 'border-kritis')}
+        className={cx(KELAS_DASAR, 'h-auto py-3 resize-y leading-relaxed', kelasBingkai(galat))}
         {...rest}
       />
     </Bungkus>
@@ -167,11 +175,7 @@ export function Pilihan({
           id={id}
           aria-invalid={galat ? true : undefined}
           aria-describedby={galat ? `${id}-galat` : bantuan ? `${id}-bantuan` : undefined}
-          className={cx(
-            KELAS_DASAR,
-            'appearance-none pr-10 cursor-pointer',
-            galat && 'border-kritis focus:border-kritis focus:ring-[var(--c-kritis-soft)]',
-          )}
+          className={cx(KELAS_DASAR, 'appearance-none pr-10 cursor-pointer', kelasBingkai(galat))}
           {...rest}
         >
           {children}

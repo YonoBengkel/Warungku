@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 import type { KeyboardEvent, ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Tombol } from '@/components/ui/dasar'
-import { Kolom } from '@/components/ui/formulir'
+import { Kolom, kelasBingkai } from '@/components/ui/formulir'
 import { IkonKembali, IkonMata, IkonMataTutup } from '@/icons'
 import { cx, nomorHp } from '@/lib/format'
 import { useAplikasi } from '@/store/aplikasi'
@@ -346,11 +346,13 @@ function LayarAuth({ children }: { children: ReactNode }) {
   )
 }
 
+/* Warna bingkai tidak ditulis di sini: `kelasBingkai` memilih abu-abu atau
+   merah, supaya keduanya tidak terpasang bersamaan. */
 const KELAS_SANDI =
   'w-full h-12 pl-3.5 pr-14 rounded-md bg-surface text-ink text-[0.9375rem] ' +
-  'border border-line-strong placeholder:text-ink-3/70 ' +
+  'border placeholder:text-ink-3/70 ' +
   'transition-[border-color,box-shadow] duration-150 ' +
-  'focus:border-brand focus:outline-none focus:ring-4 focus:ring-[var(--c-brand-ring)]'
+  'focus:outline-none focus:ring-4'
 
 /** Tombol mata butuh target sentuh penuh, jadi kolom ini tidak memakai akhiran Kolom. */
 function KolomSandi({
@@ -388,7 +390,7 @@ function KolomSandi({
           aria-invalid={galat ? true : undefined}
           aria-describedby={galat ? `${id}-galat` : bantuan ? `${id}-bantuan` : undefined}
           onChange={(e) => ubah(e.target.value)}
-          className={cx(KELAS_SANDI, galat && 'border-kritis focus:border-kritis')}
+          className={cx(KELAS_SANDI, kelasBingkai(galat))}
         />
         <button
           type="button"
