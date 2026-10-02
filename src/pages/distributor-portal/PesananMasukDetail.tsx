@@ -18,9 +18,9 @@ import {
 } from '@/icons'
 import { angka, cx, jam, nomorHp, rupiah, tanggalPendek, waktuLalu } from '@/lib/format'
 import { LABEL_JENIS_USAHA, LABEL_PESANAN_MASUK, NADA_PESANAN_MASUK } from '@/lib/label'
-import { promoById, umkmById } from '@/data/dummy'
+import { umkmById } from '@/data/dummy'
 import type { StatusPesananMasuk } from '@/lib/types'
-import { useAplikasi, usePesananMasuk } from '@/store/aplikasi'
+import { useAplikasi, usePenentuHarga, usePesananMasuk } from '@/store/aplikasi'
 import { LembarTolak, totalPesananMasuk } from './PesananMasukDaftar'
 
 /**
@@ -57,6 +57,7 @@ const TITIK_JEJAK: Record<StatusPesananMasuk, { latar: string; Ikon: typeof Ikon
 export default function PesananMasukDetail() {
   const { id = '' } = useParams()
   const pesanan = usePesananMasuk().find((p) => p.id === id)
+  const { promoById } = usePenentuHarga()
   const terimaPesananMasuk = useAplikasi((s) => s.terimaPesananMasuk)
   const majukanPesananMasuk = useAplikasi((s) => s.majukanPesananMasuk)
   const [lembarTolak, setLembarTolak] = useState(false)

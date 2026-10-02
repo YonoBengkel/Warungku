@@ -1,13 +1,14 @@
 import { Link, useParams } from 'react-router-dom'
 import { JudulBagian, Kartu, KartuTautan, Lencana, TombolTautan } from '@/components/ui/dasar'
 import { KepalaHalaman } from '@/components/ui/navigasi'
-import { KeadaanKosong } from '@/components/ui/umpanBalik'
+import { KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
 import { HargaBeli, TEMPLATE_PROMO } from '@/components/domain/KartuPromo'
 import { IkonJam, IkonPanahKanan, IkonSilang, IkonToko } from '@/icons'
 import { cx, hariLagi, jumlahSatuan, persen, tanggalPanjang } from '@/lib/format'
 import { LABEL_PROMO } from '@/lib/label'
 import type { Penawaran } from '@/lib/types'
-import { distributorById, penawaranById, promoById, rincianHarga } from '@/data/dummy'
+import { distributorById, penawaranById, promoMasihBerlaku } from '@/data/dummy'
+import { usePenentuHarga } from '@/store/aplikasi'
 
 /**
  * Laman promo satu toko, dibuka dari kartu promo di Beranda.
@@ -26,6 +27,7 @@ import { distributorById, penawaranById, promoById, rincianHarga } from '@/data/
  */
 export default function PromoDetail() {
   const { id = '' } = useParams()
+  const { promoById, rincianHarga } = usePenentuHarga()
   const promo = promoById(id)
 
   if (!promo) {
@@ -97,6 +99,16 @@ export default function PromoDetail() {
           )}
         </div>
       </div>
+
+      {/* Tautan lama ke promo yang sudah diakhiri tetap terbuka, tapi harganya
+          sudah harga biasa. Kalimat ini mencegah orang mengira potongannya
+          masih berlaku. */}
+      {!promoMasihBerlaku(promo) && (
+        <Peringatan nada="netral" judul="Promo ini sudah berakhir" className="mt-4 lg:max-w-[70ch]">
+          Harga di bawah sudah kembali ke harga beli sekali yang biasa. Pesanan yang dibuat selama promo berjalan tetap
+          mencatat harga promonya.
+        </Peringatan>
+      )}
 
       <section aria-labelledby="judul-barang-promo" className="mt-6">
         <JudulBagian

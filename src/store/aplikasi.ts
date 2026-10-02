@@ -11,6 +11,7 @@ import type {
   Notifikasi,
   PaketKontrak,
   Pergerakan,
+  Promo,
   Pesanan,
   PesananMasuk,
   ProfilUsaha,
@@ -31,6 +32,7 @@ import {
   daftarKontrakUmkmLain,
   daftarNotifikasi,
   daftarPaket,
+  daftarPromo,
   daftarPergerakan,
   daftarPesanan,
   daftarPesananMasuk,
@@ -38,10 +40,13 @@ import {
   dataKasirAwal,
   gabungKontrakMasuk,
   gabungPesananMasuk,
+  hargaBerlaku as hargaBerlakuDasar,
   kontrakBisaDipakai,
   paketById,
   penawaranById,
   profilAwal,
+  promoById as promoByIdDasar,
+  promoUntukPenawaran as promoUntukPenawaranDasar,
   rincianHarga,
   statusStok,
   umkmById,
@@ -94,6 +99,11 @@ interface KeadaanAplikasi {
   kontrakUmkmLain: KontrakPelanggan[]
   /** Paket kontrak semua distributor. Distributor aktif bisa menambah, mengubah, dan menghapus miliknya. */
   paketKontrak: PaketKontrak[]
+  /**
+   * Promo semua distributor, termasuk yang sudah berakhir (pesanan lama masih
+   * merujuknya). Distributor aktif bisa memasang, mengubah, dan mengakhiri miliknya.
+   */
+  promo: Promo[]
   tema: 'terang' | 'gelap'
   /** Mensimulasikan layanan perkiraan yang sedang tidak sehat, untuk menguji turun derajat. */
   layananPerkiraan: 'sehat' | 'tersimpan' | 'mati'
@@ -162,6 +172,10 @@ interface KeadaanAplikasi {
   jawabBerhenti: (id: string, setuju: boolean, alasan?: string) => void
   simpanPaket: (paket: PaketKontrak) => void
   hapusPaket: (id: string) => void
+
+  // Portal distributor — promo
+  simpanPromo: (promo: Promo) => void
+  akhiriPromo: (id: string) => void
   ubahPesananRutin: (kontrakId: string, aktif: boolean) => void
 
   /* Pemberitahuan */
@@ -262,6 +276,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
   pesananUmkmLain: daftarPesananMasuk,
   kontrakUmkmLain: daftarKontrakUmkmLain,
   paketKontrak: daftarPaket,
+  promo: daftarPromo,
   tema: temaAwal(),
   layananPerkiraan: 'sehat',
   // Dimulai dari keadaan belum masuk supaya "/" benar-benar memperlihatkan
@@ -497,7 +512,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
             // harga SETELAH potongan. Harga normal dan promonya ikut dicatat,
             // supaya pesanan ini tetap bisa menjelaskan angkanya walau promonya
             // sudah berakhir.
-            const harga = rincianHarga(b.penawaranId, b.kontrakId, s.kontrak)
+            const harga = rincianHarga(b.penawaranId, b.kontrakId, s.kontrak, s.promo)
             return {
               penawaranId: b.penawaranId,
               barangId: p?.barangIdTerkait ?? null,
@@ -1098,6 +1113,27 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
     get().tampilkanRacun(`${paket.kode} dihapus. Kontrak yang sudah berjalan dengan paket ini tidak terpengaruh.`, 'info')
   },
 
+  simpanPromo: (promo) => {
+    const ada = get().promo.some((p) => p.id === promo.id)
+    set((s) => ({ promo: ada ? s.promo.map((p) => (p.id === promo.id ? promo : p)) : [promo, ...s.promo] }))
+    get().tampilkanRacun(
+      ada
+        ? `Promo "${promo.judul}" diperbarui. Kartunya di Beranda pemilik usaha ikut berubah.`
+        : `Promo "${promo.judul}" terpasang dan tampil di Beranda pemilik usaha.`,
+      'aman',
+    )
+  },
+
+  /* Promo tidak dihapus, hanya diakhiri: pesanan yang sudah memakai
+     potongannya masih perlu menyebut promo mana asalnya. */
+  akhiriPromo: (id) => {
+    const promo = get().promo.find((p) => p.id === id)
+    if (!promo) return
+    const kemarin = new Date(Date.now() - 60_000).toISOString()
+    set((s) => ({ promo: s.promo.map((p) => (p.id === id ? { ...p, berakhir: kemarin } : p)) }))
+    get().tampilkanRacun(`Promo "${promo.judul}" diakhiri. Harga kembali normal mulai sekarang.`, 'info')
+  },
+
   ubahPesananRutin: (kontrakId, aktif) =>
     set((s) => ({
       kontrak: s.kontrak.map((k) => (k.id === kontrakId ? { ...k, pesananRutinAktif: aktif } : k)),
@@ -1226,6 +1262,30 @@ export function usePesananMasuk(): PesananMasuk[] {
   const pesanan = useAplikasi((s) => s.pesanan)
   const lain = useAplikasi((s) => s.pesananUmkmLain)
   return useMemo(() => gabungPesananMasuk(pesanan, lain), [pesanan, lain])
+}
+
+/**
+ * Penentu harga yang sudah terikat ke kontrak dan promo di store.
+ *
+ * Namanya sengaja sama dengan fungsi di data/dummy, jadi layar cukup mengganti
+ * asal impornya. Tidak ada lagi pemanggilan yang lupa mengirim daftar kontrak
+ * atau promo yang sedang berlaku: kelupaan itu membuat harga di satu layar
+ * berbeda dengan harga yang akhirnya tercatat di pesanan.
+ */
+export function usePenentuHarga() {
+  const kontrak = useAplikasi((s) => s.kontrak)
+  const promo = useAplikasi((s) => s.promo)
+  return useMemo(
+    () => ({
+      rincianHarga: (penawaranId: string, kontrakId: string | null = null) =>
+        rincianHarga(penawaranId, kontrakId, kontrak, promo),
+      hargaBerlaku: (penawaranId: string, kontrakId: string | null = null) =>
+        hargaBerlakuDasar(penawaranId, kontrakId, kontrak, promo),
+      promoUntukPenawaran: (penawaranId: string) => promoUntukPenawaranDasar(penawaranId, undefined, promo),
+      promoById: (id: string) => promoByIdDasar(id, promo),
+    }),
+    [kontrak, promo],
+  )
 }
 
 /** Semua kontrak distributor aktif, termasuk milik pemilik aplikasi ini. */

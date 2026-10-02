@@ -13,14 +13,12 @@ import { jumlahTampil } from '@/lib/satuan'
 import { JUDUL } from '@/lib/label'
 import {
   distributorById,
-  hargaBerlaku,
   penawaranById,
   penawaranUntukBarang,
-  rincianHarga,
   saranBelanja,
   statusStok,
 } from '@/data/dummy'
-import { useAplikasi } from '@/store/aplikasi'
+import { useAplikasi, usePenentuHarga } from '@/store/aplikasi'
 
 /**
  * Keranjang yang jujur soal bentuk akhirnya.
@@ -52,6 +50,7 @@ export default function Keranjang() {
      yang lahir saat aplikasi berjalan hanya ada di sini, dan harganya harus
      ikut terpakai saat keranjang menghitung. */
   const kontrakStore = useAplikasi((s) => s.kontrak)
+  const { hargaBerlaku, rincianHarga } = usePenentuHarga()
   const ubahJumlahKeranjang = useAplikasi((s) => s.ubahJumlahKeranjang)
   const hapusDariKeranjang = useAplikasi((s) => s.hapusDariKeranjang)
   const terkunci = useTerkunci()
@@ -98,7 +97,7 @@ export default function Keranjang() {
      tersimpan di pesanan — dan selisih itu baru ketahuan saat tagihan datang.
      Satu-satunya sumber sekarang `hargaBerlaku`. */
   function totalSub(sub: SubKeranjang): number {
-    return sub.baris.reduce((a, b) => a + hargaBerlaku(b.penawaranId, b.kontrakId, kontrakStore) * b.jumlah, 0)
+    return sub.baris.reduce((a, b) => a + hargaBerlaku(b.penawaranId, b.kontrakId) * b.jumlah, 0)
   }
 
   const totalSemua = aktif.reduce((a, s) => a + totalSub(s), 0)
@@ -224,7 +223,7 @@ export default function Keranjang() {
                     /* Satu sumber dengan total di bawah dan dengan harga yang
                        nanti tersimpan di pesanan. Baris berkontrak tidak pernah
                        membawa promo: `rincianHarga` sudah memastikannya. */
-                    const rincian = rincianHarga(baris.penawaranId, baris.kontrakId, kontrakStore)
+                    const rincian = rincianHarga(baris.penawaranId, baris.kontrakId)
                     const harga = rincian.harga
                     const isi = pw.kemasanJual?.isi ?? 1
                     const berubah = baris.saranSistem != null && baris.saranSistem !== baris.jumlah

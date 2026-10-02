@@ -23,8 +23,8 @@ import {
 } from '@/icons'
 import { angka, tanggalPendek, waktuLalu } from '@/lib/format'
 import type { Distributor, Penawaran } from '@/lib/types'
-import { daftarPenawaran, distributorById, paketUntukPenawaran, rincianHarga } from '@/data/dummy'
-import { useAplikasi } from '@/store/aplikasi'
+import { daftarPenawaran, distributorById, paketUntukPenawaran } from '@/data/dummy'
+import { useAplikasi, usePenentuHarga } from '@/store/aplikasi'
 
 /**
  * Profil distributor.
@@ -59,6 +59,7 @@ function nadaNilai(n: number): 'aman' | 'merek' | 'menipis' | 'kritis' {
 
 function BarisPenawaran({ penawaran }: { penawaran: Penawaran }) {
   const paketKontrak = useAplikasi((s) => s.paketKontrak)
+  const { rincianHarga } = usePenentuHarga()
   const paket = paketUntukPenawaran(penawaran.id, paketKontrak)
   return (
     <Link

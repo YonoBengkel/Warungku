@@ -20,7 +20,6 @@ import { angka, cx, rupiah, rupiahSumbu } from '@/lib/format'
 import { angkaTampil, jumlahTampil, satuanTampil, trenTampil } from '@/lib/satuan'
 import { JUDUL, LABEL_ARAH_PREDIKSI } from '@/lib/label'
 import {
-  hargaBerlaku,
   kategoriBarang,
   layakDiperkirakan,
   nilaiPemakaian,
@@ -29,7 +28,7 @@ import {
   trenBulanan,
   trenKategoriRupiah,
 } from '@/data/dummy'
-import { useAplikasi } from '@/store/aplikasi'
+import { useAplikasi, usePenentuHarga } from '@/store/aplikasi'
 
 /**
  * Halaman Prediksi: dua keadaan, dibedakan oleh query string.
@@ -453,7 +452,7 @@ function DetailBarang({
   labelKembali: string
 }) {
   const tambahKeKeranjang = useAplikasi((s) => s.tambahKeKeranjang)
-  const kontrakStore = useAplikasi((s) => s.kontrak)
+  const { hargaBerlaku } = usePenentuHarga()
   const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
 
   /* Dihitung ulang dari barang yang hidup di penyimpanan. Kalau memakai
@@ -648,7 +647,7 @@ function DetailBarang({
                 <p className="text-[0.8125rem] text-ink-3">
                   Perkiraan biaya beli{' '}
                   <strong className="text-ink tabular">
-                    {rupiah(jumlah * hargaBerlaku(penawaran.id, rekomendasi.kontrakId ?? null, kontrakStore))}
+                    {rupiah(jumlah * hargaBerlaku(penawaran.id, rekomendasi.kontrakId ?? null))}
                   </strong>
                 </p>
               </div>

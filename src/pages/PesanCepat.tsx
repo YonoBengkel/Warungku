@@ -18,14 +18,13 @@ import { angka, cx, hariLagi, rupiah } from '@/lib/format'
 import { jumlahTampil } from '@/lib/satuan'
 import {
   distributorById,
-  hargaBerlaku,
   hariCukup,
   penawaranById,
   penawaranUntukBarang,
   saranById,
   statusStok,
 } from '@/data/dummy'
-import { useAplikasi } from '@/store/aplikasi'
+import { useAplikasi, usePenentuHarga } from '@/store/aplikasi'
 
 /**
  * Lembar Pesan Cepat: satu komponen untuk tiga pintu masuk.
@@ -94,6 +93,7 @@ export default function PesanCepat() {
 
   const daftarBarang = useAplikasi((s) => s.barang)
   const daftarKontrak = useAplikasi((s) => s.kontrak)
+  const { hargaBerlaku } = usePenentuHarga()
   const daftarNotifikasi = useAplikasi((s) => s.notifikasi)
   const tambahKeKeranjang = useAplikasi((s) => s.tambahKeKeranjang)
   const tundaNotifikasi = useAplikasi((s) => s.tundaNotifikasi)
@@ -317,7 +317,7 @@ export default function PesanCepat() {
                           <p className="mt-0.5 text-[0.8125rem] text-ink-3 leading-snug">{r.alasanPemasok}</p>
                         )}
                         <p className="mt-1 text-[0.8125rem] text-ink-2 tabular">
-                          {rupiah(hargaBerlaku(pw.id, kontrak?.id ?? null, daftarKontrak))} / {pw.satuan}
+                          {rupiah(hargaBerlaku(pw.id, kontrak?.id ?? null))} / {pw.satuan}
                           <span className="text-ink-3"> &middot; sisa stok {angka(pw.stokTersedia)} {pw.satuan}</span>
                         </p>
                       </div>
@@ -373,7 +373,7 @@ export default function PesanCepat() {
                           .map((c) => {
                             const d = distributorById(c.distributorId)
                             const lebihMurah =
-                              hargaBerlaku(c.id) < hargaBerlaku(pw.id, kontrak?.id ?? null, daftarKontrak)
+                              hargaBerlaku(c.id) < hargaBerlaku(pw.id, kontrak?.id ?? null)
                             return (
                               <div key={c.id} className="rounded-md border border-line bg-surface-2 p-3">
                                 <div className="flex items-start justify-between gap-2">

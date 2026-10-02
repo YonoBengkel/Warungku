@@ -27,16 +27,8 @@ import {
 import { angka, rupiah, waktuLalu } from '@/lib/format'
 import { isiKemasan, jumlahBawaan, jumlahTampil } from '@/lib/satuan'
 import { BANTUAN } from '@/lib/label'
-import {
-  distributorById,
-  hargaBerlaku,
-  hariCukup,
-  paketUntukPenawaran,
-  penawaranById,
-  rincianHarga,
-  statusStok,
-} from '@/data/dummy'
-import { useAplikasi } from '@/store/aplikasi'
+import { distributorById, hariCukup, paketUntukPenawaran, penawaranById, statusStok } from '@/data/dummy'
+import { useAplikasi, usePenentuHarga } from '@/store/aplikasi'
 
 /**
  * Detail satu penawaran: satu barang dari satu distributor.
@@ -61,6 +53,7 @@ export default function PenawaranDetail() {
   const daftarKontrakAktif = useAplikasi((s) => s.kontrak)
   const tambahKeKeranjang = useAplikasi((s) => s.tambahKeKeranjang)
   const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
+  const { hargaBerlaku, rincianHarga } = usePenentuHarga()
 
   const barang = daftarBarangGudang.find((b) => b.id === penawaran?.barangIdTerkait)
   const kontrakTerkait = daftarKontrakAktif.filter(
@@ -102,17 +95,13 @@ export default function PenawaranDetail() {
      kontrak, keranjang akan memakai harga kontrak. Menghitung sendiri di sini
      membuat lembar "Beli sekali" menjanjikan satu angka lalu keranjang
      menampilkan angka lain untuk baris yang sama persis. */
-  const hargaSatuanBerlaku = hargaBerlaku(
-    penawaran.id,
-    kontrakUntukPenawaranIni?.id ?? null,
-    daftarKontrakAktif,
-  )
+  const hargaSatuanBerlaku = hargaBerlaku(penawaran.id, kontrakUntukPenawaranIni?.id ?? null)
   const subtotal = jumlah * hargaSatuanBerlaku
 
   /* Harga beli sekali, sudah termasuk potongan promo kalau ada. Angka besar di
      kartu atas memakai ini; lembar beli memakai `hargaSatuanBerlaku`, yang
      berbeda hanya kalau kamu punya kontrak untuk barang ini. */
-  const rincianBeliSekali = rincianHarga(penawaran.id, null, daftarKontrakAktif)
+  const rincianBeliSekali = rincianHarga(penawaran.id, null)
   const promo = rincianBeliSekali.promo
 
   function bukaLembarBeli() {

@@ -56,26 +56,31 @@ export const TEMPLATE_PROMO: Record<
   },
 }
 
-export function KartuPromo({ promo, lebar }: { promo: Promo; lebar?: boolean }) {
+export function KartuPromo({
+  promo,
+  lebar,
+  pratinjau,
+}: {
+  promo: Promo
+  lebar?: boolean
+  /** Tampilan saja, bukan tautan: dipakai portal distributor untuk melihat kartunya sendiri. */
+  pratinjau?: boolean
+}) {
   const template = TEMPLATE_PROMO[promo.jenis]
   const namaToko = distributorById(promo.distributorId)?.nama ?? 'Distributor'
   const sisaHari = promo.berakhir
     ? Math.ceil((+new Date(promo.berakhir) - Date.now()) / 86_400_000)
     : null
+  const kelas = cx(
+    'group flex flex-col gap-2.5 rounded-lg p-4 min-h-[9.5rem]',
+    !pratinjau && 'transition-[filter,box-shadow] duration-150 hover:brightness-97 hover:shadow-e2',
+    template.latar,
+    template.teks,
+    lebar ? 'w-full' : 'snap-start shrink-0 w-[85%] sm:w-[20rem] lg:w-full',
+  )
 
-  return (
-    // Seluruh kartu adalah satu tautan: target sentuhnya sebesar kartunya,
-    // bukan sebesar tulisan "Lihat promo" di pojok.
-    <Link
-      to={`/promo/${promo.id}`}
-      className={cx(
-        'group flex flex-col gap-2.5 rounded-lg p-4 min-h-[9.5rem]',
-        'transition-[filter,box-shadow] duration-150 hover:brightness-97 hover:shadow-e2',
-        template.latar,
-        template.teks,
-        lebar ? 'w-full' : 'snap-start shrink-0 w-[85%] sm:w-[20rem] lg:w-full',
-      )}
-    >
+  const isi = (
+    <>
       <div className="flex items-center gap-2">
         <span className={cx('shrink-0 size-9 rounded-md grid place-items-center', template.aksen)}>
           <template.Ikon size={18} />
@@ -110,6 +115,16 @@ export function KartuPromo({ promo, lebar }: { promo: Promo; lebar?: boolean }) 
           </span>
         )}
       </div>
+    </>
+  )
+
+  if (pratinjau) return <div className={kelas}>{isi}</div>
+
+  return (
+    // Seluruh kartu adalah satu tautan: target sentuhnya sebesar kartunya,
+    // bukan sebesar tulisan "Lihat promo" di pojok.
+    <Link to={`/promo/${promo.id}`} className={kelas}>
+      {isi}
     </Link>
   )
 }

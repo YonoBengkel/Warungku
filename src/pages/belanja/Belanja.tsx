@@ -28,16 +28,9 @@ import { angka, cx, waktuLalu } from '@/lib/format'
 import { isiKemasan } from '@/lib/satuan'
 import { JUDUL, LABEL_JENIS_USAHA } from '@/lib/label'
 import type { Barang, Distributor, PaketKontrak, Penawaran } from '@/lib/types'
-import {
-  daftarDistributor,
-  daftarPenawaran,
-  distributorById,
-  paketUntukPenawaran,
-  promoUntukPenawaran,
-  rincianHarga,
-} from '@/data/dummy'
+import { daftarDistributor, daftarPenawaran, distributorById, paketUntukPenawaran } from '@/data/dummy'
 import { rekomendasiDistributor, type AspekUlasan, type DistributorDirekomendasikan } from '@/data/rekomendasi'
-import { useAplikasi } from '@/store/aplikasi'
+import { useAplikasi, usePenentuHarga } from '@/store/aplikasi'
 
 /**
  * Distributor (rute tetap `/belanja`): satu kolom cari, hasil di layar yang sama.
@@ -110,6 +103,7 @@ function KartuPenawaran({
   const durasi = rentangDurasi(penawaran.id, paketKontrak)
   /* Promo dibaca di sini, bukan dikirim lewat prop: halaman induk tidak perlu
      tahu soal promo untuk bisa menampilkan kartunya. */
+  const { promoUntukPenawaran, rincianHarga } = usePenentuHarga()
   const promo = promoUntukPenawaran(penawaran.id)
 
   const lencana = distributor.baru ? (
@@ -312,6 +306,7 @@ export default function Belanja() {
   const pesanan = useAplikasi((s) => s.pesanan)
   const profil = useAplikasi((s) => s.profil)
   const paketKontrak = useAplikasi((s) => s.paketKontrak)
+  const promoStore = useAplikasi((s) => s.promo)
 
   const cari = params.get('cari') ?? ''
   const tab: TabBelanja = params.get('tab') === 'distributor' ? 'distributor' : 'barang'
@@ -393,8 +388,14 @@ export default function Belanja() {
      menjawab "distributor mana yang cocok untuk usahaku", jadi hanya tampil
      selama daftar belum dipersempit kata kunci atau kota. */
   const rekomendasi = useMemo(
-    () => rekomendasiDistributor({ jenisUsaha: profil.jenisUsaha, kota: profil.kota, barang: barangGudang }),
-    [profil.jenisUsaha, profil.kota, barangGudang],
+    () =>
+      rekomendasiDistributor({
+        jenisUsaha: profil.jenisUsaha,
+        kota: profil.kota,
+        barang: barangGudang,
+        promo: promoStore,
+      }),
+    [profil.jenisUsaha, profil.kota, barangGudang, promoStore],
   )
   const tampilkanRekomendasi = tab === 'distributor' && !cari && !kotaSaring
   const rekomendasiTeratas = tampilkanRekomendasi ? rekomendasi.direkomendasikan.slice(0, 3) : []

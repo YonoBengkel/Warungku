@@ -29,10 +29,10 @@ import {
 import { angka, cx, hariLagi, tanggalLengkapHari } from '@/lib/format'
 import { jumlahTampil } from '@/lib/satuan'
 import {
-  daftarPromo,
   layakDiperkirakan,
   penawaranById,
   penawaranUntukBarang,
+  promoMasihBerlaku,
   rekomendasiDari,
   saranBelanja,
   statusKuota,
@@ -72,6 +72,10 @@ export default function Beranda() {
   const profil = useAplikasi((s) => s.profil)
   const tambahKeKeranjang = useAplikasi((s) => s.tambahKeKeranjang)
   const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
+  const promoStore = useAplikasi((s) => s.promo)
+  /* Promo dibaca dari store: yang baru dipasang distributor langsung muncul,
+     yang sudah diakhiri langsung hilang dari Beranda. */
+  const promoTampil = useMemo(() => promoStore.filter((p) => promoMasihBerlaku(p)), [promoStore])
 
   /* Blok prediksi sengaja dimuat belakangan: ia paling mahal dan paling tidak
      mendesak, jadi tidak boleh menahan daftar yang perlu diurus. */
@@ -453,19 +457,21 @@ export default function Beranda() {
       </div>
 
       {/* Promo distributor */}
-      <section aria-labelledby="judul-promo" className="mt-6">
-        <JudulBagian
-          id="judul-promo"
-          judul="Promo dari Distributor"
-          keterangan="Berganti sendiri. Geser, atau tekan jeda kalau mau membaca lebih lama."
-        />
-        <Korsel
-          label="Promo dari distributor"
-          otomatis
-          kelasItem="w-[85%] sm:w-[20rem] lg:w-[calc((100%-1.5rem)/3)]"
-          isi={daftarPromo.map((p) => ({ kunci: p.id, elemen: <KartuPromo promo={p} lebar /> }))}
-        />
-      </section>
+      {promoTampil.length > 0 && (
+        <section aria-labelledby="judul-promo" className="mt-6">
+          <JudulBagian
+            id="judul-promo"
+            judul="Promo dari Distributor"
+            keterangan="Berganti sendiri. Geser, atau tekan jeda kalau mau membaca lebih lama."
+          />
+          <Korsel
+            label="Promo dari distributor"
+            otomatis
+            kelasItem="w-[85%] sm:w-[20rem] lg:w-[calc((100%-1.5rem)/3)]"
+            isi={promoTampil.map((p) => ({ kunci: p.id, elemen: <KartuPromo promo={p} lebar /> }))}
+          />
+        </section>
+      )}
 
       {/* Perlu Tindakan: pintasan penyaring, bukan tindakan itu sendiri */}
       <section aria-labelledby="judul-perlu-tindakan" className="mt-6">

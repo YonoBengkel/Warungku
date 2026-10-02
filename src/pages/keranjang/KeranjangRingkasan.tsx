@@ -8,13 +8,8 @@ import { LencanaPromo } from '@/components/domain/KartuPromo'
 import { IkonKeranjang, IkonKontrak, IkonNota } from '@/icons'
 import { angka, hariLagi, rupiah } from '@/lib/format'
 import { BANTUAN } from '@/lib/label'
-import {
-  distributorById,
-  hargaBerlaku,
-  penawaranById,
-  rincianHarga,
-} from '@/data/dummy'
-import { useAplikasi } from '@/store/aplikasi'
+import { distributorById, penawaranById } from '@/data/dummy'
+import { useAplikasi, usePenentuHarga } from '@/store/aplikasi'
 
 /**
  * Langkah baca-saja sebelum pesanan benar-benar lahir.
@@ -36,7 +31,7 @@ export default function KeranjangRingkasan() {
   const keranjang = useAplikasi((s) => s.keranjang)
   /* Kontrak dibaca dari store: pengajuan yang lahir saat aplikasi berjalan
      tidak pernah ada di data contoh, dan harganya harus ikut terpakai. */
-  const kontrakStore = useAplikasi((s) => s.kontrak)
+  const { hargaBerlaku, rincianHarga } = usePenentuHarga()
   const daftarBarang = useAplikasi((s) => s.barang)
   const kirimKeranjang = useAplikasi((s) => s.kirimKeranjang)
   const terkunci = useTerkunci()
@@ -59,7 +54,7 @@ export default function KeranjangRingkasan() {
      yang benar-benar tersimpan di pesanan, dan selisihnya baru ketahuan saat
      tagihan distributor datang. `hargaBerlaku` adalah satu-satunya sumber. */
   const totalSemua = aktif.reduce(
-    (a, sub) => a + sub.baris.reduce((x, b) => x + hargaBerlaku(b.penawaranId, b.kontrakId, kontrakStore) * b.jumlah, 0),
+    (a, sub) => a + sub.baris.reduce((x, b) => x + hargaBerlaku(b.penawaranId, b.kontrakId) * b.jumlah, 0),
     0,
   )
   const jumlahBarang = aktif.reduce((a, k) => a + k.baris.length, 0)
@@ -186,7 +181,7 @@ export default function KeranjangRingkasan() {
               }),
             )
             const subtotal = sub.baris.reduce(
-              (a, b) => a + hargaBerlaku(b.penawaranId, b.kontrakId, kontrakStore) * b.jumlah,
+              (a, b) => a + hargaBerlaku(b.penawaranId, b.kontrakId) * b.jumlah,
               0,
             )
 
@@ -210,7 +205,7 @@ export default function KeranjangRingkasan() {
                     if (!pw) return null
                     /* Sumber yang sama dengan harga yang akan tersimpan di
                        pesanan sesaat lagi. */
-                    const rincian = rincianHarga(b.penawaranId, b.kontrakId, kontrakStore)
+                    const rincian = rincianHarga(b.penawaranId, b.kontrakId)
                     const harga = rincian.harga
                     return (
                       <div key={b.penawaranId} className="flex items-start justify-between gap-3">

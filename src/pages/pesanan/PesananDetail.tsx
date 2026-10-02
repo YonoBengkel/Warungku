@@ -20,9 +20,9 @@ import {
 } from '@/icons'
 import { angka, cx, jam, rupiah, tanggalPendek, tanggalRingkas, waktuLalu, waktuNanti } from '@/lib/format'
 import { BANTUAN, LABEL_PESANAN } from '@/lib/label'
-import { distributorById, promoById } from '@/data/dummy'
+import { distributorById } from '@/data/dummy'
 import type { BarisPesanan, StatusPesanan } from '@/lib/types'
-import { useAplikasi } from '@/store/aplikasi'
+import { useAplikasi, usePenentuHarga } from '@/store/aplikasi'
 
 /**
  * Rincian satu pesanan.
@@ -66,6 +66,7 @@ export default function PesananDetail() {
   const unggahBukti = useAplikasi((s) => s.unggahBukti)
   const tandaiBayarTunai = useAplikasi((s) => s.tandaiBayarTunai)
   const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
+  const { promoById } = usePenentuHarga()
 
   const berkasRef = useRef<HTMLInputElement>(null)
   const [dialogBatal, setDialogBatal] = useState<'langsung' | 'ajukan' | null>(null)

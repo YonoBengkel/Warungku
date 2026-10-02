@@ -1598,8 +1598,18 @@ export const daftarPromo: Promo[] = [
   },
 ]
 
-export function promoById(id: string): Promo | undefined {
-  return daftarPromo.find((p) => p.id === id)
+/**
+ * Promo dibaca dari store (`promo`) oleh layar yang punya aksesnya, karena
+ * distributor bisa memasang dan mengakhirinya saat aplikasi berjalan. Promo
+ * yang sudah berakhir TETAP ada di daftar: pesanan lama masih merujuknya.
+ */
+export function promoById(id: string, promoTersedia: Promo[] = daftarPromo): Promo | undefined {
+  return promoTersedia.find((p) => p.id === id)
+}
+
+/** Promo yang masih tampil di Beranda: belum lewat tanggal berakhirnya. */
+export function promoMasihBerlaku(p: Pick<Promo, 'berakhir'>, pada: number = Date.now()): boolean {
+  return p.berakhir == null || +new Date(p.berakhir) >= pada
 }
 
 /* ================================================================== */
@@ -1916,6 +1926,10 @@ export function kontrakUntukBarang(barangId: string): Kontrak[] {
 /**
  * Promo berpotongan yang sedang berjalan untuk satu penawaran, kalau ada.
  *
+ * Kalau satu barang ikut beberapa promo sekaligus, yang dipakai adalah
+ * potongan TERBESAR. Aturannya harus tetap, bukan "yang kebetulan pertama di
+ * daftar": urutan daftar berubah setiap kali distributor memasang promo baru.
+ *
  * `promoTersedia` diisi dari store oleh layar yang punya aksesnya. Bawaannya
  * data contoh, supaya fungsi murni seperti penyusun saran tetap bisa dipakai.
  */
@@ -1925,13 +1939,18 @@ export function promoUntukPenawaran(
   promoTersedia: Promo[] = daftarPromo,
 ): Promo | undefined {
   const waktu = pada ? +new Date(pada) : Date.now()
-  return promoTersedia.find(
-    (p) =>
-      p.potonganPersen != null &&
-      p.potonganPersen > 0 &&
-      p.penawaranIds.includes(penawaranId) &&
-      (p.berakhir == null || +new Date(p.berakhir) >= waktu),
-  )
+  return promoTersedia
+    .filter(
+      (p) =>
+        p.potonganPersen != null &&
+        p.potonganPersen > 0 &&
+        p.penawaranIds.includes(penawaranId) &&
+        promoMasihBerlaku(p, waktu),
+    )
+    .reduce<Promo | undefined>(
+      (terbesar, p) => (!terbesar || (p.potonganPersen ?? 0) > (terbesar.potonganPersen ?? 0) ? p : terbesar),
+      undefined,
+    )
 }
 
 /**
