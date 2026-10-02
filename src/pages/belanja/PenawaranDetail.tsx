@@ -25,7 +25,7 @@ import {
   IkonToko,
 } from '@/icons'
 import { angka, rupiah, waktuLalu } from '@/lib/format'
-import { isiKemasan, jumlahBawaan, jumlahTampil } from '@/lib/satuan'
+import { isiKemasan, jumlahBawaan, jumlahTampil, kalimatIsiKemasan } from '@/lib/satuan'
 import { BANTUAN } from '@/lib/label'
 import { distributorById, hariCukup, paketUntukPenawaran, penawaranById, statusStok } from '@/data/dummy'
 import { useAplikasi, usePenentuHarga } from '@/store/aplikasi'
@@ -83,6 +83,9 @@ export default function PenawaranDetail() {
   const hargaKontrakTermurah = paket.length > 0 ? Math.min(...paket.map((p) => p.hargaSatuan)) : null
   const kelipatan = penawaran.kemasanJual
   const habisDiDistributor = penawaran.stokTersedia <= 0
+  /* Disembunyikan distributor dari katalog. Halamannya tetap bisa dibuka dari
+     pesanan atau kontrak lama, tapi tidak lagi bisa dipesan. */
+  const tidakDijual = penawaran.aktif === false
   /* Kontrak dibaca dari penyimpanan aplikasi, bukan dari berkas contoh, supaya
      kontrak yang baru berubah di layar lain langsung ikut terlihat di sini. */
   const kontrakBarang = barang
@@ -125,6 +128,13 @@ export default function PenawaranDetail() {
   return (
     <div className="pb-6">
       <KepalaHalaman judul={penawaran.nama} keterangan={distributor.nama} kembaliKe="/belanja" />
+
+      {tidakDijual && (
+        <Peringatan nada="netral" judul="Distributor sedang tidak menjual barang ini" className="mt-3 lg:max-w-[70ch]">
+          {distributor.nama} menyembunyikannya dari katalog. Kontrak dan pesanan yang sudah ada tetap berjalan; untuk
+          pesanan baru, cari barang yang sama dari distributor lain.
+        </Peringatan>
+      )}
 
       <div className="mt-4 lg:grid lg:grid-cols-12 lg:gap-6 lg:items-start">
         <div className="lg:col-span-7 space-y-4">
@@ -174,9 +184,11 @@ export default function PenawaranDetail() {
                 nilai={
                   kelipatan && barang
                     ? (isiKemasan(barang, kelipatan.nama, kelipatan.isi) ?? `per 1 ${kelipatan.nama}`)
-                    : kelipatan
-                      ? `1 ${kelipatan.nama} = ${angka(kelipatan.isi)} satuan pakai`
-                      : `per 1 ${penawaran.satuan}`
+                    : kelipatan && penawaran.satuanIsi
+                      ? (kalimatIsiKemasan(kelipatan.nama, kelipatan.isi, penawaran.satuanIsi) ?? `per 1 ${kelipatan.nama}`)
+                      : kelipatan
+                        ? `1 ${kelipatan.nama} = ${angka(kelipatan.isi)} satuan pakai`
+                        : `per 1 ${penawaran.satuan}`
                 }
               />
               <BarisData label="Area kirim" nilai={distributor.areaKirim.join(', ')} />
@@ -335,6 +347,7 @@ export default function PenawaranDetail() {
       >
         <div className="flex flex-col sm:flex-row gap-2.5">
           {paket.length > 0 &&
+            !tidakDijual &&
             (terkunci ? (
               <div className="sm:flex-1">
                 <TombolTerkunci label="Ikat Kontrak" penuh />
@@ -363,7 +376,7 @@ export default function PenawaranDetail() {
               className="sm:flex-1"
               ikonKiri={<IkonKeranjang size={18} />}
               onClick={bukaLembarBeli}
-              disabled={habisDiDistributor}
+              disabled={habisDiDistributor || tidakDijual}
             >
               Beli Sekali
             </Tombol>

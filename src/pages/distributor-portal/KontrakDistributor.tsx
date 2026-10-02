@@ -14,7 +14,7 @@ import {
   LABEL_KUOTA,
   NADA_KUOTA,
 } from '@/lib/label'
-import { daftarPenawaran, distributorAktif, statusKuota, umkmById } from '@/data/dummy'
+import { distributorAktif, statusKuota, umkmById } from '@/data/dummy'
 import type { KontrakPelanggan, PaketKontrak, Penawaran } from '@/lib/types'
 import { useAplikasi, useKontrakMasuk, usePesananMasuk } from '@/store/aplikasi'
 
@@ -325,6 +325,7 @@ export default function KontrakDistributor() {
   const semua = useKontrakMasuk()
   const pesananMasuk = usePesananMasuk()
   const paketKontrak = useAplikasi((s) => s.paketKontrak)
+  const katalog = useAplikasi((s) => s.katalog)
   const setujuiKontrak = useAplikasi((s) => s.setujuiKontrak)
   const tolakKontrak = useAplikasi((s) => s.tolakKontrak)
   const jawabBerhenti = useAplikasi((s) => s.jawabBerhenti)
@@ -356,7 +357,7 @@ export default function KontrakDistributor() {
   )
   const kontrakBerjalan = useMemo(() => semua.filter(berjalan), [semua])
   const mintaBerhenti = useMemo(() => kontrakBerjalan.filter((k) => k.pengajuanBerhenti), [kontrakBerjalan])
-  const penawaranSaya = daftarPenawaran.filter((p) => p.distributorId === distributorAktif.id)
+  const penawaranSaya = katalog.filter((p) => p.distributorId === distributorAktif.id && p.aktif !== false)
   const paketSaya = paketKontrak.filter((p) => p.distributorId === distributorAktif.id)
 
   /* Riwayat singkat toko yang mengajukan: bahan pertimbangan utama sebelum

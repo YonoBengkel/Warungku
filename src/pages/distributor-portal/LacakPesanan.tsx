@@ -15,8 +15,8 @@ import {
 import { angka, jumlahSatuan } from '@/lib/format'
 import { LABEL_PESANAN_MASUK, NADA_PESANAN_MASUK } from '@/lib/label'
 import type { PesananMasuk, StatusPesananMasuk } from '@/lib/types'
-import { daftarPenawaran, distributorAktif, umkmById } from '@/data/dummy'
-import { usePesananMasuk, useTitikPeta } from '@/store/aplikasi'
+import { distributorAktif, umkmById } from '@/data/dummy'
+import { useAplikasi, usePesananMasuk, useTitikPeta } from '@/store/aplikasi'
 
 /**
  * Lacak Pesanan: dua keadaan saja, Sedang Diproses dan Selesai.
@@ -45,8 +45,6 @@ const IKON_STATUS: Record<'disiapkan' | 'dikirim' | 'selesai', typeof IkonGudang
   selesai: IkonCentangLingkaran,
 }
 
-/** Katalog toko ini. Tetap sepanjang sesi, jadi dihitung sekali di luar komponen. */
-const BARANG_KAMI = daftarPenawaran.filter((p) => p.distributorId === distributorAktif.id)
 
 interface Kelompok {
   umkmId: string
@@ -74,6 +72,9 @@ export default function LacakPesanan() {
 
   const pesananMasuk = usePesananMasuk()
   const titik = useTitikPeta()
+  /* Katalog toko ini, dari store: distributor bisa menambah barang saat aplikasi berjalan. */
+  const katalog = useAplikasi((s) => s.katalog)
+  const BARANG_KAMI = katalog.filter((p) => p.distributorId === distributorAktif.id && p.aktif !== false)
 
   const perKeadaan = useMemo(() => {
     function kelompokkan(k: Keadaan): Kelompok[] {

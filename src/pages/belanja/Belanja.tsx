@@ -25,10 +25,10 @@ import {
   IkonToko,
 } from '@/icons'
 import { angka, cx, waktuLalu } from '@/lib/format'
-import { isiKemasan } from '@/lib/satuan'
+import { isiKemasan, kalimatIsiKemasan } from '@/lib/satuan'
 import { JUDUL, LABEL_JENIS_USAHA } from '@/lib/label'
 import type { Barang, Distributor, PaketKontrak, Penawaran } from '@/lib/types'
-import { daftarDistributor, daftarPenawaran, distributorById, paketUntukPenawaran } from '@/data/dummy'
+import { distributorById, paketUntukPenawaran } from '@/data/dummy'
 import { rekomendasiDistributor, type AspekUlasan, type DistributorDirekomendasikan } from '@/data/rekomendasi'
 import { useAplikasi, usePenentuHarga } from '@/store/aplikasi'
 
@@ -68,6 +68,9 @@ function rentangDurasi(penawaranId: string, paketTersedia: PaketKontrak[]): stri
 
 function labelKemasan(p: Penawaran, b: Barang | undefined): string {
   if (p.kemasanJual && b) return isiKemasan(b, p.kemasanJual.nama, p.kemasanJual.isi) ?? `dijual per ${p.kemasanJual.nama}`
+  if (p.kemasanJual && p.satuanIsi) {
+    return kalimatIsiKemasan(p.kemasanJual.nama, p.kemasanJual.isi, p.satuanIsi) ?? `dijual per ${p.kemasanJual.nama}`
+  }
   if (p.kemasanJual) return `1 ${p.kemasanJual.nama} = ${angka(p.kemasanJual.isi)} satuan pakai`
   return `dijual per ${p.satuan}`
 }
@@ -307,6 +310,11 @@ export default function Belanja() {
   const profil = useAplikasi((s) => s.profil)
   const paketKontrak = useAplikasi((s) => s.paketKontrak)
   const promoStore = useAplikasi((s) => s.promo)
+  /* Katalog dan profil distributor dibaca dari store: distributor bisa
+     menambah, mengubah, dan menyembunyikan barangnya saat aplikasi berjalan. */
+  const katalog = useAplikasi((s) => s.katalog)
+  const semuaDistributor = useAplikasi((s) => s.distributor)
+  const katalogAktif = useMemo(() => katalog.filter((p) => p.aktif !== false), [katalog])
 
   const cari = params.get('cari') ?? ''
   const tab: TabBelanja = params.get('tab') === 'distributor' ? 'distributor' : 'barang'
@@ -335,10 +343,13 @@ export default function Belanja() {
     return kumpulan
   }, [kontrak, pesanan])
 
-  const daftarKota = useMemo(() => Array.from(new Set(daftarDistributor.map((d) => d.kota))).sort(), [])
+  const daftarKota = useMemo(
+    () => Array.from(new Set(semuaDistributor.map((d) => d.kota))).sort(),
+    [semuaDistributor],
+  )
 
   const hasil = useMemo(() => {
-    const semua = daftarPenawaran
+    const semua = katalogAktif
       .map((p) => ({
         penawaran: p,
         distributor: distributorById(p.distributorId),
@@ -365,11 +376,11 @@ export default function Belanja() {
     // punya rating, dan memaksakan nol akan menenggelamkannya selamanya.
     const baru = semua.filter((x) => x.distributor.baru)
     return { lama, baru, jumlah: semua.length }
-  }, [barangGudang, cari, kotaSaring, hanyaAdaStok, hanyaAdaKontrak, idMitra, paketKontrak])
+  }, [barangGudang, cari, kotaSaring, hanyaAdaStok, hanyaAdaKontrak, idMitra, paketKontrak, katalogAktif])
 
   const hasilDistributor = useMemo(() => {
     const k = cari.trim().toLowerCase()
-    const semua = daftarDistributor
+    const semua = semuaDistributor
       .filter((d) => (kotaSaring ? d.kota === kotaSaring : true))
       .filter(
         (d) =>
@@ -382,7 +393,7 @@ export default function Belanja() {
       lama: semua.filter((d) => !d.baru).sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0)),
       baru: semua.filter((d) => d.baru),
     }
-  }, [cari, kotaSaring])
+  }, [cari, kotaSaring, semuaDistributor])
 
   /* Rekomendasi dihitung dari profil, bukan dari saringan di layar: ia
      menjawab "distributor mana yang cocok untuk usahaku", jadi hanya tampil
@@ -394,8 +405,10 @@ export default function Belanja() {
         kota: profil.kota,
         barang: barangGudang,
         promo: promoStore,
+        distributor: semuaDistributor,
+        penawaran: katalogAktif,
       }),
-    [profil.jenisUsaha, profil.kota, barangGudang, promoStore],
+    [profil.jenisUsaha, profil.kota, barangGudang, promoStore, semuaDistributor, katalogAktif],
   )
   const tampilkanRekomendasi = tab === 'distributor' && !cari && !kotaSaring
   const rekomendasiTeratas = tampilkanRekomendasi ? rekomendasi.direkomendasikan.slice(0, 3) : []
@@ -777,7 +790,7 @@ export default function Belanja() {
                         <KartuDistributor
                           key={d.id}
                           distributor={d}
-                          jumlahPenawaran={daftarPenawaran.filter((p) => p.distributorId === d.id).length}
+                          jumlahPenawaran={katalogAktif.filter((p) => p.distributorId === d.id).length}
                         />
                       ))}
                     </div>
@@ -795,7 +808,7 @@ export default function Belanja() {
                         <KartuDistributor
                           key={d.id}
                           distributor={d}
-                          jumlahPenawaran={daftarPenawaran.filter((p) => p.distributorId === d.id).length}
+                          jumlahPenawaran={katalogAktif.filter((p) => p.distributorId === d.id).length}
                         />
                       ))}
                     </div>

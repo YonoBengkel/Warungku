@@ -1106,6 +1106,12 @@ export const daftarDistributor: Distributor[] = [
     kategori: ['Kopi & Teh'],
     areaKirim: ['Sleman', 'Kota Yogyakarta', 'Bantul'],
     baru: false,
+    info: {
+      alamatGudang: 'Jl. Magelang KM 7, Sinduadi, Mlati, Sleman',
+      nomorHp: '081227334410',
+      jamOperasional: 'Senin sampai Sabtu, 07.00 - 16.00',
+      minimumPesanan: 250000,
+    },
   },
   {
     id: 'd-02',
@@ -1228,9 +1234,36 @@ export const daftarDistributor: Distributor[] = [
   },
 ]
 
+/*
+ * Profil dan katalog distributor bisa diubah distributor saat aplikasi berjalan
+ * (catatan B4). Semua pembaca memakai distributorById, semuaDistributor,
+ * penawaranById, penawaranUntukBarang, dan semuaPenawaran, yang membaca salinan
+ * "berlaku" di bawah. Store memperbaruinya lewat sinkronKatalog setiap kali
+ * distributor menyimpan perubahan, jadi tidak ada layar yang membaca versi lama.
+ */
+let distributorBerlaku: Distributor[] = daftarDistributor
+
 export function distributorById(id: string): Distributor | undefined {
-  return daftarDistributor.find((d) => d.id === id)
+  return distributorBerlaku.find((d) => d.id === id)
 }
+
+export function semuaDistributor(): Distributor[] {
+  return distributorBerlaku
+}
+
+/** Kategori barang yang dikenal platform; distributor memilih kategorinya dari sini. */
+export const KATEGORI_BARANG = [
+  'Kopi & Teh',
+  'Susu & Olahan',
+  'Pemanis',
+  'Bahan Makanan',
+  'Protein',
+  'Kemasan',
+  'Pendukung',
+] as const
+
+/** Wilayah kirim yang dikenal platform di purwarupa ini (DI Yogyakarta). */
+export const WILAYAH_KIRIM = ['Sleman', 'Kota Yogyakarta', 'Bantul', 'Kulon Progo', 'Gunungkidul'] as const
 
 /* ================================================================== */
 /* Penawaran                                                          */
@@ -1502,12 +1535,34 @@ export const daftarPenawaran: Penawaran[] = [
   },
 ]
 
-export function penawaranById(id: string): Penawaran | undefined {
-  return daftarPenawaran.find((p) => p.id === id)
+/* Satuan dasar isi kemasan untuk data contoh: sama dengan satuan simpan
+   barang gudang yang terkait. Penawaran yang dibuat distributor lewat portal
+   mengisinya sendiri. */
+for (const p of daftarPenawaran) {
+  if (p.satuanIsi || !p.barangIdTerkait) continue
+  p.satuanIsi = daftarBarang.find((b) => b.id === p.barangIdTerkait)?.satuan
 }
 
+let penawaranBerlaku: Penawaran[] = daftarPenawaran
+
+export function penawaranById(id: string): Penawaran | undefined {
+  return penawaranBerlaku.find((p) => p.id === id)
+}
+
+/** Penawaran yang masih dijual untuk satu barang gudang; yang dinonaktifkan distributor tidak ikut. */
 export function penawaranUntukBarang(barangId: string): Penawaran[] {
-  return daftarPenawaran.filter((p) => p.barangIdTerkait === barangId)
+  return penawaranBerlaku.filter((p) => p.barangIdTerkait === barangId && p.aktif !== false)
+}
+
+/** Seluruh katalog, termasuk yang dinonaktifkan. Saring dengan `aktif !== false` untuk katalog pembeli. */
+export function semuaPenawaran(): Penawaran[] {
+  return penawaranBerlaku
+}
+
+/** Dipanggil store setiap kali profil atau katalog distributor berubah. */
+export function sinkronKatalog(distributor: Distributor[], penawaran: Penawaran[]): void {
+  distributorBerlaku = distributor
+  penawaranBerlaku = penawaran
 }
 
 /* ================================================================== */
@@ -2772,7 +2827,13 @@ export function ulasanUntuk(distributorId: string): Ulasan[] {
 /* Portal Distributor — toko yang sedang masuk                        */
 /* ================================================================== */
 
-/** Distributor yang sedang membuka portal. Purwarupa hanya punya satu. */
+/**
+ * Distributor yang sedang membuka portal. Purwarupa hanya punya satu.
+ *
+ * Pakai konstanta ini untuk identitasnya (id, nama, warna). Data yang bisa ia
+ * ubah sendiri (kategori, area kirim, info usaha) dibaca lewat
+ * `useDistributorAktif()` di store supaya perubahannya langsung terlihat.
+ */
 export const distributorAktif: Distributor = daftarDistributor[0]
 
 /**

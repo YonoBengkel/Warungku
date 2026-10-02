@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
   Avatar,
+  BarisData,
   HanyaPembacaLayar,
   JudulBagian,
   Kartu,
@@ -21,9 +22,9 @@ import {
   IkonPanahKanan,
   IkonToko,
 } from '@/icons'
-import { angka, tanggalPendek, waktuLalu } from '@/lib/format'
+import { angka, nomorHp, rupiah, tanggalPendek, waktuLalu } from '@/lib/format'
 import type { Distributor, Penawaran } from '@/lib/types'
-import { daftarPenawaran, distributorById, paketUntukPenawaran } from '@/data/dummy'
+import { distributorById, paketUntukPenawaran } from '@/data/dummy'
 import { useAplikasi, usePenentuHarga } from '@/store/aplikasi'
 
 /**
@@ -92,11 +93,17 @@ function BarisPenawaran({ penawaran }: { penawaran: Penawaran }) {
 
 export default function DistributorProfil() {
   const { id = '' } = useParams()
-  const distributor = distributorById(id)
+  /* Profil dan katalog dibaca dari store supaya perubahan distributor di
+     portalnya langsung terlihat di sini. */
+  const distributor = useAplikasi((s) => s.distributor.find((d) => d.id === id)) ?? distributorById(id)
+  const katalog = useAplikasi((s) => s.katalog)
   const kontrak = useAplikasi((s) => s.kontrak)
   const pesanan = useAplikasi((s) => s.pesanan)
 
-  const penawaran = useMemo(() => daftarPenawaran.filter((p) => p.distributorId === id), [id])
+  const penawaran = useMemo(
+    () => katalog.filter((p) => p.distributorId === id && p.aktif !== false),
+    [katalog, id],
+  )
 
   const kontrakBerjalan = kontrak.filter(
     (k) => k.distributorId === id && (k.status === 'aktif' || k.status === 'akan-berakhir'),
@@ -162,6 +169,19 @@ export default function DistributorProfil() {
                 </div>
               </div>
             </div>
+            {/* Diisi distributor sendiri di portalnya. Minimum pesanan ditulis di
+                sini supaya tidak baru ketahuan setelah pesanan ditolak. */}
+            {distributor.info && (
+              <dl className="mt-3.5 border-t border-line pt-2.5">
+                <BarisData label="Jam operasional" nilai={distributor.info.jamOperasional} />
+                <BarisData
+                  label="Minimum pesanan"
+                  nilai={distributor.info.minimumPesanan > 0 ? rupiah(distributor.info.minimumPesanan) : 'Tanpa minimum'}
+                />
+                <BarisData label="Kirim ke" nilai={distributor.areaKirim.join(', ')} />
+                <BarisData label="Kontak" nilai={nomorHp(distributor.info.nomorHp)} />
+              </dl>
+            )}
           </Kartu>
 
           {/* Kepala rating: konteks, bukan satu angka */}

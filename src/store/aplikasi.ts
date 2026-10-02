@@ -6,10 +6,12 @@ import type {
   BarisKeranjang,
   BuktiPengiriman,
   DataKasir,
+  Distributor,
   Kontrak,
   KontrakPelanggan,
   Notifikasi,
   PaketKontrak,
+  Penawaran,
   Pergerakan,
   Promo,
   Pesanan,
@@ -28,16 +30,19 @@ import { waktuNanti } from '@/lib/format'
 import {
   POS_TUNGGAL,
   daftarBarang,
+  daftarDistributor,
   daftarKontrak,
   daftarKontrakUmkmLain,
   daftarNotifikasi,
   daftarPaket,
+  daftarPenawaran,
   daftarPromo,
   daftarPergerakan,
   daftarPesanan,
   daftarPesananMasuk,
   daftarTransaksi,
   dataKasirAwal,
+  distributorAktif,
   gabungKontrakMasuk,
   gabungPesananMasuk,
   hargaBerlaku as hargaBerlakuDasar,
@@ -48,6 +53,7 @@ import {
   promoById as promoByIdDasar,
   promoUntukPenawaran as promoUntukPenawaranDasar,
   rincianHarga,
+  sinkronKatalog,
   statusStok,
   umkmById,
   warnaTitikUntuk,
@@ -104,6 +110,10 @@ interface KeadaanAplikasi {
    * merujuknya). Distributor aktif bisa memasang, mengubah, dan mengakhiri miliknya.
    */
   promo: Promo[]
+  /** Katalog seluruh distributor. Distributor aktif mengelola barang miliknya di portal. */
+  katalog: Penawaran[]
+  /** Profil seluruh distributor. Distributor aktif mengubah kategori, area kirim, dan info usahanya. */
+  distributor: Distributor[]
   tema: 'terang' | 'gelap'
   /** Mensimulasikan layanan perkiraan yang sedang tidak sehat, untuk menguji turun derajat. */
   layananPerkiraan: 'sehat' | 'tersimpan' | 'mati'
@@ -176,6 +186,11 @@ interface KeadaanAplikasi {
   // Portal distributor — promo
   simpanPromo: (promo: Promo) => void
   akhiriPromo: (id: string) => void
+
+  // Portal distributor — profil dan katalog
+  simpanPenawaran: (penawaran: Penawaran) => void
+  aturAktifPenawaran: (id: string, aktif: boolean) => void
+  ubahDistributor: (id: string, ubahan: Partial<Distributor>) => void
   ubahPesananRutin: (kontrakId: string, aktif: boolean) => void
 
   /* Pemberitahuan */
@@ -277,6 +292,8 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
   kontrakUmkmLain: daftarKontrakUmkmLain,
   paketKontrak: daftarPaket,
   promo: daftarPromo,
+  katalog: daftarPenawaran,
+  distributor: daftarDistributor,
   tema: temaAwal(),
   layananPerkiraan: 'sehat',
   // Dimulai dari keadaan belum masuk supaya "/" benar-benar memperlihatkan
@@ -1134,6 +1151,36 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
     get().tampilkanRacun(`Promo "${promo.judul}" diakhiri. Harga kembali normal mulai sekarang.`, 'info')
   },
 
+  simpanPenawaran: (penawaran) => {
+    const ada = get().katalog.some((p) => p.id === penawaran.id)
+    set((s) => ({
+      katalog: ada ? s.katalog.map((p) => (p.id === penawaran.id ? penawaran : p)) : [...s.katalog, penawaran],
+    }))
+    get().tampilkanRacun(
+      ada
+        ? `${penawaran.nama} diperbarui. Pemilik usaha melihat harga dan stok yang baru.`
+        : `${penawaran.nama} ditambahkan ke katalogmu.`,
+      'aman',
+    )
+  },
+
+  aturAktifPenawaran: (id, aktif) => {
+    const pw = get().katalog.find((p) => p.id === id)
+    if (!pw) return
+    set((s) => ({ katalog: s.katalog.map((p) => (p.id === id ? { ...p, aktif } : p)) }))
+    get().tampilkanRacun(
+      aktif
+        ? `${pw.nama} dijual lagi dan kembali tampil di katalog pemilik usaha.`
+        : `${pw.nama} disembunyikan dari katalog. Pesanan dan kontrak yang sudah ada tidak terpengaruh.`,
+      'info',
+    )
+  },
+
+  ubahDistributor: (id, ubahan) => {
+    set((s) => ({ distributor: s.distributor.map((d) => (d.id === id ? { ...d, ...ubahan } : d)) }))
+    get().tampilkanRacun('Profil toko tersimpan. Pemilik usaha langsung melihat versi yang baru.', 'aman')
+  },
+
   ubahPesananRutin: (kontrakId, aktif) =>
     set((s) => ({
       kontrak: s.kontrak.map((k) => (k.id === kontrakId ? { ...k, pesananRutinAktif: aktif } : k)),
@@ -1262,6 +1309,22 @@ export function usePesananMasuk(): PesananMasuk[] {
   const pesanan = useAplikasi((s) => s.pesanan)
   const lain = useAplikasi((s) => s.pesananUmkmLain)
   return useMemo(() => gabungPesananMasuk(pesanan, lain), [pesanan, lain])
+}
+
+/*
+ * Satu titik sinkron: setiap kali katalog atau profil distributor berubah,
+ * pembaca di data/dummy (penawaranById, distributorById, ...) ikut membaca
+ * versi terbaru, termasuk fungsi murni seperti rincianHarga dan rekomendasi.
+ */
+useAplikasi.subscribe((s, sebelum) => {
+  if (s.katalog !== sebelum.katalog || s.distributor !== sebelum.distributor) {
+    sinkronKatalog(s.distributor, s.katalog)
+  }
+})
+
+/** Profil distributor yang membuka portal, versi terbaru dari store. */
+export function useDistributorAktif(): Distributor {
+  return useAplikasi((s) => s.distributor.find((d) => d.id === distributorAktif.id) ?? distributorAktif)
 }
 
 /**

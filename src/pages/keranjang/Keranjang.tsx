@@ -347,6 +347,18 @@ export default function Keranjang() {
                   </span>
                   <span className="text-[1.0625rem] font-bold text-ink tabular">{rupiah(totalSub(sub))}</span>
                 </div>
+                {/* Minimum pesanan diisi distributor di portalnya. Tidak
+                    memblokir: pesanannya tetap boleh dikirim, tapi lebih baik
+                    ketahuan sekarang daripada setelah ditolak. */}
+                {distributor?.info &&
+                  distributor.info.minimumPesanan > 0 &&
+                  totalSub(sub) < distributor.info.minimumPesanan && (
+                    <p className="mt-1.5 text-[0.8125rem] font-semibold text-menipis-ink leading-snug">
+                      Belum mencapai minimum pesanan {distributor.nama}, {rupiah(distributor.info.minimumPesanan)}.
+                      Kurang {rupiah(distributor.info.minimumPesanan - totalSub(sub))}; pesanan tetap bisa dikirim, tapi
+                      distributor boleh menolaknya.
+                    </p>
+                  )}
 
                 <button
                   type="button"

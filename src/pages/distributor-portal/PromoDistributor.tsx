@@ -7,7 +7,7 @@ import { KeadaanKosong } from '@/components/ui/umpanBalik'
 import { IkonBintang, IkonPena, IkonTambah } from '@/icons'
 import { bacaAngkaIndonesia, tanggalRingkas } from '@/lib/format'
 import { LABEL_PROMO } from '@/lib/label'
-import { daftarPenawaran, distributorAktif, promoMasihBerlaku } from '@/data/dummy'
+import { distributorAktif, promoMasihBerlaku } from '@/data/dummy'
 import type { JenisPromo, Promo } from '@/lib/types'
 import { useAplikasi } from '@/store/aplikasi'
 
@@ -47,7 +47,8 @@ function duaMingguLagi(): string {
 function FormPromo({ promo, tutup }: { promo: Promo | null; tutup: () => void }) {
   const simpanPromo = useAplikasi((s) => s.simpanPromo)
   const semuaPromo = useAplikasi((s) => s.promo)
-  const penawaranSaya = daftarPenawaran.filter((p) => p.distributorId === distributorAktif.id)
+  const katalog = useAplikasi((s) => s.katalog)
+  const penawaranSaya = katalog.filter((p) => p.distributorId === distributorAktif.id && p.aktif !== false)
   const masihBerlaku = promo ? promoMasihBerlaku(promo) : true
 
   const [jenis, setJenis] = useState<JenisPromo>(promo?.jenis ?? 'cuci-gudang')
@@ -241,6 +242,7 @@ function FormPromo({ promo, tutup }: { promo: Promo | null; tutup: () => void })
 export default function PromoDistributor() {
   const semuaPromo = useAplikasi((s) => s.promo)
   const akhiriPromo = useAplikasi((s) => s.akhiriPromo)
+  const katalog = useAplikasi((s) => s.katalog)
 
   const [form, setForm] = useState<{ promo: Promo | null } | null>(null)
   const [akanDiakhiri, setAkanDiakhiri] = useState<Promo | null>(null)
@@ -255,7 +257,7 @@ export default function PromoDistributor() {
 
   const namaBarang = (ids: string[]) =>
     ids
-      .map((id) => daftarPenawaran.find((p) => p.id === id)?.nama)
+      .map((id) => katalog.find((p) => p.id === id)?.nama)
       .filter(Boolean)
       .join(', ')
 

@@ -134,3 +134,23 @@ export function isiKemasan(b: Pick<Barang, 'satuan'>, nama: string, isi: number)
   const teks = jumlahBawaan(b, isi)
   return teks === `1 ${nama}` ? null : `1 ${nama} = ${teks}`
 }
+
+/**
+ * Isi satu satuan jual dalam satuan dasar, ditulis dengan satuan yang wajar:
+ * 5000 ml jadi "5 liter", 1000 gram jadi "1 kg", 24 pcs tetap "24 pcs".
+ * Dipakai untuk barang distributor yang belum terkait daftar stok pemilik usaha.
+ */
+export function tulisIsi(isi: number, satuanIsi: string): string {
+  if (satuanIsi === 'gram' && isi >= 1000) return `${angka(isi / 1000, 2)} kg`
+  if (satuanIsi === 'ml' && isi >= 1000) return `${angka(isi / 1000, 2)} liter`
+  return `${angka(isi)} ${satuanIsi}`
+}
+
+/**
+ * "1 jerigen = 5 liter" untuk kemasan jual yang isinya tercatat sendiri.
+ * Kosong kalau kalimatnya cuma mengulang dirinya ("1 kg = 1 kg").
+ */
+export function kalimatIsiKemasan(nama: string, isi: number, satuanIsi: string): string | null {
+  const isiTertulis = tulisIsi(isi, satuanIsi)
+  return isiTertulis === `1 ${nama}` ? null : `1 ${nama} = ${isiTertulis}`
+}

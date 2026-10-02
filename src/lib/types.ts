@@ -256,6 +256,16 @@ export interface Distributor {
   areaKirim: string[]
   /** Distributor baru tidak pernah ditampilkan sebagai "0,0 bintang". */
   baru: boolean
+  /** Diisi distributor sendiri di portalnya; kosong berarti belum dilengkapi. */
+  info?: InfoUsahaDistributor
+}
+
+export interface InfoUsahaDistributor {
+  alamatGudang: string
+  nomorHp: string
+  jamOperasional: string
+  /** Nilai belanja terkecil per pesanan, dalam rupiah. 0 berarti tanpa minimum. */
+  minimumPesanan: number
 }
 
 export interface Penawaran {
@@ -272,6 +282,19 @@ export interface Penawaran {
   stokDiperbaruiPada: string
   barangIdTerkait: string | null
   keterangan: string
+  /**
+   * `false` = distributor sedang tidak menjualnya: hilang dari katalog pemilik
+   * usaha, tapi pesanan, kontrak, dan promo lama yang merujuknya tetap terbaca.
+   * Kosong dianggap aktif.
+   */
+  aktif?: boolean
+  /**
+   * Satuan dasar isi `kemasanJual` ("1 jerigen = 5000 ml" berarti `ml`). Untuk
+   * barang yang terkait daftar stok pemilik usaha, satuannya SAMA dengan satuan
+   * simpan barang itu dan tidak boleh berubah: stok gudang bertambah sebanyak
+   * isi ini setiap barang diterima.
+   */
+  satuanIsi?: string
 }
 
 /* ------------------------------------------------------------------ */
