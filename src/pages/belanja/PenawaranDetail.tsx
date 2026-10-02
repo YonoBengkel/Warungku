@@ -15,6 +15,7 @@ import { Lembar } from '@/components/ui/lembar'
 import { BilahAksi, KepalaHalaman } from '@/components/ui/navigasi'
 import { KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
 import { ChipStok, KuotaBulanIni, TombolTerkunci, useTerkunci } from '@/components/domain'
+import { KALIMAT_PROMO, LencanaPromo } from '@/components/domain/KartuPromo'
 import {
   IkonBintangIsi,
   IkonKeranjang,
@@ -25,7 +26,16 @@ import {
 } from '@/icons'
 import { angka, jumlahSatuan, rupiah, waktuLalu } from '@/lib/format'
 import { BANTUAN } from '@/lib/label'
-import { distributorById, hariCukup, paketUntukPenawaran, penawaranById, statusStok } from '@/data/dummy'
+import {
+  distributorById,
+  hargaBerlaku,
+  hariCukup,
+  paketUntukPenawaran,
+  penawaranById,
+  perkiraanHematPromo,
+  promoUntukPenawaran,
+  statusStok,
+} from '@/data/dummy'
 import { useAplikasi } from '@/store/aplikasi'
 
 /**
@@ -87,7 +97,28 @@ export default function PenawaranDetail() {
       )
     : []
   const kontrakUntukPenawaranIni = kontrakTerkait[0] ?? null
-  const subtotal = jumlah * penawaran.hargaSatuan
+  /* Lewat hargaBerlaku, bukan harga eceran mentah: kalau penawaran ini terikat
+     kontrak, keranjang akan memakai harga kontrak. Menghitung sendiri di sini
+     membuat lembar "Beli sekali" menjanjikan satu angka lalu keranjang
+     menampilkan angka lain untuk baris yang sama persis. */
+  const hargaSatuanBerlaku = hargaBerlaku(
+    penawaran.id,
+    kontrakUntukPenawaranIni?.id ?? null,
+    daftarKontrakAktif,
+  )
+  const subtotal = jumlah * hargaSatuanBerlaku
+
+  /* Promo ditandai, tidak pernah dipotongkan dari angka yang dibayar. Yang
+     menagih adalah distributornya, dan tidak ada satu pun layar tempat dia
+     membuat atau menghentikan promo — potongan yang kami hitung sendiri belum
+     pernah dia setujui. Kalau ia masuk ke total, yang lahir cuma selisih
+     tagihan yang aplikasi ini tidak bisa selesaikan. Jadi hematnya ditulis
+     sebagai perkiraan: tetap berguna untuk memutuskan, tanpa berjanji.
+
+     `perkiraanHematPromo` sudah mengembalikan null untuk baris berkontrak, jadi
+     kontrak yang berjalan cukup diteruskan apa adanya ke penolongnya. */
+  const promo = promoUntukPenawaran(penawaran.id)
+  const hematPromo = perkiraanHematPromo(penawaran.id, kontrakUntukPenawaranIni?.id ?? null)
 
   function bukaLembarBeli() {
     setJumlah(1)
@@ -135,6 +166,35 @@ export default function PenawaranDetail() {
               <span className="text-[0.875rem] font-semibold text-ink-3">/{penawaran.satuan}</span>
             </div>
             <p className="mt-1 text-[0.8125rem] text-ink-3">Harga beli sekali, belum termasuk ongkos kirim.</p>
+
+            {/* Promo duduk tepat di bawah harga, bukan di kartu terpisah: di
+                sinilah pemilik usaha memutuskan membeli, jadi kabarnya harus
+                sempat terbaca sebelum jarinya sampai ke tombol. Angka besar di
+                atas sengaja dibiarkan penuh dan tidak dicoret — harga coret
+                adalah janji yang aplikasi ini tidak bisa tepati.
+
+                Lencananya boleh jadi tautan di sini: kartu ini bukan `<Link>`,
+                jadi tidak ada tautan yang ia sarangi. `items-start` menahannya
+                selebar isinya supaya lencana panjang membungkus, bukan
+                melebarkan halaman di layar 360px. */}
+            {promo && (
+              <div className="mt-2.5 flex flex-col items-start gap-1.5">
+                <LencanaPromo promo={promo} />
+                <p className="text-[0.8125rem] text-ink-2 leading-relaxed">
+                  {hematPromo != null ? (
+                    <>
+                      <strong className="text-ink">
+                        {rupiah(hematPromo)}/{penawaran.satuan}
+                      </strong>{' '}
+                      &mdash; {KALIMAT_PROMO.hematPerkiraan}
+                    </>
+                  ) : (
+                    KALIMAT_PROMO.kontrakTidakIkut
+                  )}
+                </p>
+                <p className="text-[0.75rem] text-ink-3 leading-relaxed">{KALIMAT_PROMO.totalTetapPenuh}</p>
+              </div>
+            )}
 
             <dl className="mt-3.5">
               {/* Stok distributor dan waktu pembaruannya wajib tampil: angka stok
@@ -391,7 +451,7 @@ export default function PenawaranDetail() {
 
           <div className="rounded-md bg-sunken p-3.5">
             <BarisData
-              label={`${angka(jumlah)} ${penawaran.satuan} x ${rupiah(penawaran.hargaSatuan)}`}
+              label={`${angka(jumlah)} ${penawaran.satuan} x ${rupiah(hargaSatuanBerlaku)}`}
               nilai={rupiah(subtotal)}
               tebal
             />
@@ -404,6 +464,16 @@ export default function PenawaranDetail() {
             <Peringatan nada="info" judul="Pembelian ini ikut menghitung kuota kontrak">
               Kamu punya kontrak berjalan untuk barang ini. Jumlah yang kamu ambil sekarang akan dihitung sebagai
               pemenuhan kuota bulan ini setelah barangnya kamu terima.
+              {/* Angka besar di atas adalah harga eceran; yang dipakai di sini
+                  harga kontrak. Selisihnya disebutkan supaya tidak terbaca
+                  sebagai dua angka yang saling bertentangan. */}
+              {hargaSatuanBerlaku !== penawaran.hargaSatuan && (
+                <>
+                  {' '}
+                  Harganya pun mengikuti kontrak, {rupiah(hargaSatuanBerlaku)}/{penawaran.satuan}, bukan harga
+                  eceran {rupiah(penawaran.hargaSatuan)}/{penawaran.satuan}.
+                </>
+              )}
             </Peringatan>
           )}
 

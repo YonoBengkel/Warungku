@@ -1505,9 +1505,12 @@ export const daftarPromo: Promo[] = [
     distributorId: 'd-01',
     judul: 'Panen Baru Dataran Gayo',
     keterangan: 'Biji dari panen Juli baru masuk gudang. Sangrai menyusul sesuai pesanan.',
-    berakhir: null,
-    penawaranIds: ['pw-01', 'pw-02'],
-    potonganPersen: null,
+    berakhir: hariKe(21),
+    penawaranIds: ['pw-01', 'pw-02', 'pw-03'],
+    // Satu-satunya promo berpotongan milik d-01, dan d-01 adalah distributor yang
+    // portalnya bisa dibuka. Tanpa ini, peringatan "pemesan mengacu ke promo" di
+    // sisi distributor tidak pernah bisa terlihat dengan data contoh.
+    potonganPersen: 8,
   },
   {
     id: 'pr-05',
@@ -1759,6 +1762,77 @@ export const daftarKontrak: Kontrak[] = [
 
 export function kontrakUntukBarang(barangId: string): Kontrak[] {
   return daftarKontrak.filter((k) => k.barangId === barangId && (k.status === 'aktif' || k.status === 'akan-berakhir'))
+}
+
+/* ------------------------------------------------------------------ */
+/* Harga beli — satu sumber untuk seluruh aplikasi                     */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Harga beli yang benar-benar berlaku untuk satu baris pembelian.
+ *
+ * SATU-SATUNYA tempat harga baris ditentukan. Kalau ada layar yang menghitung
+ * sendiri, cepat atau lambat angka di keranjang berbeda dengan angka yang
+ * tercatat di pesanan — dan selisih itu baru ketahuan saat tagihan datang.
+ *
+ * Aturannya cuma dua tingkat, dan urutannya tidak boleh dibalik:
+ * 1. Baris yang terikat kontrak memakai HARGA KONTRAK. Kontrak adalah dokumen
+ *    yang mengikat kedua pihak; harga di dalamnya tidak bisa digeser aplikasi.
+ * 2. Selain itu harga penawaran yang sedang berlaku.
+ *
+ * Promo sengaja TIDAK jadi tingkat ketiga. Lihat `promoUntukPenawaran`.
+ *
+ * `kontrakTersedia` wajib diisi dari store oleh layar yang punya aksesnya.
+ * Kontrak yang lahir saat aplikasi berjalan — pengajuan baru, misalnya — hanya
+ * ada di store dan tidak pernah ada di `daftarKontrak`; tanpa daftar yang benar
+ * fungsi ini diam-diam jatuh ke harga eceran, dan selisihnya baru ketahuan saat
+ * tagihan datang.
+ */
+export function hargaBerlaku(
+  penawaranId: string,
+  kontrakId?: string | null,
+  kontrakTersedia: Kontrak[] = daftarKontrak,
+): number {
+  const kontrak = kontrakId ? kontrakTersedia.find((k) => k.id === kontrakId) : undefined
+  if (kontrak) return kontrak.hargaSatuan
+  return penawaranById(penawaranId)?.hargaSatuan ?? 0
+}
+
+/**
+ * Promo yang sedang berjalan untuk satu penawaran, kalau ada.
+ *
+ * Promo adalah KABAR, bukan harga. Aplikasi ini cuma mencatat; pembayaran
+ * diselesaikan langsung antara pemilik usaha dan distributor, dan tidak ada
+ * satu pun layar tempat distributor membuat atau menghentikan promo. Jadi
+ * potongan yang kami hitung sendiri tidak pernah disepakati siapa pun — kalau
+ * ia dimasukkan ke total, aplikasi ini justru melahirkan selisih tagihan yang
+ * tidak bisa ia bereskan.
+ *
+ * Yang kami lakukan: menandai barisnya sepanjang jalur beli, menuliskan
+ * perkiraan hematnya sebagai perkiraan, dan meneruskannya ke distributor saat
+ * pesanan masuk supaya dia yang memutuskan.
+ */
+export function promoUntukPenawaran(penawaranId: string, pada?: string): Promo | undefined {
+  const waktu = pada ? +new Date(pada) : Date.now()
+  return daftarPromo.find(
+    (p) =>
+      p.potonganPersen != null &&
+      p.penawaranIds.includes(penawaranId) &&
+      (p.berakhir == null || +new Date(p.berakhir) >= waktu),
+  )
+}
+
+/**
+ * Perkiraan hemat per satuan kalau distributor memberlakukan promonya.
+ *
+ * Null untuk baris berkontrak: harga kontrak sudah terkunci di dokumen, jadi
+ * promo tidak menyentuhnya sama sekali.
+ */
+export function perkiraanHematPromo(penawaranId: string, kontrakId?: string | null): number | null {
+  if (kontrakId) return null
+  const promo = promoUntukPenawaran(penawaranId)
+  if (!promo?.potonganPersen) return null
+  return Math.round((hargaBerlaku(penawaranId) * promo.potonganPersen) / 100)
 }
 
 /**

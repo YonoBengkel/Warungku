@@ -1,6 +1,7 @@
 import { useRef, useState, type ChangeEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ChipPesanan, TombolTerkunci, useTerkunci } from '@/components/domain'
+import { KALIMAT_PROMO, LencanaPromo } from '@/components/domain/KartuPromo'
 import { Avatar, Kartu, Lencana, Pemisah, Tombol, TombolIkon, TombolTautan } from '@/components/ui/dasar'
 import { BarisChip, BilahAksi, Chip, KepalaHalaman } from '@/components/ui/navigasi'
 import { Lembar } from '@/components/ui/lembar'
@@ -19,7 +20,7 @@ import {
 } from '@/icons'
 import { angka, cx, jam, rupiah, tanggalPendek, tanggalRingkas, waktuLalu, waktuNanti } from '@/lib/format'
 import { BANTUAN, LABEL_PESANAN } from '@/lib/label'
-import { distributorById } from '@/data/dummy'
+import { distributorById, promoUntukPenawaran } from '@/data/dummy'
 import type { StatusPesanan } from '@/lib/types'
 import { useAplikasi } from '@/store/aplikasi'
 
@@ -110,6 +111,28 @@ export default function PesananDetail() {
     return i > maks ? i : maks
   }, -1)
   const langkahAktif = selesai ? 3 : indeksLangkah >= 0 ? indeksLangkah : indeksJejakTerjauh
+
+  /**
+   * Promo yang dibawa satu baris pesanan, kalau ada.
+   *
+   * Dua alasan bentuknya begini:
+   *
+   * 1. Promonya diperiksa pada TANGGAL PESANAN DIBUAT, bukan hari ini. Pesanan
+   *    lama yang lahir saat promo masih berjalan tetap membawa penandanya walau
+   *    promonya sudah lewat — ini catatan, dan catatan tidak boleh berubah
+   *    belakangan.
+   * 2. Pesanan yang punya kontrakId seluruh barisnya dicatat lewat
+   *    `hargaBerlaku(penawaranId, kontrakId)`, jadi semuanya memakai harga
+   *    kontrak yang sudah terkunci di dokumen. Menempelkan lencana promo di
+   *    situ akan menjanjikan potongan pada harga yang justru tidak bisa
+   *    dipotong.
+   */
+  function promoBaris(penawaranId: string) {
+    if (ps.kontrakId) return undefined
+    return promoUntukPenawaran(penawaranId, ps.dibuatPada)
+  }
+
+  const adaBarisPromo = ps.baris.some((b) => promoBaris(b.penawaranId) != null)
 
   function salinNomor() {
     const teks = ps.nomor
@@ -274,25 +297,36 @@ export default function PesananDetail() {
                 Rincian Pesanan
               </h2>
               <div className="space-y-3">
-                {pesanan.baris.map((b) => (
-                  <div key={b.penawaranId} className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-[1rem] font-semibold text-ink leading-snug">{b.nama}</p>
-                      <p className="mt-0.5 text-[0.8125rem] text-ink-3 tabular">
-                        {angka(b.jumlah)} {b.satuan} &times; {rupiah(b.hargaSatuan)}
-                      </p>
-                      {b.jumlahDiterima != null && b.jumlahDiterima !== b.jumlah && (
-                        <p className="mt-1 text-[0.8125rem] text-menipis-ink font-semibold">
-                          Diterima {angka(b.jumlahDiterima)} {b.satuan}
-                          {b.catatanPenerimaan ? ` · ${b.catatanPenerimaan}` : ''}
+                {pesanan.baris.map((b) => {
+                  const promo = promoBaris(b.penawaranId)
+                  return (
+                    <div key={b.penawaranId} className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-[1rem] font-semibold text-ink leading-snug">{b.nama}</p>
+                        <p className="mt-0.5 text-[0.8125rem] text-ink-3 tabular">
+                          {angka(b.jumlah)} {b.satuan} &times; {rupiah(b.hargaSatuan)}
                         </p>
-                      )}
+                        {/* Lencana ditaruh di kolom kiri yang min-w-0 dan diberi
+                            wadah blok sendiri: di layar 360px ia turun ke baris
+                            baru, bukan mendorong angka subtotal ke luar layar. */}
+                        {promo && (
+                          <div className="mt-1">
+                            <LencanaPromo promo={promo} />
+                          </div>
+                        )}
+                        {b.jumlahDiterima != null && b.jumlahDiterima !== b.jumlah && (
+                          <p className="mt-1 text-[0.8125rem] text-menipis-ink font-semibold">
+                            Diterima {angka(b.jumlahDiterima)} {b.satuan}
+                            {b.catatanPenerimaan ? ` · ${b.catatanPenerimaan}` : ''}
+                          </p>
+                        )}
+                      </div>
+                      <p className="text-[0.9375rem] font-bold text-ink tabular shrink-0">
+                        {rupiah(b.jumlah * b.hargaSatuan)}
+                      </p>
                     </div>
-                    <p className="text-[0.9375rem] font-bold text-ink tabular shrink-0">
-                      {rupiah(b.jumlah * b.hargaSatuan)}
-                    </p>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
 
               <Pemisah className="my-3" />
@@ -311,6 +345,15 @@ export default function PesananDetail() {
                 <span className="text-[0.875rem] font-bold text-ink">Total</span>
                 <span className="text-[1.25rem] font-extrabold text-ink">{rupiah(total)}</span>
               </div>
+
+              {/* Kalimat baku, bukan karangan layar ini: angka pesanan tidak
+                  pernah berubah karena promo, dan dua layar tidak boleh
+                  menjanjikan hal yang berbeda soal itu. */}
+              {adaBarisPromo && (
+                <p className="mt-2 text-[0.75rem] text-ink-3 leading-relaxed max-w-[68ch]">
+                  {KALIMAT_PROMO.totalTetapPenuh}
+                </p>
+              )}
 
               {pesanan.catatanUntukDistributor && (
                 <p className="mt-3 text-[0.8125rem] text-ink-2 bg-sunken rounded-md px-3 py-2.5 leading-relaxed max-w-[68ch]">

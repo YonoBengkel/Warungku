@@ -32,6 +32,7 @@ import {
   daftarPesananMasuk,
   daftarTransaksi,
   dataKasirAwal,
+  hargaBerlaku,
   paketById,
   penawaranById,
   profilAwal,
@@ -439,7 +440,12 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
               nama: p?.nama ?? 'Barang',
               jumlah: b.jumlah,
               satuan: p?.satuan ?? 'pcs',
-              hargaSatuan: p?.hargaSatuan ?? 0,
+              // Lewat hargaBerlaku, bukan harga penawaran mentah: baris yang
+              // terikat kontrak harus tercatat dengan HARGA KONTRAK. Sebelum
+              // ini keranjang menampilkan harga kontrak sementara pesanannya
+              // menyimpan harga eceran, dan selisihnya ikut mengotori
+              // hargaBeliTerakhir saat barang diterima.
+              hargaSatuan: hargaBerlaku(b.penawaranId, b.kontrakId, s.kontrak),
               isiPerSatuan: p?.kemasanJual?.isi ?? 1,
               jumlahDiterima: null,
               alasanSelisih: null,

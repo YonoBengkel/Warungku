@@ -13,6 +13,7 @@ import { Kolom } from '@/components/ui/formulir'
 import { Lembar } from '@/components/ui/lembar'
 import { BarisChip, Chip, TabSegmen } from '@/components/ui/navigasi'
 import { KeadaanKosong } from '@/components/ui/umpanBalik'
+import { LencanaPromo } from '@/components/domain/KartuPromo'
 import {
   IkonBintangIsi,
   IkonCari,
@@ -26,7 +27,13 @@ import {
 import { angka, cx, rupiah, waktuLalu } from '@/lib/format'
 import { JUDUL } from '@/lib/label'
 import type { Barang, Distributor, Penawaran } from '@/lib/types'
-import { daftarDistributor, daftarPenawaran, distributorById, paketUntukPenawaran } from '@/data/dummy'
+import {
+  daftarDistributor,
+  daftarPenawaran,
+  distributorById,
+  paketUntukPenawaran,
+  promoUntukPenawaran,
+} from '@/data/dummy'
 import { useAplikasi } from '@/store/aplikasi'
 
 /**
@@ -94,6 +101,9 @@ function KartuPenawaran({
   mitra: boolean
 }) {
   const durasi = rentangDurasi(penawaran.id)
+  /* Promo dibaca di sini, bukan dikirim lewat prop: halaman induk tidak perlu
+     tahu soal promo untuk bisa menampilkan kartunya. */
+  const promo = promoUntukPenawaran(penawaran.id)
 
   const lencana = distributor.baru ? (
     <Lencana nada="netral">
@@ -149,8 +159,21 @@ function KartuPenawaran({
           {waktuLalu(penawaran.stokDiperbaruiPada)}
         </p>
 
-        {/* 5. Satu lencana, tidak pernah dua */}
-        <div className="mt-2">{lencana}</div>
+        {/* 5. Lencana konteks. Aturannya tetap satu lencana hubungan; promo
+            adalah satu-satunya yang boleh menemaninya karena ia menerangkan hal
+            lain: yang pertama soal hubungan kamu dengan distributornya, yang
+            kedua soal kabar yang sedang berjalan di barangnya.
+
+            `tanpaTautan` wajib: seluruh kartu ini sudah jadi satu target lewat
+            `after:absolute after:inset-0` pada judulnya, jadi tautan kedua di
+            atas permukaan yang sama cuma jadi rebutan sasaran ketuk.
+
+            `flex-wrap` + `min-w-0`: dua lencana berdampingan harus turun baris
+            di layar 360px, bukan melebarkan kartunya. */}
+        <div className="mt-2 flex flex-wrap items-center gap-2 min-w-0">
+          {lencana}
+          {promo && <LencanaPromo promo={promo} tanpaTautan />}
+        </div>
       </div>
     </div>
   )

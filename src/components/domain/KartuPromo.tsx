@@ -113,3 +113,62 @@ export function KartuPromo({ promo, lebar }: { promo: Promo; lebar?: boolean }) 
     </Link>
   )
 }
+
+/**
+ * Penanda promo di sepanjang jalur beli: katalog, detail penawaran, keranjang,
+ * sampai pesanan yang dilihat distributor.
+ *
+ * Sengaja berbentuk lencana, bukan harga coret. Aplikasi ini tidak pernah
+ * mengubah angka yang dibayar — pembayaran diselesaikan langsung dengan
+ * distributor, dan tidak ada layar tempat distributor menyetujui potongan itu.
+ * Yang bisa kami lakukan dengan jujur adalah memberitahu bahwa promonya ada,
+ * lalu meneruskannya ke distributor supaya dia yang memutuskan.
+ */
+export function LencanaPromo({ promo, tanpaTautan }: { promo: Promo; tanpaTautan?: boolean }) {
+  const template = TEMPLATE_PROMO[promo.jenis]
+  const isi = (
+    <>
+      <template.Ikon size={12} className="shrink-0" />
+      <span className="min-w-0 break-words">
+        {LABEL_PROMO[promo.jenis]}
+        {promo.potonganPersen != null && ` · potongan ${promo.potonganPersen}%`}
+      </span>
+    </>
+  )
+  const kelas = cx(
+    'relative inline-flex items-center gap-1 rounded-sm px-2 py-[3px] text-[0.6875rem] font-semibold max-w-full',
+    template.latar,
+    template.teks,
+  )
+
+  // Di dalam kartu yang seluruhnya sudah jadi tautan, lencana ini tidak boleh
+  // jadi tautan kedua: tautan bersarang tidak sah dan membingungkan pembaca layar.
+  if (tanpaTautan) return <span className={kelas}>{isi}</span>
+
+  // Sebagai tautan, lencananya cuma setinggi ±20px. Area sentuhnya dilebarkan
+  // lewat pseudo-element supaya jempol tetap mengenainya tanpa membuat lencana
+  // terlihat gemuk di antara chip lain yang sebaris dengannya.
+  return (
+    <Link
+      to={`/promo/${promo.id}`}
+      className={cx(
+        kelas,
+        'hover:brightness-97',
+        'after:absolute after:inset-x-0 after:-top-3 after:-bottom-3 after:content-[""]',
+      )}
+    >
+      {isi}
+    </Link>
+  )
+}
+
+/**
+ * Satu kalimat baku soal promo, dipakai di keranjang dan detail penawaran.
+ * Ditulis sekali supaya dua layar tidak menjanjikan hal yang berbeda.
+ */
+export const KALIMAT_PROMO = {
+  hematPerkiraan: 'Perkiraan hemat kalau distributor memberlakukan promonya.',
+  totalTetapPenuh:
+    'Total di aplikasi tetap harga penuh. Potongan promo dihitung saat kamu mengurus pembayaran dengan distributornya.',
+  kontrakTidakIkut: 'Barang yang terikat kontrak memakai harga kontrak, jadi tidak ikut promo.',
+} as const
