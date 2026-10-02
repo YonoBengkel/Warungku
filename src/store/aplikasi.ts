@@ -32,10 +32,10 @@ import {
   daftarPesananMasuk,
   daftarTransaksi,
   dataKasirAwal,
-  hargaBerlaku,
   paketById,
   penawaranById,
   profilAwal,
+  rincianHarga,
   statusStok,
   umkmById,
   warnaTitikUntuk,
@@ -434,18 +434,21 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
           status: 'menunggu-konfirmasi',
           baris: barisKelompok.map((b) => {
             const p = penawaranById(b.penawaranId)
+            // Lewat rincianHarga, bukan harga penawaran mentah: baris berkontrak
+            // tercatat dengan HARGA KONTRAK, beli sekali yang ikut promo dengan
+            // harga SETELAH potongan. Harga normal dan promonya ikut dicatat,
+            // supaya pesanan ini tetap bisa menjelaskan angkanya walau promonya
+            // sudah berakhir.
+            const harga = rincianHarga(b.penawaranId, b.kontrakId, s.kontrak)
             return {
               penawaranId: b.penawaranId,
               barangId: p?.barangIdTerkait ?? null,
               nama: p?.nama ?? 'Barang',
               jumlah: b.jumlah,
               satuan: p?.satuan ?? 'pcs',
-              // Lewat hargaBerlaku, bukan harga penawaran mentah: baris yang
-              // terikat kontrak harus tercatat dengan HARGA KONTRAK. Sebelum
-              // ini keranjang menampilkan harga kontrak sementara pesanannya
-              // menyimpan harga eceran, dan selisihnya ikut mengotori
-              // hargaBeliTerakhir saat barang diterima.
-              hargaSatuan: hargaBerlaku(b.penawaranId, b.kontrakId, s.kontrak),
+              hargaSatuan: harga.harga,
+              hargaNormal: harga.hargaNormal,
+              promoId: harga.promo?.id ?? null,
               isiPerSatuan: p?.kemasanJual?.isi ?? 1,
               jumlahDiterima: null,
               alasanSelisih: null,

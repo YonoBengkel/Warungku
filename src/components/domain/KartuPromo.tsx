@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom'
 import { IkonJam, IkonKotak, IkonBintang, IkonSinkron, IkonToko } from '@/icons'
 import { distributorById } from '@/data/dummy'
 import { LABEL_PROMO } from '@/lib/label'
-import { cx, hariLagi, persen, tanggalRingkas } from '@/lib/format'
-import type { JenisPromo, Promo } from '@/lib/types'
+import { cx, hariLagi, persen, rupiah, tanggalRingkas } from '@/lib/format'
+import type { JenisPromo, Promo, RincianHarga } from '@/lib/types'
 
 /**
  * Kartu promo distributor.
@@ -118,11 +118,8 @@ export function KartuPromo({ promo, lebar }: { promo: Promo; lebar?: boolean }) 
  * Penanda promo di sepanjang jalur beli: katalog, detail penawaran, keranjang,
  * sampai pesanan yang dilihat distributor.
  *
- * Sengaja berbentuk lencana, bukan harga coret. Aplikasi ini tidak pernah
- * mengubah angka yang dibayar — pembayaran diselesaikan langsung dengan
- * distributor, dan tidak ada layar tempat distributor menyetujui potongan itu.
- * Yang bisa kami lakukan dengan jujur adalah memberitahu bahwa promonya ada,
- * lalu meneruskannya ke distributor supaya dia yang memutuskan.
+ * Lencana ini menerangkan ASAL potongan; angkanya sendiri ditampilkan oleh
+ * `HargaBeli`, yang membaca `rincianHarga` — satu-satunya sumber harga baris.
  */
 export function LencanaPromo({ promo, tanpaTautan }: { promo: Promo; tanpaTautan?: boolean }) {
   const template = TEMPLATE_PROMO[promo.jenis]
@@ -163,12 +160,49 @@ export function LencanaPromo({ promo, tanpaTautan }: { promo: Promo; tanpaTautan
 }
 
 /**
- * Satu kalimat baku soal promo, dipakai di keranjang dan detail penawaran.
+ * Kalimat baku soal promo, dipakai di keranjang, detail penawaran, dan pesanan.
  * Ditulis sekali supaya dua layar tidak menjanjikan hal yang berbeda.
  */
 export const KALIMAT_PROMO = {
-  hematPerkiraan: 'Perkiraan hemat kalau distributor memberlakukan promonya.',
-  totalTetapPenuh:
-    'Total di aplikasi tetap harga penuh. Potongan promo dihitung saat kamu mengurus pembayaran dengan distributornya.',
+  sudahDipotong: 'Potongan promo sudah masuk ke harga ini.',
+  hanyaBeliSekali: 'Potongan promo berlaku untuk beli sekali.',
   kontrakTidakIkut: 'Barang yang terikat kontrak memakai harga kontrak, jadi tidak ikut promo.',
 } as const
+
+/**
+ * Harga satu baris beli, dengan harga normal dicoret kalau promo memotongnya.
+ *
+ * Harga coret di sini sah karena potongannya memang masuk ke angka yang
+ * disimpan di pesanan (`rincianHarga` sumber keduanya). Untuk baris berkontrak
+ * harga normal TIDAK dicoret: harga kontrak adalah kesepakatan, bukan diskon,
+ * dan mencoretnya membuat kontrak terbaca seperti promo yang bisa berakhir.
+ */
+export function HargaBeli({
+  rincian,
+  satuan,
+  besar,
+  className,
+}: {
+  rincian: RincianHarga
+  satuan: string
+  besar?: boolean
+  className?: string
+}) {
+  const dicoret = rincian.sumber === 'promo' && rincian.hargaNormal > rincian.harga
+  return (
+    <span className={cx('relative inline-flex flex-wrap items-baseline gap-x-1.5', className)}>
+      <span className={cx('tabular', besar ? 'text-[1.5rem] font-extrabold text-ink' : 'font-bold text-ink')}>
+        {rupiah(rincian.harga)}
+        <span className={cx('font-semibold text-ink-3', besar ? 'text-[0.875rem]' : 'text-[0.8125rem]')}>
+          /{satuan}
+        </span>
+      </span>
+      {dicoret && (
+        <span className="text-[0.8125rem] text-ink-3 tabular">
+          <span className="sr-only">Harga normal </span>
+          <s>{rupiah(rincian.hargaNormal)}</s>
+        </span>
+      )}
+    </span>
+  )
+}

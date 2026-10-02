@@ -2,12 +2,12 @@ import { Link, useParams } from 'react-router-dom'
 import { JudulBagian, Kartu, KartuTautan, Lencana, TombolTautan } from '@/components/ui/dasar'
 import { KepalaHalaman } from '@/components/ui/navigasi'
 import { KeadaanKosong } from '@/components/ui/umpanBalik'
-import { TEMPLATE_PROMO } from '@/components/domain/KartuPromo'
+import { HargaBeli, TEMPLATE_PROMO } from '@/components/domain/KartuPromo'
 import { IkonJam, IkonPanahKanan, IkonSilang, IkonToko } from '@/icons'
-import { cx, hariLagi, jumlahSatuan, persen, rupiah, tanggalPanjang } from '@/lib/format'
+import { cx, hariLagi, jumlahSatuan, persen, tanggalPanjang } from '@/lib/format'
 import { LABEL_PROMO } from '@/lib/label'
 import type { Penawaran } from '@/lib/types'
-import { distributorById, penawaranById, promoById } from '@/data/dummy'
+import { distributorById, penawaranById, promoById, rincianHarga } from '@/data/dummy'
 
 /**
  * Laman promo satu toko, dibuka dari kartu promo di Beranda.
@@ -20,11 +20,9 @@ import { distributorById, penawaranById, promoById } from '@/data/dummy'
  * harga jual produk akhir — harga jual tetap milik aplikasi kasir dan tidak
  * pernah muncul di aplikasi ini.
  *
- * Angka harganya sengaja TIDAK dipotong sendiri di layar ini. Potongan promo
- * belum berlaku di mana pun — halaman penawaran, keranjang, dan pesanan yang
- * terkirim semuanya memakai harga penuh. Kalau layar ini memotongnya duluan,
- * pemilik warung memilih promo berdasarkan angka yang tidak pernah ia bayar,
- * dan selisihnya baru ketahuan waktu barangnya datang.
+ * Harganya dibaca lewat `rincianHarga`, sumber yang sama dengan halaman
+ * penawaran, keranjang, dan pesanan. Potongan promo berlaku untuk beli sekali;
+ * barang yang terikat kontrak tetap memakai harga kontrak.
  */
 export default function PromoDetail() {
   const { id = '' } = useParams()
@@ -104,7 +102,11 @@ export default function PromoDetail() {
         <JudulBagian
           id="judul-barang-promo"
           judul="Barang yang ikut promo"
-          keterangan={`Harga di bawah adalah harga beli dari ${namaToko} sebelum potongan promo. Potongannya dihitung saat kamu mengurus pesanannya dengan ${namaToko}.`}
+          keterangan={
+            promo.potonganPersen
+              ? `Harga beli sekali dari ${namaToko}, sudah dipotong promo. Barang yang terikat kontrak tetap memakai harga kontrak.`
+              : `Harga beli sekali dari ${namaToko}.`
+          }
         />
 
         {penawaran.length === 0 ? (
@@ -137,10 +139,7 @@ export default function PromoDetail() {
                       {/* Angka yang sama persis dengan yang dipakai halaman
                           penawaran dan keranjang. Satu barang tidak boleh
                           punya dua harga di dua layar. */}
-                      <p className="text-[1rem] font-extrabold text-ink tabular">
-                        {rupiah(p.hargaSatuan)}
-                      </p>
-                      <p className="text-[0.75rem] text-ink-3">per {p.satuan}</p>
+                      <HargaBeli rincian={rincianHarga(p.id, null)} satuan={p.satuan} className="justify-end" />
                     </div>
                   </div>
                 </KartuTautan>

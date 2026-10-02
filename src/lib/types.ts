@@ -364,6 +364,13 @@ export interface BarisPesanan {
   jumlah: number
   satuan: string
   hargaSatuan: number
+  /**
+   * Harga sebelum potongan promo, dicatat saat pesanan dibuat. Kosong untuk
+   * pesanan lama dan baris tanpa promo: artinya `hargaSatuan` sudah harga penuh.
+   */
+  hargaNormal?: number
+  /** Promo yang memotong harga baris ini. Dicatat, bukan ditebak ulang dari tanggal. */
+  promoId?: string | null
   /** Isi satuan pakai per satuan jual, untuk menghitung penambahan stok. */
   isiPerSatuan: number
   jumlahDiterima: number | null
@@ -520,6 +527,20 @@ export interface Promo {
   potonganPersen: number | null
 }
 
+/**
+ * Hasil penentuan harga satu baris beli. Dihasilkan HANYA oleh `rincianHarga`
+ * di data/dummy, supaya katalog, keranjang, dan pesanan membaca angka yang sama.
+ */
+export interface RincianHarga {
+  /** Harga yang benar-benar dibayar per satuan jual. */
+  harga: number
+  /** Harga penawaran sebelum kontrak atau promo menyentuhnya. */
+  hargaNormal: number
+  /** Promo yang memotong harga. Selalu null untuk baris berkontrak. */
+  promo: Promo | null
+  sumber: 'kontrak' | 'promo' | 'normal'
+}
+
 /* ------------------------------------------------------------------ */
 /* Prediksi stok                                                       */
 /* ------------------------------------------------------------------ */
@@ -590,6 +611,9 @@ export interface BarisPesananMasuk {
   jumlah: number
   satuan: string
   hargaSatuan: number
+  /** Harga sebelum potongan promo; kosong berarti tidak ada potongan. */
+  hargaNormal?: number
+  promoId?: string | null
 }
 
 export interface JejakPesananMasuk {

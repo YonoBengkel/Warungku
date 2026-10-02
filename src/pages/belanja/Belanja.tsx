@@ -13,7 +13,7 @@ import { Kolom } from '@/components/ui/formulir'
 import { Lembar } from '@/components/ui/lembar'
 import { BarisChip, Chip, TabSegmen } from '@/components/ui/navigasi'
 import { KeadaanKosong } from '@/components/ui/umpanBalik'
-import { LencanaPromo } from '@/components/domain/KartuPromo'
+import { HargaBeli, LencanaPromo } from '@/components/domain/KartuPromo'
 import {
   IkonBintangIsi,
   IkonCari,
@@ -24,7 +24,7 @@ import {
   IkonSilang,
   IkonToko,
 } from '@/icons'
-import { angka, cx, rupiah, waktuLalu } from '@/lib/format'
+import { angka, cx, waktuLalu } from '@/lib/format'
 import { JUDUL } from '@/lib/label'
 import type { Barang, Distributor, Penawaran } from '@/lib/types'
 import {
@@ -33,6 +33,7 @@ import {
   distributorById,
   paketUntukPenawaran,
   promoUntukPenawaran,
+  rincianHarga,
 } from '@/data/dummy'
 import { useAplikasi } from '@/store/aplikasi'
 
@@ -136,10 +137,10 @@ function KartuPenawaran({
         </h3>
         <p className="text-[0.8125rem] text-ink-3 leading-snug">{labelKemasan(penawaran, barang)}</p>
 
-        {/* 2. Harga per satuan */}
-        <p className="mt-1.5 text-[1rem] font-bold text-ink">
-          {rupiah(penawaran.hargaSatuan)}
-          <span className="text-[0.8125rem] font-semibold text-ink-3">/{penawaran.satuan}</span>
+        {/* 2. Harga beli sekali. Lewat rincianHarga supaya potongan promo yang
+            masuk ke keranjang juga yang tampil di sini — bukan rumus kedua. */}
+        <p className="mt-1.5 text-[1rem]">
+          <HargaBeli rincian={rincianHarga(penawaran.id, null)} satuan={penawaran.satuan} />
         </p>
 
         {/* 3. Nama distributor + kota, selalu bisa diketuk sendiri */}

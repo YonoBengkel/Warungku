@@ -18,6 +18,7 @@ import {
 import { angka, cx, hariLagi, jumlahSatuan, rupiah } from '@/lib/format'
 import {
   distributorById,
+  hargaBerlaku,
   hariCukup,
   penawaranById,
   penawaranUntukBarang,
@@ -249,7 +250,7 @@ export default function PesanCepat() {
             const status = statusStok(b)
             const kandidat = penawaranUntukBarang(b.id)
               .slice()
-              .sort((x, y) => x.hargaSatuan - y.hargaSatuan)
+              .sort((x, y) => hargaBerlaku(x.id) - hargaBerlaku(y.id))
               .slice(0, 5)
 
             return (
@@ -323,7 +324,7 @@ export default function PesanCepat() {
                           <p className="mt-0.5 text-[0.8125rem] text-ink-3 leading-snug">{r.alasanPemasok}</p>
                         )}
                         <p className="mt-1 text-[0.8125rem] text-ink-2 tabular">
-                          {rupiah(kontrak ? kontrak.hargaSatuan : pw.hargaSatuan)} / {pw.satuan}
+                          {rupiah(hargaBerlaku(pw.id, kontrak?.id ?? null, daftarKontrak))} / {pw.satuan}
                           <span className="text-ink-3"> &middot; sisa stok {angka(pw.stokTersedia)} {pw.satuan}</span>
                         </p>
                       </div>
@@ -378,14 +379,15 @@ export default function PesanCepat() {
                           .slice(0, 2)
                           .map((c) => {
                             const d = distributorById(c.distributorId)
-                            const lebihMurah = c.hargaSatuan < pw.hargaSatuan
+                            const lebihMurah =
+                              hargaBerlaku(c.id) < hargaBerlaku(pw.id, kontrak?.id ?? null, daftarKontrak)
                             return (
                               <div key={c.id} className="rounded-md border border-line bg-surface-2 p-3">
                                 <div className="flex items-start justify-between gap-2">
                                   <div className="min-w-0">
                                     <p className="text-[0.875rem] font-semibold text-ink truncate">{d?.nama}</p>
                                     <p className="text-[0.8125rem] text-ink-2 tabular">
-                                      {rupiah(c.hargaSatuan)} / {c.satuan}
+                                      {rupiah(hargaBerlaku(c.id))} / {c.satuan}
                                       <span className="text-ink-3">
                                         {' '}
                                         &middot; sisa stok {angka(c.stokTersedia)} {c.satuan}
@@ -557,7 +559,7 @@ export default function PesanCepat() {
         const k = keadaanBaris(r)
         const kandidat = penawaranUntukBarang(b.id)
           .slice()
-          .sort((x, y) => x.hargaSatuan - y.hargaSatuan)
+          .sort((x, y) => hargaBerlaku(x.id) - hargaBerlaku(y.id))
           .slice(0, 5)
 
         return (
@@ -584,7 +586,7 @@ export default function PesanCepat() {
                       setLembarPemasok(null)
                     }}
                     judul={d?.nama ?? 'Distributor'}
-                    keterangan={`${rupiah(c.hargaSatuan)} / ${c.satuan} · sisa stok ${angka(c.stokTersedia)} ${c.satuan}`}
+                    keterangan={`${rupiah(hargaBerlaku(c.id))} / ${c.satuan} · sisa stok ${angka(c.stokTersedia)} ${c.satuan}`}
                     kanan={
                       c.id === r.penawaranId ? <Lencana nada="merek">Saran sistem</Lencana> : undefined
                     }

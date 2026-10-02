@@ -21,6 +21,7 @@ import {
 import { angka, cx, jumlahSatuan, rupiah } from '@/lib/format'
 import { JUDUL, LABEL_ARAH_PREDIKSI, NADA_ARAH_PREDIKSI } from '@/lib/label'
 import {
+  hargaBerlaku,
   kategoriBarang,
   layakDiperkirakan,
   penawaranById,
@@ -443,6 +444,7 @@ function DetailBarang({
   labelKembali: string
 }) {
   const tambahKeKeranjang = useAplikasi((s) => s.tambahKeKeranjang)
+  const kontrakStore = useAplikasi((s) => s.kontrak)
   const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
 
   /* Dihitung ulang dari barang yang hidup di penyimpanan. Kalau memakai
@@ -679,7 +681,7 @@ function DetailBarang({
                 <p className="text-[0.8125rem] text-ink-3">
                   Perkiraan biaya beli{' '}
                   <strong className="text-ink tabular">
-                    {rupiah(jumlah * penawaran.hargaSatuan)}
+                    {rupiah(jumlah * hargaBerlaku(penawaran.id, rekomendasi?.kontrakId ?? null, kontrakStore))}
                   </strong>
                 </p>
               </div>

@@ -20,8 +20,8 @@ import {
 } from '@/icons'
 import { angka, cx, jam, rupiah, tanggalPendek, tanggalRingkas, waktuLalu, waktuNanti } from '@/lib/format'
 import { BANTUAN, LABEL_PESANAN } from '@/lib/label'
-import { distributorById, promoUntukPenawaran } from '@/data/dummy'
-import type { StatusPesanan } from '@/lib/types'
+import { distributorById, promoById } from '@/data/dummy'
+import type { BarisPesanan, StatusPesanan } from '@/lib/types'
 import { useAplikasi } from '@/store/aplikasi'
 
 /**
@@ -113,26 +113,15 @@ export default function PesananDetail() {
   const langkahAktif = selesai ? 3 : indeksLangkah >= 0 ? indeksLangkah : indeksJejakTerjauh
 
   /**
-   * Promo yang dibawa satu baris pesanan, kalau ada.
-   *
-   * Dua alasan bentuknya begini:
-   *
-   * 1. Promonya diperiksa pada TANGGAL PESANAN DIBUAT, bukan hari ini. Pesanan
-   *    lama yang lahir saat promo masih berjalan tetap membawa penandanya walau
-   *    promonya sudah lewat — ini catatan, dan catatan tidak boleh berubah
-   *    belakangan.
-   * 2. Pesanan yang punya kontrakId seluruh barisnya dicatat lewat
-   *    `hargaBerlaku(penawaranId, kontrakId)`, jadi semuanya memakai harga
-   *    kontrak yang sudah terkunci di dokumen. Menempelkan lencana promo di
-   *    situ akan menjanjikan potongan pada harga yang justru tidak bisa
-   *    dipotong.
+   * Promo yang memotong satu baris, dibaca dari CATATAN pesanan (`promoId`),
+   * bukan ditebak ulang dari tanggal. Pesanan adalah catatan: angkanya tidak
+   * boleh berubah hanya karena daftar promo hari ini berbeda.
    */
-  function promoBaris(penawaranId: string) {
-    if (ps.kontrakId) return undefined
-    return promoUntukPenawaran(penawaranId, ps.dibuatPada)
+  function promoBaris(b: BarisPesanan) {
+    return b.promoId ? promoById(b.promoId) : undefined
   }
 
-  const adaBarisPromo = ps.baris.some((b) => promoBaris(b.penawaranId) != null)
+  const adaBarisPromo = ps.baris.some((b) => promoBaris(b) != null)
 
   function salinNomor() {
     const teks = ps.nomor
@@ -298,7 +287,8 @@ export default function PesananDetail() {
               </h2>
               <div className="space-y-3">
                 {pesanan.baris.map((b) => {
-                  const promo = promoBaris(b.penawaranId)
+                  const promo = promoBaris(b)
+                  const dipotong = b.hargaNormal != null && b.hargaNormal > b.hargaSatuan
                   return (
                     <div key={b.penawaranId} className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
@@ -309,9 +299,14 @@ export default function PesananDetail() {
                         {/* Lencana ditaruh di kolom kiri yang min-w-0 dan diberi
                             wadah blok sendiri: di layar 360px ia turun ke baris
                             baru, bukan mendorong angka subtotal ke luar layar. */}
-                        {promo && (
-                          <div className="mt-1">
-                            <LencanaPromo promo={promo} />
+                        {(promo || dipotong) && (
+                          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                            {promo && <LencanaPromo promo={promo} />}
+                            {dipotong && (
+                              <span className="text-[0.75rem] text-ink-3">
+                                harga normal <s className="tabular">{rupiah(b.hargaNormal!)}</s>
+                              </span>
+                            )}
                           </div>
                         )}
                         {b.jumlahDiterima != null && b.jumlahDiterima !== b.jumlah && (
@@ -346,12 +341,10 @@ export default function PesananDetail() {
                 <span className="text-[1.25rem] font-extrabold text-ink">{rupiah(total)}</span>
               </div>
 
-              {/* Kalimat baku, bukan karangan layar ini: angka pesanan tidak
-                  pernah berubah karena promo, dan dua layar tidak boleh
-                  menjanjikan hal yang berbeda soal itu. */}
+              {/* Kalimat baku, satu sumber dengan keranjang dan detail penawaran. */}
               {adaBarisPromo && (
                 <p className="mt-2 text-[0.75rem] text-ink-3 leading-relaxed max-w-[68ch]">
-                  {KALIMAT_PROMO.totalTetapPenuh}
+                  {KALIMAT_PROMO.sudahDipotong}
                 </p>
               )}
 

@@ -4,7 +4,7 @@ import { Avatar, BarisData, Kartu, Lencana, Pemisah, Tombol, TombolTautan } from
 import { KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
 import { BilahAksi, KepalaHalaman } from '@/components/ui/navigasi'
 import { TombolTerkunci, useTerkunci } from '@/components/domain'
-import { KALIMAT_PROMO, LencanaPromo } from '@/components/domain/KartuPromo'
+import { LencanaPromo } from '@/components/domain/KartuPromo'
 import { IkonKeranjang, IkonKontrak, IkonNota } from '@/icons'
 import { angka, hariLagi, rupiah } from '@/lib/format'
 import { BANTUAN } from '@/lib/label'
@@ -12,8 +12,7 @@ import {
   distributorById,
   hargaBerlaku,
   penawaranById,
-  perkiraanHematPromo,
-  promoUntukPenawaran,
+  rincianHarga,
 } from '@/data/dummy'
 import { useAplikasi } from '@/store/aplikasi'
 
@@ -74,15 +73,6 @@ export default function KeranjangRingkasan() {
   )
   const jumlahDistributor = aktif.length
 
-  /* Promo dihitung sekali untuk seluruh belanja: kartu total dirender dua kali
-     (kolom kanan desktop dan di bawah daftar pada layar sempit) dan keduanya
-     wajib berbunyi sama. */
-  const barisAktif = aktif.flatMap((s) => s.baris)
-  const adaPromo = barisAktif.some((b) => promoUntukPenawaran(b.penawaranId) != null)
-  const adaPromoPadaKontrak = barisAktif.some(
-    (b) => b.kontrakId != null && promoUntukPenawaran(b.penawaranId) != null,
-  )
-
   function kirim() {
     if (sudahKirim.current) return
     sudahKirim.current = true
@@ -131,15 +121,6 @@ export default function KeranjangRingkasan() {
         Ongkos kirim belum termasuk. Tiap distributor menentukan sendiri dan mencatatnya setelah pesanan
         dikonfirmasi.
       </p>
-      {/* Totalnya tetap harga penuh; yang ditambahkan di sini cuma keterangan.
-          Menambahkan baris "Hemat" ke rincian total akan terbaca seperti
-          potongan yang sudah masuk, padahal distributor belum menyetujuinya. */}
-      {adaPromo && (
-        <p className="mt-2 text-[0.8125rem] text-ink-3 leading-relaxed">{KALIMAT_PROMO.totalTetapPenuh}</p>
-      )}
-      {adaPromo && adaPromoPadaKontrak && (
-        <p className="mt-1 text-[0.8125rem] text-ink-3 leading-relaxed">{KALIMAT_PROMO.kontrakTidakIkut}</p>
-      )}
       <Pemisah className="my-3" />
       <p className="text-[0.875rem] font-semibold text-ink">{BANTUAN.bayarLuar}</p>
     </Kartu>
@@ -227,11 +208,10 @@ export default function KeranjangRingkasan() {
                   {sub.baris.map((b) => {
                     const pw = penawaranById(b.penawaranId)
                     if (!pw) return null
-                    const harga = hargaBerlaku(b.penawaranId, b.kontrakId, kontrakStore)
-                    /* Promo ditandai juga di layar terakhir ini supaya pemilik
-                       usaha tidak baru tahu soal promonya setelah pesanan lahir. */
-                    const promo = promoUntukPenawaran(b.penawaranId)
-                    const hematSatuan = perkiraanHematPromo(b.penawaranId, b.kontrakId)
+                    /* Sumber yang sama dengan harga yang akan tersimpan di
+                       pesanan sesaat lagi. */
+                    const rincian = rincianHarga(b.penawaranId, b.kontrakId, kontrakStore)
+                    const harga = rincian.harga
                     return (
                       <div key={b.penawaranId} className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
@@ -242,16 +222,13 @@ export default function KeranjangRingkasan() {
                           {/* Lencananya sengaja tanpa tautan: layar ini cuma
                               untuk dibaca, jadi tidak boleh ada jalan keluar
                               baru tepat sebelum tombol kirim ditekan. */}
-                          {promo && !b.kontrakId && (
-                            <span className="mt-1 flex flex-wrap">
-                              <LencanaPromo promo={promo} tanpaTautan />
+                          {rincian.promo && (
+                            <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                              <LencanaPromo promo={rincian.promo} tanpaTautan />
+                              <span className="text-[0.75rem] text-ink-3">
+                                harga normal <s className="tabular">{rupiah(rincian.hargaNormal)}</s>
+                              </span>
                             </span>
-                          )}
-                          {hematSatuan != null && (
-                            <p className="mt-1 text-[0.75rem] text-ink-3 leading-snug">
-                              Hemat <span className="tabular">{rupiah(hematSatuan * b.jumlah)}</span>{' '}
-                              &middot; {KALIMAT_PROMO.hematPerkiraan}
-                            </p>
                           )}
                         </div>
                         <div className="shrink-0 text-right">

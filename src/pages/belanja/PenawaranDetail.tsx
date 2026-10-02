@@ -15,7 +15,7 @@ import { Lembar } from '@/components/ui/lembar'
 import { BilahAksi, KepalaHalaman } from '@/components/ui/navigasi'
 import { KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
 import { ChipStok, KuotaBulanIni, TombolTerkunci, useTerkunci } from '@/components/domain'
-import { KALIMAT_PROMO, LencanaPromo } from '@/components/domain/KartuPromo'
+import { HargaBeli, KALIMAT_PROMO, LencanaPromo } from '@/components/domain/KartuPromo'
 import {
   IkonBintangIsi,
   IkonKeranjang,
@@ -32,8 +32,7 @@ import {
   hariCukup,
   paketUntukPenawaran,
   penawaranById,
-  perkiraanHematPromo,
-  promoUntukPenawaran,
+  rincianHarga,
   statusStok,
 } from '@/data/dummy'
 import { useAplikasi } from '@/store/aplikasi'
@@ -108,17 +107,11 @@ export default function PenawaranDetail() {
   )
   const subtotal = jumlah * hargaSatuanBerlaku
 
-  /* Promo ditandai, tidak pernah dipotongkan dari angka yang dibayar. Yang
-     menagih adalah distributornya, dan tidak ada satu pun layar tempat dia
-     membuat atau menghentikan promo — potongan yang kami hitung sendiri belum
-     pernah dia setujui. Kalau ia masuk ke total, yang lahir cuma selisih
-     tagihan yang aplikasi ini tidak bisa selesaikan. Jadi hematnya ditulis
-     sebagai perkiraan: tetap berguna untuk memutuskan, tanpa berjanji.
-
-     `perkiraanHematPromo` sudah mengembalikan null untuk baris berkontrak, jadi
-     kontrak yang berjalan cukup diteruskan apa adanya ke penolongnya. */
-  const promo = promoUntukPenawaran(penawaran.id)
-  const hematPromo = perkiraanHematPromo(penawaran.id, kontrakUntukPenawaranIni?.id ?? null)
+  /* Harga beli sekali, sudah termasuk potongan promo kalau ada. Angka besar di
+     kartu atas memakai ini; lembar beli memakai `hargaSatuanBerlaku`, yang
+     berbeda hanya kalau kamu punya kontrak untuk barang ini. */
+  const rincianBeliSekali = rincianHarga(penawaran.id, null, daftarKontrakAktif)
+  const promo = rincianBeliSekali.promo
 
   function bukaLembarBeli() {
     setJumlah(1)
@@ -158,41 +151,21 @@ export default function PenawaranDetail() {
 
             <Pemisah className="my-3.5" />
 
-            {/* Harga beli sekali: satu-satunya angka besar di blok ini */}
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-[1.625rem] font-extrabold text-ink leading-none tracking-tight">
-                {rupiah(penawaran.hargaSatuan)}
-              </span>
-              <span className="text-[0.875rem] font-semibold text-ink-3">/{penawaran.satuan}</span>
-            </div>
+            {/* Harga beli sekali: satu-satunya angka besar di blok ini. Kalau
+                promo memotongnya, harga normal dicoret di sebelahnya — potongan
+                itu memang masuk ke harga yang tercatat di pesanan. */}
+            <HargaBeli rincian={rincianBeliSekali} satuan={penawaran.satuan} besar />
             <p className="mt-1 text-[0.8125rem] text-ink-3">Harga beli sekali, belum termasuk ongkos kirim.</p>
 
-            {/* Promo duduk tepat di bawah harga, bukan di kartu terpisah: di
-                sinilah pemilik usaha memutuskan membeli, jadi kabarnya harus
-                sempat terbaca sebelum jarinya sampai ke tombol. Angka besar di
-                atas sengaja dibiarkan penuh dan tidak dicoret — harga coret
-                adalah janji yang aplikasi ini tidak bisa tepati.
-
-                Lencananya boleh jadi tautan di sini: kartu ini bukan `<Link>`,
-                jadi tidak ada tautan yang ia sarangi. `items-start` menahannya
-                selebar isinya supaya lencana panjang membungkus, bukan
-                melebarkan halaman di layar 360px. */}
+            {/* Asal potongan ditulis tepat di bawah harga: di sinilah pemilik
+                usaha memutuskan membeli. `items-start` menahan lencana selebar
+                isinya supaya membungkus, bukan melebarkan halaman di 360px. */}
             {promo && (
               <div className="mt-2.5 flex flex-col items-start gap-1.5">
                 <LencanaPromo promo={promo} />
                 <p className="text-[0.8125rem] text-ink-2 leading-relaxed">
-                  {hematPromo != null ? (
-                    <>
-                      <strong className="text-ink">
-                        {rupiah(hematPromo)}/{penawaran.satuan}
-                      </strong>{' '}
-                      &mdash; {KALIMAT_PROMO.hematPerkiraan}
-                    </>
-                  ) : (
-                    KALIMAT_PROMO.kontrakTidakIkut
-                  )}
+                  {kontrakUntukPenawaranIni ? KALIMAT_PROMO.kontrakTidakIkut : KALIMAT_PROMO.hanyaBeliSekali}
                 </p>
-                <p className="text-[0.75rem] text-ink-3 leading-relaxed">{KALIMAT_PROMO.totalTetapPenuh}</p>
               </div>
             )}
 
@@ -334,7 +307,7 @@ export default function PenawaranDetail() {
           <p className="text-[0.875rem] text-ink-2 leading-snug">
             Beli sekali{' '}
             <strong className="text-ink">
-              {rupiah(penawaran.hargaSatuan)}/{penawaran.satuan}
+              {rupiah(rincianBeliSekali.harga)}/{penawaran.satuan}
             </strong>
             {hargaKontrakTermurah != null ? (
               <>

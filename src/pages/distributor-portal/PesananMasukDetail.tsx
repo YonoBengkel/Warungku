@@ -18,8 +18,8 @@ import {
 } from '@/icons'
 import { angka, cx, jam, nomorHp, rupiah, tanggalPendek, waktuLalu } from '@/lib/format'
 import { LABEL_PESANAN_MASUK, NADA_PESANAN_MASUK } from '@/lib/label'
-import { promoUntukPenawaran, umkmById } from '@/data/dummy'
-import type { Promo, StatusPesananMasuk } from '@/lib/types'
+import { promoById, umkmById } from '@/data/dummy'
+import type { StatusPesananMasuk } from '@/lib/types'
 import { useAplikasi } from '@/store/aplikasi'
 import { LembarTolak, totalPesananMasuk } from './PesananMasukDaftar'
 
@@ -90,17 +90,6 @@ export default function PesananMasukDetail() {
   const total = totalPesananMasuk(p)
   const perluDijawab = p.status === 'menunggu-konfirmasi'
 
-  /* Promo yang diklaim pesanan ini, dinilai pada TANGGAL PESANAN DIBUAT, bukan
-     hari ini: yang perlu kamu putuskan adalah promo yang berlaku ketika pemesan
-     menekan kirim, bukan promo yang kebetulan berjalan saat layar ini dibuka.
-     Satu promo bisa memuat beberapa baris, jadi daftarnya disaring per id. */
-  const promoDiklaim: Promo[] = []
-  for (const b of p.baris) {
-    const promo = promoUntukPenawaran(b.penawaranId, p.dibuatPada)
-    if (!promo) continue
-    const idPromo = promo.id
-    if (!promoDiklaim.some((x) => x.id === idPromo)) promoDiklaim.push(promo)
-  }
   const labelMaju =
     p.status === 'disiapkan'
       ? 'Tandai Sedang Dikirim'
@@ -185,7 +174,11 @@ export default function PesananMasukDetail() {
               </h2>
               <div className="space-y-3">
                 {p.baris.map((b) => {
-                  const promo = promoUntukPenawaran(b.penawaranId, p.dibuatPada)
+                  /* Promo dibaca dari catatan baris, bukan ditebak dari tanggal:
+                     potongannya sudah masuk ke harga saat pemesan mengirim, dan
+                     catatan pesanan tidak boleh berubah belakangan. */
+                  const promo = b.promoId ? promoById(b.promoId) : undefined
+                  const dipotong = b.hargaNormal != null && b.hargaNormal > b.hargaSatuan
                   return (
                   <div key={b.penawaranId}>
                     <div className="flex items-start justify-between gap-3">
@@ -198,9 +191,14 @@ export default function PesananMasukDetail() {
                             dan kamu tidak boleh dilempar keluar portalmu sendiri.
                             Wadah bloknya membuat lencana turun baris di 360px,
                             bukan mendorong angka subtotal ke luar layar. */}
-                        {promo && (
-                          <div className="mt-1">
-                            <LencanaPromo promo={promo} tanpaTautan />
+                        {(promo || dipotong) && (
+                          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                            {promo && <LencanaPromo promo={promo} tanpaTautan />}
+                            {dipotong && (
+                              <span className="text-[0.75rem] text-ink-3">
+                                harga normal <s className="tabular">{rupiah(b.hargaNormal!)}</s>
+                              </span>
+                            )}
                           </div>
                         )}
                       </div>
@@ -372,27 +370,7 @@ export default function PesananMasukDetail() {
         </div>
       </div>
 
-      {/* 6a. Klaim promo, dibaca SEBELUM Terima/Tolak ditekan.
-             Hanya selama pesanan masih menunggu jawaban: setelah diterima atau
-             ditolak, keputusannya sudah lewat dan peringatan ini tinggal jadi
-             kalimat yang tidak bisa ditindaklanjuti. Lencana di daftar barang
-             tetap muncul di semua status, karena itu catatan, bukan ajakan. */}
-      {perluDijawab && promoDiklaim.length > 0 && (
-        <Peringatan
-          nada="info"
-          judul="Pemesan mengacu ke promo yang sedang berjalan"
-          className="mt-4 lg:max-w-[70ch]"
-        >
-          Barang di pesanan ini ikut{' '}
-          {promoDiklaim
-            .map((pr) => (pr.potonganPersen != null ? `${pr.judul} (potongan ${pr.potonganPersen}%)` : pr.judul))
-            .join(' dan ')}{' '}
-          saat pesanan dibuat. Angka pada pesanan ini adalah harga penuh — potongannya tidak dihitung di sini dan
-          diselesaikan saat penagihan. Pastikan dulu potongan itu memang kamu berlakukan sebelum menekan Terima.
-        </Peringatan>
-      )}
-
-      {/* 6b. Aksi menempel di bawah, isinya berubah menurut tahap */}
+      {/* 6. Aksi menempel di bawah, isinya berubah menurut tahap */}
       {(perluDijawab || labelMaju) && (
         <BilahAksi>
           {perluDijawab ? (

@@ -10,6 +10,7 @@ import {
   TombolTautan,
 } from '@/components/ui/dasar'
 import { KepalaHalaman } from '@/components/ui/navigasi'
+import { HargaBeli } from '@/components/domain/KartuPromo'
 import { BilahProgres, KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
 import {
   IkonBintangIsi,
@@ -20,9 +21,9 @@ import {
   IkonPanahKanan,
   IkonToko,
 } from '@/icons'
-import { angka, rupiah, tanggalPendek, waktuLalu } from '@/lib/format'
+import { angka, tanggalPendek, waktuLalu } from '@/lib/format'
 import type { Distributor, Penawaran } from '@/lib/types'
-import { daftarPenawaran, distributorById, paketUntukPenawaran } from '@/data/dummy'
+import { daftarPenawaran, distributorById, paketUntukPenawaran, rincianHarga } from '@/data/dummy'
 import { useAplikasi } from '@/store/aplikasi'
 
 /**
@@ -65,11 +66,11 @@ function BarisPenawaran({ penawaran }: { penawaran: Penawaran }) {
     >
       <div className="min-w-0 grow">
         <p className="text-[0.9375rem] font-semibold text-ink leading-snug">{penawaran.nama}</p>
-        <p className="mt-0.5 text-[0.8125rem] text-ink-2">
-          {rupiah(penawaran.hargaSatuan)}
-          <span className="text-ink-3">/{penawaran.satuan}</span>
+        {/* Harga beli sekali dari sumber yang sama dengan keranjang: kalau
+            promo memotongnya, angka di sini sudah angka setelah potongan. */}
+        <p className="mt-0.5 text-[0.8125rem] text-ink-2 flex flex-wrap items-baseline gap-x-1.5">
+          <HargaBeli rincian={rincianHarga(penawaran.id, null)} satuan={penawaran.satuan} className="text-[0.8125rem]" />
           <span className="text-ink-3">
-            {' '}
             &middot; stok {angka(penawaran.stokTersedia)} {penawaran.satuan}
           </span>
         </p>
