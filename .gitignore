@@ -8,6 +8,9 @@ dist/
 # Environment variables
 .env
 .env.*
+# Templatnya justru harus ikut: tanpa ini tim kloning repo
+# dan tidak punya contoh isi .env sama sekali.
+!.env.example
 
 # Editor & IDE
 .vscode/

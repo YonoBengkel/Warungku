@@ -1,0 +1,27 @@
+# Lingkungan UTAMA (api + pembangkit dataset + garis dasar).
+# Diuji pada Python 3.14.5.
+#
+#   python -m pip install -r requirements.txt
+#
+# Lingkungan layanan model TERPISAH dan memakai Python 3.12.
+# Lihat requirements-ml.txt dan ml/README.md untuk alasannya.
+
+# --- API ---------------------------------------------------------------
+fastapi>=0.115
+uvicorn[standard]>=0.30
+sqlmodel>=0.0.22
+psycopg2-binary>=2.9
+alembic>=1.13
+python-dotenv>=1.0
+
+# --- Pembangkit dataset & garis dasar ----------------------------------
+numpy>=1.26
+pandas>=2.0
+scipy>=1.11
+scikit-learn>=1.4
+statsmodels>=0.14      # Holt-Winters
+lightgbm>=4.0          # garis dasar Mesin 2 yang paling kuat
+
+# --- Uji ---------------------------------------------------------------
+pytest>=8.0
+httpx>=0.27            # dibutuhkan fastapi.testclient

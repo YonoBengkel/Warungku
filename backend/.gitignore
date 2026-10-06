@@ -1,0 +1,20 @@
+# Lingkungan Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.venv-ml/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Rahasia (juga sudah tertutup .gitignore akar)
+.env
+
+# Keluaran eksperimen & dataset besar
+keluaran/*
+*.parquet
+
+# Tapi ringkasan hasil eksperimen ikut dilacak: berkasnya kecil, dan angka
+# di laporan harus bisa ditelusuri ke berkas yang menghasilkannya — bukan ke
+# ingatan orang yang kebetulan menjalankannya.
+!keluaran/hasil_*.json

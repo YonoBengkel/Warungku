@@ -1,0 +1,43 @@
+# Lingkungan LAYANAN MODEL. Python 3.12, bukan 3.14.
+#
+#   py -3.12 -m venv .venv-ml
+#   .venv-ml/Scripts/python -m pip install -r requirements-ml.txt
+#
+# KENAPA TERPISAH. `uni2ts` (pembungkus MOIRAI) memaku `scipy==1.11.4`, dan
+# scipy versi itu tidak punya wheel untuk Python 3.14 — pip akan mencoba
+# mengkompilasinya dari sumber dan gagal di `Compiler cython cannot compile
+# programs`. Memaksa satu lingkungan untuk keduanya berarti menurunkan versi
+# seluruh proyek demi satu paket.
+#
+# Pemisahan ini juga yang membuat rancangan dua layanan (`api` dan `ml`)
+# terbukti perlu, bukan sekadar enak digambar di diagram.
+
+# --- Mesin 1: MOIRAI ---------------------------------------------------
+uni2ts>=1.2            # menarik torch, gluonts, lightning
+                       # bobot diunduh dari HuggingFace saat pertama jalan
+                       # (~100 MB untuk ukuran `small`)
+
+# --- Mesin 2: TabPFN ---------------------------------------------------
+# DIPAKU KE 2.x DENGAN SENGAJA.
+#
+# tabpfn 9.x menolak mengunduh bobotnya sebelum ada akun Prior Labs dan
+# lisensinya diterima lewat peramban — langkah yang harus dilakukan manusia,
+# bukan skrip, dan yang akan menghentikan siapa pun yang mengkloning repo ini.
+# Versi 2.2.1 mengambil bobotnya langsung dari HuggingFace tanpa akun, dan
+# itulah versi yang dipakai menghasilkan angka di laporan.
+#
+# Kalau nanti ingin pindah ke 9.x, itu keputusan yang harus disadari: ia
+# menambah satu langkah pendaftaran untuk setiap anggota tim dan setiap mesin
+# tempat layanan ini dipasang.
+tabpfn>=2.2,<3
+
+# --- Bersama -----------------------------------------------------------
+sqlmodel>=0.0.22
+psycopg2-binary>=2.9
+python-dotenv>=1.0
+statsmodels>=0.14
+scikit-learn>=1.4
+lightgbm>=4.0
+fastapi>=0.115
+uvicorn[standard]>=0.30
+httpx>=0.27
