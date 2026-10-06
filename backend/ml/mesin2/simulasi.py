@@ -43,9 +43,13 @@ MULAI_BELAJAR = 300
 
 #: Penaksir dilatih ulang tiap sekian hari, bukan tiap keputusan. Melatih ulang
 #: tiap keputusan akan lebih "benar" secara teori dan sama sekali tidak mungkin
-#: dijalankan: BART butuh puluhan detik sekali latih. Di produksi pun jadwalnya
-#: harian, jadi simulasi ini justru lebih menyerupai keadaan sebenarnya.
-LATIH_TIAP_HARI = 14
+#: dijalankan: BART butuh puluhan detik sekali latih.
+#:
+#: Angkanya SAMA untuk semua kebijakan dan semua penaksir. Kalau BART dilatih
+#: lebih jarang karena ia lambat, perbandingannya berubah menjadi "model yang
+#: sering dilatih melawan model yang jarang dilatih", dan itu bukan pertanyaan
+#: yang sedang kami ajukan.
+LATIH_TIAP_HARI = 30
 
 
 @dataclass

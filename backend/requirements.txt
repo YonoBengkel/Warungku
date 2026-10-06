@@ -1,27 +1,45 @@
-# Lingkungan UTAMA (api + pembangkit dataset + garis dasar).
+# Lingkungan UTAMA — api, dataset, ketiga mesin, uji.
 # Diuji pada Python 3.14.5.
 #
 #   python -m pip install -r requirements.txt
 #
-# Lingkungan layanan model TERPISAH dan memakai Python 3.12.
-# Lihat requirements-ml.txt dan ml/README.md untuk alasannya.
+# Sejak Mesin 1 beralih ke Chronos-2, lingkungan terpisah TIDAK lagi wajib.
+# `.venv-ml` hanya dibutuhkan kalau ingin menjalankan MOIRAI sebagai pembanding;
+# lihat requirements-ml.txt.
 
-# --- API ---------------------------------------------------------------
+# --- API & otentikasi --------------------------------------------------
 fastapi>=0.115
 uvicorn[standard]>=0.30
 sqlmodel>=0.0.22
 psycopg2-binary>=2.9
 alembic>=1.13
 python-dotenv>=1.0
+argon2-cffi>=23.1       # hash kata sandi
+pyjwt>=2.8              # token
+email-validator>=2.0    # dipakai EmailStr saat mendaftar
+apscheduler>=3.10       # penjadwal harian di dalam layanan ml
 
-# --- Pembangkit dataset & garis dasar ----------------------------------
+# --- Dataset & garis dasar ---------------------------------------------
 numpy>=1.26
 pandas>=2.0
 scipy>=1.11
 scikit-learn>=1.4
-statsmodels>=0.14      # Holt-Winters
-lightgbm>=4.0          # garis dasar Mesin 2 yang paling kuat
+statsmodels>=0.14       # Holt-Winters
+lightgbm>=4.0           # garis dasar berkapasitas tinggi
 
-# --- Uji ---------------------------------------------------------------
+# --- Mesin 1: Chronos-2 (Apache-2.0) -----------------------------------
+# Bobot diunduh dari HuggingFace saat pertama jalan, tanpa akun.
+chronos-forecasting>=2.3
+
+# --- Mesin 2: BART ------------------------------------------------------
+# Posterior sungguhan, jadi Thompson sampling tinggal mencuplik.
+# Catatan: PyMC berjalan lebih cepat kalau ada kompiler C (g++). Tanpa itu ia
+# mundur ke backend yang lebih lambat tapi tetap benar.
+pymc-bart>=0.13
+
+# --- Laporan ------------------------------------------------------------
+matplotlib>=3.8
+
+# --- Uji ----------------------------------------------------------------
 pytest>=8.0
-httpx>=0.27            # dibutuhkan fastapi.testclient
+httpx>=0.27             # dibutuhkan fastapi.testclient

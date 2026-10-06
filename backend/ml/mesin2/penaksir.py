@@ -17,11 +17,50 @@ dan itu heuristik yang menyamar sebagai Thompson sampling.
 
 from __future__ import annotations
 
+import gc
+import os
 import warnings
+
+# Dibatasi SEBELUM numpy/scipy dimuat. PyMC menjalankan pencuplik BART di
+# proses pekerja, dan tiap pekerja memuat BLAS-nya sendiri. Dengan jumlah utas
+# bawaan, satu kali jalan simulasi yang melatih ulang puluhan kali menghabiskan
+# memori virtual Windows dan berhenti dengan "The paging file is too small" —
+# pesan yang sama sekali tidak menyinggung BLAS, sehingga mudah salah dikira
+# cacat kode.
+for _nama in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS",
+              "NUMEXPR_NUM_THREADS", "VECLIB_MAXIMUM_THREADS"):
+    os.environ.setdefault(_nama, "1")
 
 import numpy as np
 
 from .bandit import Penaksir
+
+
+def _bereskan_pekerja() -> None:
+    """
+    Tutup proses pekerja yang ditinggalkan PyMC sesudah pencuplikan selesai.
+
+    Pencuplik BART menjalankan pekerjanya di proses terpisah, dan proses itu
+    **tidak selalu berakhir sendiri**. Dalam satu kali simulasi yang melatih
+    ulang belasan kali, sisa-sisa itu menumpuk sampai puluhan proses, masing-
+    masing memegang sekitar 290 MB karena memuat BLAS-nya sendiri. Di mesin
+    12 GB, itu menghabiskan seluruh memori dan berhenti dengan "The paging file
+    is too small" — pesan yang tidak menyinggung PyMC sama sekali, jadi mudah
+    sekali disangka cacat di kode kita.
+
+    Dipanggil SESUDAH pencuplikan selesai, jadi tidak ada pekerjaan yang
+    terputus di tengah jalan.
+    """
+    import multiprocessing
+
+    for anak in multiprocessing.active_children():
+        try:
+            anak.terminate()
+            anak.join(timeout=2)
+        except Exception:
+            # Pekerja yang sudah mati lebih dulu melempar galat saat ditutup.
+            # Itu justru keadaan yang kita inginkan, jadi diabaikan.
+            pass
 
 
 class BartBayesian(Penaksir):
@@ -55,10 +94,10 @@ class BartBayesian(Penaksir):
 
     def __init__(
         self,
-        pohon: int = 50,
-        cuplikan: int = 300,
-        pemanasan: int = 300,
-        maks_baris: int = 6_000,
+        pohon: int = 40,
+        cuplikan: int = 200,
+        pemanasan: int = 200,
+        maks_baris: int = 4_000,
         benih: int = 20261006,
     ) -> None:
         self.pohon = pohon
@@ -100,7 +139,12 @@ class BartBayesian(Penaksir):
                 self._jejak = pm.sample(
                     draws=self.cuplikan,
                     tune=self.pemanasan,
-                    chains=2,
+                    # Satu rantai, bukan dua. Dua rantai berguna untuk memeriksa
+                    # konvergensi, dan di percobaan tunggal itu memang kami
+                    # pakai — tapi di simulasi yang melatih ulang puluhan kali,
+                    # ia menggandakan memori untuk ketelitian yang tidak kami
+                    # baca. Pemeriksaan konvergensi dilakukan terpisah.
+                    chains=1,
                     cores=1,
                     random_seed=self.benih,
                     progressbar=False,
@@ -109,6 +153,12 @@ class BartBayesian(Penaksir):
         # Pohon-pohonnya menempel pada op BART, bukan pada jejak MCMC. Inilah
         # yang dipakai meramal data baru.
         self._op = mu.owner.op
+        # Jejak MCMC tidak dipakai lagi sesudah ini; yang dipakai meramal hanya
+        # pohon di `_op`. Dilepas supaya pelatihan ulang berikutnya tidak
+        # menumpuk salinan posterior lama di memori.
+        self._jejak = None
+        _bereskan_pekerja()
+        gc.collect()
 
     def peluang_dan_sebaran(self, X: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         """

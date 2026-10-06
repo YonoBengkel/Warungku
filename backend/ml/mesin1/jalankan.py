@@ -25,7 +25,8 @@ def main() -> None:
     p.add_argument("--batas", type=int, default=0, help="batasi jumlah deret (0 = semua)")
     p.add_argument("--asal", type=int, default=3, help="jumlah titik asal uji ulang")
     p.add_argument("--cakrawala", type=int, default=CAKRAWALA)
-    p.add_argument("--moirai", action="store_true", help="ikutkan MOIRAI (perlu uni2ts)")
+    p.add_argument("--chronos", action="store_true", help="ikutkan Chronos-2 (model utama)")
+    p.add_argument("--moirai", action="store_true", help="ikutkan MOIRAI (perlu .venv-ml)")
     p.add_argument("--ukuran", type=str, default="small", choices=("small", "base", "large"))
     p.add_argument("--kelompok", type=int, default=16, help="ukuran kelompok inferensi MOIRAI")
     p.add_argument("--json", type=str, default="", help="tulis hasil ke berkas JSON")
@@ -45,6 +46,13 @@ def main() -> None:
     print()
 
     metode: dict[str, tuple] = {n: (f, None) for n, f in METODE.items()}
+    if arg.chronos:
+        from .chronos import bungkus_chronos, ramal_banyak as chronos_banyak
+
+        metode["chronos_2"] = (
+            bungkus_chronos(),
+            lambda tugas, ck: chronos_banyak(tugas, ck, kelompok=arg.kelompok),
+        )
     if arg.moirai:
         from .moirai import bungkus_moirai, ramal_banyak
 
