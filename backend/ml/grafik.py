@@ -57,6 +57,26 @@ def _warna(nama: str) -> str:
     return "#6b7280"
 
 
+#: Pada grafik Mesin 2, nama metode berbentuk "penaksir+kebijakan". Mewarnainya
+#: dengan satu aturan membuat keempat kebijakan berpenaksir sama tampil dengan
+#: warna identik — dan justru perbandingan kebijakan itulah isi grafiknya.
+#: Jadi warna dipakai untuk KEBIJAKAN, gaya garis untuk PENAKSIR.
+GAYA_PENAKSIR = {"logistik": "-", "bart": "--", "pohon": "-."}
+
+
+def _warna_kebijakan(nama: str) -> str:
+    kebijakan = nama.split("+", 1)[1] if "+" in nama else nama
+    return _warna(kebijakan)
+
+
+def _gaya_penaksir(nama: str) -> str:
+    penaksir = nama.split("+", 1)[0] if "+" in nama else nama
+    for kunci, g in GAYA_PENAKSIR.items():
+        if kunci in penaksir:
+            return g
+    return "-"
+
+
 def _siapkan():
     GAMBAR.mkdir(parents=True, exist_ok=True)
     plt.rcParams.update(
@@ -171,7 +191,12 @@ def kurva_regret(berkas: str = "hasil_simulasi_mesin2.json") -> Path | None:
         if not h["kurva"]:
             continue
         x = np.arange(len(h["kurva"]))
-        ax.plot(x, h["kurva"], lw=1.5, color=_warna(h["nama"]), label=h["nama"])
+        ax.plot(
+            x, h["kurva"], lw=1.6,
+            color=_warna_kebijakan(h["nama"]),
+            ls=_gaya_penaksir(h["nama"]),
+            label=h["nama"],
+        )
 
     # Garis acuan: kalau setiap keputusan diambil dengan kebijakan termurah.
     n_hari = max((len(h["kurva"]) for h in data["hasil"]), default=0)
@@ -207,7 +232,7 @@ def banding_mesin2(berkas: str = "hasil_simulasi_mesin2.json") -> Path | None:
     nilai = [h["regret_rata"] for h in hasil]
 
     fig, ax = plt.subplots(figsize=(9, 4))
-    ax.barh(nama, nilai, color=[_warna(n) for n in nama])
+    ax.barh(nama, nilai, color=[_warna_kebijakan(n) for n in nama])
     ax.invert_yaxis()
     ax.axvline(acuan["termurah_regret"], color=WARNA["termurah"], ls="--", lw=1.3)
     ax.text(acuan["termurah_regret"], -0.7, " selalu termurah", color=WARNA["termurah"], fontsize=8)

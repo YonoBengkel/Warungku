@@ -61,6 +61,10 @@ class HasilSimulasi:
     sukses_rata: float
     #: Regret kumulatif per hari, untuk digambar.
     kurva: list[float] = field(default_factory=list)
+    #: Indeks kandidat yang dipilih tiap keputusan. Dipakai membandingkan dua
+    #: kebijakan: tanpa ini, "kebijakannya berbeda tapi hasilnya sama" hanya
+    #: bisa diduga, tidak bisa ditunjukkan.
+    pilihan: list[int] = field(default_factory=list)
     tanggal: list[date] = field(default_factory=list)
     detik: float = 0.0
 
@@ -115,6 +119,7 @@ def jalankan(
 
     regret = 0.0
     sukses = 0
+    pilihan: list[int] = []
     kurva: list[float] = []
     tanggal_kurva: list[date] = []
     hari_sekarang: date | None = None
@@ -159,6 +164,7 @@ def jalankan(
             skor = kebijakan.skor(p, sigma, acak)
 
         pilih = int(np.argmax(skor))
+        pilihan.append(pilih)
 
         # --- hasilnya terungkap (dari matriks counterfactual) ----------------
         hasil = kandidat["sukses"].to_numpy(dtype=int)
@@ -201,6 +207,7 @@ def jalankan(
         regret_rata=regret / n,
         sukses_rata=sukses / n,
         kurva=kurva,
+        pilihan=pilihan,
         tanggal=tanggal_kurva,
         detik=time.perf_counter() - mulai,
     )
