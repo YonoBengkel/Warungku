@@ -595,8 +595,10 @@ def laporan_lengkap() -> Path:
     )
 
     judul(d, "5.6 Endpoint yang tersedia", 2)
-    if not gambar(d, "api_swagger.jpg", "Gambar 1. Seluruh endpoint API pada Swagger UI. Gembok menandai endpoint yang memerlukan token.", 14.0):
+    if not gambar(d, "api_swagger.jpg", "Gambar 1. Seluruh endpoint layanan API. Gembok menandai endpoint yang memerlukan token.", 14.0):
         alinea(d, "(Tangkapan layar Swagger UI belum tersedia.)")
+    d.add_paragraph()
+    gambar(d, "ml_swagger.jpg", "Gambar 2. Endpoint layanan model. Ketiga mesin dijalankan dari sini; /jadwal menampilkan keadaan penjadwal.", 14.0)
     d.add_page_break()
 
     # --- 6. Mesin 1 ------------------------------------------------------
@@ -609,7 +611,7 @@ def laporan_lengkap() -> Path:
         "ke depan, dalam bentuk kuantil p10 / p50 / p90. Batas aman diambil dari p90 selama "
         "lama pengiriman — bukan dari p50, karena p50 berarti separuh waktu warung kehabisan.",
     )
-    if not gambar(d, "mesin1_kipas.png", "Gambar 2. Kipas p10-p90 melawan permintaan sebenarnya. Batas aman diambil dari tepi atas kipas, bukan dari garis tengahnya.", 15.0):
+    if not gambar(d, "mesin1_kipas.png", "Gambar 3. Kipas p10-p90 melawan permintaan sebenarnya. Batas aman diambil dari tepi atas kipas, bukan dari garis tengahnya.", 15.0):
         alinea(d, "(Gambar kipas perkiraan belum tersedia.)")
 
     judul(d, "6.2 Rancangan evaluasi", 2)
@@ -647,7 +649,7 @@ def laporan_lengkap() -> Path:
             ],
             lebar=[4.5, 2.5, 2.5, 3.5, 2.0],
         )
-        gambar(d, "mesin1_banding.png", "Gambar 3. Perbandingan metode Mesin 1 menurut WQL dan MASE.", 15.0)
+        gambar(d, "mesin1_banding.png", "Gambar 4. Perbandingan metode Mesin 1 menurut WQL dan MASE.", 15.0)
     else:
         alinea(d, "(Hasil Mesin 1 belum tersedia; jalankan python -m ml.mesin1.jalankan --chronos.)")
 
@@ -661,6 +663,69 @@ def laporan_lengkap() -> Path:
         "berarti selangnya terlalu sempit dan janji “aman 90 persen” tidak ditepati, "
         "sedangkan yang jauh di atas berarti batas amannya menyuruh warung menimbun.",
     )
+    judul(d, "6.5 Temuan: Chronos-2 seri dengan Holt-Winters, tetapi jauh lebih cepat", 2)
+    if m1:
+        urut1 = sorted(m1, key=lambda x: x["wql"])
+        cari = {x["nama"]: x for x in m1}
+        hw, ch = cari.get("holt_winters"), cari.get("chronos_2")
+        if hw and ch:
+            selisih = 100 * (ch["wql"] - hw["wql"]) / hw["wql"]
+            cepat = hw["detik"] / max(ch["detik"], 1e-9)
+            alinea(
+                d,
+                "Holt-Winters menempati peringkat pertama menurut WQL (%s) dan Chronos-2 "
+                "tepat di belakangnya (%s) — selisih %.1f persen. Untuk %d jendela penilaian, "
+                "selisih sekecil itu tidak cukup untuk menyatakan salah satunya lebih akurat."
+                % (
+                    ("%.4f" % hw["wql"]).replace(".", ","),
+                    ("%.4f" % ch["wql"]).replace(".", ","),
+                    selisih,
+                    ch["n"],
+                ),
+            )
+            alinea(
+                d,
+                "Yang membedakan keduanya bukan akurasi, melainkan biaya dan sifat. Chronos-2 "
+                "menyelesaikan seluruh penilaian dalam %d detik melawan %d detik Holt-Winters "
+                "— %.1f kali lebih cepat — dan cakupan selangnya lebih dekat ke sasaran 80 "
+                "persen (%s persen melawan %s persen). Lebih penting lagi, Chronos-2 "
+                "mencapainya TANPA DILATIH sama sekali pada data kami: ia tidak pernah "
+                "melihat satu pun barang Warungku, sedangkan Holt-Winters menaksir "
+                "parameternya sendiri untuk setiap satu dari %d deret."
+                % (
+                    round(ch["detik"]), round(hw["detik"]), cepat,
+                    ("%.1f" % (100 * ch["cakupan"])).replace(".", ","),
+                    ("%.1f" % (100 * hw["cakupan"])).replace(".", ","),
+                    ch["n"] // 3,
+                ),
+            )
+            alinea(
+                d,
+                "Sifat itulah yang tidak terukur oleh tabel di atas, karena semua deret di "
+                "sini sudah punya 400 hari riwayat. Warung yang baru mendaftar hanya punya "
+                "beberapa pekan, dan di situ metode yang harus menaksir parameter musiman "
+                "sendiri justru paling lemah.",
+            )
+            alinea(
+                d,
+                "Kecurigaan yang harus disebut. Pembangkit dataset kami menghasilkan "
+                "permintaan sebagai tingkat dasar dikali pengali musiman mingguan dikali "
+                "derau — bentuk yang hampir persis diasumsikan Holt-Winters. Keunggulan "
+                "struktural itu tidak otomatis berlaku di data nyata, dan fakta bahwa model "
+                "pondasi tetap menyamainya di kandang lawan patut dicatat.",
+            )
+            alinea(d, "Rekomendasi: pakai Chronos-2 sebagai mesin produksi.", tebal=True)
+            alinea(
+                d,
+                "Alasannya bertumpuk: akurasinya setara, waktunya seperempat, kalibrasinya "
+                "sedikit lebih baik, lisensinya Apache-2.0 sehingga boleh ikut kalau Warungku "
+                "suatu saat dijual, dan ia tidak memerlukan pelatihan per barang. Holt-Winters "
+                "tetap dipertahankan di dalam kode sebagai pembanding dan sebagai cadangan "
+                "kalau bobot model tidak bisa diunduh.",
+            )
+    else:
+        alinea(d, "(Hasil Mesin 1 belum tersedia.)")
+
     d.add_page_break()
 
     # --- 7. Mesin 2 ------------------------------------------------------
@@ -749,8 +814,8 @@ def laporan_lengkap() -> Path:
             ],
             lebar=[5.5, 2.5, 2.5, 3.0, 2.0],
         )
-        gambar(d, "mesin2_regret.png", "Gambar 4. Regret kumulatif sepanjang 400 hari. Makin landai makin baik.", 15.0)
-        gambar(d, "mesin2_banding.png", "Gambar 5. Regret rata-rata per keputusan, dengan acuan termurah dan acak sebagai garis.", 15.0)
+        gambar(d, "mesin2_regret.png", "Gambar 5. Regret kumulatif sepanjang 400 hari. Makin landai makin baik.", 15.0)
+        gambar(d, "mesin2_banding.png", "Gambar 6. Regret rata-rata per keputusan, dengan acuan termurah dan acak sebagai garis.", 15.0)
     else:
         alinea(d, "(Hasil simulasi Mesin 2 belum tersedia.)")
 
@@ -768,9 +833,10 @@ def laporan_lengkap() -> Path:
     alinea(
         d,
         "Keempat kebijakan berakhir di regret yang nyaris sama. Ini bukan tanda kebijakannya "
-        "tidak bekerja — pemeriksaan terpisah menunjukkan epsilon-greedy memilih berbeda dari "
-        "greedy pada sekitar 13 persen keputusan, dan Thompson pada sekitar 17 persen. "
-        "Pilihan mereka memang berbeda; hasil akhirnya yang setara.",
+        "tidak bekerja. Pemeriksaan terpisah atas seluruh 9.328 keputusan menunjukkan "
+        "epsilon-greedy memilih berbeda dari greedy pada 761 keputusan (8,2 persen), Thompson "
+        "pada 691 keputusan (7,4 persen), dan LinUCB pada 394 keputusan (4,2 persen). Pilihan "
+        "mereka memang berbeda; hasil akhirnya yang setara.",
     )
     alinea(
         d,
@@ -779,6 +845,13 @@ def laporan_lengkap() -> Path:
         "warung langsung memperbaiki taksiran untuk semua warung lain. Dengan ribuan "
         "keputusan, greedy sudah mengumpulkan data yang cukup dalam beberapa pekan pertama, "
         "dan sesudah itu tidak banyak lagi yang bisa dibeli dengan menjelajah.",
+    )
+    alinea(
+        d,
+        "Satu kebetulan yang perlu disebut supaya tidak disalahartikan sebagai cacat: greedy "
+        "dan epsilon-greedy berakhir di regret total yang sama persis, 1.462. Keduanya "
+        "benar-benar memilih berbeda pada 761 keputusan; biaya dan keuntungan menjelajah "
+        "kebetulan saling meniadakan tepat di angka itu.",
     )
     alinea(
         d,
@@ -829,7 +902,7 @@ def laporan_lengkap() -> Path:
             ],
             lebar=[4.0, 3.0, 3.0, 3.0],
         )
-    gambar(d, "mesin3_segmen.png", "Gambar 6. Sebaran segmen dan posisi RFM rata-ratanya.", 15.0)
+    gambar(d, "mesin3_segmen.png", "Gambar 7. Sebaran segmen dan posisi RFM rata-ratanya.", 15.0)
     alinea(
         d,
         "Jumlah kelompok dipilih dengan skor siluet, bukan ditetapkan di muka. Skor siluet "
@@ -1088,7 +1161,8 @@ def laporan_ringkas() -> Path:
         "Sebelumnya setiap endpoint menerima usaha_id dari alamat dan mempercayainya, "
         "sehingga mengganti satu angka sudah cukup untuk membaca stok warung orang lain.",
     )
-    gambar(d, "api_swagger.jpg", "Seluruh endpoint API. Gembok menandai yang memerlukan token.", 14.0)
+    gambar(d, "api_swagger.jpg", "Endpoint layanan API. Gembok menandai yang memerlukan token.", 14.0)
+    gambar(d, "ml_swagger.jpg", "Endpoint layanan model: ketiga mesin dan penjadwal.", 14.0)
 
     # --- E -----------------------------------------------------------
     judul(d, "E. Mesin 1 — perkiraan permintaan — bagian 6")
@@ -1276,6 +1350,9 @@ def laporan_ringkas() -> Path:
 
 # --------------------------------------------------------------------------
 def main() -> None:
+    # Gambar tidak disalin dari mana pun: `ml/grafik.py` menulis langsung ke
+    # `laporan/gambar/`. Satu tempat, supaya tidak ada dua salinan yang bisa
+    # berbeda isinya.
     print("Membangun laporan Word...")
     a = laporan_lengkap()
     print("  lengkap : %s" % a)
