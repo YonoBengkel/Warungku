@@ -36,30 +36,57 @@ import numpy as np
 from .bandit import Penaksir
 
 
-def _bereskan_pekerja() -> None:
+def _lupakan_singgahan_sampler(op) -> None:
     """
-    Tutup proses pekerja yang ditinggalkan PyMC sesudah pencuplikan selesai.
+    Buang singgahan sampler milik pymc-bart untuk op ini.
 
-    Pencuplik BART menjalankan pekerjanya di proses terpisah, dan proses itu
-    **tidak selalu berakhir sendiri**. Dalam satu kali simulasi yang melatih
-    ulang belasan kali, sisa-sisa itu menumpuk sampai puluhan proses, masing-
-    masing memegang sekitar 290 MB karena memuat BLAS-nya sendiri. Di mesin
-    12 GB, itu menghabiskan seluruh memori dan berhenti dengan "The paging file
-    is too small" — pesan yang tidak menyinggung PyMC sama sekali, jadi mudah
-    sekali disangka cacat di kode kita.
-
-    Dipanggil SESUDAH pencuplikan selesai, jadi tidak ada pekerjaan yang
-    terputus di tengah jalan.
+    Singgahannya berkunci `id(op)`, dan Python memakai ulang alamat objek yang
+    sudah dibebaskan. Tanpa dibuang, pelatihan berikutnya bisa mendapat sampler
+    lama milik objek lain yang kebetulan menempati alamat yang sama — ramalan
+    yang keluar akan tetap masuk akal bentuknya, tapi berasal dari pohon yang
+    salah, dan tidak ada galat yang muncul.
     """
+    try:
+        from pymc_bart.utils import _posterior_sampler_cache
+
+        _posterior_sampler_cache.pop(id(op), None)
+    except Exception:
+        pass
+
+
+def _anak_sekarang() -> set:
     import multiprocessing
 
-    for anak in multiprocessing.active_children():
+    return set(multiprocessing.active_children())
+
+
+def _tutup_anak_baru(sebelum: set) -> None:
+    """
+    Tutup proses yang muncul selama pelatihan, dan HANYA itu.
+
+    `pymc_bart.BART` membuat satu `multiprocessing.Manager()` untuk tiap
+    instance dan tidak pernah menutupnya. Satu simulasi yang melatih ulang
+    belasan kali meninggalkan belasan proses Manager, masing-masing sekitar
+    290 MB karena memuat BLAS sendiri; di mesin 12 GB seluruh memori habis dan
+    prosesnya berhenti dengan pesan tentang paging file yang tidak menyinggung
+    PyMC sama sekali.
+
+    Dua hal yang membuat pembersihan ini harus berhati-hati:
+
+    1. `op.all_trees` adalah **proksi** ke Manager itu. Menutup Manager-nya
+       sebelum pohonnya disalin keluar membuat ramalan berikutnya berhenti
+       dengan `BrokenPipeError`. Pemanggil WAJIB menyalin pohonnya lebih dulu.
+    2. Menutup semua `active_children()` tanpa pandang bulu juga membunuh
+       proses pembantu milik multiprocessing sendiri, sehingga pelatihan
+       berikutnya gagal. Karena itu yang ditutup hanya selisihnya.
+    """
+    for anak in _anak_sekarang() - sebelum:
         try:
             anak.terminate()
-            anak.join(timeout=2)
+            anak.join(timeout=3)
         except Exception:
-            # Pekerja yang sudah mati lebih dulu melempar galat saat ditutup.
-            # Itu justru keadaan yang kita inginkan, jadi diabaikan.
+            # Proses yang sudah mati lebih dulu melempar galat saat ditutup.
+            # Itu justru keadaan yang diinginkan.
             pass
 
 
@@ -128,6 +155,7 @@ class BartBayesian(Penaksir):
             pilih = acak.choice(len(X), self.maks_baris, replace=False)
             X, y = X[pilih], y[pilih]
 
+        sebelum = _anak_sekarang()
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             with pm.Model():
@@ -153,11 +181,16 @@ class BartBayesian(Penaksir):
         # Pohon-pohonnya menempel pada op BART, bukan pada jejak MCMC. Inilah
         # yang dipakai meramal data baru.
         self._op = mu.owner.op
-        # Jejak MCMC tidak dipakai lagi sesudah ini; yang dipakai meramal hanya
-        # pohon di `_op`. Dilepas supaya pelatihan ulang berikutnya tidak
-        # menumpuk salinan posterior lama di memori.
+        # Pohonnya DISALIN keluar dari proksi Manager menjadi daftar Python
+        # biasa. Sesudah ini tidak ada lagi yang bergantung pada proses
+        # Manager, sehingga ia boleh ditutup — dan harus, karena ia tidak
+        # pernah menutup dirinya sendiri.
+        self._op.all_trees = list(self._op.all_trees)
+        _lupakan_singgahan_sampler(self._op)
+
+        # Jejak MCMC tidak dipakai lagi; yang dipakai meramal hanya pohonnya.
         self._jejak = None
-        _bereskan_pekerja()
+        _tutup_anak_baru(sebelum)
         gc.collect()
 
     def peluang_dan_sebaran(self, X: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
