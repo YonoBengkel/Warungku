@@ -13,13 +13,14 @@ baru di sini berarti menambah penerjemah di sisi frontend tanpa alasan.
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, Path, Query
+from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from sqlalchemy import text
 from sqlmodel import Session
 
 from warungku.basis_data import mesin
 from warungku.model import Distributor
 
+from .otentikasi import distributor_saya
 from .skema import PesananMasuk, PelangganTersegmen, RingkasanSegmen
 
 rute = APIRouter(prefix="/distributor/{distributor_id}", tags=["distributor"])
@@ -34,7 +35,7 @@ def _distributor_atau_404(sesi: Session, distributor_id: int) -> Distributor:
 
 @rute.get("/pesanan", response_model=list[PesananMasuk])
 def pesanan_masuk(
-    distributor_id: int = Path(ge=1),
+    distributor_id: int = Depends(distributor_saya),
     status: str | None = Query(default=None, description="saring menurut status"),
     batas: int = Query(default=100, ge=1, le=500),
 ):
@@ -67,7 +68,7 @@ def pesanan_masuk(
 
 
 @rute.get("/segmen", response_model=list[RingkasanSegmen])
-def ringkasan_segmen(distributor_id: int = Path(ge=1)):
+def ringkasan_segmen(distributor_id: int = Depends(distributor_saya)):
     """
     Ringkasan tiap segmen pelanggan. **Tidak** memanggil layanan model.
 
@@ -98,7 +99,7 @@ def ringkasan_segmen(distributor_id: int = Path(ge=1)):
 
 
 @rute.get("/segmen/{segmen}", response_model=list[PelangganTersegmen])
-def anggota_segmen(distributor_id: int = Path(ge=1), segmen: str = Path(min_length=2)):
+def anggota_segmen(segmen: str = Path(min_length=2), distributor_id: int = Depends(distributor_saya)):
     """
     Anggota satu segmen beserta angka RFM-nya.
 

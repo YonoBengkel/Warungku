@@ -100,6 +100,11 @@ HARI_PERSEDIAAN = 21
 #: membuat data punya sinyal untuk distributor yang jarang dipilih.
 PELUANG_TERMURAH = 0.70
 
+#: Kata sandi untuk SELURUH akun contoh. Ini data simulasi, bukan data orang —
+#: tidak ada rahasia yang bocor, dan tim butuh satu kata sandi yang bisa dipakai
+#: masuk ke akun mana pun saat mencoba. Jangan pernah dipakai di luar simulasi.
+KATA_SANDI_CONTOH = "warungku123"
+
 AKHIR = date(2026, 10, 5)
 MULAI = AKHIR - timedelta(days=HARI_SIMULASI - 1)
 BATAS_UJI = AKHIR - timedelta(days=HARI_UJI - 1)
@@ -162,6 +167,9 @@ class Pembangkit:
         self.acak = acak
         self.baris: dict[str, list[dict]] = {}
         self.penghitung: dict[str, int] = {}
+        # Argon2 sengaja lambat (itu gunanya). Menghitungnya 78 kali memakan
+        # belasan detik untuk hasil yang identik, jadi dihitung sekali.
+        self._sandi_hash: str | None = None
         #: Pesanan yang sudah sampai, lengkap dengan hasilnya. Sumber D2.
         self.kiriman_selesai: list[dict] = []
         #: (barang_id, tanggal) -> catatan permintaan harian. Sumber D1.
@@ -175,6 +183,14 @@ class Pembangkit:
         data["id"] = n
         self.baris.setdefault(tabel, []).append(data)
         return n
+
+    @property
+    def sandi_hash(self) -> str:
+        if self._sandi_hash is None:
+            from argon2 import PasswordHasher
+
+            self._sandi_hash = PasswordHasher().hash(KATA_SANDI_CONTOH)
+        return self._sandi_hash
 
     # -- langkah 1: katalog ------------------------------------------------
     def buat_katalog(self) -> dict[str, int]:
@@ -201,7 +217,7 @@ class Pembangkit:
                 {
                     "nomor_hp": f"0812200{i:04d}",
                     "email": f"distributor{i + 1}@warungku.test",
-                    "kata_sandi_hash": "argon2:contoh-tidak-dipakai",
+                    "kata_sandi_hash": self.sandi_hash,
                     "nama": d.nama,
                     "aktif": True,
                 },
@@ -283,7 +299,7 @@ class Pembangkit:
                 {
                     "nomor_hp": f"0813100{i:04d}",
                     "email": f"umkm{i + 1}@warungku.test",
-                    "kata_sandi_hash": "argon2:contoh-tidak-dipakai",
+                    "kata_sandi_hash": self.sandi_hash,
                     "nama": f"Pemilik {u.nama}",
                     "aktif": True,
                 },
@@ -1205,6 +1221,7 @@ def main() -> None:
     print("Benih            : %d" % arg.benih)
     print("UMKM / distributor: %d / %d" % (len(UMKM), len(DISTRIBUTOR)))
     print("Hari libur (SKB) : %d tanggal" % len(SEMUA_LIBUR))
+    print("Kata sandi contoh: %s  (semua akun)" % KATA_SANDI_CONTOH)
     print()
 
     # Kalender diisi lebih dulu: ia acuan, bukan hasil simulasi, dan kolom

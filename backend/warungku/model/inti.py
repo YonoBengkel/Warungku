@@ -121,8 +121,15 @@ class Keanggotaan(SQLModel, table=True):
     """
 
     __tablename__ = "keanggotaan"
+    # Satu akun satu usaha, sesuai keputusan pemilik proyek. Perhatikan arahnya:
+    # yang dibatasi adalah PENGGUNA, bukan usaha — satu warung tetap boleh punya
+    # pemilik dan beberapa pegawai, karena layar `/akun/pengguna` menjanjikan itu.
+    #
+    # Tabelnya dipertahankan alih-alih memindahkan `usaha_id` ke `pengguna`:
+    # kalau nanti berubah pikiran, melonggarkan batasan jauh lebih murah
+    # daripada memecah kolom yang sudah dipakai di mana-mana.
     __table_args__ = (
-        UniqueConstraint("pengguna_id", "usaha_id", name="uq_keanggotaan"),
+        UniqueConstraint("pengguna_id", name="uq_keanggotaan_pengguna"),
     )
 
     id: int | None = Field(default=None, primary_key=True)

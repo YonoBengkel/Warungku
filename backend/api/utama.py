@@ -13,7 +13,7 @@ from sqlalchemy import text
 from warungku.basis_data import mesin
 from warungku.konfigurasi import alamat_layanan_model
 
-from . import distributor, gudang
+from . import distributor, gudang, otentikasi
 
 app = FastAPI(
     title="Warungku API",
@@ -36,6 +36,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(otentikasi.rute)
 app.include_router(gudang.rute)
 app.include_router(distributor.rute)
 

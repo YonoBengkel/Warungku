@@ -18,6 +18,7 @@ pemilik warung melihat halaman kosong, bukan angka lama yang masih berguna.
 from __future__ import annotations
 
 import uuid
+from contextlib import asynccontextmanager
 from datetime import date, datetime, timedelta, timezone
 
 from fastapi import BackgroundTasks, FastAPI
@@ -27,16 +28,36 @@ from sqlalchemy import text
 from warungku.basis_data import mesin
 from warungku.enum import KematanganPerkiraan, TingkatLayanan
 
+from . import penjadwal
 from .data import CAKRAWALA, MIN_RIWAYAT, muat_deret
+
+@asynccontextmanager
+async def daur_hidup(_app: FastAPI):
+    """Nyalakan penjadwal saat layanan mulai, matikan saat berhenti."""
+    penjadwal.mulai()
+    yield
+    penjadwal.berhenti()
+
 
 app = FastAPI(
     title="Warungku — layanan model",
     version="0.1.0",
-    description="Menjalankan Mesin 1 dan Mesin 2, menulis hasilnya ke tabel.",
+    description="Menjalankan Mesin 1, 2, dan 3; menulis hasilnya ke tabel.",
+    lifespan=daur_hidup,
 )
 
 #: Diperbarui saat satu kali jalan selesai, dibaca endpoint /sehat.
 _terakhir: dict[str, object] = {}
+
+
+@app.get("/jadwal", tags=["sistem"])
+def jadwal() -> dict:
+    """
+    Apa yang dijadwalkan, kapan berikutnya, hasil terakhirnya.
+
+    Ada supaya "kenapa angkanya basi?" punya jawaban tanpa membuka log.
+    """
+    return penjadwal.keadaan()
 
 
 class PermintaanJalan(BaseModel):
@@ -44,7 +65,7 @@ class PermintaanJalan(BaseModel):
     #: "moirai" atau nama metode garis dasar. Garis dasar dipertahankan sebagai
     #: pilihan yang bisa dipakai sungguhan, bukan cuma pembanding: ia ratusan
     #: kali lebih cepat, dan selisih mutunya kecil.
-    metode: str = "holt_winters"
+    metode: str = "chronos"
     cakrawala: int = CAKRAWALA
 
 
@@ -90,7 +111,13 @@ def _jalankan_mesin1(usaha_id: int | None, metode: str, cakrawala: int) -> Hasil
     if usaha_id is not None:
         deret = [d for d in deret if d.usaha_id == usaha_id]
 
-    if metode.startswith("moirai"):
+    if metode.startswith("chronos"):
+        from .mesin1.chronos import ramal_banyak
+
+        tugas = [(d, len(d)) for d in deret]
+        ramalan = ramal_banyak(tugas, cakrawala) if tugas else []
+        nama_model, versi = "amazon/chronos-2", "chronos-forecasting"
+    elif metode.startswith("moirai"):
         from .mesin1.moirai import ramal_banyak
 
         ukuran = metode.split("_", 1)[1] if "_" in metode else "small"
@@ -164,7 +191,10 @@ def mesin1_jadwalkan(p: PermintaanJalan, tugas: BackgroundTasks) -> dict:
 
 
 class PermintaanSaran(BaseModel):
-    usaha_id: int
+    #: None berarti seluruh usaha.
+    usaha_id: int | None = None
+    #: "bart", "logistik", atau "pohon".
+    penaksir: str = "logistik"
     #: Pencuplikan Thompson untuk eksplorasi. Di produksi ini yang diinginkan —
     #: tanpanya distributor baru tidak pernah terpilih, jadi tidak pernah punya
     #: riwayat, jadi tidak pernah terpilih. Tapi keluarannya jadi TIDAK
@@ -182,9 +212,14 @@ def mesin2(p: PermintaanSaran) -> dict:
     masih penuh — dan tiap baris itu akan kedaluwarsa dalam 12 jam tanpa pernah
     dibaca siapa pun.
     """
-    from .mesin2.saran import jalankan
+    from .mesin2.saran import jalankan, jalankan_semua
 
-    hasil = jalankan(p.usaha_id, thompson=p.thompson)
+    # Tanpa usaha_id: seluruh usaha, dengan SATU kali pelatihan. Memanggil
+    # jalankan() tujuh puluh kali akan melatih model yang sama tujuh puluh kali.
+    if p.usaha_id is None:
+        hasil = jalankan_semua(penaksir=p.penaksir, thompson=p.thompson)
+    else:
+        hasil = jalankan(p.usaha_id, thompson=p.thompson, nama_model=p.penaksir)
     _terakhir["mesin2"] = hasil
     return hasil
 

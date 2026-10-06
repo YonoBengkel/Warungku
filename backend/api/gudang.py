@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from fastapi import APIRouter, HTTPException, Path
+from fastapi import APIRouter, Depends, HTTPException, Path
 from sqlalchemy import text
 from sqlmodel import Session, select
 
@@ -25,6 +25,7 @@ from warungku.basis_data import mesin
 from warungku.enum import JenisPergerakan
 from warungku.model import Barang, PemetaanMenu, PemetaanMenuBahan, Transaksi, TransaksiBaris, Usaha
 
+from .otentikasi import usaha_saya
 from .skema import BarangRingkas, HasilStruk, PerkiraanRingkas, SaranDistributor, StrukMasuk
 
 rute = APIRouter(prefix="/usaha/{usaha_id}", tags=["gudang"])
@@ -47,7 +48,7 @@ def _status(stok: Decimal, batas: Decimal) -> str:
 
 
 @rute.get("/barang", response_model=list[BarangRingkas])
-def daftar_barang(usaha_id: int = Path(ge=1)) -> list[BarangRingkas]:
+def daftar_barang(usaha_id: int = Depends(usaha_saya)) -> list[BarangRingkas]:
     with Session(mesin()) as sesi:
         _usaha_atau_404(sesi, usaha_id)
         barang = sesi.exec(
@@ -68,7 +69,7 @@ def daftar_barang(usaha_id: int = Path(ge=1)) -> list[BarangRingkas]:
 
 
 @rute.get("/barang/{barang_id}/perkiraan", response_model=list[PerkiraanRingkas])
-def perkiraan_barang(usaha_id: int = Path(ge=1), barang_id: int = Path(ge=1)):
+def perkiraan_barang(barang_id: int = Path(ge=1), usaha_id: int = Depends(usaha_saya)):
     """
     Baca perkiraan terbaru dari tabel. **Tidak** memanggil layanan model.
 
@@ -98,7 +99,7 @@ def perkiraan_barang(usaha_id: int = Path(ge=1), barang_id: int = Path(ge=1)):
 
 
 @rute.get("/barang/{barang_id}/saran", response_model=list[SaranDistributor])
-def saran_distributor(usaha_id: int = Path(ge=1), barang_id: int = Path(ge=1)):
+def saran_distributor(barang_id: int = Path(ge=1), usaha_id: int = Depends(usaha_saya)):
     """
     Baca saran distributor dari tabel. **Tidak** memanggil layanan model.
 
@@ -128,7 +129,7 @@ def saran_distributor(usaha_id: int = Path(ge=1), barang_id: int = Path(ge=1)):
 
 
 @rute.post("/transaksi", response_model=HasilStruk)
-def terima_struk(struk: StrukMasuk, usaha_id: int = Path(ge=1)) -> HasilStruk:
+def terima_struk(struk: StrukMasuk, usaha_id: int = Depends(usaha_saya)) -> HasilStruk:
     """
     Terima satu nota dari kasir. Aman dikirim ulang berapa kali pun.
 
