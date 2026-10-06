@@ -101,3 +101,60 @@ class SaranDistributor(BaseModel):
     dijalankan_pada: datetime
     kedaluwarsa_pada: datetime
     kedaluwarsa: bool
+
+
+class PesananMasuk(BaseModel):
+    """Satu pesanan dilihat dari sisi distributor."""
+
+    id: int
+    nomor: str
+    usaha_id: int
+    nama_usaha: str
+    kota: str
+    dibuat_pada: datetime
+    status: str
+    status_bayar: str
+    ongkos_kirim: int | None
+    perkiraan_tiba: datetime | None
+    dari_saran: bool
+    sudah_diulas: bool
+    jumlah_baris: int
+    nilai: int
+
+
+class RingkasanSegmen(BaseModel):
+    """Satu segmen pelanggan beserta rata-rata RFM anggotanya."""
+
+    segmen: str
+    nama_segmen: str
+    ciri: str | None
+    saran: str | None
+    jumlah: int
+    rata_recency: int
+    rata_frequency: int
+    rata_monetary: int
+    dijalankan_pada: datetime
+    tanggal_acuan: date
+
+
+class PelangganTersegmen(BaseModel):
+    """
+    Satu pelanggan di dalam sebuah segmen.
+
+    `jarak_ke_pusat` ikut dikirim: anggota berjarak jauh adalah pelanggan yang
+    "dipaksa masuk" ke segmen terdekat. Menampilkannya mencegah layar terdengar
+    lebih yakin daripada yang pantas.
+    """
+
+    usaha_id: int
+    nama_usaha: str
+    kota: str
+    segmen: str
+    nama_segmen: str
+    recency: int
+    frequency: int
+    monetary: int
+    lama_berlangganan: int
+    jenis_usaha: str
+    kategori_utama: str
+    jarak_ke_pusat: float

@@ -13,7 +13,7 @@ from sqlalchemy import text
 from warungku.basis_data import mesin
 from warungku.konfigurasi import alamat_layanan_model
 
-from . import gudang
+from . import distributor, gudang
 
 app = FastAPI(
     title="Warungku API",
@@ -37,6 +37,7 @@ app.add_middleware(
 )
 
 app.include_router(gudang.rute)
+app.include_router(distributor.rute)
 
 
 @app.get("/sehat", tags=["sistem"])

@@ -8,12 +8,14 @@ Pembagian lapis ini bukan kosmetik — ia menentukan siapa boleh menulis ke mana
 2. **Identitas** (`pengguna`, `usaha`, `keanggotaan`, `distributor`)
 3. **Gudang** (`barang`, `pergerakan`, `transaksi`, pemetaan menu) — ditulis UMKM
 4. **Niaga** (`penawaran`, `kontrak`, `pesanan`, `promo`, `ulasan`) — lintas pihak
-5. **Analitik** (`permintaan_harian`, `prediksi`, `fitur_pesanan`, `rekomendasi_skor`)
-   — HANYA ditulis layanan model, hanya dibaca API
+5. **Analitik** (`permintaan_harian`, `prediksi`, `fitur_pesanan`,
+   `rekomendasi_skor`, `segmen_pelanggan`) — HANYA ditulis layanan model,
+   hanya dibaca API
 """
 
 from .analitik import FiturPesanan, PermintaanHarian, Prediksi, RekomendasiSkor
 from .referensi import HariLiburNasional
+from .segmen import SegmenPelanggan
 from .gudang import (
     Barang,
     DataKasir,
@@ -76,6 +78,7 @@ __all__ = [
     "Prediksi",
     "FiturPesanan",
     "RekomendasiSkor",
+    "SegmenPelanggan",
     # Lapis 0
     "HariLiburNasional",
 ]
