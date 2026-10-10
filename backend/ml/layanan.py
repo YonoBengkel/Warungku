@@ -62,10 +62,12 @@ def jadwal() -> dict:
 
 class PermintaanJalan(BaseModel):
     usaha_id: int | None = None
-    #: "moirai" atau nama metode garis dasar. Garis dasar dipertahankan sebagai
-    #: pilihan yang bisa dipakai sungguhan, bukan cuma pembanding: ia ratusan
-    #: kali lebih cepat, dan selisih mutunya kecil.
-    metode: str = "chronos"
+    #: "holt_winters" (ETS, bawaan sejak 10 Okt 2026), "chronos", "moirai", atau
+    #: nama metode garis dasar lain. ETS dipilih karena MAPE pekanannya setara
+    #: Chronos-2 (15,4% melawan 15,6% pada barang lolos saringan) dan
+    #: parameternya bisa dibaca per barang — permintaan dosen. Chronos-2 tetap
+    #: tersedia sebagai pembanding.
+    metode: str = "holt_winters"
     cakrawala: int = CAKRAWALA
 
 
@@ -129,7 +131,10 @@ def _jalankan_mesin1(usaha_id: int | None, metode: str, cakrawala: int) -> Hasil
 
         f = METODE[metode]
         ramalan = [f(d, len(d), cakrawala) for d in deret]
-        nama_model, versi = metode, "garis-dasar-0.1"
+        if metode == "holt_winters":
+            nama_model, versi = "ets-holt-winters", "statsmodels"
+        else:
+            nama_model, versi = metode, "garis-dasar-0.1"
 
     baris = []
     for d, r in zip(deret, ramalan):
