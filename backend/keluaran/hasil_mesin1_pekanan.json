@@ -1,0 +1,66 @@
+{
+ "rancangan": {
+  "titik_asal": 8,
+  "cakrawala_hari": 7,
+  "deret": 890,
+  "pasangan_lolos": 5073,
+  "abc": "aktif untuk 890 dari 890 barang"
+ },
+ "hasil": [
+  {
+   "nama": "naif_musiman",
+   "mape_pekanan": 28.05432651071132,
+   "wape_pekanan": 19.632101835573078,
+   "mape_harian": 56.406713939038006,
+   "n_pekan": 6132,
+   "mape_pekanan_lolos": 19.383493874469636,
+   "n_pekan_lolos": 4688,
+   "kategori": "layak",
+   "detik": 4.283947099989746
+  },
+  {
+   "nama": "aturan_sederhana",
+   "mape_pekanan": 22.18973811089661,
+   "wape_pekanan": 15.524270419020194,
+   "mape_harian": 46.90665648829855,
+   "n_pekan": 6132,
+   "mape_pekanan_lolos": 16.164632214551933,
+   "n_pekan_lolos": 4688,
+   "kategori": "layak",
+   "detik": 0.4185205999528989
+  },
+  {
+   "nama": "kuantil_hari_pekan",
+   "mape_pekanan": 23.03253097901575,
+   "wape_pekanan": 15.921494382549858,
+   "mape_harian": 43.87997127437193,
+   "n_pekan": 6132,
+   "mape_pekanan_lolos": 14.938034897585581,
+   "n_pekan_lolos": 4688,
+   "kategori": "layak",
+   "detik": 10.354984799982049
+  },
+  {
+   "nama": "ets_holt_winters",
+   "mape_pekanan": 24.491937726169315,
+   "wape_pekanan": 16.574730035061762,
+   "mape_harian": 42.2159885229006,
+   "n_pekan": 6132,
+   "mape_pekanan_lolos": 15.373617660867577,
+   "n_pekan_lolos": 4688,
+   "kategori": "layak",
+   "detik": 2570.9374164000037
+  },
+  {
+   "nama": "chronos_2",
+   "mape_pekanan": 24.363455202961205,
+   "wape_pekanan": 16.664953845191494,
+   "mape_harian": 43.202997069134845,
+   "n_pekan": 6132,
+   "mape_pekanan_lolos": 15.597267002237555,
+   "n_pekan_lolos": 4688,
+   "kategori": "layak",
+   "detik": 147.70917990000453
+  }
+ ]
+}
