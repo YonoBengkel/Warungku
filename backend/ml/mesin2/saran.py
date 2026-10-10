@@ -30,6 +30,8 @@ from warungku.basis_data import mesin
 
 from ..data import FITUR, muat_fitur_pesanan
 from .bandit import ThompsonSampling
+from .beta import BetaBernoulli, kunci_dari
+from .fuzzy import ATURAN_BAWAAN
 from .keadaan import KeadaanDistributor, muat_keadaan, muat_ulasan
 
 #: Berapa lama skor dianggap masih berlaku. Skor Mesin 2 bergantung pada harga
@@ -133,19 +135,29 @@ def _alasan(baris: dict) -> str:
     return inti.capitalize() + "." + peringatan
 
 
-def latih_model(penaksir: str = "bart"):
+def latih_model(penaksir: str = "beta"):
     """
     Latih penaksir pada seluruh riwayat sampai hari ini.
 
     Berbeda dari evaluasi, yang sengaja menahan 35 hari terakhir: di produksi
     tidak ada alasan membuang data terbaru, dan justru data terbarulah yang
     paling menggambarkan keadaan distributor sekarang.
+
+    Bawaannya Beta-Bernoulli: "pelatihannya" adalah menghitung sukses dan gagal
+    tiap distributor per kondisi dari seluruh pesanan yang sudah selesai.
     """
-    from .bandit import BanditLengkap, ThompsonSampling
+    df = muat_fitur_pesanan()
+    if penaksir == "beta":
+        X = df[list(FITUR)].to_numpy(dtype=float)
+        model = BetaBernoulli()
+        kunci = [kunci_dari(int(d), x, pisah_konteks=model.pisah_konteks) for d, x in zip(df["distributor_id"], X)]
+        model.latih(X, df["sukses"].to_numpy(dtype=int), kunci=kunci)
+        return model
+
+    from .bandit import BanditLengkap
     from .penaksir import BartBayesian, LogistikBayesian, PohonBootstrap
 
     kelas = {"bart": BartBayesian, "logistik": LogistikBayesian, "pohon": PohonBootstrap}[penaksir]
-    df = muat_fitur_pesanan()
     model = BanditLengkap(kelas(), ThompsonSampling())
     model.latih(df[list(FITUR)].to_numpy(dtype=float), df["sukses"].to_numpy(dtype=int))
     return model
@@ -156,7 +168,7 @@ def jalankan(
     *,
     thompson: bool = True,
     model=None,
-    nama_model: str = "bart",
+    nama_model: str = "beta",
 ) -> dict:
     """
     Nilai seluruh kandidat untuk satu usaha, tulis `SIMPAN_TERATAS` teratas.
@@ -210,28 +222,47 @@ def jalankan(
             for r in g.itertuples()
         ]
         X = np.array([[f[k] for k in FITUR] for f in fitur], dtype=float)
-        # `peluang_murni` dan bukan `peluang`: yang ditampilkan ke pemilik
-        # warung harus taksiran, bukan cuplikan Thompson — kalau cuplikan,
-        # angkanya berubah tiap kali halaman disegarkan.
-        p = np.clip(np.asarray(model.peluang_murni(X), dtype=float), 0.0, 1.0)
+        rasio = g["rasio_harga"].to_numpy(dtype=float)
+        segmen: list[str | None] = [None] * len(g)
+        catatan_beta: list[str] = [""] * len(g)
 
-        if thompson:
-            # Ketidakpastian datang dari posterior penaksir, bukan dari jumlah
-            # pesanan. Versi sebelumnya mencuplik Beta di sekitar peluang titik
-            # dengan "bukti" dikarang dari banyaknya pesanan — itu heuristik
-            # yang menyamar sebagai Thompson sampling, dan ia tidak tahu
-            # apa-apa tentang seberapa yakin modelnya sendiri.
-            _p, sigma = model.penaksir.peluang_dan_sebaran(X)
-            skor = ThompsonSampling().skor(p, sigma, acak_global)
+        if isinstance(model, BetaBernoulli):
+            # Jalur utama: keandalan Beta per distributor dan kondisi, satu
+            # cuplikan Thompson untuk eksplorasi, lalu fuzzy menimbang harga.
+            kunci = [kunci_dari(int(d), x, pisah_konteks=model.pisah_konteks) for d, x in zip(g["distributor_id"], X)]
+            p, _sigma = model.peluang_dan_sebaran(X, kunci=kunci)
+            keandalan = model.cuplik(kunci, acak_global) if thompson else p
+            skor = ATURAN_BAWAAN.skor(keandalan, rasio)
+            # Segmen dihitung dari keandalan TAKSIRAN, bukan cuplikan, supaya
+            # label yang dibaca pemilik warung tidak berganti tiap penyegaran.
+            # Urutan tetap memakai cuplikan; itulah yang memberi eksplorasi.
+            segmen = ATURAN_BAWAAN.segmen(ATURAN_BAWAAN.skor(p, rasio))
+            for j, k in enumerate(kunci):
+                a, b = model.parameter(k)
+                total = int(round(a + b - 2))
+                # "Serupa" hanya benar kalau hitungannya dipisah per kondisi.
+                cakupan = "pesanan serupa" if model.pisah_konteks else "pesanan"
+                catatan_beta[j] = (
+                    " %d dari %d %s sebelumnya ke distributor ini berjalan mulus."
+                    % (int(round(a - 1)), total, cakupan)
+                    if total > 0 else " Belum ada %s sebelumnya ke distributor ini." % cakupan
+                )
+            urut = np.argsort(-skor)[:SIMPAN_TERATAS]
+            nama_tulis = "beta+thompson+fuzzy" if thompson else "beta+fuzzy"
         else:
-            skor = p.copy()
+            # Penaksir lama (BART, logistik): peluang sukses x utilitas harga.
+            # `peluang_murni` dan bukan `peluang`: yang ditampilkan ke pemilik
+            # warung harus taksiran, bukan cuplikan Thompson.
+            p = np.clip(np.asarray(model.peluang_murni(X), dtype=float), 0.0, 1.0)
+            if thompson:
+                _p, sigma = model.penaksir.peluang_dan_sebaran(X)
+                skor = ThompsonSampling().skor(p, sigma, acak_global)
+            else:
+                skor = p.copy()
+            skor = skor / rasio
+            urut = np.argsort(-skor)[:SIMPAN_TERATAS]
+            nama_tulis = nama_model + ("+thompson" if thompson else "")
 
-        # Peringkat akhir = peluang sukses x utilitas harga. Peluang saja akan
-        # selalu memilih distributor paling andal tanpa peduli harganya, dan
-        # pemilik warung yang marginnya tipis tidak akan memakai sarannya.
-        skor = skor / g["rasio_harga"].to_numpy(dtype=float)
-
-        urut = np.argsort(-skor)[:SIMPAN_TERATAS]
         for i in urut:
             r = g.iloc[int(i)]
             baris_keluar.append(
@@ -242,8 +273,9 @@ def jalankan(
                     "distributor_id": int(r["distributor_id"]),
                     "p_sukses": float(round(p[int(i)], 4)),
                     "skor": float(round(skor[int(i)], 4)),
-                    "alasan": _alasan(fitur[int(i)] | {"nama": r["nama_distributor"]}),
-                    "model_nama": nama_model + ("+thompson" if thompson else ""),
+                    "alasan": _alasan(fitur[int(i)] | {"nama": r["nama_distributor"]}) + catatan_beta[int(i)],
+                    "segmen": segmen[int(i)],
+                    "model_nama": nama_tulis,
                     "model_versi": "0.1",
                     "dijalankan_pada": sekarang,
                     "kedaluwarsa_pada": sekarang + UMUR_SKOR,
@@ -271,7 +303,7 @@ def jalankan(
     }
 
 
-def jalankan_semua(penaksir: str = "bart", thompson: bool = True) -> dict:
+def jalankan_semua(penaksir: str = "beta", thompson: bool = True) -> dict:
     """
     Nilai kandidat untuk SELURUH usaha dengan satu kali pelatihan.
 

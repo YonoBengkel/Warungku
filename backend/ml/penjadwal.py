@@ -71,7 +71,7 @@ def _mesin1() -> dict:
 def _mesin2() -> dict:
     from .mesin2.saran import jalankan_semua
 
-    return jalankan_semua(penaksir=os.environ.get("WARUNGKU_PENAKSIR_MESIN2", "logistik"))
+    return jalankan_semua(penaksir=os.environ.get("WARUNGKU_PENAKSIR_MESIN2", "beta"))
 
 
 def _mesin3() -> dict:

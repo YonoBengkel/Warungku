@@ -193,8 +193,8 @@ def mesin1_jadwalkan(p: PermintaanJalan, tugas: BackgroundTasks) -> dict:
 class PermintaanSaran(BaseModel):
     #: None berarti seluruh usaha.
     usaha_id: int | None = None
-    #: "bart", "logistik", atau "pohon".
-    penaksir: str = "logistik"
+    #: "beta" (bawaan: Beta-Bernoulli + fuzzy), "bart", "logistik", atau "pohon".
+    penaksir: str = "beta"
     #: Pencuplikan Thompson untuk eksplorasi. Di produksi ini yang diinginkan —
     #: tanpanya distributor baru tidak pernah terpilih, jadi tidak pernah punya
     #: riwayat, jadi tidak pernah terpilih. Tapi keluarannya jadi TIDAK

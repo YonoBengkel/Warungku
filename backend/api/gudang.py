@@ -115,7 +115,7 @@ def saran_distributor(barang_id: int = Path(ge=1), usaha_id: int = Depends(usaha
             text(
                 """
                 SELECT r.barang_id, r.distributor_id, r.penawaran_id,
-                       d.nama AS nama_distributor, r.p_sukses, r.skor, r.alasan,
+                       d.nama AS nama_distributor, r.p_sukses, r.skor, r.alasan, r.segmen,
                        r.model_nama, r.dijalankan_pada, r.kedaluwarsa_pada,
                        (r.kedaluwarsa_pada < now()) AS kedaluwarsa
                   FROM rekomendasi_skor r

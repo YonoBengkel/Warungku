@@ -34,6 +34,7 @@ import numpy as np
 import pandas as pd
 
 from ..data import FITUR
+from .beta import kunci_dari
 from .keadaan import KeadaanDistributor, muat_keadaan
 
 #: Sebelum sebanyak ini keputusan terkumpul, penaksir belum dilatih dan semua
@@ -59,6 +60,11 @@ class HasilSimulasi:
     regret_total: float
     regret_rata: float
     sukses_rata: float
+    #: Rata-rata rasio harga pilihan terhadap kandidat termurah (1,0 = selalu
+    #: termurah). Regret hanya mengukur keandalan, jadi kebijakan yang ikut
+    #: menimbang harga pasti kalah di regret; tanpa kolom ini, apa yang ia
+    #: dapat sebagai gantinya tidak terlihat.
+    harga_rata: float = 1.0
     #: Regret kumulatif per hari, untuk digambar.
     kurva: list[float] = field(default_factory=list)
     #: Indeks kandidat yang dipilih tiap keputusan. Dipakai membandingkan dua
@@ -69,9 +75,9 @@ class HasilSimulasi:
     detik: float = 0.0
 
     def baris(self) -> str:
-        return "%-28s keputusan %5d | regret total %7.1f | regret/keputusan %.4f | sukses %.3f | %6.1fs" % (
+        return "%-34s keputusan %5d | regret %7.1f | regret/kep %.4f | sukses %.3f | harga %.4f | %6.1fs" % (
             self.nama, self.keputusan, self.regret_total,
-            self.regret_rata, self.sukses_rata, self.detik,
+            self.regret_rata, self.sukses_rata, self.harga_rata, self.detik,
         )
 
 
@@ -97,12 +103,25 @@ def jalankan(
     latih_tiap: int = LATIH_TIAP_HARI,
     mulai_belajar: int = MULAI_BELAJAR,
     maks_keputusan: int = 0,
+    lapis_harga=None,
 ) -> HasilSimulasi:
     """
     Jalankan satu kebijakan sepanjang rentang simulasi.
 
     `buat_penaksir` boleh None untuk kebijakan yang tidak belajar sama sekali
     (termurah, acak) — dipakai sebagai batas bawah di grafik.
+
+    Tiga jenis penaksir diterima:
+
+    * biasa (BART, logistik): dilatih ulang pada jadwal `latih_tiap`;
+    * berbasis hitungan (`butuh_kunci`, mis. Beta-Bernoulli): sama, tapi diberi
+      kunci distributor; kalau `daring`, hitungannya bertambah tiap keputusan
+      dan prior Beta(1, 1) berlaku sejak hari pertama, tanpa fase acak;
+    * tanpa belajar (`tanpa_belajar`, mis. TOPSIS): menilai dari hari pertama.
+
+    `lapis_harga(skor_keandalan, rasio_harga)` menggabungkan skor dengan harga,
+    misalnya inferensi fuzzy. Tanpanya, kandidat diurutkan menurut keandalan
+    saja.
     """
     mulai = time.perf_counter()
     acak = np.random.default_rng(benih)
@@ -112,9 +131,16 @@ def jalankan(
         keputusan = keputusan[:maks_keputusan]
 
     penaksir = buat_penaksir() if buat_penaksir is not None else None
+    butuh_kunci = bool(getattr(penaksir, "butuh_kunci", False))
+    daring = bool(getattr(penaksir, "daring", False))
+    tanpa_belajar = bool(getattr(penaksir, "tanpa_belajar", False))
     riwayat_X: list[np.ndarray] = []
     riwayat_y: list[int] = []
-    terlatih = False
+    riwayat_kunci: list = []
+    # Penaksir daring dan penaksir tanpa belajar sudah bisa menilai sejak
+    # keputusan pertama; yang lain menunggu riwayat cukup.
+    terlatih = daring or tanpa_belajar
+    total_harga = 0.0
     hari_latih_terakhir: date | None = None
 
     regret = 0.0
@@ -128,10 +154,15 @@ def jalankan(
         # --- latih ulang kalau sudah waktunya --------------------------------
         if (
             penaksir is not None
+            and not daring
+            and not tanpa_belajar
             and len(riwayat_X) >= mulai_belajar
             and (hari_latih_terakhir is None or (tanggal - hari_latih_terakhir).days >= latih_tiap)
         ):
-            penaksir.latih(np.vstack(riwayat_X), np.array(riwayat_y, dtype=int))
+            if butuh_kunci:
+                penaksir.latih(np.vstack(riwayat_X), np.array(riwayat_y, dtype=int), kunci=riwayat_kunci)
+            else:
+                penaksir.latih(np.vstack(riwayat_X), np.array(riwayat_y, dtype=int))
             terlatih = True
             hari_latih_terakhir = tanggal
 
@@ -160,10 +191,21 @@ def jalankan(
             # karena alasan yang tidak ada hubungannya dengan kebijakannya.
             skor = acak.random(len(X))
         else:
-            p, sigma = penaksir.peluang_dan_sebaran(X)
-            skor = kebijakan.skor(p, sigma, acak)
+            if tanpa_belajar:
+                skor = np.asarray(penaksir.peluang(X), dtype=float)
+            else:
+                if butuh_kunci:
+                    kunci = [kunci_dari(int(d), x, pisah_konteks=penaksir.pisah_konteks)
+                             for d, x in zip(kandidat["distributor_id"], X)]
+                    p, sigma = penaksir.peluang_dan_sebaran(X, kunci=kunci)
+                else:
+                    p, sigma = penaksir.peluang_dan_sebaran(X)
+                skor = kebijakan.skor(p, sigma, acak)
+            if lapis_harga is not None:
+                skor = lapis_harga(skor, kandidat["rasio_harga"].to_numpy(dtype=float))
 
         pilih = int(np.argmax(skor))
+        total_harga += float(kandidat["rasio_harga"].iloc[pilih])
         pilihan.append(pilih)
 
         # --- hasilnya terungkap (dari matriks counterfactual) ----------------
@@ -179,6 +221,12 @@ def jalankan(
         # pernah ia punya, dan seluruh perbandingannya kehilangan arti.
         riwayat_X.append(X[pilih])
         riwayat_y.append(diperoleh)
+        if butuh_kunci:
+            k = kunci_dari(int(kandidat["distributor_id"].iloc[pilih]), X[pilih],
+                           pisah_konteks=penaksir.pisah_konteks)
+            riwayat_kunci.append(k)
+            if daring:
+                penaksir.perbarui(k, diperoleh)
 
         baris = kandidat.iloc[pilih]
         keadaan.perbarui(
@@ -206,6 +254,7 @@ def jalankan(
         regret_total=regret,
         regret_rata=regret / n,
         sukses_rata=sukses / n,
+        harga_rata=total_harga / n,
         kurva=kurva,
         pilihan=pilihan,
         tanggal=tanggal_kurva,
@@ -229,7 +278,12 @@ def acuan_oracle_dan_termurah(cf: pd.DataFrame, maks_keputusan: int = 0) -> dict
         int(g.loc[g["harga_per_satuan_dasar"].idxmin(), "sukses"]) for _, g in keputusan
     )
     acak = sum(float(g["sukses"].mean()) for _, g in keputusan)
+    harga_oracle = sum(float(g.loc[g["sukses"].idxmax(), "rasio_harga"]) for _, g in keputusan)
+    harga_acak = sum(float(g["rasio_harga"].mean()) for _, g in keputusan)
     return {
+        "oracle_harga": harga_oracle / n,
+        "acak_harga": harga_acak / n,
+        "termurah_harga": 1.0,
         "keputusan": n,
         "oracle_sukses": oracle / n,
         "termurah_sukses": termurah / n,

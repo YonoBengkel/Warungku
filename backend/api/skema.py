@@ -97,6 +97,9 @@ class SaranDistributor(BaseModel):
     p_sukses: float
     skor: float
     alasan: str | None
+    #: "sangat-layak", "layak", atau "kurang-layak". Kosong untuk skor dari
+    #: penaksir lama yang tidak menghasilkan segmen.
+    segmen: str | None = None
     model_nama: str
     dijalankan_pada: datetime
     kedaluwarsa_pada: datetime

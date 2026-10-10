@@ -43,6 +43,7 @@ class Termurah:
 
     nama = "termurah"
     butuh_latih = False
+    tanpa_belajar = True
     per_keputusan = False
 
     def latih(self, X: np.ndarray, y: np.ndarray) -> None:
@@ -69,6 +70,8 @@ class Topsis:
 
     nama = "topsis"
     butuh_latih = False
+    #: Menilai sejak keputusan pertama di simulasi regret; tidak ada yang dilatih.
+    tanpa_belajar = True
     #: Wajib. Lihat PER_KEPUTUSAN_DEFAULT di atas.
     per_keputusan = True
 

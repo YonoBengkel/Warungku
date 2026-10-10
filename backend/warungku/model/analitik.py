@@ -178,6 +178,10 @@ class RekomendasiSkor(SQLModel, table=True):
     skor: float
     #: Satu kalimat, bahasa pemilik usaha. Layar menuntutnya.
     alasan: str | None = Field(default=None, sa_column=Column(Text))
+    #: Segmen distributor untuk barang ini: "sangat-layak", "layak", atau
+    #: "kurang-layak", dari inferensi fuzzy atas keandalan dan harga. Boleh
+    #: kosong untuk penaksir yang tidak menghasilkan segmen (BART, logistik).
+    segmen: str | None = Field(default=None, max_length=20)
 
     model_nama: str = Field(max_length=60)
     model_versi: str = Field(max_length=40)
