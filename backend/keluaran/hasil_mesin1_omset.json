@@ -1,0 +1,146 @@
+{
+ "simulasi": {
+  "pencilan": {
+   "hari_dinilai": 28000,
+   "pencilan": 247,
+   "dijelaskan_kalender": 211,
+   "persen_pencilan": 0.88,
+   "batas_chi2": 16.266
+  },
+  "titik_asal": 8,
+  "hasil": [
+   {
+    "nama": "naif_musiman",
+    "mape_pekanan": 13.21585079967085,
+    "wape_pekanan": 13.126737021977577,
+    "mape_harian": 30.004569468276802,
+    "kategori": "baik",
+    "entitas_lolos_5": 2,
+    "entitas": 70,
+    "n_pekan": 560,
+    "gagal": 0,
+    "detik": 0.21393349999561906
+   },
+   {
+    "nama": "ets",
+    "mape_pekanan": 11.01002132561215,
+    "wape_pekanan": 11.555289070194437,
+    "mape_harian": 21.678589351020218,
+    "kategori": "baik",
+    "entitas_lolos_5": 2,
+    "entitas": 70,
+    "n_pekan": 560,
+    "gagal": 0,
+    "detik": 92.01376539998455
+   },
+   {
+    "nama": "sarimax",
+    "mape_pekanan": 8.799064509782754,
+    "wape_pekanan": 9.309054699368389,
+    "mape_harian": 20.318357735787842,
+    "kategori": "sangat akurat",
+    "entitas_lolos_5": 7,
+    "entitas": 70,
+    "n_pekan": 560,
+    "gagal": 0,
+    "detik": 645.4531746000284
+   },
+   {
+    "nama": "var",
+    "mape_pekanan": 12.939362320015865,
+    "wape_pekanan": 12.848875828498208,
+    "mape_harian": 27.638194549529096,
+    "kategori": "baik",
+    "entitas_lolos_5": 1,
+    "entitas": 70,
+    "n_pekan": 560,
+    "gagal": 0,
+    "detik": 7.155223200039472
+   },
+   {
+    "nama": "chronos_2",
+    "mape_pekanan": 11.190016680217992,
+    "wape_pekanan": 11.84894446553728,
+    "mape_harian": 21.507097949858952,
+    "kategori": "baik",
+    "entitas_lolos_5": 2,
+    "entitas": 70,
+    "n_pekan": 560,
+    "gagal": 0,
+    "detik": 75.42218719999073
+   }
+  ]
+ },
+ "french_bakery": {
+  "pencilan": {
+   "hari_dinilai": 600,
+   "pencilan": 16,
+   "dijelaskan_kalender": 9,
+   "persen_pencilan": 2.67,
+   "batas_chi2": 16.266
+  },
+  "titik_asal": 40,
+  "hasil": [
+   {
+    "nama": "naif_musiman",
+    "mape_pekanan": 15.246110386846764,
+    "wape_pekanan": 15.026607941270969,
+    "mape_harian": 23.267203367056844,
+    "kategori": "baik",
+    "entitas_lolos_5": 0,
+    "entitas": 1,
+    "n_pekan": 29,
+    "gagal": 0,
+    "detik": 0.04702709999401122
+   },
+   {
+    "nama": "ets",
+    "mape_pekanan": 13.561766098227107,
+    "wape_pekanan": 14.315447278598153,
+    "mape_harian": 18.91430106380166,
+    "kategori": "baik",
+    "entitas_lolos_5": 0,
+    "entitas": 1,
+    "n_pekan": 29,
+    "gagal": 0,
+    "detik": 4.558132000034675
+   },
+   {
+    "nama": "sarimax",
+    "mape_pekanan": 11.929811232616396,
+    "wape_pekanan": 12.512623443493043,
+    "mape_harian": 16.57524086846396,
+    "kategori": "baik",
+    "entitas_lolos_5": 0,
+    "entitas": 1,
+    "n_pekan": 29,
+    "gagal": 0,
+    "detik": 16.24950939998962
+   },
+   {
+    "nama": "var",
+    "mape_pekanan": 14.863669649312982,
+    "wape_pekanan": 15.139405085007688,
+    "mape_harian": 22.057097722410223,
+    "kategori": "baik",
+    "entitas_lolos_5": 0,
+    "entitas": 1,
+    "n_pekan": 29,
+    "gagal": 0,
+    "detik": 0.5212294000084512
+   },
+   {
+    "nama": "chronos_2",
+    "mape_pekanan": 10.241233277476129,
+    "wape_pekanan": 11.210067898252838,
+    "mape_harian": 15.443352592932133,
+    "kategori": "baik",
+    "entitas_lolos_5": 0,
+    "entitas": 1,
+    "n_pekan": 29,
+    "gagal": 0,
+    "detik": 2.2505961999995634
+   }
+  ]
+ }
+}
