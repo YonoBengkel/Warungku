@@ -100,6 +100,9 @@ def tabel(d: Document, kepala: list[str], baris: list[list[str]], lebar: list[fl
     for i, teks in enumerate(kepala):
         sel = t.rows[0].cells[i]
         sel.text = ""
+        # Rata kiri di dalam sel: rata kiri-kanan pada kolom sempit merenggangkan
+        # kata sampai sulit dibaca.
+        sel.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.LEFT
         r = sel.paragraphs[0].add_run(teks)
         r.bold = True
         r.font.name = HURUF
@@ -108,6 +111,7 @@ def tabel(d: Document, kepala: list[str], baris: list[list[str]], lebar: list[fl
         sel_baris = t.add_row().cells
         for i, teks in enumerate(isi):
             sel_baris[i].text = ""
+            sel_baris[i].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.LEFT
             r = sel_baris[i].paragraphs[0].add_run(str(teks))
             r.font.name = HURUF
             r.font.size = Pt(11)
@@ -208,14 +212,813 @@ def jumlah_uji() -> int:
     return 0
 
 
+def segmen_produksi() -> dict[str, int]:
+    """Sebaran segmen distributor di rekomendasi_skor, hasil jalan produksi terakhir."""
+    from sqlalchemy import text
+
+    import sys
+
+    sys.path.insert(0, str(AKAR / "backend"))
+    from warungku.basis_data import mesin
+
+    with mesin().connect() as kon:
+        baris = kon.execute(
+            text("SELECT segmen, count(*) FROM rekomendasi_skor WHERE segmen IS NOT NULL GROUP BY 1")
+        ).all()
+    return {r[0]: int(r[1]) for r in baris}
+
+
+BULAN = ("Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus",
+         "September", "Oktober", "November", "Desember")
+
+
+def tanggal_hari_ini() -> str:
+    """Tanggal berbahasa Indonesia; strftime("%B") mengikuti locale mesin, bukan dokumen."""
+    t = date.today()
+    return "%d %s %d" % (t.day, BULAN[t.month - 1], t.year)
+
+
+def _pr(x: float, n: int = 1) -> str:
+    """Persen bergaya Indonesia: 14,9%."""
+    return ("%.*f%%" % (n, x)).replace(".", ",")
+
+
+def _ak(x: float, n: int = 4) -> str:
+    return ("%.*f" % (n, x)).replace(".", ",")
+
+
+def _rb(x: float) -> str:
+    return f"{x:,.0f}".replace(",", ".")
+
+
+JUDUL_SUMBER = {"simulasi": "Simulasi Warungku", "french_bakery": "French Bakery (data nyata)"}
+NAMA_METODE = {
+    "naif_musiman": "Naif musiman",
+    "aturan_sederhana": "Aturan sederhana (rata-rata 28 hari)",
+    "kuantil_hari_pekan": "Kuantil hari-pekan",
+    "ets_holt_winters": "ETS / Holt-Winters",
+    "ets": "ETS / Holt-Winters",
+    "sarimax": "SARIMAX",
+    "var": "VAR (multivariat)",
+    "chronos_2": "Chronos-2 (pembanding)",
+}
+
+
+def _mape_terbaik(m1p: dict) -> dict:
+    return min(m1p["hasil"], key=lambda x: x["mape_pekanan_lolos"])
+
+
+def _omset_terbaik(m1o: dict | None, sumber: str) -> dict | None:
+    if not m1o or "hasil" not in m1o.get(sumber, {}):
+        return None
+    return min(m1o[sumber]["hasil"], key=lambda x: x["mape_pekanan"])
+
+
+def teks_mesin1(m1p, m1o) -> str:
+    bagian = ["ETS (Holt-Winters) untuk produksi; SARIMAX dan VAR untuk omset; Chronos-2 sebagai pembanding."]
+    if m1p:
+        e = {h["nama"]: h for h in m1p["hasil"]}.get("ets_holt_winters")
+        if e:
+            bagian.append("MAPE pekanan unit, barang lolos saringan: %s (%s)." % (_pr(e["mape_pekanan_lolos"]), metrik_lewis(e["mape_pekanan_lolos"])))
+    o = _omset_terbaik(m1o, "simulasi")
+    if o:
+        bagian.append("MAPE pekanan omset terbaik: %s (%s)." % (_pr(o["mape_pekanan"]), NAMA_METODE.get(o["nama"], o["nama"])))
+    return " ".join(bagian)
+
+
+def teks_mesin2(sim) -> str:
+    t = "Beta-Bernoulli + Thompson + fuzzy: saran distributor dan tiga segmen distributor."
+    if sim:
+        t += " Simulasi regret 400 hari, %s keputusan, 11 varian di tiga sumbu." % _rb(sim["acuan"]["keputusan"])
+    return t
+
+
+def temuan_utama(d: Document, m1p, m1o, sim) -> None:
+    alinea(d, "Temuan yang mengubah rencana", tebal=True)
+    if m1p:
+        terbaik = _mape_terbaik(m1p)
+        o = _omset_terbaik(m1o, "simulasi")
+        butir(
+            d,
+            "Sasaran MAPE 5 persen belum tercapai secara keseluruhan. Ramalan unit per barang "
+            "terbaik mencapai MAPE pekanan %s pada barang yang lolos saringan (%s menurut "
+            "skala Lewis)%s. Bagian 6.7 menjelaskan kenapa sebagian jarak ini tidak bisa "
+            "ditutup model apa pun." % (
+                _pr(terbaik["mape_pekanan_lolos"]), metrik_lewis(terbaik["mape_pekanan_lolos"]),
+                (", dan ramalan omset dengan %s mencapai %s (%s); %d dari %d UMKM sudah di bawah 5 persen"
+                 % (NAMA_METODE.get(o["nama"], o["nama"]), _pr(o["mape_pekanan"]), o["kategori"],
+                    o["entitas_lolos_5"], o["entitas"])) if o else ""),
+        )
+    butir(
+        d,
+        "Metode sederhana menyamai atau mengalahkan metode rumit. ETS setara Chronos-2 "
+        "untuk ramalan unit, dan Beta-Bernoulli — dua hitungan per distributor — "
+        "mengalahkan BART untuk saran distributor. Keduanya menjadi model utama; yang "
+        "rumit tetap ada sebagai pembanding.",
+    )
+    if sim:
+        a = sim["acuan"]
+        butir(
+            d,
+            "Kebijakan “selalu pilih termurah” lebih buruk daripada memilih acak: regret per "
+            "keputusan %s melawan %s. Itu premis Mesin 2, dan di dataset ini ia terbukti."
+            % (_ak(a["termurah_regret"]), _ak(a["acak_regret"])),
+        )
+
+
+def tanggapan_dosen(d: Document, halaman_baru: bool = False) -> None:
+    if halaman_baru:
+        d.add_page_break()
+    alinea(d, "Catatan dosen dan tanggapannya", tebal=True)
+    tabel(
+        d,
+        ["Catatan", "Tanggapan", "Bagian"],
+        [
+            ["Ramal omset, univariat atau multivariat (dengan jumlah barang dan jumlah pelanggan)",
+             "ETS dan SARIMAX (univariat + kalender); VAR meramal omset, jumlah barang, dan jumlah nota bersama", "6.6"],
+            ["MAPE ≤ 5%, bukan MSE",
+             "MAPE pekanan di tiga tingkat, dibaca dengan skala Lewis. 5% belum tercapai; alasannya dijelaskan", "6.4, 6.7"],
+            ["Pencilan dengan Mahalanobis, bukan boxplot",
+             "Mahalanobis dengan MCD; pencilan ditandai, tidak dibuang; Lebaran bukan pencilan", "6.3"],
+            ["Jangan memakai metode yang tidak dipahami tim",
+             "Model utama ETS, SARIMAX, VAR, Beta-Bernoulli, fuzzy. Chronos-2 dan BART hanya pembanding", "6.9, 7.5"],
+            ["Hanya 10 barang teratas yang diramal",
+             "ABC 10 teratas per katalog UMKM menurut nilai, ditambah Syntetos–Boylan dan uji musiman", "6.2"],
+            ["Segmentasi distributor dengan Bayesian, pohon keputusan, atau fuzzy",
+             "Beta-Bernoulli (Bayesian) + fuzzy Sugeno, menghasilkan tiga segmen", "7"],
+            ["Laju pemakaian > 30% per pekan, dan musiman",
+             "Musiman diuji dengan STL. Ambang 30% tidak dipakai menyaring karena mengukur kebijakan restock; alasannya dijelaskan", "6.2"],
+        ],
+        lebar=[5.4, 7.4, 2.2],
+    )
+
+
+# --------------------------------------------------------------------------
+# Bagian Mesin 1 dan Mesin 2 (laporan lengkap)
+# --------------------------------------------------------------------------
+def bagian_mesin1(d: Document, m1, m1p, m1o, sar) -> None:
+    judul(d, "6. Mesin 1 — perkiraan permintaan dan omset")
+    judul(d, "6.1 Dua pertanyaan, dua ramalan", 2)
+    alinea(
+        d,
+        "Mesin 1 menjawab dua pertanyaan yang berbeda. Pertama, berapa unit tiap barang "
+        "yang akan terpakai pekan depan — angka ini dipakai menghitung batas aman stok, "
+        "jadi keluarannya sebaran p10 / p50 / p90, dan batas aman diambil dari p90 selama "
+        "lama pengiriman. Kedua, berapa omset tiap UMKM pekan depan — angka ini untuk "
+        "gambaran bisnis pemilik, sesuai catatan dosen. Ramalan omset tidak dipakai untuk "
+        "batas aman, dan sebaliknya.",
+    )
+    if not gambar(d, "mesin1_kipas.png", "Gambar 3. Kipas p10-p90 ETS melawan permintaan sebenarnya. Batas aman diambil dari tepi atas kipas, bukan dari garis tengahnya.", 15.0):
+        alinea(d, "(Gambar kipas perkiraan belum tersedia.)")
+
+    # --- saringan -----------------------------------------------------------
+    judul(d, "6.2 Barang mana yang diramal", 2)
+    alinea(
+        d,
+        "Tidak semua barang layak diramal dengan model. Tiga saringan baku dipakai, "
+        "masing-masing menjawab satu pertanyaan, dan semuanya dihitung dari delapan pekan "
+        "terakhir sebelum titik ramal — tidak pernah dari masa depan.",
+    )
+    tabel(
+        d,
+        ["Saringan", "Pertanyaan", "Aturan"],
+        [
+            ["ABC (Pareto)", "Barang mana yang paling penting nilainya?",
+             "10 barang teratas per katalog UMKM menurut nilai pemakaian (unit x harga), bukan menurut unit"],
+            ["Syntetos–Boylan (2005)", "Polanya cukup teratur untuk model?",
+             "ADI < 1,32 dan CV² < 0,49 berarti halus; selebihnya terputus, tak menentu, atau bergumpal"],
+            ["Kekuatan musiman (STL)", "Ada pola mingguan yang harus ditangkap?",
+             "F = maks(0; 1 − Var(R)/Var(S+R)) ≥ 0,40"],
+        ],
+        lebar=[3.6, 4.6, 6.8],
+    )
+    alinea(
+        d,
+        "Sebuah barang diramal dengan model kalau ia lolos ABC dan polanya halus, ATAU kalau "
+        "pola musimannya kuat — barang musiman tetap perlu model walaupun nilainya kecil, "
+        "karena aturan rata-rata akan meleset tepat di hari ramainya. Barang yang tidak "
+        "lolos tetap mendapat batas aman, lewat aturan sederhana (rata-rata pemakaian x lama "
+        "kirim x faktor aman). Saringan menentukan cara menghitung, bukan siapa yang dilayani.",
+    )
+    alinea(
+        d,
+        "ABC dihitung dari nilai, bukan unit, karena satuan barang berbeda-beda: 1.000 gram "
+        "gula seharga Rp1 per gram lebih kecil nilainya daripada 10 bungkus susu seharga "
+        "Rp500 per bungkus. Diurutkan menurut unit, gula akan selalu menang.",
+    )
+    if sar:
+        pola = sar["pola"]
+        tabel(
+            d,
+            ["Besaran", "Jumlah barang"],
+            [
+                ["Barang di seluruh katalog", "%d (dari %d UMKM)" % (sar["barang"], sar["usaha"])],
+                ["Lolos ABC (10 teratas per katalog)", str(sar["lolos_abc"])],
+                ["Pola halus / terputus / bergumpal",
+                 "%d / %d / %d" % (pola.get("halus", 0), pola.get("terputus", 0), pola.get("bergumpal", 0))],
+                ["Musiman kuat (F ≥ %s)" % _ak(sar["batas_musiman"], 2), str(sar["musiman"])],
+                ["Diramal dengan model", str(sar["diramal"])],
+                ["... di antaranya masuk hanya karena musiman", str(sar["masuk_lewat_musiman_saja"])],
+            ],
+            lebar=[8.5, 5.0],
+        )
+        alinea(
+            d,
+            "Catatan jujur: katalog simulasi rata-rata hanya %.0f barang per UMKM, jadi "
+            "saringan 10 teratas meloloskan sebagian besar barang. Di katalog warung "
+            "sungguhan yang memuat ratusan barang, saringan ini jauh lebih selektif."
+            % (sar["barang"] / max(sar["usaha"], 1)),
+        )
+    alinea(d, "Kenapa bukan ambang laju pemakaian 30 persen per pekan", tebal=True)
+    alinea(
+        d,
+        "Usulan awalnya: barang diramal kalau dalam sepekan terpakai lebih dari 30 persen "
+        "stoknya (contoh: 300 dari 1.000 dus). Ukuran ini disebut sell-through, dan "
+        "penyebutnya adalah stok yang dibeli pemilik — jadi ia mengukur kebijakan restock, "
+        "bukan permintaan. Barang yang sama bisa 60 persen pada pekan sebelum restock dan "
+        "15 persen sesudahnya. Pada pengukuran sekali di data simulasi, mediannya 38 persen, "
+        "426 dari 890 barang lolos ambang 30 persen, dan korelasinya dengan barang terlaris "
+        "hanya 0,23. Karena itu sell-through tidak dipakai menyaring; ia lebih cocok untuk "
+        "menandai stok mati (barang yang hampir tidak berkurang), dan itu belum dibangun.",
+    )
+
+    # --- pencilan ------------------------------------------------------------
+    judul(d, "6.3 Pencilan: jarak Mahalanobis", 2)
+    alinea(
+        d,
+        "Boxplot menilai satu kolom sendirian. Hari dengan omset tinggi DAN nota banyak itu "
+        "wajar; hari dengan omset tinggi tapi nota sedikit itu janggal (satu pembeli "
+        "borongan, atau salah catat). Boxplot tidak bisa membedakan keduanya karena "
+        "masing-masing angka sendirian masih dalam rentang biasa. Jarak Mahalanobis "
+        "mengukur jarak dari pusat data dengan memperhitungkan hubungan antarkolom.",
+    )
+    butir(d, "Vektor harian per UMKM: log omset, log jumlah barang, log jumlah nota.")
+    butir(d, "Level lokal (median bergulir 29 hari) dan pola hari-pekan dibuang dulu. Tanpa ini setiap Sabtu yang ramai ikut tertandai; versi pertama menandai 10 persen hari toko roti, kebanyakan hari musim panas.")
+    butir(d, "Pusat dan kovarian ditaksir dengan Minimum Covariance Determinant (Rousseeuw, 1984), bukan rata-rata biasa, supaya pencilan besar tidak menyamarkan dirinya sendiri.")
+    butir(d, "Batas: chi-kuadrat derajat bebas 3 pada peluang 0,999. Batas 0,975 yang lazim menandai 5,8 persen hari pada data buatan yang sama sekali bersih — MCD menaksir sebaran sedikit kekecilan pada sampel sebesar ini (Hardin & Rocke, 2005).")
+    butir(d, "Pencilan DITANDAI, tidak dibuang. Hanya SARIMAX yang memperlakukannya sebagai data hilang saat dilatih. Hari libur, Ramadan, dan Lebaran tidak pernah ditandai: penjualan Lebaran yang anjlok adalah kejadian nyata yang harus dipelajari model.")
+    if m1o:
+        baris = []
+        for k, v in m1o.items():
+            if "pencilan" not in v:
+                continue
+            p = v["pencilan"]
+            baris.append([JUDUL_SUMBER.get(k, k), _rb(p["hari_dinilai"]), str(p["pencilan"]),
+                          _pr(p["persen_pencilan"]), str(p["dijelaskan_kalender"])])
+        if baris:
+            tabel(d, ["Sumber", "Hari dinilai", "Pencilan", "Persen", "Lolos karena kalender"], baris,
+                  lebar=[4.6, 2.6, 2.2, 2.2, 3.4])
+
+    # --- rancangan evaluasi --------------------------------------------------
+    judul(d, "6.4 Rancangan evaluasi: MAPE pekanan", 2)
+    alinea(
+        d,
+        "Metrik utamanya MAPE, sesuai catatan dosen, dihitung pada jumlah tujuh hari — "
+        "satu siklus restock. Pemilik warung memutuskan belanja per pekan, jadi galat yang "
+        "berarti baginya adalah galat jumlah sepekan, bukan galat hari Selasa. MAPE harian "
+        "tetap dilaporkan supaya bedanya terlihat.",
+    )
+    butir(d, "Uji ulang bergulir: model dilatih sampai titik asal, meramal tujuh hari, lalu titik asal mundur sepekan. Delapan titik asal untuk ramalan unit dan untuk omset simulasi; 40 untuk toko roti yang hanya satu toko.")
+    butir(d, "Saringan dihitung ulang di setiap titik asal, supaya keputusan barang mana yang diramal tidak mengintip masa depan.")
+    butir(d, "Pekan yang berisi hari stok habis dikeluarkan dari penilaian unit: penjualan hari itu dibatasi stok, bukan permintaan. Pekan yang berisi hari toko tutup dikeluarkan dari penilaian omset.")
+    butir(d, "Periode bernilai nol dikeluarkan dari MAPE (pembagian dengan nol). WAPE — jumlah galat dibagi jumlah nilai sebenarnya — ikut dilaporkan karena tidak punya masalah itu.")
+    alinea(d, "Hasilnya dibaca dengan skala Lewis (1982):")
+    tabel(
+        d,
+        ["MAPE", "Kategori"],
+        [["< 10%", "sangat akurat"], ["10% – 20%", "baik"], ["20% – 50%", "layak"], ["≥ 50%", "tidak akurat"]],
+        lebar=[4.0, 5.0],
+    )
+
+    # --- hasil unit ------------------------------------------------------------
+    judul(d, "6.5 Hasil: ramalan unit per barang", 2)
+    if m1p:
+        r = m1p["rancangan"]
+        alinea(
+            d,
+            "%d deret barang, %d titik asal, %s pekan dinilai; %s pasangan (barang, pekan) "
+            "lolos saringan." % (r["deret"], r["titik_asal"], _rb(m1p["hasil"][0]["n_pekan"]),
+                                 _rb(r["pasangan_lolos"])),
+        )
+        urut = sorted(m1p["hasil"], key=lambda x: x["mape_pekanan_lolos"])
+        tabel(
+            d,
+            ["Metode", "MAPE pekanan, barang lolos", "MAPE pekanan, semua", "WAPE", "MAPE harian", "Waktu"],
+            [
+                [NAMA_METODE.get(h["nama"], h["nama"]),
+                 "%s (%s)" % (_pr(h["mape_pekanan_lolos"]), metrik_lewis(h["mape_pekanan_lolos"])),
+                 _pr(h["mape_pekanan"]), _pr(h["wape_pekanan"]), _pr(h["mape_harian"]),
+                 "%.0f d" % h["detik"]]
+                for h in urut
+            ],
+            lebar=[4.2, 3.4, 2.2, 1.8, 2.0, 1.6],
+        )
+        gambar(d, "mesin1_mape.png", "Gambar 4. MAPE ramalan unit di tiga tingkat. Latar menunjukkan skala Lewis; garis merah adalah sasaran 5 persen.", 15.5)
+        cari = {h["nama"]: h for h in m1p["hasil"]}
+        ets, ch, kq = cari.get("ets_holt_winters"), cari.get("chronos_2"), cari.get("kuantil_hari_pekan")
+        if ets and ch and kq:
+            alinea(
+                d,
+                "Tiga metode teratas berjarak kurang dari satu poin persen: kuantil hari-pekan "
+                "%s, ETS %s, Chronos-2 %s pada barang lolos saringan. Untuk %s pekan "
+                "penilaian, selisih sebesar itu tidak cukup untuk menyatakan salah satunya "
+                "lebih akurat. Yang jelas: ketiganya mengalahkan naif musiman, dan menyaring "
+                "barang menurunkan MAPE dari sekitar 24 persen ke sekitar 15 persen."
+                % (_pr(kq["mape_pekanan_lolos"]), _pr(ets["mape_pekanan_lolos"]),
+                   _pr(ch["mape_pekanan_lolos"]), _rb(ets["n_pekan_lolos"])),
+            )
+
+    # --- hasil omset -------------------------------------------------------------
+    judul(d, "6.6 Hasil: ramalan omset per UMKM", 2)
+    alinea(
+        d,
+        "Lima metode, dari yang paling sederhana. Semuanya dilatih pada logaritma omset "
+        "karena ragam omset naik bersama levelnya.",
+    )
+    tabel(
+        d,
+        ["Metode", "Peubah", "Yang bisa dibaca"],
+        [
+            ["Naif musiman", "omset pekan lalu", "tidak ada parameter"],
+            ["ETS / Holt-Winters", "omset", "alfa, beta, gamma, redaman tren"],
+            ["SARIMAX(1,0,1)(0,1,1)7", "omset + kalender (libur, gajian, Ramadan, Lebaran)", "koefisien AR, MA, dan tiap hari kalender"],
+            ["VAR", "omset, jumlah barang, jumlah nota bersama", "matriks koefisien per lag"],
+            ["Chronos-2", "omset (pembanding, tanpa dilatih)", "tidak ada"],
+        ],
+        lebar=[4.2, 5.6, 5.2],
+    )
+    alinea(
+        d,
+        "Jumlah barang dan jumlah nota tidak bisa menjadi peubah luar SARIMAX, karena "
+        "SARIMAX butuh nilai peubah luar untuk hari yang diramal, dan jumlah nota besok "
+        "belum diketahui hari ini. Yang sah sebagai peubah luar hanya yang sudah pasti di "
+        "masa depan: kalender. Ketiganya masuk bersama lewat VAR, yang meramal ketiganya "
+        "sekaligus — bentuk sederhana dari peramalan multivariat yang disarankan dosen. "
+        "Orde SARIMAX ditetapkan, tidak dicari per UMKM, supaya tidak ada pertanyaan "
+        "\"kenapa warung A memakai orde berbeda dari warung B\" yang tidak punya jawaban.",
+    )
+    if m1o:
+        for k, v in m1o.items():
+            if "hasil" not in v:
+                alinea(d, "%s: dilewati (%s)." % (JUDUL_SUMBER.get(k, k), v.get("dilewati", "")))
+                continue
+            urut = sorted(v["hasil"], key=lambda x: x["mape_pekanan"])
+            alinea(d, "%s — %d titik asal, %d pekan dinilai" % (JUDUL_SUMBER.get(k, k), v["titik_asal"], urut[0]["n_pekan"]), tebal=True)
+            tabel(
+                d,
+                ["Metode", "MAPE pekanan", "WAPE", "MAPE harian", "UMKM ≤ 5%", "Gagal"],
+                [
+                    [NAMA_METODE.get(h["nama"], h["nama"]),
+                     "%s (%s)" % (_pr(h["mape_pekanan"]), h["kategori"]),
+                     _pr(h["wape_pekanan"]), _pr(h["mape_harian"]),
+                     "%d/%d" % (h["entitas_lolos_5"], h["entitas"]), str(h["gagal"])]
+                    for h in urut
+                ],
+                lebar=[4.0, 3.6, 1.8, 2.2, 2.0, 1.4],
+            )
+        gambar(d, "mesin1_omset.png", "Gambar 5. MAPE pekanan ramalan omset per metode, pada data simulasi dan data toko roti sungguhan.", 15.5)
+        alinea(
+            d,
+            "Data toko roti (French Bakery, Kaggle) dipakai untuk satu hal: membuktikan "
+            "metodenya bekerja pada data toko sungguhan, bukan hanya pada data yang kami "
+            "bangkitkan sendiri. Tiap sumber dilatih dan diuji di dirinya sendiri; tidak ada "
+            "parameter yang dipindah antarsumber.",
+        )
+
+    # --- 5 persen --------------------------------------------------------------
+    judul(d, "6.7 Sasaran MAPE 5 persen belum tercapai", 2)
+    alinea(
+        d,
+        "Ini harus disebut terang. Tidak satu pun metode mencapai MAPE pekanan 5 persen "
+        "secara keseluruhan, baik untuk unit per barang maupun untuk omset.",
+    )
+    if m1p:
+        t = _mape_terbaik(m1p)
+        alinea(
+            d,
+            "Yang tercapai: ramalan unit barang yang lolos saringan mencapai %s (%s)."
+            % (_pr(t["mape_pekanan_lolos"]), metrik_lewis(t["mape_pekanan_lolos"])),
+        )
+    for k in ("simulasi", "french_bakery"):
+        o = _omset_terbaik(m1o, k)
+        if o:
+            alinea(
+                d,
+                "Omset %s: terbaik %s dengan %s (%s)%s."
+                % (JUDUL_SUMBER.get(k, k), NAMA_METODE.get(o["nama"], o["nama"]), _pr(o["mape_pekanan"]),
+                   o["kategori"],
+                   ("; %d dari %d UMKM sudah di bawah 5 persen" % (o["entitas_lolos_5"], o["entitas"]))
+                   if o["entitas"] > 1 else ""),
+            )
+    o = _omset_terbaik(m1o, "simulasi")
+    if o and o["nama"] == "sarimax":
+        alinea(
+            d,
+            "Kecurigaan yang harus disebut: pembangkit dataset kami memasukkan efek libur, "
+            "gajian, Ramadan, dan Lebaran, dan SARIMAX adalah satu-satunya metode yang "
+            "diberi kalender yang sama sebagai peubah luar. Keunggulannya di simulasi "
+            "sebagian bersifat struktural; hasil toko roti adalah ujian yang lebih adil.",
+        )
+        if m1o and "hasil" in m1o.get("french_bakery", {}):
+            fb = sorted(m1o["french_bakery"]["hasil"], key=lambda x: x["mape_pekanan"])
+            urutan = ", ".join("%s %s" % (NAMA_METODE.get(h["nama"], h["nama"]), _pr(h["mape_pekanan"])) for h in fb)
+            alinea(
+                d,
+                "Di toko roti urutannya: %s. Hanya %d pekan yang bisa dinilai karena satu toko "
+                "saja, jadi selisih satu-dua poin di sini belum bisa dibedakan dari kebetulan."
+                % (urutan, fb[0]["n_pekan"]),
+            )
+    alinea(
+        d,
+        "Sebagian jaraknya tidak bisa ditutup model apa pun. Kalau penjualan sepekan "
+        "sebuah barang berderau acak seperti sebaran Poisson dengan rata-rata λ, galat "
+        "persen rata-rata ramalan yang SEMPURNA pun sekitar √(2/(πλ)). Supaya galat itu "
+        "di bawah 5 persen, barangnya harus terjual sekitar 255 unit per pekan. Sebagian "
+        "besar barang warung terjual jauh lebih sedikit. Omset lebih mudah diramal "
+        "daripada unit per barang karena ia menjumlahkan banyak barang dan derau acaknya "
+        "saling meniadakan sebagian — itulah sebabnya MAPE omset lebih kecil.",
+    )
+    alinea(
+        d,
+        "Jadi pilihan yang tersedia adalah menurunkan tingkat rinciannya (omset bulanan, "
+        "atau kelompok barang), bukan mengganti model. Kami tidak memilihnya diam-diam: "
+        "batas aman tetap butuh angka per barang per pekan, dan angka itulah yang kami "
+        "laporkan apa adanya.",
+    )
+
+    # --- sebaran kuantil (hasil lama, tetap berlaku) -------------------------------
+    if m1:
+        judul(d, "6.8 Mutu sebaran p10–p90", 2)
+        alinea(
+            d,
+            "MAPE hanya menilai garis tengah. Batas aman memakai p90, jadi mutu seluruh "
+            "sebaran juga diukur, dengan WQL (galat kuantil tertimbang) dan cakupan selang "
+            "p10–p90 yang seharusnya mendekati 80 persen. Percobaan ini dijalankan sebelum "
+            "evaluasi pekanan, dengan tiga titik asal dan cakrawala 30 hari.",
+        )
+        urut = sorted(m1, key=lambda x: x["wql"])
+        tabel(
+            d,
+            ["Metode", "MASE", "WQL", "Cakupan p10-p90", "Waktu"],
+            [
+                [h["nama"], _ak(h["mase"], 3), _ak(h["wql"]), _pr(100 * h["cakupan"]), "%.0f d" % h["detik"]]
+                for h in urut
+            ],
+            lebar=[4.5, 2.5, 2.5, 3.5, 2.0],
+        )
+        gambar(d, "mesin1_banding.png", "Gambar 6. Perbandingan metode menurut WQL dan MASE.", 15.0)
+
+    judul(d, "6.9 Keputusan: ETS untuk produksi", 2)
+    alinea(
+        d,
+        "Mesin produksi diganti dari Chronos-2 ke ETS (Holt-Winters dengan musim mingguan). "
+        "Akurasinya setara, dan bedanya ada di hal yang diminta dosen: setiap parameter ETS "
+        "bisa dibaca dan dijelaskan per barang — seberapa cepat level mengikuti data baru, "
+        "seberapa kuat pola mingguan. Chronos-2 adalah model pondasi dengan ratusan juta "
+        "parameter yang tidak bisa dijelaskan satu per satu; ia tetap di kode sebagai "
+        "pembanding, bersama SARIMAX dan VAR untuk omset.",
+    )
+    if m1p:
+        cari = {h["nama"]: h for h in m1p["hasil"]}
+        kq = cari.get("kuantil_hari_pekan")
+        if kq:
+            alinea(
+                d,
+                "Satu hal perlu dicatat supaya tidak tersembunyi: kuantil hari-pekan — "
+                "rata-rata kuantil per hari dalam pekan dari 12 pekan terakhir — mendapat "
+                "MAPE barang lolos sedikit lebih kecil (%s). Selisihnya di bawah satu poin "
+                "dan metodenya bahkan lebih sederhana daripada ETS; ia tetap tersedia sebagai "
+                "pilihan produksi lewat satu pengaturan (WARUNGKU_METODE_MESIN1)."
+                % _pr(kq["mape_pekanan_lolos"]),
+            )
+    d.add_page_break()
+
+
+def metrik_lewis(x: float) -> str:
+    if x != x:
+        return "tidak terdefinisi"
+    return "sangat akurat" if x < 10 else "baik" if x < 20 else "layak" if x < 50 else "tidak akurat"
+
+
+def bagian_mesin2(d: Document, sim, seg_prod: dict[str, int]) -> None:
+    judul(d, "7. Mesin 2 — saran dan segmentasi distributor")
+    judul(d, "7.1 Apa yang dijawabnya", 2)
+    alinea(
+        d,
+        "Ke distributor mana sebaiknya warung ini memesan barang ini, hari ini — dan "
+        "distributor mana yang masuk segmen sangat layak, layak, atau kurang layak. "
+        "Segmentasi ini yang diminta dosen dengan metode Bayesian, pohon keputusan, atau "
+        "fuzzy. Kami memakai dua: Bayesian (Beta-Bernoulli) untuk menaksir keandalan, dan "
+        "fuzzy untuk menggabungkan keandalan dengan harga menjadi satu skor dan satu segmen.",
+    )
+    kode(
+        d,
+        "riwayat pesanan --> Beta-Bernoulli --> keandalan distributor\n"
+        "                                          |\n"
+        "harga penawaran ----------------------> fuzzy Sugeno (3 x 3 aturan)\n"
+        "                                          |\n"
+        "                                 skor 0..1 --> segmen + urutan saran",
+    )
+
+    judul(d, "7.2 Keandalan: Beta-Bernoulli", 2)
+    alinea(
+        d,
+        "Setiap pesanan ke sebuah distributor berakhir mulus (tepat waktu, lengkap) atau "
+        "tidak. Itu percobaan Bernoulli, dan pasangan Bayesian yang paling sederhana "
+        "untuknya adalah sebaran Beta. Mulai dari Beta(1, 1) — belum tahu apa-apa — lalu "
+        "setiap pesanan mulus menambah a satu, setiap pesanan gagal menambah b satu. "
+        "Keandalan taksirannya a / (a + b). Tidak ada pelatihan berulang, tidak ada "
+        "parameter tersembunyi; seluruh model adalah dua hitungan per distributor.",
+    )
+    alinea(
+        d,
+        "Contoh hitung tangan. Distributor A: 45 mulus, 5 gagal, jadi Beta(46, 6), rata-rata "
+        "0,885. Distributor B: 2 mulus, 0 gagal, jadi Beta(3, 1), rata-rata 0,75. Rata-rata A "
+        "lebih tinggi, tetapi B baru dicoba dua kali dan sebarannya lebar. Dengan Thompson "
+        "sampling, sistem mencuplik satu angka dari tiap sebaran dan memilih yang tertinggi: "
+        "B menang sekitar 30 persen dari waktu. Itulah eksplorasi — distributor baru tetap "
+        "diberi kesempatan, sebanding dengan ketidakpastiannya.",
+    )
+
+    judul(d, "7.3 Segmen: fuzzy Sugeno", 2)
+    alinea(
+        d,
+        "Dua masukan: keandalan (dari Beta-Bernoulli) dan rasio harga terhadap penawaran "
+        "termurah untuk barang yang sama. Masing-masing dibagi tiga himpunan dengan fungsi "
+        "keanggotaan segitiga dan bahu. Sembilan aturan JIKA-MAKA memberi skor; skor akhir "
+        "adalah rata-rata tertimbang skor aturan, dengan bobot derajat keanggotaan (operator "
+        "min) — inferensi Sugeno orde nol.",
+    )
+    tabel(
+        d,
+        ["Keandalan \\ Harga", "murah (≤ 1,00)", "sedang (puncak 1,10)", "mahal (≥ 1,20)"],
+        [
+            ["rendah (≤ 0,55)", "0,30", "0,15", "0,00"],
+            ["sedang (puncak 0,70)", "0,70", "0,50", "0,30"],
+            ["tinggi (≥ 0,85)", "1,00", "0,85", "0,60"],
+        ],
+        lebar=[4.2, 3.4, 3.8, 3.4],
+    )
+    alinea(
+        d,
+        "Skor ≥ 0,70 masuk segmen sangat layak, 0,45 sampai di bawah 0,70 layak, selebihnya "
+        "kurang layak. Batas himpunan dan skor aturan adalah pilihan kami yang bisa dibaca "
+        "dan diubah di satu tempat (ml/mesin2/fuzzy.py), bukan hasil pelatihan. Contoh hitung "
+        "tangan: keandalan 0,775 adalah setengah sedang dan setengah tinggi; rasio harga 1,05 "
+        "setengah murah dan setengah sedang. Empat aturan menyala dengan kekuatan 0,5 dan "
+        "skor 0,70, 0,50, 1,00, 0,85; rata-ratanya 0,7625 — sangat layak.",
+    )
+    if seg_prod:
+        total = sum(seg_prod.values())
+        alinea(
+            d,
+            "Jalan produksi terakhir menulis %d saran ke rekomendasi_skor: %d sangat layak, "
+            "%d layak, %d kurang layak."
+            % (total, seg_prod.get("sangat-layak", 0), seg_prod.get("layak", 0), seg_prod.get("kurang-layak", 0)),
+        )
+
+    judul(d, "7.4 Simulasi regret berurutan", 2)
+    alinea(
+        d,
+        "Mesin 2 dinilai dengan regret, bukan akurasi: berapa keberhasilan yang hilang "
+        "karena tidak memilih distributor terbaik. Waktu berjalan 400 hari; tiap hari "
+        "kebijakan memilih, hasilnya terungkap dari matriks counterfactual, dan hanya hasil "
+        "distributor yang dipilih yang masuk riwayat — persis seperti di dunia nyata, di "
+        "mana distributor yang tidak dipesan tidak pernah memberi kabar. Perbandingan "
+        "disusun tiga sumbu, masing-masing mengubah satu hal saja.",
+    )
+    if sim:
+        a = sim["acuan"]
+        tabel(
+            d,
+            ["Acuan", "Rata-rata sukses", "Regret per keputusan", "Rasio harga"],
+            [
+                ["Oracle (batas atas)", _ak(a["oracle_sukses"]), "0", _ak(a["oracle_harga"], 3)],
+                ["Memilih acak", _ak(a["acak_sukses"]), _ak(a["acak_regret"]), _ak(a["acak_harga"], 3)],
+                ["Selalu termurah (kebijakan sekarang)", _ak(a["termurah_sukses"]), _ak(a["termurah_regret"]),
+                 _ak(a.get("termurah_harga", 1.0), 3)],
+            ],
+            lebar=[5.6, 3.0, 3.6, 2.6],
+        )
+        sumbu: dict[str, list] = {}
+        for h in sim["hasil"]:
+            sumbu.setdefault(h.get("sumbu", "lain"), []).append(h)
+        for nama_sumbu, isi in sumbu.items():
+            alinea(d, nama_sumbu, tebal=True)
+            tabel(
+                d,
+                ["Varian", "Regret total", "Regret/keputusan", "Sukses", "Rasio harga"],
+                [
+                    [h["nama"], _rb(h["regret_total"]), _ak(h["regret_rata"]), _ak(h["sukses_rata"], 3),
+                     _ak(h.get("harga_rata", float("nan")), 4)]
+                    for h in sorted(isi, key=lambda x: x["regret_total"])
+                ],
+                lebar=[5.6, 2.4, 3.0, 2.0, 2.4],
+            )
+        gambar(d, "mesin2_regret.png", "Gambar 7. Regret kumulatif sepanjang 400 hari. Makin landai makin baik.", 15.0)
+        gambar(d, "mesin2_kompromi.png", "Gambar 8. Keandalan melawan harga. Kebijakan yang menimbang harga menukar sedikit keandalan dengan harga yang lebih murah.", 15.0)
+
+        cari = {h["nama"]: h for h in sim["hasil"]}
+        b, bart, lg, bk = (cari.get(k) for k in ("beta+thompson", "bart+thompson", "logistik+thompson", "beta_konteks+thompson"))
+        if b and bart and lg:
+            judul(d, "7.5 Temuan: penaksir paling sederhana menang", 2)
+            alinea(
+                d,
+                "Beta-Bernoulli — dua hitungan per distributor — mencapai regret total %s, "
+                "lebih kecil daripada regresi logistik Bayesian (%s) dan BART (%s), yang "
+                "sebelumnya menjadi penaksir utama. Dengan delapan distributor dan riwayat "
+                "yang dipakai bersama oleh 70 UMKM, fitur konteks tambahan lebih banyak "
+                "menambah derau daripada informasi. BART dilepas dari jalur utama dan tetap "
+                "di kode sebagai pembanding."
+                % (_rb(b["regret_total"]), _rb(lg["regret_total"]), _rb(bart["regret_total"])),
+            )
+            if bk:
+                alinea(
+                    d,
+                    "Hal yang sama terlihat di dalam Beta-Bernoulli sendiri: memecah hitungan "
+                    "menurut musim dan jarak (Beta berkonteks) memperburuk regret menjadi %s. "
+                    "Catatan jujur: pilihan untuk TIDAK memecah konteks diambil dari simulasi "
+                    "yang sama dengan yang dipakai menilainya, jadi angka %s sedikit "
+                    "menguntungkan dirinya sendiri." % (_rb(bk["regret_total"]), _rb(b["regret_total"])),
+                )
+
+        g, ts, ucb, eps = (cari.get(k) for k in ("beta_daring+greedy", "beta_daring+thompson", "beta_daring+linucb_a1", "beta_daring+epsilon_greedy_0.1"))
+        if g and ts:
+            judul(d, "7.6 Temuan: eksplorasi hampir tidak membayar dirinya sendiri", 2)
+            alinea(
+                d,
+                "Pada penaksir Beta yang diperbarui setiap pesanan, greedy murni mendapat "
+                "regret %s, Thompson %s%s. Penjelasannya: reputasi tiap distributor dipakai "
+                "bersama oleh seluruh UMKM, sehingga dalam beberapa pekan pertama setiap "
+                "distributor sudah punya ratusan pesanan dan ketidakpastiannya hampir habis. "
+                "Greedy dan LinUCB hanya berbeda pilihan pada segelintir keputusan; Thompson "
+                "berbeda dari greedy pada sekitar 4 persen keputusan."
+                % (_rb(g["regret_total"]), _rb(ts["regret_total"]),
+                   (", LinUCB %s, epsilon-greedy %s" % (_rb(ucb["regret_total"]), _rb(eps["regret_total"]))) if ucb and eps else ""),
+            )
+            alinea(
+                d,
+                "Thompson tetap dipakai di produksi karena biayanya kecil dan ia diperlukan "
+                "untuk keadaan yang tidak ada di simulasi: distributor baru yang mendaftar "
+                "setelah sistem berjalan, yang tanpa eksplorasi tidak akan pernah dicoba.",
+            )
+
+        tp, tf, gf = (cari.get(k) for k in ("topsis", "beta_daring+thompson+fuzzy", "beta_daring+greedy+fuzzy"))
+        if tp and tf:
+            judul(d, "7.7 Temuan: fuzzy lebih andal daripada TOPSIS", 2)
+            alinea(
+                d,
+                "TOPSIS adalah pembanding pengambilan keputusan multikriteria yang lazim. Ia "
+                "tidak belajar dari hasil pesanan; bobotnya tetap. Fuzzy di atas Beta+Thompson "
+                "mencapai regret %s melawan %s untuk TOPSIS, dengan rasio harga %s melawan %s "
+                "— lebih andal dengan harga yang hanya sedikit lebih mahal. Keduanya sengaja "
+                "menukar sebagian keandalan dengan harga, sehingga regretnya lebih besar "
+                "daripada kebijakan yang hanya mengejar keandalan (Gambar 8)."
+                % (_rb(tf["regret_total"]), _rb(tp["regret_total"]), _ak(tf["harga_rata"]), _ak(tp["harga_rata"])),
+            )
+
+        judul(d, "7.8 Temuan: selalu termurah kalah dari memilih acak", 2)
+        alinea(
+            d,
+            "Kebijakan yang berlaku sekarang di lapangan menghasilkan regret per keputusan %s, "
+            "lebih besar daripada memilih acak (%s). Itu premis Mesin 2. Tetapi premis itu "
+            "sebagian hasil rancangan dataset kami sendiri: kamilah yang membuat distributor "
+            "termurah menjadi yang terburuk. Di data nyata hubungannya mungkin lebih lemah."
+            % (_ak(a["termurah_regret"]), _ak(a["acak_regret"])),
+        )
+    else:
+        alinea(d, "(Hasil simulasi Mesin 2 belum tersedia.)")
+    d.add_page_break()
+
+
+def ringkas_mesin(d: Document, m1p, m1o, sar, sim, seg, seg_prod: dict[str, int]) -> None:
+    """Bagian E, F, G laporan ringkas. Angkanya dari sumber yang sama dengan laporan lengkap."""
+    # --- E -----------------------------------------------------------
+    judul(d, "E. Mesin 1 — perkiraan permintaan dan omset — bagian 6")
+    alinea(d, "Yang dijawabnya.", tebal=True)
+    alinea(
+        d,
+        "Dua hal: unit tiap barang pekan depan (untuk batas aman, dari p90) dan omset tiap "
+        "UMKM pekan depan (untuk gambaran bisnis pemilik).",
+    )
+    alinea(d, "Barang mana yang diramal.", tebal=True)
+    alinea(
+        d,
+        "10 teratas per katalog menurut nilai (ABC), polanya halus (Syntetos–Boylan), atau "
+        "musimannya kuat (STL). Barang lain tetap mendapat batas aman dari aturan sederhana."
+        + (" Hasilnya %d dari %d barang diramal dengan model." % (sar["diramal"], sar["barang"]) if sar else ""),
+    )
+    alinea(d, "Pencilan.", tebal=True)
+    alinea(
+        d,
+        "Jarak Mahalanobis dengan MCD atas log omset, jumlah barang, dan jumlah nota; batas "
+        "chi-kuadrat 0,999. Ditandai, tidak dibuang. Libur, Ramadan, dan Lebaran tidak "
+        "pernah ditandai.",
+    )
+    alinea(d, "Hasil: MAPE pekanan (jumlah tujuh hari, satu siklus restock).", tebal=True)
+    if m1p:
+        urut = sorted(m1p["hasil"], key=lambda x: x["mape_pekanan_lolos"])
+        tabel(
+            d,
+            ["Unit per barang", "Barang lolos", "Semua barang", "Harian"],
+            [[NAMA_METODE.get(h["nama"], h["nama"]),
+              "%s (%s)" % (_pr(h["mape_pekanan_lolos"]), metrik_lewis(h["mape_pekanan_lolos"])),
+              _pr(h["mape_pekanan"]), _pr(h["mape_harian"])] for h in urut],
+            lebar=[5.0, 4.0, 3.0, 2.5],
+        )
+        gambar(d, "mesin1_mape.png", "MAPE unit di tiga tingkat; garis merah sasaran 5 persen.", 14.5)
+    if m1o:
+        baris = []
+        for k, v in m1o.items():
+            if "hasil" not in v:
+                continue
+            for h in sorted(v["hasil"], key=lambda x: x["mape_pekanan"]):
+                baris.append([JUDUL_SUMBER.get(k, k), NAMA_METODE.get(h["nama"], h["nama"]),
+                              "%s (%s)" % (_pr(h["mape_pekanan"]), h["kategori"])])
+        if baris:
+            tabel(d, ["Omset", "Metode", "MAPE pekanan"], baris, lebar=[5.0, 5.0, 4.5])
+            gambar(d, "mesin1_omset.png", "MAPE pekanan omset, simulasi dan toko roti sungguhan.", 14.5)
+    alinea(d, "Sasaran 5 persen belum tercapai.", tebal=True)
+    alinea(
+        d,
+        "Derau acak penjualan per barang per pekan sudah lebih besar dari 5 persen untuk "
+        "barang yang terjual di bawah sekitar 255 unit sepekan, bahkan untuk ramalan yang "
+        "sempurna. Omset lebih mudah karena derau banyak barang saling meniadakan.",
+    )
+    alinea(d, "Kenapa ETS untuk produksi.", tebal=True)
+    alinea(
+        d,
+        "Setara Chronos-2 dalam akurasi, dan setiap parameternya bisa dijelaskan per barang. "
+        "Chronos-2 tetap sebagai pembanding; SARIMAX dan VAR (multivariat: omset, jumlah "
+        "barang, jumlah nota) untuk omset.",
+    )
+
+    # --- F -----------------------------------------------------------
+    judul(d, "F. Mesin 2 — saran dan segmentasi distributor — bagian 7")
+    alinea(d, "Yang dijawabnya.", tebal=True)
+    alinea(
+        d,
+        "Ke distributor mana sebaiknya memesan barang ini, dan distributor mana yang sangat "
+        "layak, layak, atau kurang layak.",
+    )
+    alinea(d, "Cara kerjanya.", tebal=True)
+    butir(d, "Bayesian: tiap distributor punya Beta(a, b); pesanan mulus menambah a, pesanan gagal menambah b. Keandalan = a / (a + b).")
+    butir(d, "Thompson sampling: cuplik satu angka dari tiap Beta, urutkan. Distributor yang jarang dicoba tetap mendapat kesempatan.")
+    butir(d, "Fuzzy Sugeno: keandalan dan rasio harga, 3 x 3 aturan, menjadi skor 0–1. Skor ≥ 0,70 sangat layak, ≥ 0,45 layak.")
+    if seg_prod:
+        alinea(
+            d,
+            "Produksi: %d sangat layak, %d layak, %d kurang layak."
+            % (seg_prod.get("sangat-layak", 0), seg_prod.get("layak", 0), seg_prod.get("kurang-layak", 0)),
+        )
+    if sim:
+        a = sim["acuan"]
+        tabel(
+            d,
+            ["Varian", "Regret total", "Regret/keputusan", "Rasio harga"],
+            [[h["nama"], _rb(h["regret_total"]), _ak(h["regret_rata"]), _ak(h.get("harga_rata", float("nan")), 4)]
+             for h in sorted(sim["hasil"], key=lambda x: x["regret_total"])]
+            + [["Memilih acak", "—", _ak(a["acak_regret"]), _ak(a["acak_harga"], 4)],
+               ["Selalu termurah (sekarang)", "—", _ak(a["termurah_regret"]), _ak(a.get("termurah_harga", 1.0), 4)]],
+            lebar=[5.8, 2.6, 3.2, 2.6],
+        )
+        gambar(d, "mesin2_kompromi.png", "Keandalan melawan harga per kebijakan.", 14.5)
+    alinea(d, "TEMUAN.", tebal=True)
+    butir(d, "Beta-Bernoulli mengalahkan regresi logistik dan BART. Metode paling sederhana menang; BART menjadi pembanding saja.")
+    butir(d, "Fuzzy di atas Beta+Thompson lebih andal daripada TOPSIS, dengan harga hanya sedikit lebih mahal.")
+    butir(d, "Selalu termurah kalah dari memilih acak — premis Mesin 2. Sebagian karena rancangan dataset kami sendiri.")
+    butir(d, "Eksplorasi hampir tidak membayar dirinya sendiri: reputasi distributor dipakai bersama 70 UMKM. Thompson tetap dipasang untuk distributor baru.")
+
+    # --- G -----------------------------------------------------------
+    judul(d, "G. Profil pelanggan distributor — bagian 8")
+    alinea(
+        d,
+        "Sebelumnya disebut Mesin 3. Namanya diganti supaya tidak tertukar dengan "
+        "segmentasi distributor (Mesin 2). Ini fitur pendukung portal distributor: siapa "
+        "pelanggan yang harus dijaga, siapa yang mulai menghilang, siapa yang baru.",
+    )
+    alinea(
+        d,
+        "K-Prototypes, karena fiturnya campuran angka (RFM) dan kategori (jenis usaha); "
+        "K-Means tidak bisa menghitung jarak antara kedai kopi dan warung makan."
+        + (" Hasil: %d pelanggan di %d distributor, jumlah kelompok dipilih dengan skor siluet."
+           % (seg.get("baris", 0), seg.get("distributor", 0)) if seg else ""),
+    )
+    gambar(d, "mesin3_segmen.png", "Sebaran kelompok pelanggan dan posisi RFM rata-ratanya.", 14.5)
+
+
 # --------------------------------------------------------------------------
 # Laporan lengkap
 # --------------------------------------------------------------------------
 def laporan_lengkap() -> Path:
     db = angka_basis_data()
     m1 = _json("hasil_mesin1.json")
+    m1p = _json("hasil_mesin1_pekanan.json")
+    m1o = _json("hasil_mesin1_omset.json")
+    sar = _json("hasil_mesin1_saringan.json")
     sim = _json("hasil_simulasi_mesin2.json")
     seg = _json("hasil_mesin3.json")
+    seg_prod = segmen_produksi()
     n_uji = jumlah_uji()
 
     d = _dokumen()
@@ -234,7 +1037,7 @@ def laporan_lengkap() -> Path:
     alinea(d, "Proyek Warungku — platform stok dan pengadaan untuk UMKM", rata="tengah")
     d.add_paragraph()
     alinea(d, "Cabang Rombak#3", rata="tengah")
-    alinea(d, date.today().strftime("%d %B %Y"), rata="tengah")
+    alinea(d, tanggal_hari_ini(), rata="tengah")
     d.add_page_break()
 
     # --- 1. ringkasan ---------------------------------------------------
@@ -256,36 +1059,17 @@ def laporan_lengkap() -> Path:
             ["Dataset", "%s baris dari satu simulasi 400 hari, 70 UMKM, 8 distributor."
              % f"{db['total_baris']:,}".replace(",", ".")],
             ["Pemeriksaan data", "4 uji konsistensi SQL, semuanya mengembalikan 0."],
-            ["Mesin 1", "6 metode diperbandingkan, uji ulang bergulir 3 titik asal."],
-            ["Mesin 2", "Contextual bandit: 4 kebijakan x 3 penaksir, simulasi regret 400 hari."],
-            ["Mesin 3", "K-Prototypes, segmentasi pelanggan per distributor."],
+            ["Mesin 1", teks_mesin1(m1p, m1o)],
+            ["Mesin 2", teks_mesin2(sim)],
+            ["Profil pelanggan", "K-Prototypes, pengelompokan pelanggan per distributor (fitur pendukung)."],
             ["Backend", "Dua layanan terpisah, otentikasi dua pintu, penjadwal harian."],
             ["Uji otomatis", "%d uji, semuanya lulus." % n_uji],
         ],
         lebar=[4.0, 11.0],
     )
 
-    alinea(d, "Tiga temuan yang mengubah rencana", tebal=True)
-    butir(
-        d,
-        "Lisensi bobot model menentukan pilihan, bukan hanya akurasi. MOIRAI dan Chronos-2 "
-        "sama-sama bisa diunduh tanpa akun dan mutunya setara, tetapi bobot MOIRAI "
-        "berlisensi CC-BY-NC-4.0 — boleh untuk penelitian, tidak boleh kalau Warungku "
-        "dijual. Mesin 1 memakai Chronos-2 (Apache-2.0).",
-    )
-    butir(
-        d,
-        "Kebijakan “selalu pilih termurah” lebih buruk daripada memilih acak. "
-        "Pada simulasi 400 hari, regret per keputusannya 0,2416 melawan 0,2077 untuk "
-        "pemilihan acak. Itu premis Mesin 2, dan di dataset ini ia terbukti.",
-    )
-    butir(
-        d,
-        "Eksplorasi hampir tidak membayar dirinya sendiri di masalah ini. Keempat "
-        "kebijakan bandit berakhir di regret yang nyaris sama. Penjelasannya ada di "
-        "bagian 7; singkatnya, reputasi distributor dipakai bersama oleh seluruh UMKM, "
-        "sehingga masalah awal-dingin sudah selesai dalam beberapa pekan pertama.",
-    )
+    temuan_utama(d, m1p, m1o, sim)
+    tanggapan_dosen(d, halaman_baru=True)
     alinea(
         d,
         "Catatan yang harus dibaca bersama seluruh angka di laporan ini: semuanya berasal "
@@ -522,8 +1306,8 @@ def laporan_lengkap() -> Path:
     alinea(
         d,
         "Pada rancangan sebelumnya, pemisahan ini juga keharusan teknis: uni2ts (pembungkus "
-        "MOIRAI) memaku scipy versi yang tidak punya wheel untuk Python 3.14. Sejak Mesin 1 "
-        "beralih ke Chronos-2, batasan itu hilang dan seluruh proyek kembali ke satu "
+        "MOIRAI) memaku scipy versi yang tidak punya wheel untuk Python 3.14. Sejak MOIRAI "
+        "dilepas, batasan itu hilang dan seluruh proyek kembali ke satu "
         "lingkungan Python — pemisahan layanannya tetap, karena alasan pertamanya tetap.",
     )
 
@@ -531,7 +1315,7 @@ def laporan_lengkap() -> Path:
     kode(
         d,
         "POST /mesin1/jalankan   (layanan ml, port 8001)\n"
-        "        |  Chronos-2 untuk seluruh barang\n"
+        "        |  ETS (Holt-Winters) untuk seluruh barang\n"
         "        v\n"
         "   tabel `prediksi`\n"
         "        |\n"
@@ -581,7 +1365,7 @@ def laporan_lengkap() -> Path:
         [
             ["Mesin 1", "02.00 WIB tiap hari", "Warung sudah tutup dan belum buka; data kemarin lengkap"],
             ["Mesin 2", "tiap 4 jam", "Skornya berlaku 12 jam; empat jam berarti tidak pernah basi"],
-            ["Mesin 3", "tiap 4 jam", "Mengikuti Mesin 2"],
+            ["Profil pelanggan", "tiap 4 jam", "Mengikuti Mesin 2"],
         ],
         lebar=[2.5, 3.5, 9.0],
     )
@@ -601,269 +1385,18 @@ def laporan_lengkap() -> Path:
     gambar(d, "ml_swagger.jpg", "Gambar 2. Endpoint layanan model. Ketiga mesin dijalankan dari sini; /jadwal menampilkan keadaan penjadwal.", 14.0)
     d.add_page_break()
 
-    # --- 6. Mesin 1 ------------------------------------------------------
-    judul(d, "6. Mesin 1 — perkiraan permintaan")
-    judul(d, "6.1 Apa yang dijawabnya", 2)
-    alinea(
-        d,
-        "Mesin 1 meramal permintaan, bukan stok. Stok tidak diramal; ia dihitung. Yang "
-        "diramal adalah berapa banyak bahan yang akan terpakai, per barang per hari, 30 hari "
-        "ke depan, dalam bentuk kuantil p10 / p50 / p90. Batas aman diambil dari p90 selama "
-        "lama pengiriman — bukan dari p50, karena p50 berarti separuh waktu warung kehabisan.",
-    )
-    if not gambar(d, "mesin1_kipas.png", "Gambar 3. Kipas p10-p90 melawan permintaan sebenarnya. Batas aman diambil dari tepi atas kipas, bukan dari garis tengahnya.", 15.0):
-        alinea(d, "(Gambar kipas perkiraan belum tersedia.)")
-
-    judul(d, "6.2 Rancangan evaluasi", 2)
-    alinea(
-        d,
-        "Uji ulang bergulir dengan tiga titik asal, bukan satu pembelahan. Dengan satu "
-        "jendela uji, selisih antar model bisa seluruhnya berasal dari kebetulan: jendela itu "
-        "kena Ramadan, atau kena pekan yang luar biasa sepi.",
-    )
-    alinea(
-        d,
-        "Metrik utamanya WQL (galat kuantil tertimbang), bukan MASE dan bukan MAPE. MAPE "
-        "membagi dengan nilai sebenarnya, dan permintaan harian UMKM sering nol — pembagian "
-        "dengan nol itu kadang dibuang diam-diam oleh pustaka, dan yang terbuang justru "
-        "hari-hari paling penting. MASE tetap dilaporkan karena skalanya mudah dibaca: 1,0 "
-        "berarti setara menebak “besok sama seperti hari yang sama pekan lalu”. Tetapi yang "
-        "dipakai aplikasi adalah p90, jadi yang harus diukur adalah mutu seluruh sebarannya.",
-    )
-
-    judul(d, "6.3 Hasil", 2)
-    if m1:
-        urut = sorted(m1, key=lambda x: x["wql"])
-        tabel(
-            d,
-            ["Metode", "MASE", "WQL", "Cakupan p10-p90", "Waktu"],
-            [
-                [
-                    h["nama"],
-                    ("%.3f" % h["mase"]).replace(".", ","),
-                    ("%.4f" % h["wql"]).replace(".", ","),
-                    ("%.1f%%" % (100 * h["cakupan"])).replace(".", ","),
-                    "%.0f d" % h["detik"],
-                ]
-                for h in urut
-            ],
-            lebar=[4.5, 2.5, 2.5, 3.5, 2.0],
-        )
-        gambar(d, "mesin1_banding.png", "Gambar 4. Perbandingan metode Mesin 1 menurut WQL dan MASE.", 15.0)
-    else:
-        alinea(d, "(Hasil Mesin 1 belum tersedia; jalankan python -m ml.mesin1.jalankan --chronos.)")
-
-    judul(d, "6.4 Pemeriksaan kalibrasi", 2)
-    alinea(
-        d,
-        "Naif musiman mendapat MASE mendekati 1,0, seperti yang seharusnya, karena MASE "
-        "memang memakai galat metode itu sebagai penyebut. Kalau angka ini jauh dari 1,0, "
-        "berarti penyebutnya salah dan seluruh kolom MASE tidak bisa dibaca sebagai menang "
-        "atau kalah. Cakupan p10-p90 seharusnya mendekati 80 persen; yang jauh di bawah "
-        "berarti selangnya terlalu sempit dan janji “aman 90 persen” tidak ditepati, "
-        "sedangkan yang jauh di atas berarti batas amannya menyuruh warung menimbun.",
-    )
-    judul(d, "6.5 Temuan: Chronos-2 seri dengan Holt-Winters, tetapi jauh lebih cepat", 2)
-    if m1:
-        urut1 = sorted(m1, key=lambda x: x["wql"])
-        cari = {x["nama"]: x for x in m1}
-        hw, ch = cari.get("holt_winters"), cari.get("chronos_2")
-        if hw and ch:
-            selisih = 100 * (ch["wql"] - hw["wql"]) / hw["wql"]
-            cepat = hw["detik"] / max(ch["detik"], 1e-9)
-            alinea(
-                d,
-                "Holt-Winters menempati peringkat pertama menurut WQL (%s) dan Chronos-2 "
-                "tepat di belakangnya (%s) — selisih %.1f persen. Untuk %d jendela penilaian, "
-                "selisih sekecil itu tidak cukup untuk menyatakan salah satunya lebih akurat."
-                % (
-                    ("%.4f" % hw["wql"]).replace(".", ","),
-                    ("%.4f" % ch["wql"]).replace(".", ","),
-                    selisih,
-                    ch["n"],
-                ),
-            )
-            alinea(
-                d,
-                "Yang membedakan keduanya bukan akurasi, melainkan biaya dan sifat. Chronos-2 "
-                "menyelesaikan seluruh penilaian dalam %d detik melawan %d detik Holt-Winters "
-                "— %.1f kali lebih cepat — dan cakupan selangnya lebih dekat ke sasaran 80 "
-                "persen (%s persen melawan %s persen). Lebih penting lagi, Chronos-2 "
-                "mencapainya TANPA DILATIH sama sekali pada data kami: ia tidak pernah "
-                "melihat satu pun barang Warungku, sedangkan Holt-Winters menaksir "
-                "parameternya sendiri untuk setiap satu dari %d deret."
-                % (
-                    round(ch["detik"]), round(hw["detik"]), cepat,
-                    ("%.1f" % (100 * ch["cakupan"])).replace(".", ","),
-                    ("%.1f" % (100 * hw["cakupan"])).replace(".", ","),
-                    ch["n"] // 3,
-                ),
-            )
-            alinea(
-                d,
-                "Sifat itulah yang tidak terukur oleh tabel di atas, karena semua deret di "
-                "sini sudah punya 400 hari riwayat. Warung yang baru mendaftar hanya punya "
-                "beberapa pekan, dan di situ metode yang harus menaksir parameter musiman "
-                "sendiri justru paling lemah.",
-            )
-            alinea(
-                d,
-                "Kecurigaan yang harus disebut. Pembangkit dataset kami menghasilkan "
-                "permintaan sebagai tingkat dasar dikali pengali musiman mingguan dikali "
-                "derau — bentuk yang hampir persis diasumsikan Holt-Winters. Keunggulan "
-                "struktural itu tidak otomatis berlaku di data nyata, dan fakta bahwa model "
-                "pondasi tetap menyamainya di kandang lawan patut dicatat.",
-            )
-            alinea(d, "Rekomendasi: pakai Chronos-2 sebagai mesin produksi.", tebal=True)
-            alinea(
-                d,
-                "Alasannya bertumpuk: akurasinya setara, waktunya seperempat, kalibrasinya "
-                "sedikit lebih baik, lisensinya Apache-2.0 sehingga boleh ikut kalau Warungku "
-                "suatu saat dijual, dan ia tidak memerlukan pelatihan per barang. Holt-Winters "
-                "tetap dipertahankan di dalam kode sebagai pembanding dan sebagai cadangan "
-                "kalau bobot model tidak bisa diunduh.",
-            )
-    else:
-        alinea(d, "(Hasil Mesin 1 belum tersedia.)")
-
-    d.add_page_break()
-
-    # --- 7. Mesin 2 ------------------------------------------------------
-    judul(d, "7. Mesin 2 — saran distributor sebagai contextual bandit")
-    judul(d, "7.1 Kenapa bandit dan bukan klasifikasi", 2)
-    alinea(d, "Tiga sifat masalah ini tidak bisa dinyatakan oleh pengklasifikasi statis:")
-    butir(d, "Umpan balik sebagian. Kita hanya melihat hasil distributor yang benar-benar dipesan; yang tidak dipesan tidak pernah memberi label.")
-    butir(d, "Keputusan hari ini menentukan data besok. Distributor yang tidak pernah dipilih tidak pernah punya riwayat, jadi skornya ditarik ke rata-rata, jadi tidak pernah dipilih.")
-    butir(d, "Metrik aslinya regret — berapa yang hilang karena tidak memilih yang terbaik — bukan akurasi.")
-    kode(
-        d,
-        "Kebijakan  --+-- Thompson Sampling   (Chapelle & Li, 2011)\n"
-        "             +-- LinUCB              (Li dkk., 2010)\n"
-        "             +-- epsilon-greedy\n"
-        "             +-- Greedy murni        (pembanding: eksplorasi nol)\n"
-        "                   | membungkus\n"
-        "Penaksir   ------- BART / logistik Bayesian / LightGBM bootstrap",
-    )
-
-    judul(d, "7.2 Kenapa BART", 2)
-    alinea(
-        d,
-        "BART (Bayesian Additive Regression Trees; Chipman, George & McCulloch, 2010) adalah "
-        "jumlah ratusan pohon kecil yang masing-masing dibatasi prior agar hanya menjelaskan "
-        "sedikit. MCMC menghasilkan ratusan cuplikan dari posterior, bukan satu taksiran "
-        "titik, sehingga Thompson sampling tinggal mengambil satu cuplikan — tidak ada "
-        "langkah heuristik di antaranya.",
-    )
-    alinea(
-        d,
-        "Silsilahnya cocok dengan masalah ini. Hill (2011) memperkenalkan BART untuk "
-        "menaksir hasil yang akan terjadi seandainya diberi perlakuan lain — persis bentuk "
-        "matriks counterfactual yang kami bangun. Jadi pilihannya punya alasan, bukan sekadar "
-        "mencari metode yang jarang dipakai.",
-    )
-    alinea(
-        d,
-        "Catatan koreksi. Rencana sebelumnya memakai TabPFN dengan anggapan ia bekerja "
-        "zero-shot. Itu tidak benar: TabPFN melakukan in-context learning, yang berarti ia "
-        "tidak perlu dilatih tetapi wajib dibawa tabel contoh berlabel pada setiap inferensi. "
-        "Akibatnya tidak ada berkas model yang bisa dipasang, ada batas ukuran tabel, dan "
-        "masalah awal-dingin tidak hilang. Versi 9.x juga menuntut pembuatan akun dan "
-        "penerimaan lisensi lewat peramban sebelum bobotnya bisa diunduh.",
-    )
-
-    judul(d, "7.3 Simulasi regret berurutan", 2)
-    alinea(
-        d,
-        "Evaluasi potret sesaat membekukan keadaan distributor di batas jendela uji, lalu "
-        "menilai semua keputusan sekaligus. Pada potret sesaat, eksplorasi hanya terlihat "
-        "sebagai derau — tidak ada hari esok tempat pengetahuan baru terpakai.",
-    )
-    alinea(
-        d,
-        "Di simulasi berurutan, waktu berjalan: kebijakan memilih, hasilnya terungkap dari "
-        "matriks counterfactual, pengetahuannya bertambah, besok ia memilih lagi dengan "
-        "pengetahuan itu. Hanya hasil lengan yang dipilih yang masuk riwayat — itulah bandit "
-        "feedback; memasukkan hasil kandidat lain berarti belajar dari informasi yang di "
-        "dunia nyata tidak pernah ada.",
-    )
-    if sim:
-        a = sim["acuan"]
-        tabel(
-            d,
-            ["Acuan", "Rata-rata sukses", "Regret per keputusan"],
-            [
-                ["Oracle (batas atas)", ("%.4f" % a["oracle_sukses"]).replace(".", ","), "0"],
-                ["Memilih acak", ("%.4f" % a["acak_sukses"]).replace(".", ","), ("%.4f" % a["acak_regret"]).replace(".", ",")],
-                ["Selalu termurah (kebijakan sekarang)", ("%.4f" % a["termurah_sukses"]).replace(".", ","), ("%.4f" % a["termurah_regret"]).replace(".", ",")],
-            ],
-            lebar=[6.5, 4.0, 4.5],
-        )
-        urut = sorted(sim["hasil"], key=lambda x: x["regret_total"])
-        tabel(
-            d,
-            ["Kebijakan + penaksir", "Keputusan", "Regret total", "Regret/keputusan", "Sukses"],
-            [
-                [
-                    h["nama"],
-                    f"{h['keputusan']:,}".replace(",", "."),
-                    "%.0f" % h["regret_total"],
-                    ("%.4f" % h["regret_rata"]).replace(".", ","),
-                    ("%.3f" % h["sukses_rata"]).replace(".", ","),
-                ]
-                for h in urut
-            ],
-            lebar=[5.5, 2.5, 2.5, 3.0, 2.0],
-        )
-        gambar(d, "mesin2_regret.png", "Gambar 5. Regret kumulatif sepanjang 400 hari. Makin landai makin baik.", 15.0)
-        gambar(d, "mesin2_banding.png", "Gambar 6. Regret rata-rata per keputusan, dengan acuan termurah dan acak sebagai garis.", 15.0)
-    else:
-        alinea(d, "(Hasil simulasi Mesin 2 belum tersedia.)")
-
-    judul(d, "7.4 Temuan: selalu termurah kalah dari memilih acak", 2)
-    alinea(
-        d,
-        "Kebijakan yang berlaku sekarang di lapangan — selalu pilih yang termurah — "
-        "menghasilkan regret per keputusan yang lebih besar daripada memilih acak. Itu "
-        "membuktikan premis Mesin 2. Tetapi perlu disebut juga bahwa premis itu sebagian "
-        "adalah hasil rancangan dataset kami sendiri: kamilah yang membuat distributor "
-        "termurah menjadi yang terburuk. Di data nyata hubungannya mungkin lebih lemah.",
-    )
-
-    judul(d, "7.5 Temuan: eksplorasi hampir tidak membayar dirinya sendiri", 2)
-    alinea(
-        d,
-        "Keempat kebijakan berakhir di regret yang nyaris sama. Ini bukan tanda kebijakannya "
-        "tidak bekerja. Pemeriksaan terpisah atas seluruh 9.328 keputusan menunjukkan "
-        "epsilon-greedy memilih berbeda dari greedy pada 761 keputusan (8,2 persen), Thompson "
-        "pada 691 keputusan (7,4 persen), dan LinUCB pada 394 keputusan (4,2 persen). Pilihan "
-        "mereka memang berbeda; hasil akhirnya yang setara.",
-    )
-    alinea(
-        d,
-        "Penjelasannya ada pada bentuk masalahnya. Hanya ada delapan distributor, dan "
-        "reputasi tiap distributor dipakai bersama oleh seluruh 70 UMKM — hasil pesanan satu "
-        "warung langsung memperbaiki taksiran untuk semua warung lain. Dengan ribuan "
-        "keputusan, greedy sudah mengumpulkan data yang cukup dalam beberapa pekan pertama, "
-        "dan sesudah itu tidak banyak lagi yang bisa dibeli dengan menjelajah.",
-    )
-    alinea(
-        d,
-        "Satu kebetulan yang perlu disebut supaya tidak disalahartikan sebagai cacat: greedy "
-        "dan epsilon-greedy berakhir di regret total yang sama persis, 1.462. Keduanya "
-        "benar-benar memilih berbeda pada 761 keputusan; biaya dan keuntungan menjelajah "
-        "kebetulan saling meniadakan tepat di angka itu.",
-    )
-    alinea(
-        d,
-        "Konsekuensi praktisnya justru menyenangkan: lapis eksplorasi boleh dipasang tanpa "
-        "biaya yang berarti, dan ia tetap diperlukan untuk keadaan yang tidak muncul di "
-        "simulasi ini — distributor baru yang mendaftar setelah sistem berjalan, atau "
-        "distributor yang mutunya berubah.",
-    )
-    d.add_page_break()
+    bagian_mesin1(d, m1, m1p, m1o, sar)
+    bagian_mesin2(d, sim, seg_prod)
 
     # --- 8. Mesin 3 ------------------------------------------------------
-    judul(d, "8. Mesin 3 — segmentasi pelanggan distributor")
+    judul(d, "8. Profil pelanggan distributor (fitur pendukung)")
+    alinea(
+        d,
+        "Bagian ini sebelumnya disebut Mesin 3, segmentasi pelanggan. Namanya diganti "
+        "supaya tidak tertukar dengan segmentasi distributor yang diminta dosen — yang itu "
+        "dikerjakan Mesin 2 (bagian 7). Profil pelanggan adalah fitur pendukung portal "
+        "distributor, bukan salah satu mesin utama.",
+    )
     alinea(
         d,
         "Arahnya berlawanan dengan Mesin 2. Mesin 2 membaca pesanan dari sisi UMKM "
@@ -902,7 +1435,7 @@ def laporan_lengkap() -> Path:
             ],
             lebar=[4.0, 3.0, 3.0, 3.0],
         )
-    gambar(d, "mesin3_segmen.png", "Gambar 7. Sebaran segmen dan posisi RFM rata-ratanya.", 15.0)
+    gambar(d, "mesin3_segmen.png", "Gambar 9. Sebaran kelompok pelanggan dan posisi RFM rata-ratanya.", 15.0)
     alinea(
         d,
         "Jumlah kelompok dipilih dengan skor siluet, bukan ditetapkan di muka. Skor siluet "
@@ -930,6 +1463,8 @@ def laporan_lengkap() -> Path:
             ["test_data.py", "Sensor kehabisan stok, pengisian median hari-pekan, pembelahan menurut waktu, dan daftar fitur yang tidak boleh memuat label"],
             ["test_struk.py", "Idempotensi nota, invarian buku besar, menu yang belum dipetakan"],
             ["test_otentikasi.py", "Dua pintu, dua token, penjagaan alamat, dan hash dari pembangkit yang benar-benar bisa dipakai masuk"],
+            ["test_mesin1_saringan.py", "MAPE dan skala Lewis dihitung tangan; Syntetos–Boylan pada empat pola buatan; ABC memakai nilai, bukan unit; saringan tidak mengintip masa depan; Mahalanobis menangkap kombinasi janggal tetapi tidak menandai Lebaran"],
+            ["test_mesin2_sederhana.py", "Pembaruan Beta dan contoh Beta(46, 6) melawan Beta(3, 1); keanggotaan fuzzy, contoh hitung tangan 0,7625, dan kemonotonan skor"],
         ],
         lebar=[4.0, 11.0],
     )
@@ -951,7 +1486,8 @@ def laporan_lengkap() -> Path:
     butir(d, "Kerangka perbandingannya adil: semua metode dinilai pada jendela yang sama persis, dengan perlakuan NaN yang sama, tanpa kebocoran masa depan (diuji).")
     butir(d, "Urutan relatif antar metode pada dataset ini bisa dipercaya.")
     alinea(d, "Tidak boleh disimpulkan", tebal=True)
-    butir(d, "Bahwa model pondasi tidak berguna. Pembangkit dataset kami menghasilkan permintaan dengan bentuk yang hampir persis diasumsikan Holt-Winters, dan keunggulan struktural itu tidak otomatis berlaku di data nyata.")
+    butir(d, "Bahwa ETS lebih baik daripada model pondasi secara umum. Pembangkit dataset kami menghasilkan permintaan dengan bentuk yang hampir persis diasumsikan Holt-Winters, dan keunggulan struktural itu tidak otomatis berlaku di data nyata. Data toko roti baru satu toko.")
+    butir(d, "Bahwa sasaran 5 persen mustahil. Ia belum tercapai pada tingkat barang per pekan; pada tingkat yang lebih kasar (omset bulanan, kelompok barang) jaraknya lebih kecil.")
     butir(d, "Bahwa Mesin 2 akan menaikkan keberhasilan pesanan sebesar angka di tabel. Kebijakan termurah diuji pada dataset yang kami rancang supaya distributor termurah adalah yang terburuk.")
     butir(d, "Bahwa eksplorasi tidak berguna. Simulasi ini tidak memuat distributor baru yang mendaftar di tengah jalan, dan di situlah eksplorasi paling berarti.")
     butir(d, "Apa pun tentang perilaku pengguna sungguhan. Tidak ada satu pun pemilik warung nyata di dalam angka ini.")
@@ -978,7 +1514,10 @@ def laporan_lengkap() -> Path:
             ["Tabel kendala dan keranjang sisi server", "Ditunda sesuai keputusan"],
             ["Resep berbilang bahan", "Struktur tabel ada, dataset mengisinya satu-ke-satu sesuai keputusan"],
             ["Dockerfile api dan ml", "Hanya basis data yang di kontainer; keduanya jalan sebagai perintah uvicorn. Lebih jujur daripada Dockerfile yang tidak pernah diuji"],
-            ["Data warung sungguhan", "Seluruh angka berasal dari simulasi. Lihat bagian 10"],
+            ["Data warung sungguhan", "Angka Warungku berasal dari simulasi; satu toko roti nyata dipakai untuk menguji metode omset. Lihat bagian 10"],
+            ["Penanda stok mati", "Sell-through hanya cocok untuk menandai barang yang hampir tidak berkurang; penandanya belum dibangun"],
+            ["MAPE 5 persen", "Belum tercapai pada tingkat barang per pekan. Lihat bagian 6.7"],
+            ["Ramalan omset di aplikasi", "Baru dievaluasi; belum ditulis ke basis data dan belum tampil di portal"],
         ],
         lebar=[5.0, 10.0],
     )
@@ -996,6 +1535,9 @@ def laporan_lengkap() -> Path:
         "python -m pytest uji -q\n"
         "\n"
         "python -m ml.mesin1.jalankan --chronos --json keluaran/hasil_mesin1.json\n"
+        "python -m ml.mesin1.jalankan_pekanan --chronos --json keluaran/hasil_mesin1_pekanan.json\n"
+        "python -m ml.mesin1.jalankan_pekanan --hanya-saringan keluaran/hasil_mesin1_saringan.json\n"
+        "python -m ml.mesin1.jalankan_omset --json keluaran/hasil_mesin1_omset.json\n"
         "python -m ml.mesin2.jalankan_simulasi --bart --json keluaran/hasil_simulasi_mesin2.json\n"
         "python -m ml.grafik\n"
         "\n"
@@ -1026,9 +1568,12 @@ def laporan_ringkas() -> Path:
     tidak mungkin menyebut angka yang berbeda.
     """
     db = angka_basis_data()
-    m1 = _json("hasil_mesin1.json")
+    m1p = _json("hasil_mesin1_pekanan.json")
+    m1o = _json("hasil_mesin1_omset.json")
+    sar = _json("hasil_mesin1_saringan.json")
     sim = _json("hasil_simulasi_mesin2.json")
     seg = _json("hasil_mesin3.json")
+    seg_prod = segmen_produksi()
     n_uji = jumlah_uji()
 
     d = _dokumen()
@@ -1044,7 +1589,7 @@ def laporan_ringkas() -> Path:
     r.font.name = HURUF
     r.font.color.rgb = TEAL
     alinea(d, "Ringkasan dari Laporan Lengkap; nomor bagian menunjuk ke sana.", rata="tengah")
-    alinea(d, "Cabang Rombak#3 — " + date.today().strftime("%d %B %Y"), rata="tengah")
+    alinea(d, "Cabang Rombak#3 — " + tanggal_hari_ini(), rata="tengah")
     d.add_paragraph()
 
     tabel(
@@ -1055,13 +1600,14 @@ def laporan_ringkas() -> Path:
             ["B. Dataset", "%s baris, 70 UMKM, 400 hari, kalender SKB" % f"{db['total_baris']:,}".replace(",", ".")],
             ["C. Pemeriksaan", "4 uji SQL, semuanya 0"],
             ["D. Backend", "Dua layanan, otentikasi dua pintu, penjadwal harian"],
-            ["E. Mesin 1", "Chronos-2 (Apache-2.0), 6 metode dibandingkan"],
-            ["F. Mesin 2", "Contextual bandit: BART + Thompson, simulasi regret"],
-            ["G. Mesin 3", "K-Prototypes, segmentasi per distributor"],
+            ["E. Mesin 1", teks_mesin1(m1p, m1o)],
+            ["F. Mesin 2", teks_mesin2(sim)],
+            ["G. Profil pelanggan", "K-Prototypes, pengelompokan pelanggan per distributor (fitur pendukung)"],
             ["H. Uji otomatis", "%d uji, semuanya lulus" % n_uji],
         ],
         lebar=[4.0, 11.0],
     )
+    tanggapan_dosen(d)
     d.add_page_break()
 
     # --- A -----------------------------------------------------------
@@ -1164,131 +1710,7 @@ def laporan_ringkas() -> Path:
     gambar(d, "api_swagger.jpg", "Endpoint layanan API. Gembok menandai yang memerlukan token.", 14.0)
     gambar(d, "ml_swagger.jpg", "Endpoint layanan model: ketiga mesin dan penjadwal.", 14.0)
 
-    # --- E -----------------------------------------------------------
-    judul(d, "E. Mesin 1 — perkiraan permintaan — bagian 6")
-    alinea(d, "Yang dijawabnya.", tebal=True)
-    alinea(
-        d,
-        "Berapa banyak bahan yang akan terpakai, per barang per hari, 30 hari ke depan, "
-        "dalam bentuk p10 / p50 / p90. Batas aman diambil dari p90 selama lama pengiriman, "
-        "bukan dari p50 — p50 berarti separuh waktu warung kehabisan.",
-    )
-    alinea(d, "Kenapa Chronos-2 dan bukan MOIRAI.", tebal=True)
-    alinea(
-        d,
-        "Keduanya bisa diunduh tanpa akun dan mutunya setara. Bedanya lisensi bobot: MOIRAI "
-        "CC-BY-NC-4.0 (non-komersial), Chronos-2 Apache-2.0. Kalau Warungku dijual, bobot "
-        "MOIRAI tidak boleh ikut — dan seluruh angka batas aman berasal dari situ.",
-    )
-    if m1:
-        urut = sorted(m1, key=lambda x: x["wql"])
-        tabel(
-            d,
-            ["Metode", "MASE", "WQL", "Cakupan", "Waktu"],
-            [
-                [h["nama"], ("%.3f" % h["mase"]).replace(".", ","),
-                 ("%.4f" % h["wql"]).replace(".", ","),
-                 ("%.1f%%" % (100 * h["cakupan"])).replace(".", ","),
-                 "%.0f d" % h["detik"]]
-                for h in urut
-            ],
-            lebar=[4.5, 2.5, 2.5, 2.5, 2.0],
-        )
-    gambar(d, "mesin1_banding.png", "Perbandingan metode Mesin 1.", 14.5)
-    alinea(d, "Metrik utama WQL, bukan MAPE.", tebal=True)
-    alinea(
-        d,
-        "MAPE membagi dengan nilai sebenarnya, dan permintaan harian sering nol. "
-        "Pembagian dengan nol kadang dibuang diam-diam oleh pustaka, dan yang terbuang "
-        "justru hari-hari paling penting.",
-    )
-
-    # --- F -----------------------------------------------------------
-    judul(d, "F. Mesin 2 — saran distributor — bagian 7")
-    alinea(d, "Yang dijawabnya.", tebal=True)
-    alinea(
-        d,
-        "Ke distributor mana sebaiknya memesan barang ini, untuk warung ini, hari ini. "
-        "Bukan per UMKM sekali untuk selamanya: jawabannya berubah menurut barang, ukuran "
-        "pesanan, cuaca, jarak, dan minimum pesanan.",
-    )
-    alinea(d, "Kenapa dibingkai sebagai contextual bandit.", tebal=True)
-    butir(d, "Umpan balik sebagian: hanya hasil distributor yang dipesan yang terlihat.")
-    butir(d, "Keputusan hari ini menentukan data besok.")
-    butir(d, "Metrik aslinya regret, bukan akurasi.")
-    alinea(d, "Kenapa BART sebagai penaksir.", tebal=True)
-    alinea(
-        d,
-        "Posteriornya asli, jadi Thompson sampling tinggal mencuplik tanpa heuristik. "
-        "Silsilahnya juga cocok: BART dirancang untuk menaksir hasil yang akan terjadi "
-        "seandainya diberi perlakuan lain — persis bentuk matriks counterfactual kami. "
-        "TabPFN dilepas karena bukan zero-shot seperti yang dikira, dan versi barunya "
-        "berpagar akun serta lisensi.",
-    )
-    if sim:
-        a = sim["acuan"]
-        urut = sorted(sim["hasil"], key=lambda x: x["regret_total"])
-        tabel(
-            d,
-            ["Kebijakan + penaksir", "Regret total", "Regret/keputusan", "Sukses"],
-            [["Oracle (batas atas)", "0", "0,0000", ("%.4f" % a["oracle_sukses"]).replace(".", ",")]]
-            + [
-                [h["nama"], "%.0f" % h["regret_total"],
-                 ("%.4f" % h["regret_rata"]).replace(".", ","),
-                 ("%.3f" % h["sukses_rata"]).replace(".", ",")]
-                for h in urut
-            ]
-            + [
-                ["Memilih acak", "—", ("%.4f" % a["acak_regret"]).replace(".", ","), ("%.4f" % a["acak_sukses"]).replace(".", ",")],
-                ["Selalu termurah (sekarang)", "—", ("%.4f" % a["termurah_regret"]).replace(".", ","), ("%.4f" % a["termurah_sukses"]).replace(".", ",")],
-            ],
-            lebar=[5.5, 3.0, 3.5, 2.5],
-        )
-        gambar(d, "mesin2_regret.png", "Regret kumulatif 400 hari. Makin landai makin baik.", 14.5)
-    alinea(d, "TEMUAN 1: selalu termurah kalah dari memilih acak.", tebal=True)
-    alinea(
-        d,
-        "Premis Mesin 2 terbukti di dataset ini. Tetapi premis itu sebagian hasil rancangan "
-        "kami sendiri: kamilah yang membuat distributor termurah menjadi yang terburuk.",
-    )
-    alinea(d, "TEMUAN 2: eksplorasi hampir tidak membayar dirinya sendiri.", tebal=True)
-    alinea(
-        d,
-        "Keempat kebijakan berakhir di regret yang nyaris sama, padahal pilihannya memang "
-        "berbeda (epsilon-greedy berbeda dari greedy pada ~13 persen keputusan, Thompson "
-        "~17 persen). Sebabnya: hanya ada delapan distributor, dan reputasi mereka dipakai "
-        "bersama oleh 70 UMKM, sehingga masalah awal-dingin selesai dalam beberapa pekan. "
-        "Lapis eksplorasi tetap dipasang karena ia diperlukan untuk hal yang tidak muncul di "
-        "simulasi: distributor baru yang mendaftar setelah sistem berjalan.",
-    )
-
-    # --- G -----------------------------------------------------------
-    judul(d, "G. Mesin 3 — segmentasi pelanggan — bagian 8")
-    alinea(d, "Yang dijawabnya.", tebal=True)
-    alinea(
-        d,
-        "Dari sekian UMKM yang pernah memesan ke saya, siapa yang harus saya jaga, siapa "
-        "yang mulai menghilang, siapa yang baru. Ini mesin untuk portal distributor.",
-    )
-    alinea(d, "Kenapa K-Prototypes dan bukan K-Means.", tebal=True)
-    alinea(
-        d,
-        "Fiturnya campuran angka dan kategori. K-Means tidak bisa menghitung jarak antara "
-        "kedai kopi dan warung makan. K-Prototypes menjumlahkan dua jenis jarak dengan bobot "
-        "gamma; pusat kelompoknya rata-rata untuk angka dan modus untuk kategori.",
-    )
-    if seg:
-        alinea(
-            d,
-            "Hasil: %d pelanggan tersegmen di %d distributor, jumlah kelompok dipilih dengan "
-            "skor siluet." % (seg.get("baris", 0), seg.get("distributor", 0)),
-        )
-    gambar(d, "mesin3_segmen.png", "Sebaran segmen dan posisi RFM rata-ratanya.", 14.5)
-    alinea(
-        d,
-        "Keluarannya kelompok bernama dengan satu kalimat ciri dan satu kalimat saran "
-        "tindakan, bukan nomor kelompok — nomor kelompok tidak bisa dipakai siapa pun.",
-    )
+    ringkas_mesin(d, m1p, m1o, sar, sim, seg, seg_prod)
 
     # --- H -----------------------------------------------------------
     judul(d, "H. Uji otomatis — bagian 9")
@@ -1301,6 +1723,8 @@ def laporan_ringkas() -> Path:
             ["test_data.py", "Sensor kehabisan stok, pembelahan waktu, fitur tidak memuat label"],
             ["test_struk.py", "Idempotensi nota, invarian buku besar"],
             ["test_otentikasi.py", "Dua pintu, dua token, penjagaan alamat"],
+            ["test_mesin1_saringan.py", "MAPE dan skala Lewis, Syntetos–Boylan, ABC menurut nilai, Mahalanobis dan Lebaran"],
+            ["test_mesin2_sederhana.py", "Pembaruan Beta, contoh Beta(46, 6) vs Beta(3, 1), fuzzy 0,7625"],
         ],
         lebar=[4.0, 11.0],
     )
@@ -1321,7 +1745,8 @@ def laporan_ringkas() -> Path:
         "metode pada dataset ini bisa dipercaya.",
     )
     alinea(d, "Tidak boleh disimpulkan:", tebal=True)
-    butir(d, "Bahwa model pondasi tidak berguna — dataset kami menguntungkan metode klasik secara struktural.")
+    butir(d, "Bahwa ETS lebih baik daripada model pondasi secara umum — dataset kami menguntungkan metode klasik secara struktural.")
+    butir(d, "Bahwa sasaran 5 persen mustahil — ia belum tercapai pada tingkat barang per pekan; pada tingkat yang lebih kasar jaraknya lebih kecil.")
     butir(d, "Bahwa Mesin 2 akan menaikkan keberhasilan pesanan sebesar angka di tabel — kebijakan termurah diuji pada dataset yang kami rancang supaya termurah adalah terburuk.")
     butir(d, "Bahwa eksplorasi tidak berguna — simulasi ini tidak memuat distributor baru yang mendaftar di tengah jalan.")
     butir(d, "Apa pun tentang perilaku pengguna sungguhan.")
@@ -1338,7 +1763,10 @@ def laporan_ringkas() -> Path:
             ["kendala, keranjang sisi server", "Ditunda sesuai keputusan"],
             ["Resep berbilang bahan", "Struktur tabel ada, dataset mengisinya satu-ke-satu"],
             ["Dockerfile api dan ml", "Hanya basis data di kontainer; demo dijalankan dengan uvicorn"],
-            ["Data warung sungguhan", "Seluruh angka dari simulasi"],
+            ["Data warung sungguhan", "Angka Warungku dari simulasi; satu toko roti nyata untuk menguji metode omset"],
+            ["Penanda stok mati", "Sell-through hanya cocok untuk ini; belum dibangun"],
+            ["MAPE 5 persen", "Belum tercapai pada tingkat barang per pekan"],
+            ["Ramalan omset di aplikasi", "Baru dievaluasi; belum ditulis ke basis data dan belum tampil"],
         ],
         lebar=[5.0, 10.0],
     )
