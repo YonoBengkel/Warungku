@@ -37,6 +37,10 @@ WARNA = {
     "kuantil_hari_pekan": "#0e7490",
     "croston": "#9a3412",
     "naif_musiman": "#6b7280",
+    "aturan_sederhana": "#9ca3af",
+    "ets": "#b45309",
+    "sarimax": "#7c3aed",
+    "var": "#be185d",
     "bart": "#0f766e",
     "logistik": "#1d4ed8",
     "pohon": "#b45309",
@@ -108,7 +112,7 @@ def kipas_perkiraan(barang_id: int | None = None) -> Path | None:
     diambil dari tepi atas kipas, bukan dari garis tengahnya.
     """
     from .data import muat_deret
-    from .mesin1.chronos import ramal_banyak
+    from .mesin1.dasar import holt_winters
 
     deret = muat_deret()
     if not deret:
@@ -117,7 +121,8 @@ def kipas_perkiraan(barang_id: int | None = None) -> Path | None:
 
     cakrawala = 30
     akhir = len(d) - cakrawala
-    r = ramal_banyak([(d, akhir)], cakrawala)[0]
+    # Model produksi sejak 10 Okt 2026 adalah ETS, jadi kipasnya juga ETS.
+    r = holt_winters(d, akhir, cakrawala)
 
     ekor = 60
     t_lalu = np.arange(-ekor, 0)
@@ -127,14 +132,15 @@ def kipas_perkiraan(barang_id: int | None = None) -> Path | None:
 
     fig, ax = plt.subplots(figsize=(9, 4))
     ax.plot(t_lalu, lalu, color="#374151", lw=1.2, label="riwayat")
-    ax.fill_between(t_depan, r[0.1], r[0.9], color=WARNA["chronos"], alpha=0.18, label="p10-p90")
-    ax.plot(t_depan, r[0.5], color=WARNA["chronos"], lw=1.8, label="p50 (perkiraan)")
-    ax.plot(t_depan, r[0.9], color=WARNA["chronos"], lw=1.0, ls="--", label="p90 (dasar batas aman)")
+    w = WARNA["holt_winters"]
+    ax.fill_between(t_depan, r[0.1], r[0.9], color=w, alpha=0.18, label="p10-p90")
+    ax.plot(t_depan, r[0.5], color=w, lw=1.8, label="p50 (perkiraan)")
+    ax.plot(t_depan, r[0.9], color=w, lw=1.0, ls="--", label="p90 (dasar batas aman)")
     ax.plot(t_depan, asli, color="#dc2626", lw=1.4, marker="o", ms=2.5, label="permintaan sebenarnya")
     ax.axvline(0, color="#9ca3af", lw=0.8)
     ax.set_xlabel("hari (0 = titik perkiraan dibuat)")
     ax.set_ylabel("permintaan (%s)" % d.satuan if hasattr(d, "satuan") else "permintaan")
-    ax.set_title("Mesin 1 — Chronos-2: %s" % d.nama)
+    ax.set_title("Mesin 1 — ETS (Holt-Winters): %s" % d.nama)
     ax.legend(frameon=False, ncol=3, fontsize=8)
     return _simpan(fig, "mesin1_kipas.png")
 
@@ -171,6 +177,96 @@ def banding_mesin1(berkas: str = "hasil_mesin1.json") -> Path | None:
     return _simpan(fig, "mesin1_banding.png")
 
 
+def _pita_lewis(ax, batas_atas: float) -> None:
+    """Pita latar skala Lewis (1982) dan garis sasaran 5% dari dosen."""
+    for bawah, atas, label, w in (
+        (0, 10, "sangat akurat", "#dcfce7"),
+        (10, 20, "baik", "#ecfccb"),
+        (20, 50, "layak", "#fef9c3"),
+        (50, max(batas_atas, 60), "tidak akurat", "#fee2e2"),
+    ):
+        if bawah >= batas_atas:
+            continue
+        ax.axvspan(bawah, min(atas, batas_atas), color=w, zorder=0)
+        ax.text((bawah + min(atas, batas_atas)) / 2, 1.01, label, transform=ax.get_xaxis_transform(),
+                ha="center", va="bottom", fontsize=7, color="#4b5563")
+    ax.axvline(5, color="#dc2626", lw=1.2, ls="--", zorder=4)
+    ax.text(5, -0.06, "sasaran 5%", transform=ax.get_xaxis_transform(), color="#dc2626",
+            fontsize=7, ha="center", va="top")
+
+
+def mape_mesin1(berkas: str = "hasil_mesin1_pekanan.json") -> Path | None:
+    """
+    MAPE per barang di tiga tingkat: harian, pekanan semua barang, pekanan
+    barang yang lolos saringan. Latarnya pita skala Lewis, garis merahnya
+    sasaran 5% dari dosen — supaya jaraknya terlihat, bukan disembunyikan.
+    """
+    p = KELUARAN / berkas
+    if not p.exists():
+        return None
+    data = sorted(json.load(p.open(encoding="utf-8"))["hasil"], key=lambda x: x["mape_pekanan_lolos"])
+    nama = [d["nama"] for d in data]
+    y = np.arange(len(nama))
+    tinggi = 0.26
+    fig, ax = plt.subplots(figsize=(10, 4.6))
+    batas = max(d["mape_harian"] for d in data) * 1.15
+    _pita_lewis(ax, batas)
+    for geser, kunci, label, alfa in (
+        (-tinggi, "mape_harian", "harian", 0.35),
+        (0, "mape_pekanan", "pekanan, semua barang", 0.65),
+        (tinggi, "mape_pekanan_lolos", "pekanan, barang lolos saringan", 1.0),
+    ):
+        nilai = [d[kunci] for d in data]
+        ax.barh(y + geser, nilai, height=tinggi, color=[_warna(n) for n in nama], alpha=alfa,
+                label=label, zorder=3, edgecolor="white")
+        for i, v in enumerate(nilai):
+            ax.text(v, i + geser, " %.1f%%" % v, va="center", fontsize=7, zorder=5)
+    ax.set_yticks(y, nama)
+    ax.invert_yaxis()
+    ax.set_xlim(0, batas)
+    ax.set_xlabel("MAPE (%), kecil lebih baik")
+    from matplotlib.patches import Patch
+
+    # Legenda abu-abu: warna batang menandai metode, kepekatannya menandai tingkat.
+    ax.legend(
+        handles=[Patch(color="#374151", alpha=a, label=t) for a, t in (
+            (0.35, "harian"), (0.65, "pekanan, semua barang"), (1.0, "pekanan, barang lolos saringan"))],
+        frameon=False, fontsize=8, loc="upper center", bbox_to_anchor=(0.5, -0.16), ncol=3,
+    )
+    ax.set_title("Mesin 1 — MAPE ramalan unit per barang, 8 pekan bergulir", pad=16)
+    return _simpan(fig, "mesin1_mape.png")
+
+
+def mape_omset(berkas: str = "hasil_mesin1_omset.json") -> Path | None:
+    """MAPE pekanan omset per metode, satu panel per sumber data."""
+    p = KELUARAN / berkas
+    if not p.exists():
+        return None
+    data = json.load(p.open(encoding="utf-8"))
+    sumber = [(k, v) for k, v in data.items() if "hasil" in v]
+    if not sumber:
+        return None
+    judul_sumber = {"simulasi": "Simulasi Warungku (70 UMKM)", "french_bakery": "French Bakery (toko roti nyata)"}
+
+    fig, sumbu = plt.subplots(1, len(sumber), figsize=(5.4 * len(sumber), 3.8), squeeze=False)
+    for ax, (k, v) in zip(sumbu[0], sumber):
+        hasil = sorted(v["hasil"], key=lambda x: x["mape_pekanan"])
+        nama = [h["nama"] for h in hasil]
+        nilai = [h["mape_pekanan"] for h in hasil]
+        batas = max(25.0, max(nilai) * 1.25)
+        _pita_lewis(ax, batas)
+        ax.barh(nama, nilai, color=[_warna(n) for n in nama], zorder=3)
+        ax.invert_yaxis()
+        for i, x in enumerate(nilai):
+            ax.text(x, i, " %.1f%%" % x, va="center", fontsize=8, zorder=5)
+        ax.set_xlim(0, batas)
+        ax.set_xlabel("MAPE pekanan omset (%)")
+        ax.set_title("%s\n%d pekan dinilai" % (judul_sumber.get(k, k), hasil[0]["n_pekan"]), fontsize=9, pad=16)
+    fig.suptitle("Mesin 1 — ramalan omset 7 hari ke depan", y=1.04)
+    fig.tight_layout()
+    return _simpan(fig, "mesin1_omset.png")
+
+
 # --------------------------------------------------------------------------
 def kurva_regret(berkas: str = "hasil_simulasi_mesin2.json") -> Path | None:
     """
@@ -186,36 +282,34 @@ def kurva_regret(berkas: str = "hasil_simulasi_mesin2.json") -> Path | None:
     data = json.load(p.open(encoding="utf-8"))
     acuan = data["acuan"]
 
-    fig, ax = plt.subplots(figsize=(9.5, 4.6))
+    # Satu panel per sumbu percobaan. Sebelas garis dalam satu panel tidak
+    # terbaca, dan tiap sumbu memang hanya mengubah satu hal: perbandingan yang
+    # bermakna ada di dalam panel, bukan antarpanel.
+    sumbu: dict[str, list] = {}
     for h in data["hasil"]:
-        if not h["kurva"]:
-            continue
-        x = np.arange(len(h["kurva"]))
-        ax.plot(
-            x, h["kurva"], lw=1.6,
-            color=_warna_kebijakan(h["nama"]),
-            ls=_gaya_penaksir(h["nama"]),
-            label=h["nama"],
-        )
-
-    # Garis acuan: kalau setiap keputusan diambil dengan kebijakan termurah.
+        if h["kurva"]:
+            sumbu.setdefault(h.get("sumbu", "semua"), []).append(h)
     n_hari = max((len(h["kurva"]) for h in data["hasil"]), default=0)
-    if n_hari:
-        per_hari = acuan["keputusan"] / n_hari
-        x = np.arange(n_hari)
-        ax.plot(
-            x, x * per_hari * acuan["termurah_regret"], lw=1.4, ls="--",
-            color=WARNA["termurah"], label="selalu termurah (kebijakan sekarang)",
-        )
-        ax.plot(
-            x, x * per_hari * acuan["acak_regret"], lw=1.2, ls=":",
-            color=WARNA["acak"], label="memilih acak",
-        )
+    palet = ["#0f766e", "#1d4ed8", "#b45309", "#7c3aed", "#be185d"]
 
-    ax.set_xlabel("hari simulasi")
-    ax.set_ylabel("regret kumulatif (pesanan gagal yang bisa dihindari)")
-    ax.set_title("Mesin 2 — regret kumulatif: makin landai makin baik")
-    ax.legend(frameon=False, fontsize=8, ncol=2)
+    fig, panel = plt.subplots(1, len(sumbu), figsize=(5.2 * len(sumbu), 4.6), sharey=True, squeeze=False)
+    for ax, (nama_sumbu, isi) in zip(panel[0], sumbu.items()):
+        for i, h in enumerate(sorted(isi, key=lambda x: x["regret_total"])):
+            ax.plot(np.arange(len(h["kurva"])), h["kurva"], lw=1.6, color=palet[i % len(palet)],
+                    label="%s (%s)" % (h["nama"], f"{h['regret_total']:,.0f}".replace(",", ".")))
+        if n_hari:
+            per_hari = acuan["keputusan"] / n_hari
+            x = np.arange(n_hari)
+            ax.plot(x, x * per_hari * acuan["termurah_regret"], lw=1.3, ls="--",
+                    color=WARNA["termurah"], label="selalu termurah")
+            ax.plot(x, x * per_hari * acuan["acak_regret"], lw=1.2, ls=":",
+                    color=WARNA["acak"], label="memilih acak")
+        ax.set_title(nama_sumbu.split(" (")[0], fontsize=10)
+        ax.set_xlabel("hari simulasi")
+        ax.legend(frameon=False, fontsize=7, loc="upper left")
+    panel[0][0].set_ylabel("regret kumulatif (pesanan gagal yang bisa dihindari)")
+    fig.suptitle("Mesin 2 — regret kumulatif: makin landai makin baik (angka = regret total)", y=1.02)
+    fig.tight_layout()
     return _simpan(fig, "mesin2_regret.png")
 
 
@@ -332,6 +426,8 @@ def semua() -> list[Path]:
     for nama, f in (
         ("kipas perkiraan", kipas_perkiraan),
         ("banding Mesin 1", banding_mesin1),
+        ("MAPE Mesin 1", mape_mesin1),
+        ("MAPE omset", mape_omset),
         ("kurva regret", kurva_regret),
         ("banding Mesin 2", banding_mesin2),
         ("kompromi Mesin 2", kompromi_mesin2),
