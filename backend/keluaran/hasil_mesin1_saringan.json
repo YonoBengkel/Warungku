@@ -1,0 +1,16 @@
+{
+ "barang": 890,
+ "usaha": 70,
+ "teratas_per_usaha": 10,
+ "batas_musiman": 0.4,
+ "lolos_abc": 682,
+ "layak_model": 737,
+ "musiman": 158,
+ "diramal": 632,
+ "masuk_lewat_musiman_saja": 27,
+ "pola": {
+  "halus": 737,
+  "terputus": 104,
+  "bergumpal": 49
+ }
+}
