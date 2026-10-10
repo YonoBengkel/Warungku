@@ -171,3 +171,64 @@ def sesal(hasil_terpilih: float, hasil_terbaik: float) -> float:
     counterfactual dibuat. Ia tidak pernah dilatihkan.
     """
     return float(hasil_terbaik - hasil_terpilih)
+
+
+# --------------------------------------------------------------------------
+# MAPE — metrik utama Mesin 1 sejak konsultasi dosen 10 Okt 2026
+# --------------------------------------------------------------------------
+
+
+def mape(asli: np.ndarray, ramalan: np.ndarray) -> float:
+    """
+    Rata-rata galat persentase absolut, dalam persen.
+
+    Periode dengan nilai sebenarnya nol atau kosong (NaN) **dikeluarkan**, dan
+    itu harus disebut setiap kali angkanya dilaporkan. MAPE membagi dengan
+    nilai sebenarnya; pada periode bernilai nol hasilnya tak terhingga, dan
+    pustaka yang diam-diam membuangnya membuat dua angka MAPE dari sumber
+    berbeda tidak bisa dibandingkan. Karena itulah MAPE paling bermakna pada
+    tingkat agregat (pekanan, per UMKM), tempat nilai nol jarang.
+    """
+    a = np.asarray(asli, dtype=float)
+    f = np.asarray(ramalan, dtype=float)
+    sah = np.isfinite(a) & np.isfinite(f) & (a > 0)
+    if not sah.any():
+        return float("nan")
+    return float(np.mean(np.abs(a[sah] - f[sah]) / a[sah]) * 100.0)
+
+
+def wape(asli: np.ndarray, ramalan: np.ndarray) -> float:
+    """
+    Galat absolut tertimbang, dalam persen: jumlah |galat| / jumlah nilai.
+
+    Pendamping MAPE yang tidak meledak pada periode kecil. Kalau MAPE jauh di
+    atas WAPE, sumbernya periode-periode bernilai kecil, bukan ramalan yang
+    buruk secara umum.
+    """
+    a = np.asarray(asli, dtype=float)
+    f = np.asarray(ramalan, dtype=float)
+    sah = np.isfinite(a) & np.isfinite(f)
+    total = float(np.abs(a[sah]).sum())
+    if total <= 0:
+        return float("nan")
+    return float(np.abs(a[sah] - f[sah]).sum() / total * 100.0)
+
+
+#: Skala tafsir MAPE menurut Lewis (1982), Industrial and Business Forecasting
+#: Methods. Lazim dipakai di skripsi Indonesia untuk membaca angka MAPE.
+SKALA_LEWIS: tuple[tuple[float, str], ...] = (
+    (10.0, "sangat akurat"),
+    (20.0, "baik"),
+    (50.0, "layak"),
+    (float("inf"), "tidak akurat"),
+)
+
+
+def kategori_lewis(nilai_mape: float) -> str:
+    """Kategori Lewis (1982) untuk satu angka MAPE dalam persen."""
+    if not np.isfinite(nilai_mape):
+        return "tidak terdefinisi"
+    for batas, nama in SKALA_LEWIS:
+        if nilai_mape < batas:
+            return nama
+    return SKALA_LEWIS[-1][1]
