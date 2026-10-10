@@ -246,6 +246,42 @@ def banding_mesin2(berkas: str = "hasil_simulasi_mesin2.json") -> Path | None:
 
 
 # --------------------------------------------------------------------------
+def kompromi_mesin2(berkas: str = "hasil_simulasi_mesin2.json") -> Path | None:
+    """
+    Keandalan melawan harga: tiap kebijakan satu titik.
+
+    Regret hanya mengukur keandalan, jadi kebijakan yang ikut menimbang harga
+    (TOPSIS, fuzzy) pasti tampak kalah di kurva regret. Gambar ini menunjukkan
+    apa yang mereka dapat sebagai gantinya. Titik yang lebih kanan-bawah
+    daripada titik lain di kedua sumbu kalah mutlak; yang lain saling tukar.
+    """
+    p = KELUARAN / berkas
+    if not p.exists():
+        return None
+    data = json.load(p.open(encoding="utf-8"))
+    acuan = data["acuan"]
+    if "harga_rata" not in data["hasil"][0]:
+        return None
+
+    fig, ax = plt.subplots(figsize=(9, 5))
+    for h in data["hasil"]:
+        ax.scatter(h["harga_rata"], h["sukses_rata"], s=46, color=_warna_kebijakan(h["nama"]),
+                   marker="s" if "fuzzy" in h["nama"] or "topsis" in h["nama"] else "o", zorder=3)
+        ax.annotate(h["nama"], (h["harga_rata"], h["sukses_rata"]), fontsize=7,
+                    xytext=(5, 3), textcoords="offset points")
+    for nama, x, y, w in (
+        ("oracle", acuan["oracle_harga"], acuan["oracle_sukses"], WARNA["oracle"]),
+        ("selalu termurah", acuan.get("termurah_harga", 1.0), acuan["termurah_sukses"], WARNA["termurah"]),
+        ("memilih acak", acuan["acak_harga"], acuan["acak_sukses"], WARNA["acak"]),
+    ):
+        ax.scatter(x, y, s=70, marker="X", color=w, zorder=4)
+        ax.annotate(nama, (x, y), fontsize=8, color=w, xytext=(5, -10), textcoords="offset points")
+    ax.set_xlabel("rata-rata rasio harga terhadap kandidat termurah (kiri lebih murah)")
+    ax.set_ylabel("rata-rata keberhasilan pesanan (atas lebih andal)")
+    ax.set_title("Mesin 2 — keandalan melawan harga")
+    return _simpan(fig, "mesin2_kompromi.png")
+
+
 def sebaran_segmen() -> Path | None:
     """Jumlah pelanggan per segmen, dan posisi RFM rata-ratanya."""
     from sqlalchemy import text
@@ -298,6 +334,7 @@ def semua() -> list[Path]:
         ("banding Mesin 1", banding_mesin1),
         ("kurva regret", kurva_regret),
         ("banding Mesin 2", banding_mesin2),
+        ("kompromi Mesin 2", kompromi_mesin2),
         ("sebaran segmen", sebaran_segmen),
     ):
         try:
