@@ -1,0 +1,33 @@
+# Basis data pengembangan Turnify Flow.
+#
+# Port 5433 (bukan 5432) supaya tidak bentrok dengan PostgreSQL yang mungkin
+# sudah berjalan di komputermu. Jalankan dari akar repo:
+#   docker compose -f deployment/docker-compose.yml up -d
+#
+# Nama proyek dikunci "backend". Berkas ini dulu ada di folder backend/, dan
+# Docker Compose memakai nama folder sebagai nama proyek. Volume datanya
+# bernama backend_warungku_data; tanpa baris ini, Compose akan membuat volume
+# baru yang KOSONG dan basis data tampak hilang.
+name: backend
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: warungku-db
+    environment:
+      POSTGRES_USER: warungku
+      POSTGRES_PASSWORD: warungku
+      POSTGRES_DB: warungku_dev
+      TZ: Asia/Jakarta
+    ports:
+      - "5433:5432"
+    volumes:
+      - warungku_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U warungku -d warungku_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  warungku_data:

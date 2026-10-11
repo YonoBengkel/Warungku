@@ -4,10 +4,15 @@ from __future__ import annotations
 
 import os
 from functools import lru_cache
+from pathlib import Path
 
 from dotenv import load_dotenv
 
-load_dotenv()
+#: backend/.env, dicari dengan jalur pasti. `load_dotenv()` tanpa jalur kadang
+#: mencari dari folder kerja; sejak perintah dijalankan dari akar repo, itu
+#: akan meleset. Variabel yang sudah diset di lingkungan tetap menang.
+BERKAS_ENV = Path(__file__).resolve().parents[1] / ".env"
+load_dotenv(BERKAS_ENV)
 
 # Satuan dasar yang dikenal platform. Stok SELALU disimpan dalam satuan ini;
 # "kg" dan "liter" hanyalah lapisan tampilan di antarmuka.
@@ -24,7 +29,7 @@ def alamat_basis_data() -> str:
     if not alamat:
         raise RuntimeError(
             "WARUNGKU_DB belum diisi. Salin backend/.env.example jadi backend/.env, "
-            "lalu jalankan: docker compose -f backend/docker-compose.yml up -d"
+            "lalu jalankan dari akar repo: docker compose -f deployment/docker-compose.yml up -d"
         )
     return alamat
 

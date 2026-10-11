@@ -1,35 +1,59 @@
-# Dependencies
+# Dependensi
 node_modules/
 
-# Build output
-dist/
+# Hasil build frontend
+frontend/dist/
 *.tsbuildinfo
 
-# Environment variables
+# Lingkungan Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.venv-ml/
+.pytest_cache/
+.ipynb_checkpoints/
+*.egg-info/
+
+# Rahasia dan konfigurasi lokal
 .env
 .env.*
 # Templatnya justru harus ikut: tanpa ini tim kloning repo
 # dan tidak punya contoh isi .env sama sekali.
 !.env.example
+*.local
 
-# Editor & IDE
+# Editor & alat AI
 .vscode/
-
-# AI tools config
 .claude/
 .agents/
+
+# Riwayat percakapan dengan asisten AI (pribadi, tidak ikut repo)
 Riwayat Chat/
 
-# OS files
+# Hasil model: log tidak dilacak, tapi ringkasan JSON ikut dilacak supaya
+# angka di laporan bisa ditelusuri ke berkas yang menghasilkannya, bukan ke
+# ingatan orang yang kebetulan menjalankannya.
+ml/hasil/*
+!ml/hasil/hasil_*.json
+
+# Ekspor CSV dataset simulasi (besar; dibangkitkan ulang oleh
+# `python -m dataset.buat_dataset`).
+data/keluaran/
+*.parquet
+
+# Dataset nyata dari pihak luar. Lisensinya tidak selalu terbuka (French Bakery:
+# "© Original Authors"), jadi berkas datanya tidak dilacak. README di tiap
+# folder tetap dilacak, supaya anggota tim tahu dari mana mengunduhnya.
+data/data_nyata/**/*.csv
+
+# Patch Rombak#2: sudah menjadi commit di riwayat git, disimpan lokal saja.
+docs/arsip/patches-rombak2/
+
+# OS
 .DS_Store
 Thumbs.db
 
-# Local overrides
-*.local
-
-# Logs
+# Log
 *.log
 npm-debug.log*
-
-# Docs
-docs/

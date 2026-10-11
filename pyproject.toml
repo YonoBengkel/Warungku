@@ -1,0 +1,48 @@
+# Turnify Flow — sisi Python (backend, layanan model, pembangkit dataset).
+#
+# Kode Python tersebar di tiga folder, tapi tetap satu proyek dengan satu
+# lingkungan. Pemetaan di bawah membuat keempat paket bisa diimpor dengan nama
+# yang sama seperti sebelum folder dipisah:
+#
+#   warungku  -> backend/warungku   model tabel, enum, koneksi basis data
+#   api       -> backend/api        layanan baca-tulis (FastAPI, port 8000)
+#   ml        -> ml                 Mesin 1, 2, 3 dan layanan model (port 8001)
+#   dataset   -> data/dataset       pembangkit dataset simulasi
+#
+# Pasang sekali dari akar repo:  python -m pip install -e . --no-deps
+# Dependensinya ada di requirements.txt.
+
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "turnify-flow"
+version = "0.1.0"
+description = "Turnify Flow: sistem analitika rantai pasok untuk UMKM sebagai pendamping aplikasi kasir"
+requires-python = ">=3.12"
+
+[tool.setuptools.package-dir]
+warungku = "backend/warungku"
+api = "backend/api"
+ml = "ml"
+dataset = "data/dataset"
+
+[tool.setuptools]
+packages = [
+    "warungku",
+    "warungku.model",
+    "api",
+    "dataset",
+    "ml",
+    "ml.mesin1",
+    "ml.mesin2",
+    "ml.mesin3",
+    "ml.sumber",
+    "ml.eksperimen",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["backend/uji", "ml/uji"]
+# Uji tetap jalan walau `pip install -e .` belum dijalankan.
+pythonpath = ["backend", "data", "."]

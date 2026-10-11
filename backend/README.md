@@ -38,7 +38,7 @@ python -m dataset.buat_dataset
 docker exec -i warungku-db psql -U warungku -d warungku_dev < skrip/02_periksa_konsistensi.sql
 
 # 5. uji otomatis
-python -m pytest uji -q
+python -m pytest -q
 
 # 6. API
 python -m uvicorn api.utama:app --reload --port 8000
