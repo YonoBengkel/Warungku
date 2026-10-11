@@ -49,6 +49,11 @@ class DeretBarang:
     hari_libur: np.ndarray
     pekan_gajian: np.ndarray
     ramadan: np.ndarray
+    #: Harga per satuan dasar, untuk menimbang barang yang satuannya tidak
+    #: sebanding (gram, ml, pcs), mis. di saringan ABC. Simulasi: harga beli
+    #: terakhir dibagi isi kemasan. French Bakery: median harga jual artikel,
+    #: karena harga belinya tidak ada. None kalau tidak diketahui.
+    harga_satuan: float | None = None
 
     def __len__(self) -> int:
         return len(self.nilai)
@@ -90,6 +95,23 @@ def muat_deret(min_riwayat: int = MIN_RIWAYAT) -> list[DeretBarang]:
             ),
             kon,
         )
+        harga = pd.read_sql_query(
+            text(
+                """
+                SELECT b.id AS barang_id,
+                       b.harga_beli_terakhir::float8 / NULLIF(k.isi, 0)::float8 AS harga_satuan
+                  FROM barang b
+                  LEFT JOIN LATERAL (
+                      SELECT isi FROM kemasan WHERE barang_id = b.id ORDER BY id LIMIT 1
+                  ) k ON true
+                """
+            ),
+            kon,
+        )
+    harga_per_barang = {
+        int(r.barang_id): (None if pd.isna(r.harga_satuan) else float(r.harga_satuan))
+        for r in harga.itertuples()
+    }
 
     deret: list[DeretBarang] = []
     for barang_id, g in df.groupby("barang_id", sort=True):
@@ -123,6 +145,7 @@ def muat_deret(min_riwayat: int = MIN_RIWAYAT) -> list[DeretBarang]:
                 hari_libur=g["hari_libur"].to_numpy(dtype=bool),
                 pekan_gajian=g["pekan_gajian"].to_numpy(dtype=bool),
                 ramadan=g["ramadan"].to_numpy(dtype=bool),
+                harga_satuan=harga_per_barang.get(int(barang_id)),
             )
         )
     return deret
