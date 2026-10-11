@@ -1,0 +1,537 @@
+{
+ "rancangan": {
+  "deret": 890,
+  "benih": 20261006,
+  "cakrawala_hari": 7,
+  "validasi": [
+   "2026-08-11",
+   "2026-08-18",
+   "2026-08-25",
+   "2026-09-01",
+   "2026-09-08",
+   "2026-09-15",
+   "2026-09-22"
+  ],
+  "uji_dikunci": "2026-09-29",
+  "fitur": [
+   "cv",
+   "tren",
+   "adi",
+   "cv2",
+   "musiman"
+  ],
+  "jendela_fitur_hari": 112,
+  "kisaran_k": [
+   2,
+   3,
+   4,
+   5,
+   6,
+   7,
+   8
+  ],
+  "perwakilan_per_kelompok": 3,
+  "lolos_saringan_a1": 634,
+  "lolos_saringan_uji": 630
+ },
+ "kelompok": {
+  "k": 2,
+  "siluet_per_k": {
+   "2": 0.2933,
+   "3": 0.2281,
+   "4": 0.2412,
+   "5": 0.25,
+   "6": 0.2386,
+   "7": 0.2362,
+   "8": 0.2404
+  },
+  "ukuran": [
+   267,
+   367
+  ],
+  "pusat": [
+   {
+    "cv": 0.481,
+    "tren": -0.0003,
+    "adi": 1.0037,
+    "cv2": 0.232,
+    "musiman": 0.3111
+   },
+   {
+    "cv": 0.4212,
+    "tren": -0.0012,
+    "adi": 1.0,
+    "cv2": 0.1781,
+    "musiman": 0.213
+   }
+  ],
+  "perwakilan": {
+   "0": [
+    "Gelas Plastik 16 oz (376)",
+    "Beras (704)",
+    "Gula Pasir (475)"
+   ],
+   "1": [
+    "Biji Kopi Robusta (19)",
+    "Gula Pasir (724)",
+    "Gelas Plastik 22 oz (633)"
+   ]
+  }
+ },
+ "turnamen": {
+  "0": {
+   "juara": "sarima",
+   "papan": [
+    {
+     "model": "sarima",
+     "mape": 13.4802,
+     "wape": 11.5883,
+     "mda": 72.1088,
+     "rmse": 4916.1877,
+     "n_pekan": 21,
+     "peringkat_mape": 1,
+     "peringkat_wape": 1,
+     "peringkat_mda": 3,
+     "peringkat_rmse": 1,
+     "rank_sum": 6
+    },
+    {
+     "model": "lightgbm",
+     "mape": 13.536,
+     "wape": 13.3306,
+     "mda": 72.7891,
+     "rmse": 5198.616,
+     "n_pekan": 21,
+     "peringkat_mape": 2,
+     "peringkat_wape": 2,
+     "peringkat_mda": 1,
+     "peringkat_rmse": 3,
+     "rank_sum": 8
+    },
+    {
+     "model": "ets",
+     "mape": 16.1868,
+     "wape": 20.2509,
+     "mda": 72.7891,
+     "rmse": 5407.5757,
+     "n_pekan": 21,
+     "peringkat_mape": 3,
+     "peringkat_wape": 4,
+     "peringkat_mda": 1,
+     "peringkat_rmse": 4,
+     "rank_sum": 12
+    },
+    {
+     "model": "chronos_2",
+     "mape": 17.0388,
+     "wape": 15.9898,
+     "mda": 70.068,
+     "rmse": 5055.643,
+     "n_pekan": 21,
+     "peringkat_mape": 4,
+     "peringkat_wape": 3,
+     "peringkat_mda": 4,
+     "peringkat_rmse": 2,
+     "rank_sum": 13
+    },
+    {
+     "model": "naif_musiman",
+     "mape": 20.4398,
+     "wape": 21.314,
+     "mda": 62.585,
+     "rmse": 6734.4629,
+     "n_pekan": 21,
+     "peringkat_mape": 5,
+     "peringkat_wape": 5,
+     "peringkat_mda": 5,
+     "peringkat_rmse": 5,
+     "rank_sum": 20
+    }
+   ]
+  },
+  "1": {
+   "juara": "chronos_2",
+   "papan": [
+    {
+     "model": "chronos_2",
+     "mape": 12.1899,
+     "wape": 11.6309,
+     "mda": 71.0345,
+     "rmse": 470.0095,
+     "n_pekan": 20,
+     "peringkat_mape": 1,
+     "peringkat_wape": 1,
+     "peringkat_mda": 3,
+     "peringkat_rmse": 1,
+     "rank_sum": 6
+    },
+    {
+     "model": "sarima",
+     "mape": 13.3477,
+     "wape": 14.8106,
+     "mda": 73.1034,
+     "rmse": 478.244,
+     "n_pekan": 20,
+     "peringkat_mape": 2,
+     "peringkat_wape": 3,
+     "peringkat_mda": 1,
+     "peringkat_rmse": 3,
+     "rank_sum": 9
+    },
+    {
+     "model": "lightgbm",
+     "mape": 13.6532,
+     "wape": 12.5298,
+     "mda": 70.3448,
+     "rmse": 472.8137,
+     "n_pekan": 20,
+     "peringkat_mape": 3,
+     "peringkat_wape": 2,
+     "peringkat_mda": 4,
+     "peringkat_rmse": 2,
+     "rank_sum": 11
+    },
+    {
+     "model": "ets",
+     "mape": 14.7289,
+     "wape": 15.3017,
+     "mda": 72.4138,
+     "rmse": 489.4968,
+     "n_pekan": 20,
+     "peringkat_mape": 4,
+     "peringkat_wape": 4,
+     "peringkat_mda": 2,
+     "peringkat_rmse": 4,
+     "rank_sum": 14
+    },
+    {
+     "model": "naif_musiman",
+     "mape": 18.6114,
+     "wape": 17.8281,
+     "mda": 65.5172,
+     "rmse": 695.1501,
+     "n_pekan": 20,
+     "peringkat_mape": 5,
+     "peringkat_wape": 5,
+     "peringkat_mda": 5,
+     "peringkat_rmse": 5,
+     "rank_sum": 20
+    }
+   ]
+  }
+ },
+ "juara_dari_anggota": {
+  "0": "lightgbm",
+  "1": "sarima"
+ },
+ "pendukung_validasi_anggota": {
+  "catatan": "pekan validasi yang sama dengan pekan pemilihan juara; bukan uji",
+  "juara_perwakilan": {
+   "mape": 15.0175,
+   "wape": 15.4561,
+   "mda": 74.415,
+   "rmse": 4143.3104,
+   "n_pekan": 4089
+  },
+  "ets": {
+   "mape": 15.1007,
+   "wape": 15.4208,
+   "mda": 74.5816,
+   "rmse": 4121.0668,
+   "n_pekan": 4089
+  },
+  "juara_vs_ets": {
+   "selisih": -0.0832,
+   "bawah": -0.3349,
+   "atas": 0.1613,
+   "n": 4089,
+   "a_lebih_baik": 2064,
+   "b_lebih_baik": 2025,
+   "seri": 0
+  },
+  "papan_anggota": {
+   "0": [
+    {
+     "model": "lightgbm",
+     "mape": 14.9591,
+     "wape": 13.6902,
+     "mda": 75.3286,
+     "rmse": 4002.7837,
+     "n_pekan": 1722,
+     "peringkat_mape": 2,
+     "peringkat_wape": 1,
+     "peringkat_mda": 1,
+     "peringkat_rmse": 1,
+     "rank_sum": 5
+    },
+    {
+     "model": "sarima",
+     "mape": 14.5906,
+     "wape": 15.0541,
+     "mda": 75.1869,
+     "rmse": 4111.4765,
+     "n_pekan": 1722,
+     "peringkat_mape": 1,
+     "peringkat_wape": 2,
+     "peringkat_mda": 2,
+     "peringkat_rmse": 3,
+     "rank_sum": 8
+    },
+    {
+     "model": "ets",
+     "mape": 15.2589,
+     "wape": 15.517,
+     "mda": 75.1554,
+     "rmse": 4103.296,
+     "n_pekan": 1722,
+     "peringkat_mape": 3,
+     "peringkat_wape": 3,
+     "peringkat_mda": 3,
+     "peringkat_rmse": 2,
+     "rank_sum": 11
+    },
+    {
+     "model": "chronos_2",
+     "mape": 15.6083,
+     "wape": 15.7093,
+     "mda": 74.4708,
+     "rmse": 4111.8436,
+     "n_pekan": 1722,
+     "peringkat_mape": 4,
+     "peringkat_wape": 4,
+     "peringkat_mda": 4,
+     "peringkat_rmse": 4,
+     "rank_sum": 16
+    },
+    {
+     "model": "naif_musiman",
+     "mape": 19.8939,
+     "wape": 19.0117,
+     "mda": 67.9075,
+     "rmse": 5496.9567,
+     "n_pekan": 1722,
+     "peringkat_mape": 5,
+     "peringkat_wape": 5,
+     "peringkat_mda": 5,
+     "peringkat_rmse": 5,
+     "rank_sum": 20
+    }
+   ],
+   "1": [
+    {
+     "model": "sarima",
+     "mape": 14.1379,
+     "wape": 14.6501,
+     "mda": 74.1625,
+     "rmse": 4096.7837,
+     "n_pekan": 2408,
+     "peringkat_mape": 1,
+     "peringkat_wape": 2,
+     "peringkat_mda": 1,
+     "peringkat_rmse": 2,
+     "rank_sum": 6
+    },
+    {
+     "model": "lightgbm",
+     "mape": 14.5873,
+     "wape": 14.1627,
+     "mda": 74.0715,
+     "rmse": 4009.4396,
+     "n_pekan": 2408,
+     "peringkat_mape": 2,
+     "peringkat_wape": 1,
+     "peringkat_mda": 3,
+     "peringkat_rmse": 1,
+     "rank_sum": 7
+    },
+    {
+     "model": "ets",
+     "mape": 14.994,
+     "wape": 15.4195,
+     "mda": 74.1341,
+     "rmse": 4129.4978,
+     "n_pekan": 2408,
+     "peringkat_mape": 3,
+     "peringkat_wape": 3,
+     "peringkat_mda": 2,
+     "peringkat_rmse": 3,
+     "rank_sum": 11
+    },
+    {
+     "model": "chronos_2",
+     "mape": 15.286,
+     "wape": 15.6575,
+     "mda": 73.8099,
+     "rmse": 4156.4101,
+     "n_pekan": 2408,
+     "peringkat_mape": 4,
+     "peringkat_wape": 4,
+     "peringkat_mda": 4,
+     "peringkat_rmse": 4,
+     "rank_sum": 16
+    },
+    {
+     "model": "naif_musiman",
+     "mape": 19.1417,
+     "wape": 19.1028,
+     "mda": 67.2695,
+     "rmse": 5416.0637,
+     "n_pekan": 2408,
+     "peringkat_mape": 5,
+     "peringkat_wape": 5,
+     "peringkat_mda": 5,
+     "peringkat_rmse": 5,
+     "rank_sum": 20
+    }
+   ]
+  },
+  "per_model_semua_anggota": {
+   "naif_musiman": {
+    "mape": 19.4553,
+    "wape": 19.0674,
+    "mda": 67.5371,
+    "rmse": 5450.1831,
+    "n_pekan": 4130
+   },
+   "ets": {
+    "mape": 15.1044,
+    "wape": 15.4574,
+    "mda": 74.5626,
+    "rmse": 4118.514,
+    "n_pekan": 4130
+   },
+   "sarima": {
+    "mape": 14.3266,
+    "wape": 14.807,
+    "mda": 74.5923,
+    "rmse": 4102.9607,
+    "n_pekan": 4130
+   },
+   "lightgbm": {
+    "mape": 14.7423,
+    "wape": 13.9792,
+    "mda": 74.5989,
+    "rmse": 4006.6456,
+    "n_pekan": 4130
+   },
+   "chronos_2": {
+    "mape": 15.4204,
+    "wape": 15.6776,
+    "mda": 74.0872,
+    "rmse": 4137.7518,
+    "n_pekan": 4130
+   }
+  }
+ },
+ "uji": {
+  "strategi": {
+   "juara_per_kelompok": {
+    "mape": 16.021,
+    "wape": 16.9613,
+    "mda": 75.2548,
+    "rmse": 4753.0411,
+    "n_pekan": 561,
+    "mape_harian": 38.3998
+   },
+   "juara_dari_anggota": {
+    "mape": 14.704,
+    "wape": 14.5928,
+    "mda": 75.4918,
+    "rmse": 4575.3136,
+    "n_pekan": 561,
+    "mape_harian": 41.0272
+   },
+   "naif_musiman_untuk_semua": {
+    "mape": 18.2427,
+    "wape": 17.9113,
+    "mda": 68.6419,
+    "rmse": 6026.458,
+    "n_pekan": 561,
+    "mape_harian": 51.7454
+   },
+   "ets_untuk_semua": {
+    "mape": 17.5122,
+    "wape": 18.5375,
+    "mda": 74.9704,
+    "rmse": 4789.0186,
+    "n_pekan": 561,
+    "mape_harian": 36.3838
+   },
+   "sarima_untuk_semua": {
+    "mape": 14.7701,
+    "wape": 14.756,
+    "mda": 75.2548,
+    "rmse": 4608.3613,
+    "n_pekan": 561,
+    "mape_harian": 40.1606
+   },
+   "lightgbm_untuk_semua": {
+    "mape": 14.7615,
+    "wape": 14.2096,
+    "mda": 75.8,
+    "rmse": 4417.1411,
+    "n_pekan": 561,
+    "mape_harian": 42.0599
+   },
+   "chronos_2_untuk_semua": {
+    "mape": 16.9639,
+    "wape": 18.1898,
+    "mda": 74.8519,
+    "rmse": 4790.2057,
+    "n_pekan": 561,
+    "mape_harian": 36.8044
+   }
+  },
+  "juara_vs_ets": {
+   "selisih": -1.4912,
+   "bawah": -2.1975,
+   "atas": -0.7997,
+   "n": 561,
+   "a_lebih_baik": 339,
+   "b_lebih_baik": 222,
+   "seri": 0
+  },
+  "per_kelompok": [
+   {
+    "kelompok": 0,
+    "juara": "sarima",
+    "anggota_uji": 256,
+    "mape_naif_musiman": 19.1292,
+    "mape_ets": 17.9326,
+    "mape_sarima": 14.9103,
+    "mape_lightgbm": 14.7504,
+    "mape_chronos_2": 17.1903,
+    "terbaik_di_uji_mengintip": "lightgbm"
+   },
+   {
+    "kelompok": 1,
+    "juara": "chronos_2",
+    "anggota_uji": 374,
+    "mape_naif_musiman": 17.6176,
+    "mape_ets": 17.2158,
+    "mape_sarima": 14.6713,
+    "mape_lightgbm": 14.7693,
+    "mape_chronos_2": 16.8043,
+    "terbaik_di_uji_mengintip": "sarima"
+   }
+  ]
+ },
+ "detik": {
+  "turnamen_naif_musiman": 0.0394,
+  "turnamen_ets": 7.8047,
+  "turnamen_sarima": 31.6008,
+  "turnamen_lightgbm": 29.638,
+  "turnamen_chronos_2": 32.9693,
+  "anggota_naif_musiman": 3.8302,
+  "anggota_ets": 746.1164,
+  "anggota_sarima": 2985.5808,
+  "anggota_lightgbm": 14.624,
+  "anggota_chronos_2": 85.2806,
+  "uji_naif_musiman": 0.6308,
+  "uji_ets": 110.0979,
+  "uji_sarima": 413.361,
+  "uji_lightgbm": 5.6965,
+  "uji_chronos_2": 11.5392
+ },
+ "detik_total": 4525.2111
+}
