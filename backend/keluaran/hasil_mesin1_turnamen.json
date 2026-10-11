@@ -1,0 +1,321 @@
+{
+ "rancangan": {
+  "deret": 890,
+  "benih": 20261006,
+  "cakrawala_hari": 7,
+  "validasi": [
+   "2026-08-11",
+   "2026-08-18",
+   "2026-08-25",
+   "2026-09-01",
+   "2026-09-08",
+   "2026-09-15",
+   "2026-09-22"
+  ],
+  "uji_dikunci": "2026-09-29",
+  "fitur": [
+   "cv",
+   "tren",
+   "adi",
+   "cv2",
+   "musiman"
+  ],
+  "jendela_fitur_hari": 112,
+  "kisaran_k": [
+   2,
+   3,
+   4,
+   5,
+   6,
+   7,
+   8
+  ],
+  "perwakilan_per_kelompok": 3,
+  "lolos_saringan_a1": 634,
+  "lolos_saringan_uji": 630
+ },
+ "kelompok": {
+  "k": 2,
+  "siluet_per_k": {
+   "2": 0.2933,
+   "3": 0.2281,
+   "4": 0.2412,
+   "5": 0.25,
+   "6": 0.2386,
+   "7": 0.2362,
+   "8": 0.2404
+  },
+  "ukuran": [
+   267,
+   367
+  ],
+  "pusat": [
+   {
+    "cv": 0.481,
+    "tren": -0.0003,
+    "adi": 1.0037,
+    "cv2": 0.232,
+    "musiman": 0.3111
+   },
+   {
+    "cv": 0.4212,
+    "tren": -0.0012,
+    "adi": 1.0,
+    "cv2": 0.1781,
+    "musiman": 0.213
+   }
+  ],
+  "perwakilan": {
+   "0": [
+    "Gelas Plastik 16 oz (376)",
+    "Beras (704)",
+    "Gula Pasir (475)"
+   ],
+   "1": [
+    "Biji Kopi Robusta (19)",
+    "Gula Pasir (724)",
+    "Gelas Plastik 22 oz (633)"
+   ]
+  }
+ },
+ "turnamen": {
+  "0": {
+   "juara": "sarima",
+   "papan": [
+    {
+     "model": "sarima",
+     "mape": 13.4802,
+     "wape": 11.5883,
+     "mda": 72.1088,
+     "rmse": 4916.1877,
+     "n_pekan": 21,
+     "peringkat_mape": 1,
+     "peringkat_wape": 1,
+     "peringkat_mda": 3,
+     "peringkat_rmse": 1,
+     "rank_sum": 6
+    },
+    {
+     "model": "lightgbm",
+     "mape": 13.536,
+     "wape": 13.3306,
+     "mda": 72.7891,
+     "rmse": 5198.616,
+     "n_pekan": 21,
+     "peringkat_mape": 2,
+     "peringkat_wape": 2,
+     "peringkat_mda": 1,
+     "peringkat_rmse": 3,
+     "rank_sum": 8
+    },
+    {
+     "model": "ets",
+     "mape": 16.1868,
+     "wape": 20.2509,
+     "mda": 72.7891,
+     "rmse": 5407.5757,
+     "n_pekan": 21,
+     "peringkat_mape": 3,
+     "peringkat_wape": 4,
+     "peringkat_mda": 1,
+     "peringkat_rmse": 4,
+     "rank_sum": 12
+    },
+    {
+     "model": "chronos_2",
+     "mape": 17.0388,
+     "wape": 15.9898,
+     "mda": 70.068,
+     "rmse": 5055.643,
+     "n_pekan": 21,
+     "peringkat_mape": 4,
+     "peringkat_wape": 3,
+     "peringkat_mda": 4,
+     "peringkat_rmse": 2,
+     "rank_sum": 13
+    },
+    {
+     "model": "naif_musiman",
+     "mape": 20.4398,
+     "wape": 21.314,
+     "mda": 62.585,
+     "rmse": 6734.4629,
+     "n_pekan": 21,
+     "peringkat_mape": 5,
+     "peringkat_wape": 5,
+     "peringkat_mda": 5,
+     "peringkat_rmse": 5,
+     "rank_sum": 20
+    }
+   ]
+  },
+  "1": {
+   "juara": "chronos_2",
+   "papan": [
+    {
+     "model": "chronos_2",
+     "mape": 12.1899,
+     "wape": 11.6309,
+     "mda": 71.0345,
+     "rmse": 470.0095,
+     "n_pekan": 20,
+     "peringkat_mape": 1,
+     "peringkat_wape": 1,
+     "peringkat_mda": 3,
+     "peringkat_rmse": 1,
+     "rank_sum": 6
+    },
+    {
+     "model": "sarima",
+     "mape": 13.3477,
+     "wape": 14.8106,
+     "mda": 73.1034,
+     "rmse": 478.244,
+     "n_pekan": 20,
+     "peringkat_mape": 2,
+     "peringkat_wape": 3,
+     "peringkat_mda": 1,
+     "peringkat_rmse": 3,
+     "rank_sum": 9
+    },
+    {
+     "model": "lightgbm",
+     "mape": 13.6532,
+     "wape": 12.5298,
+     "mda": 70.3448,
+     "rmse": 472.8137,
+     "n_pekan": 20,
+     "peringkat_mape": 3,
+     "peringkat_wape": 2,
+     "peringkat_mda": 4,
+     "peringkat_rmse": 2,
+     "rank_sum": 11
+    },
+    {
+     "model": "ets",
+     "mape": 14.7289,
+     "wape": 15.3017,
+     "mda": 72.4138,
+     "rmse": 489.4968,
+     "n_pekan": 20,
+     "peringkat_mape": 4,
+     "peringkat_wape": 4,
+     "peringkat_mda": 2,
+     "peringkat_rmse": 4,
+     "rank_sum": 14
+    },
+    {
+     "model": "naif_musiman",
+     "mape": 18.6114,
+     "wape": 17.8281,
+     "mda": 65.5172,
+     "rmse": 695.1501,
+     "n_pekan": 20,
+     "peringkat_mape": 5,
+     "peringkat_wape": 5,
+     "peringkat_mda": 5,
+     "peringkat_rmse": 5,
+     "rank_sum": 20
+    }
+   ]
+  }
+ },
+ "uji": {
+  "strategi": {
+   "juara_per_kelompok": {
+    "mape": 16.021,
+    "wape": 16.9613,
+    "mda": 75.2548,
+    "rmse": 4753.0411,
+    "n_pekan": 561,
+    "mape_harian": 38.3998
+   },
+   "naif_musiman_untuk_semua": {
+    "mape": 18.2427,
+    "wape": 17.9113,
+    "mda": 68.6419,
+    "rmse": 6026.458,
+    "n_pekan": 561,
+    "mape_harian": 51.7454
+   },
+   "ets_untuk_semua": {
+    "mape": 17.5122,
+    "wape": 18.5375,
+    "mda": 74.9704,
+    "rmse": 4789.0186,
+    "n_pekan": 561,
+    "mape_harian": 36.3838
+   },
+   "sarima_untuk_semua": {
+    "mape": 14.7701,
+    "wape": 14.756,
+    "mda": 75.2548,
+    "rmse": 4608.3613,
+    "n_pekan": 561,
+    "mape_harian": 40.1606
+   },
+   "lightgbm_untuk_semua": {
+    "mape": 14.7615,
+    "wape": 14.2096,
+    "mda": 75.8,
+    "rmse": 4417.1411,
+    "n_pekan": 561,
+    "mape_harian": 42.0599
+   },
+   "chronos_2_untuk_semua": {
+    "mape": 16.9639,
+    "wape": 18.1898,
+    "mda": 74.8519,
+    "rmse": 4790.2057,
+    "n_pekan": 561,
+    "mape_harian": 36.8044
+   }
+  },
+  "juara_vs_ets": {
+   "selisih": -1.4912,
+   "bawah": -2.1975,
+   "atas": -0.7997,
+   "n": 561,
+   "a_lebih_baik": 339,
+   "b_lebih_baik": 222,
+   "seri": 0
+  },
+  "per_kelompok": [
+   {
+    "kelompok": 0,
+    "juara": "sarima",
+    "anggota_uji": 256,
+    "mape_naif_musiman": 19.1292,
+    "mape_ets": 17.9326,
+    "mape_sarima": 14.9103,
+    "mape_lightgbm": 14.7504,
+    "mape_chronos_2": 17.1903,
+    "terbaik_di_uji_mengintip": "lightgbm"
+   },
+   {
+    "kelompok": 1,
+    "juara": "chronos_2",
+    "anggota_uji": 374,
+    "mape_naif_musiman": 17.6176,
+    "mape_ets": 17.2158,
+    "mape_sarima": 14.6713,
+    "mape_lightgbm": 14.7693,
+    "mape_chronos_2": 16.8043,
+    "terbaik_di_uji_mengintip": "sarima"
+   }
+  ]
+ },
+ "detik": {
+  "turnamen_naif_musiman": 0.0343,
+  "turnamen_ets": 7.5142,
+  "turnamen_sarima": 31.0105,
+  "turnamen_lightgbm": 23.4412,
+  "turnamen_chronos_2": 28.2551,
+  "uji_naif_musiman": 0.5186,
+  "uji_ets": 109.8791,
+  "uji_sarima": 421.7465,
+  "uji_lightgbm": 6.1565,
+  "uji_chronos_2": 11.2516
+ },
+ "detik_total": 677.5213
+}
