@@ -156,11 +156,20 @@ def main() -> None:
     for nama, daftar in rm.items():
         hasil_uji[nama] = {**T.ukur(daftar), "mape_harian": _harian(daftar)}
 
-    # Bootstrap berpasangan juara vs ETS, hanya pekan yang sah di keduanya.
-    ape_j = np.array([r.ape for r in rm["juara_per_kelompok"]])
+    # Bootstrap berpasangan tiap strategi vs ETS, hanya pekan yang sah di keduanya.
     ape_e = np.array([r.ape for r in rm["ets_untuk_semua"]])
-    sah = np.isfinite(ape_j) & np.isfinite(ape_e)
-    banding = T.bootstrap_selisih(ape_j[sah], ape_e[sah])
+    banding_semua = {}
+    for nama, daftar in rm.items():
+        if nama == "ets_untuk_semua":
+            continue
+        x = np.array([r.ape for r in daftar])
+        sah = np.isfinite(x) & np.isfinite(ape_e)
+        banding_semua[nama] = T.bootstrap_selisih(x[sah], ape_e[sah])
+    banding = banding_semua["juara_per_kelompok"]
+    ape_uji = {
+        "barang_id": [d.barang_id for d in pop8], "kelompok": [int(c) for c in c8],
+        **{nama: [r.ape for r in daftar] for nama, daftar in rm.items()},
+    }
 
     per_kelompok = []
     for c in range(kel.k):
@@ -192,7 +201,8 @@ def main() -> None:
         "turnamen": {c: {"juara": juara[c], "papan": papan[c]} for c in range(kel.k)},
         "juara_dari_anggota": juara_anggota,
         "pendukung_validasi_anggota": pendukung,
-        "uji": {"strategi": hasil_uji, "juara_vs_ets": banding, "per_kelompok": per_kelompok},
+        "uji": {"strategi": hasil_uji, "juara_vs_ets": banding, "semua_vs_ets": banding_semua,
+                "per_kelompok": per_kelompok, "ape_per_barang": ape_uji},
         "detik": jam.detik,
         "detik_total": time.perf_counter() - mulai,
     }
