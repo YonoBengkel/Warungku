@@ -1,0 +1,350 @@
+{
+ "simulasi": {
+  "pekan_validasi": 7,
+  "pekan_uji": 1,
+  "kalender_dipakai": [
+   "lebaran",
+   "libur",
+   "pekan_gajian",
+   "ramadan"
+  ],
+  "papan_validasi": [
+   {
+    "model": "sarimax",
+    "mape": 8.690239985899275,
+    "wape": 9.269513379634205,
+    "mda": 78.22157434402332,
+    "rmse": 748331.0202379797,
+    "n_pekan": 490,
+    "peringkat_mape": 1,
+    "peringkat_wape": 1,
+    "peringkat_mda": 1,
+    "peringkat_rmse": 1,
+    "rank_sum": 4
+   },
+   {
+    "model": "chronos_2_kalender",
+    "mape": 9.44454142704585,
+    "wape": 9.926427361423555,
+    "mda": 76.38483965014578,
+    "rmse": 765627.0992813942,
+    "n_pekan": 490,
+    "peringkat_mape": 2,
+    "peringkat_wape": 2,
+    "peringkat_mda": 2,
+    "peringkat_rmse": 2,
+    "rank_sum": 8
+   },
+   {
+    "model": "ets",
+    "mape": 10.775958890324487,
+    "wape": 11.249377635879682,
+    "mda": 75.01457725947522,
+    "rmse": 790567.5826728852,
+    "n_pekan": 490,
+    "peringkat_mape": 3,
+    "peringkat_wape": 3,
+    "peringkat_mda": 3,
+    "peringkat_rmse": 4,
+    "rank_sum": 13
+   },
+   {
+    "model": "chronos_2",
+    "mape": 10.858032619901529,
+    "wape": 11.42362667818057,
+    "mda": 74.72303206997084,
+    "rmse": 789929.2752253548,
+    "n_pekan": 490,
+    "peringkat_mape": 4,
+    "peringkat_wape": 4,
+    "peringkat_mda": 4,
+    "peringkat_rmse": 3,
+    "rank_sum": 15
+   },
+   {
+    "model": "var",
+    "mape": 12.920806917882619,
+    "wape": 12.695082356398391,
+    "mda": 70.49562682215743,
+    "rmse": 939232.7417059501,
+    "n_pekan": 490,
+    "peringkat_mape": 5,
+    "peringkat_wape": 5,
+    "peringkat_mda": 5,
+    "peringkat_rmse": 5,
+    "rank_sum": 20
+   },
+   {
+    "model": "naif_musiman",
+    "mape": 13.284457772812491,
+    "wape": 13.252233991292908,
+    "mda": 68.7463556851312,
+    "rmse": 1046639.7710584373,
+    "n_pekan": 490,
+    "peringkat_mape": 6,
+    "peringkat_wape": 6,
+    "peringkat_mda": 6,
+    "peringkat_rmse": 6,
+    "rank_sum": 24
+   }
+  ],
+  "juara_validasi": "sarimax",
+  "uji": {
+   "naif_musiman": {
+    "mape": 12.735601987679345,
+    "wape": 12.337335176740064,
+    "mda": 68.77551020408164,
+    "rmse": 1088657.9616690837,
+    "n_pekan": 70
+   },
+   "ets": {
+    "mape": 12.648458372625818,
+    "wape": 13.479535145974616,
+    "mda": 75.10204081632654,
+    "rmse": 909789.8332294363,
+    "n_pekan": 70
+   },
+   "sarimax": {
+    "mape": 9.404301589815436,
+    "wape": 9.415578748447578,
+    "mda": 77.75510204081633,
+    "rmse": 843688.8907240314,
+    "n_pekan": 70
+   },
+   "var": {
+    "mape": 13.06925013494859,
+    "wape": 13.81626851792671,
+    "mda": 71.42857142857143,
+    "rmse": 988931.1808693707,
+    "n_pekan": 70
+   },
+   "chronos_2": {
+    "mape": 13.513905102433254,
+    "wape": 14.524281152817089,
+    "mda": 75.91836734693878,
+    "rmse": 937729.9951629802,
+    "n_pekan": 70
+   },
+   "chronos_2_kalender": {
+    "mape": 12.338979800860344,
+    "wape": 13.186095260738071,
+    "mda": 76.93877551020408,
+    "rmse": 908865.1778669248,
+    "n_pekan": 70
+   }
+  },
+  "banding_uji": {
+   "chronos_2_kalender_vs_sarimax": {
+    "selisih": 2.9346782110449112,
+    "bawah": 1.5787766105284573,
+    "atas": 4.303835106398016,
+    "n": 70,
+    "a_lebih_baik": 18,
+    "b_lebih_baik": 52,
+    "seri": 0
+   },
+   "chronos_2_kalender_vs_chronos_2": {
+    "selisih": -1.1749253015729106,
+    "bawah": -1.9893516282440797,
+    "atas": -0.2985394410371919,
+    "n": 70,
+    "a_lebih_baik": 46,
+    "b_lebih_baik": 24,
+    "seri": 0
+   }
+  },
+  "detik": {
+   "naif_musiman": 0.10335630003828555,
+   "ets": 98.30454529996496,
+   "sarimax": 710.4306015000911,
+   "var": 8.990569100016728,
+   "chronos_2": 119.25879620044725,
+   "chronos_2_kalender": 108.54369919968303
+  },
+  "gagal": {
+   "naif_musiman": 0,
+   "ets": 0,
+   "sarimax": 0,
+   "var": 0,
+   "chronos_2": 0,
+   "chronos_2_kalender": 0
+  }
+ },
+ "french_bakery": {
+  "pekan_validasi": 32,
+  "pekan_uji": 8,
+  "kalender_dipakai": [
+   "libur"
+  ],
+  "papan_validasi": [
+   {
+    "model": "chronos_2",
+    "mape": 11.878621227916838,
+    "wape": 13.62471948257985,
+    "mda": 80.74534161490683,
+    "rmse": 299.6353996157103,
+    "n_pekan": 23,
+    "peringkat_mape": 1,
+    "peringkat_wape": 1,
+    "peringkat_mda": 1,
+    "peringkat_rmse": 2,
+    "rank_sum": 5
+   },
+   {
+    "model": "sarimax",
+    "mape": 14.514074491437551,
+    "wape": 15.399602798900853,
+    "mda": 76.3975155279503,
+    "rmse": 290.02071938303436,
+    "n_pekan": 23,
+    "peringkat_mape": 3,
+    "peringkat_wape": 2,
+    "peringkat_mda": 3,
+    "peringkat_rmse": 1,
+    "rank_sum": 9
+   },
+   {
+    "model": "chronos_2_kalender",
+    "mape": 14.101087473898758,
+    "wape": 16.11985780297304,
+    "mda": 75.77639751552795,
+    "rmse": 303.95962220956915,
+    "n_pekan": 23,
+    "peringkat_mape": 2,
+    "peringkat_wape": 4,
+    "peringkat_mda": 4,
+    "peringkat_rmse": 3,
+    "rank_sum": 13
+   },
+   {
+    "model": "var",
+    "mape": 15.071773378126021,
+    "wape": 15.73623672794473,
+    "mda": 75.15527950310559,
+    "rmse": 328.85708478932276,
+    "n_pekan": 23,
+    "peringkat_mape": 4,
+    "peringkat_wape": 3,
+    "peringkat_mda": 5,
+    "peringkat_rmse": 5,
+    "rank_sum": 17
+   },
+   {
+    "model": "ets",
+    "mape": 15.310843892618575,
+    "wape": 16.808726578604695,
+    "mda": 78.88198757763976,
+    "rmse": 311.99886892905846,
+    "n_pekan": 23,
+    "peringkat_mape": 5,
+    "peringkat_wape": 6,
+    "peringkat_mda": 2,
+    "peringkat_rmse": 4,
+    "rank_sum": 17
+   },
+   {
+    "model": "naif_musiman",
+    "mape": 16.056022329642282,
+    "wape": 16.258911914505216,
+    "mda": 75.15527950310559,
+    "rmse": 393.60818570033643,
+    "n_pekan": 23,
+    "peringkat_mape": 6,
+    "peringkat_wape": 5,
+    "peringkat_mda": 5,
+    "peringkat_rmse": 6,
+    "rank_sum": 22
+   }
+  ],
+  "juara_validasi": "chronos_2",
+  "uji": {
+   "naif_musiman": {
+    "mape": 12.141447939463939,
+    "wape": 11.57735689658091,
+    "mda": 66.66666666666666,
+    "rmse": 308.7765387909808,
+    "n_pekan": 6
+   },
+   "ets": {
+    "mape": 6.856967886393156,
+    "wape": 7.3366933209356775,
+    "mda": 71.42857142857143,
+    "rmse": 235.28807792533348,
+    "n_pekan": 6
+   },
+   "sarimax": {
+    "mape": 13.67736743360842,
+    "wape": 11.092388680288698,
+    "mda": 76.19047619047619,
+    "rmse": 266.3969233718961,
+    "n_pekan": 6
+   },
+   "var": {
+    "mape": 14.06593868886298,
+    "wape": 13.468857709832275,
+    "mda": 69.04761904761905,
+    "rmse": 294.7944752462149,
+    "n_pekan": 6
+   },
+   "chronos_2": {
+    "mape": 3.964579467453397,
+    "wape": 4.451394972819311,
+    "mda": 73.80952380952381,
+    "rmse": 214.71054885430596,
+    "n_pekan": 6
+   },
+   "chronos_2_kalender": {
+    "mape": 4.120178899703722,
+    "wape": 4.202167753916227,
+    "mda": 71.42857142857143,
+    "rmse": 204.46189669397793,
+    "n_pekan": 6
+   }
+  },
+  "banding_uji": {
+   "chronos_2_kalender_vs_sarimax": {
+    "selisih": -9.5571885339047,
+    "bawah": -23.392362697739955,
+    "atas": -1.8005128560105277,
+    "n": 6,
+    "a_lebih_baik": 6,
+    "b_lebih_baik": 0,
+    "seri": 0
+   },
+   "chronos_2_vs_sarimax": {
+    "selisih": -9.712787966155025,
+    "bawah": -24.89644004720124,
+    "atas": -1.3064551091022678,
+    "n": 6,
+    "a_lebih_baik": 5,
+    "b_lebih_baik": 1,
+    "seri": 0
+   },
+   "chronos_2_kalender_vs_chronos_2": {
+    "selisih": 0.15559943225032402,
+    "bawah": -1.8194067154069784,
+    "atas": 1.9985224183050296,
+    "n": 6,
+    "a_lebih_baik": 2,
+    "b_lebih_baik": 4,
+    "seri": 0
+   }
+  },
+  "detik": {
+   "naif_musiman": 0.06271150009706616,
+   "ets": 5.413417000207119,
+   "sarimax": 25.530545199871995,
+   "var": 0.7144031000207178,
+   "chronos_2": 5.179135599930305,
+   "chronos_2_kalender": 3.8834742999169976
+  },
+  "gagal": {
+   "naif_musiman": 0,
+   "ets": 0,
+   "sarimax": 0,
+   "var": 0,
+   "chronos_2": 0,
+   "chronos_2_kalender": 0
+  }
+ }
+}
