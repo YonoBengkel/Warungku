@@ -251,6 +251,72 @@ def _rb(x: float) -> str:
     return f"{x:,.0f}".replace(",", ".")
 
 
+# --------------------------------------------------------------------------
+# Ulangan Mesin 2 dengan banyak benih
+# --------------------------------------------------------------------------
+#: Nama kebijakan di hasil ulangan (ml/eksperimen/mesin2_penyetelan.py).
+ULANG_NAMA = {
+    "greedy": "Greedy",
+    "linucb_a1": "LinUCB (alfa 1)",
+    "thompson": "Thompson",
+    "epsilon_greedy_0.1": "Epsilon-greedy 0,1",
+    "thompson+fuzzy (produksi)": "Thompson + fuzzy (produksi)",
+    "greedy+fuzzy": "Greedy + fuzzy",
+    "topsis": "TOPSIS",
+}
+
+
+def _ulang() -> dict | None:
+    """Hasil simulasi yang diulang 10 benih; angka resmi tiap kebijakan Mesin 2."""
+    u = _json("hasil_eksperimen_mesin2_ulangan.json")
+    return {b["nama"]: b for b in u["hasil"]} | {"_benih": len(u["benih"])} if u else None
+
+
+def _rbu(ulang: dict | None, nama: str, cadangan: float | None = None) -> str:
+    """Regret rata-rata ± simpangan baku dari ulangan; angka satu benih kalau ulangan tidak ada."""
+    b = (ulang or {}).get(nama)
+    if not b:
+        return _rb(cadangan) if cadangan is not None else "—"
+    r = b["regret"]
+    return _rb(r["rata"]) + (" ± %s" % _rb(r["sd"]) if r["sd"] > 0 else "")
+
+
+#: Nama di simulasi satu benih -> nama di hasil ulangan.
+SATU_KE_ULANG = {
+    "beta_daring+greedy": "greedy",
+    "beta_daring+epsilon_greedy_0.1": "epsilon_greedy_0.1",
+    "beta_daring+thompson": "thompson",
+    "beta_daring+linucb_a1": "linucb_a1",
+    "beta_daring+thompson+fuzzy": "thompson+fuzzy (produksi)",
+    "beta_daring+greedy+fuzzy": "greedy+fuzzy",
+    "topsis": "topsis",
+}
+
+
+def regret_tampil(h: dict, ulang: dict | None) -> str:
+    """Regret satu baris tabel: rata-rata ulangan bila ada (ditandai *), selain itu satu benih."""
+    nama = SATU_KE_ULANG.get(h["nama"])
+    if ulang and nama in ulang:
+        return _rbu(ulang, nama) + " *"
+    return _rb(h["regret_total"])
+
+
+def tabel_ulangan(d: Document, ulang: dict | None, lebar: list[float] | None = None) -> None:
+    if not ulang:
+        return
+    baris = []
+    for nama, tampil in ULANG_NAMA.items():
+        b = ulang.get(nama)
+        if not b:
+            continue
+        r = b["regret"]
+        selang = ("%s–%s" % (_rb(r["ci95"][0]), _rb(r["ci95"][1]))) if r["sd"] > 0 else "deterministik"
+        baris.append([tampil, _rbu(ulang, nama), selang, _ak(b["harga"]["rata"], 3)])
+    baris.sort(key=lambda x: ulang[[k for k, v in ULANG_NAMA.items() if v == x[0]][0]]["regret"]["rata"])
+    tabel(d, ["Kebijakan", "Regret total (rata-rata ± sd)", "Selang 95%", "Rasio harga"], baris,
+          lebar=lebar or [5.6, 4.0, 3.2, 2.4])
+
+
 JUDUL_SUMBER = {"simulasi": "Simulasi Warungku", "french_bakery": "French Bakery (data nyata)"}
 NAMA_METODE = {
     "naif_musiman": "Naif musiman",
@@ -800,6 +866,7 @@ def bagian_mesin2(d: Document, sim, seg_prod: dict[str, int]) -> None:
             ],
             lebar=[5.6, 3.0, 3.6, 2.6],
         )
+        ulang = _ulang()
         sumbu: dict[str, list] = {}
         for h in sim["hasil"]:
             sumbu.setdefault(h.get("sumbu", "lain"), []).append(h)
@@ -809,12 +876,26 @@ def bagian_mesin2(d: Document, sim, seg_prod: dict[str, int]) -> None:
                 d,
                 ["Varian", "Regret total", "Regret/keputusan", "Sukses", "Rasio harga"],
                 [
-                    [h["nama"], _rb(h["regret_total"]), _ak(h["regret_rata"]), _ak(h["sukses_rata"], 3),
+                    [h["nama"], regret_tampil(h, ulang), _ak(h["regret_rata"]), _ak(h["sukses_rata"], 3),
                      _ak(h.get("harga_rata", float("nan")), 4)]
                     for h in sorted(isi, key=lambda x: x["regret_total"])
                 ],
                 lebar=[5.6, 2.4, 3.0, 2.0, 2.4],
             )
+        if ulang:
+            alinea(d, "* Regret total rata-rata %d benih ± simpangan baku; kolom lain dari satu benih."
+                   % ulang["_benih"])
+            alinea(d, "Ulangan dengan %d benih acak" % ulang["_benih"], tebal=True)
+            alinea(
+                d,
+                "Tabel per sumbu di atas berasal dari satu benih acak. Benih itu ikut menentukan "
+                "cuplikan Thompson dan lemparan epsilon-greedy, sehingga selisih kecil antar "
+                "kebijakan bisa hanya derau. Karena itu simulasi diulang dengan %d benih; angka "
+                "di bawah ini yang dipakai sebagai angka resmi tiap kebijakan. Kebijakan tanpa "
+                "unsur acak (greedy, LinUCB, TOPSIS) memberi angka yang sama di semua benih."
+                % ulang["_benih"],
+            )
+            tabel_ulangan(d, ulang)
         gambar(d, "mesin2_regret.png", "Gambar 7. Regret kumulatif sepanjang 400 hari. Makin landai makin baik.", 15.0)
         gambar(d, "mesin2_kompromi.png", "Gambar 8. Keandalan melawan harga. Kebijakan yang menimbang harga menukar sedikit keandalan dengan harga yang lebih murah.", 15.0)
 
@@ -843,6 +924,7 @@ def bagian_mesin2(d: Document, sim, seg_prod: dict[str, int]) -> None:
                 )
 
         g, ts, ucb, eps = (cari.get(k) for k in ("beta_daring+greedy", "beta_daring+thompson", "beta_daring+linucb_a1", "beta_daring+epsilon_greedy_0.1"))
+        ulang = _ulang()
         if g and ts:
             judul(d, "7.6 Temuan: eksplorasi hampir tidak membayar dirinya sendiri", 2)
             alinea(
@@ -853,8 +935,10 @@ def bagian_mesin2(d: Document, sim, seg_prod: dict[str, int]) -> None:
                 "distributor sudah punya ratusan pesanan dan ketidakpastiannya hampir habis. "
                 "Greedy dan LinUCB hanya berbeda pilihan pada segelintir keputusan; Thompson "
                 "berbeda dari greedy pada sekitar 4 persen keputusan."
-                % (_rb(g["regret_total"]), _rb(ts["regret_total"]),
-                   (", LinUCB %s, epsilon-greedy %s" % (_rb(ucb["regret_total"]), _rb(eps["regret_total"]))) if ucb and eps else ""),
+                % (_rbu(ulang, "greedy", g["regret_total"]), _rbu(ulang, "thompson", ts["regret_total"]),
+                   (", LinUCB %s, epsilon-greedy %s" % (_rbu(ulang, "linucb_a1", ucb["regret_total"]),
+                                                        _rbu(ulang, "epsilon_greedy_0.1", eps["regret_total"])))
+                   if ucb and eps else ""),
             )
             alinea(
                 d,
@@ -874,7 +958,10 @@ def bagian_mesin2(d: Document, sim, seg_prod: dict[str, int]) -> None:
                 "— lebih andal dengan harga yang hanya sedikit lebih mahal. Keduanya sengaja "
                 "menukar sebagian keandalan dengan harga, sehingga regretnya lebih besar "
                 "daripada kebijakan yang hanya mengejar keandalan (Gambar 8)."
-                % (_rb(tf["regret_total"]), _rb(tp["regret_total"]), _ak(tf["harga_rata"]), _ak(tp["harga_rata"])),
+                % (_rbu(ulang, "thompson+fuzzy (produksi)", tf["regret_total"]),
+                   _rbu(ulang, "topsis", tp["regret_total"]),
+                   _ak(ulang["thompson+fuzzy (produksi)"]["harga"]["rata"] if ulang else tf["harga_rata"]),
+                   _ak(ulang["topsis"]["harga"]["rata"] if ulang else tp["harga_rata"])),
             )
 
         judul(d, "7.8 Temuan: selalu termurah kalah dari memilih acak", 2)
@@ -976,12 +1063,17 @@ def ringkas_mesin(d: Document, m1p, m1o, sar, sim, seg, seg_prod: dict[str, int]
         tabel(
             d,
             ["Varian", "Regret total", "Regret/keputusan", "Rasio harga"],
-            [[h["nama"], _rb(h["regret_total"]), _ak(h["regret_rata"]), _ak(h.get("harga_rata", float("nan")), 4)]
+            [[h["nama"], regret_tampil(h, _ulang()), _ak(h["regret_rata"]), _ak(h.get("harga_rata", float("nan")), 4)]
              for h in sorted(sim["hasil"], key=lambda x: x["regret_total"])]
             + [["Memilih acak", "—", _ak(a["acak_regret"]), _ak(a["acak_harga"], 4)],
                ["Selalu termurah (sekarang)", "—", _ak(a["termurah_regret"]), _ak(a.get("termurah_harga", 1.0), 4)]],
             lebar=[5.8, 2.6, 3.2, 2.6],
         )
+        ulang = _ulang()
+        if ulang:
+            alinea(d, "* Rata-rata %d benih ± simpangan baku; kolom lain dari satu benih. "
+                      "Rincian ulangan:" % ulang["_benih"])
+            tabel_ulangan(d, ulang, lebar=[5.8, 3.8, 3.0, 2.6])
         gambar(d, "mesin2_kompromi.png", "Keandalan melawan harga per kebijakan.", 14.5)
     alinea(d, "TEMUAN.", tebal=True)
     butir(d, "Beta-Bernoulli mengalahkan regresi logistik dan BART. Metode paling sederhana menang; BART menjadi pembanding saja.")
