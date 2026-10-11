@@ -27,14 +27,14 @@ python -m pip install -r requirements.txt
 cp .env.example .env
 python -m alembic upgrade head
 
-# 3. isi dengan dataset simulasi (~832.000 baris, sekitar sepuluh menit)
+# 3. isi dengan dataset simulasi (~5,8 juta baris, 5 juta di antaranya nota kasir)
 #    Perhatian: ini MENGOSONGKAN lalu mengisi ulang. Keluaran model
 #    (`prediksi`, `rekomendasi_skor`, `segmen_pelanggan`) ikut terhapus lewat
 #    CASCADE, karena angka model yang menunjuk barang yang sudah tidak ada
 #    memang harus pergi. Jalankan ulang ketiga mesin sesudahnya (langkah 7).
 python -m dataset.buat_dataset
 
-# 4. periksa datanya konsisten — keempatnya harus 0
+# 4. periksa datanya konsisten — keenamnya harus 0
 docker exec -i warungku-db psql -U warungku -d warungku_dev < skrip/02_periksa_konsistensi.sql
 
 # 5. uji otomatis

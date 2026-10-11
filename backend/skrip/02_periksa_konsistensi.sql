@@ -1,4 +1,4 @@
--- Tiga pemeriksaan yang harus lulus sebelum dataset dipakai melatih apa pun.
+-- Pemeriksaan yang harus lulus sebelum dataset dipakai melatih apa pun.
 --
 -- Semuanya mengembalikan 0. Angka selain 0 berarti ada yang bohong, dan lebih
 -- baik tahu sekarang daripada saat angka laporan tidak bisa dijelaskan.
@@ -52,3 +52,37 @@ SELECT COUNT(*) AS baris_salah_distributor
   JOIN pesanan ps ON ps.id = pb.pesanan_id
   JOIN penawaran pn ON pn.id = pb.penawaran_id
  WHERE pn.distributor_id <> ps.distributor_id;
+
+\echo '5. nota hanya merinci penjualan: jumlahnya sama dengan buku besar per barang per hari'
+-- Kueri yang sama dipakai `periksa_turunan` di dataset/buat_dataset.py
+-- (SQL_NOTA_VS_BUKU_BESAR); ubah keduanya bersamaan.
+WITH dari_nota AS (
+    SELECT t.usaha_id, b.id AS barang_id,
+           (t.waktu AT TIME ZONE 'UTC')::date AS tanggal,
+           SUM(tb.jumlah) AS jumlah
+      FROM transaksi_baris tb
+      JOIN transaksi t ON t.id = tb.transaksi_id
+      JOIN barang b ON b.usaha_id = t.usaha_id AND b.nama = tb.nama_menu
+     WHERE NOT t.dibatalkan
+     GROUP BY 1, 2, 3
+), dari_ledger AS (
+    SELECT pg.usaha_id, pg.barang_id,
+           (pg.waktu AT TIME ZONE 'UTC')::date AS tanggal,
+           SUM(-pg.jumlah) AS jumlah
+      FROM pergerakan pg
+      JOIN barang b ON b.id = pg.barang_id
+     WHERE pg.jenis = 'terjual' AND b.dicatat_manual = false
+     GROUP BY 1, 2, 3
+)
+SELECT COUNT(*) AS barang_hari_tidak_cocok
+  FROM dari_nota n
+  FULL OUTER JOIN dari_ledger l USING (usaha_id, barang_id, tanggal)
+ WHERE ABS(COALESCE(n.jumlah, 0) - COALESCE(l.jumlah, 0)) > 0.001;
+
+\echo '6. setiap nota punya baris, dan setiap baris punya harga jual'
+-- Omset dihitung dari harga di nota. Baris tanpa harga membuat omset hari itu
+-- terlihat lebih kecil tanpa ada yang tahu.
+SELECT (SELECT COUNT(*) FROM transaksi t
+         WHERE NOT EXISTS (SELECT 1 FROM transaksi_baris tb WHERE tb.transaksi_id = t.id))
+     + (SELECT COUNT(*) FROM transaksi_baris WHERE harga_jual_satuan IS NULL)
+       AS nota_cacat;

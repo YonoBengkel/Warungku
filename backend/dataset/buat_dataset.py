@@ -24,6 +24,8 @@ Yang disimulasikan:
 5. **Matriks counterfactual**: untuk tiap pesanan, hasil yang AKAN terjadi
    seandainya dipesan ke distributor lain. Hanya untuk evaluasi, tidak pernah
    dilatihkan.
+6. **Nota kasir** untuk seluruh 400 hari, lengkap dengan harga jual, sumber
+   omset harian dan jumlah nota harian (lihat `dataset/nota.py`).
 
 Jalankan: python -m dataset.buat_dataset
 """
@@ -78,6 +80,7 @@ from warungku.model import (
     Usaha,
 )
 
+from . import nota as modul_nota
 from .kalender import SEMUA_LIBUR
 from .katalog import DISTRIBUTOR, KATALOG, PRODUK_PER_NAMA, RAK, UMKM
 from .pola import KARAKTER, faktor_musiman, hari_kirim_asli, hari_libur, musim_hujan, pekan_gajian, sedang_ramadan
@@ -89,10 +92,8 @@ BENIH = 20261006
 #: 400 hari: 365 untuk melatih, 35 terakhir disembunyikan untuk menguji.
 HARI_SIMULASI = 400
 HARI_UJI = 35
-#: Struk per-nota hanya dibuat untuk jendela terakhir; sebelumnya dianggap
-#: riwayat hasil impor saat pendaftaran ("sudah punya data transaksi sebelumnya?").
-HARI_STRUK = 30
-STRUK_PER_HARI = 6
+#: Nota kasir dibuat untuk seluruh 400 hari. Asumsi harga jual, belanja per
+#: nota, dan jam ramai ada di `dataset/nota.py`.
 
 #: Pesan ulang saat stok di bawah batas aman; sekali pesan untuk ~21 hari pakai.
 HARI_PERSEDIAAN = 21
@@ -527,6 +528,9 @@ class Pembangkit:
                     b.stok -= terjual
 
                     if terjual > 1e-9:
+                        # Barang yang dicatat manual (tisu, gas) tidak lewat
+                        # kasir, jadi tidak pernah muncul di nota. Pemakaiannya
+                        # dicatat pemilik sendiri.
                         self.tambah(
                             "pergerakan",
                             {
@@ -536,10 +540,13 @@ class Pembangkit:
                                 "jenis": JenisPergerakan.TERJUAL,
                                 "jumlah": -round(terjual, 3),
                                 "stok_sesudah": round(b.stok, 3),
-                                "keterangan": "Penjualan harian dari kasir",
+                                "keterangan": (
+                                    "Pemakaian harian, dicatat manual" if b.manual
+                                    else "Penjualan harian dari kasir"
+                                ),
                                 "pesanan_id": None,
                                 "transaksi_id": None,
-                                "oleh": "Kasir Open POS",
+                                "oleh": f"Pemilik {w.nama}" if b.manual else "Kasir Open POS",
                             },
                         )
 
@@ -840,65 +847,35 @@ class Pembangkit:
         self.kiriman_selesai.append(kiriman)
 
     # ----------------------------------------------------------------------
-    def buat_struk(self) -> None:
+    def buat_nota(self, acak: np.random.Generator) -> modul_nota.Nota:
         """
-        Struk per-nota untuk jendela terakhir saja.
+        Nota kasir untuk seluruh 400 hari, dari penjualan di buku besar.
 
-        Sebelum jendela ini, pergerakan dianggap **riwayat hasil impor** saat
-        pendaftaran — persis yang ditanyakan layar onboarding, "apakah kamu sudah
-        punya data transaksi sebelumnya?". Jadi dua jalur masuk data sama-sama
-        terwakili: impor riwayat dan sinkron harian dari kasir.
+        `acak` sengaja generator terpisah dari `self.acak`, supaya menambah nota
+        tidak menggeser satu angka pun di D1 dan D2.
+
+        Baris `pergerakan` tidak ditautkan ke nota (`transaksi_id` kosong). Satu
+        baris buku besar di sini adalah ringkasan sehari dari puluhan nota, jadi
+        menautkannya ke salah satu nota akan menyesatkan. Jalur API yang
+        sungguhan (`POST /usaha/{id}/transaksi`) menulis satu baris per bahan per
+        nota, dan di sana tautannya selalu ada.
         """
-        from collections import defaultdict
-
-        batas = AKHIR - timedelta(days=HARI_STRUK - 1)
-        per_hari: dict[tuple[int, date], list[dict]] = defaultdict(list)
-        for pg in self.baris.get("pergerakan", []):
-            if pg["jenis"] is not JenisPergerakan.TERJUAL:
-                continue
-            t = pg["waktu"].date()
-            if t >= batas:
-                per_hari[(pg["usaha_id"], t)].append(pg)
-
-        nama_barang = {b["id"]: b["nama"] for b in self.baris["barang"]}
-        satuan_barang = {b["id"]: b["satuan"] for b in self.baris["barang"]}
-
-        for (usaha_id, t), daftar in sorted(per_hari.items(), key=lambda x: (x[0][1], x[0][0])):
-            jumlah_struk = min(STRUK_PER_HARI, max(1, len(daftar)))
-            struk_ids = []
-            for n in range(jumlah_struk):
-                sid = self.tambah(
-                    "transaksi",
-                    {
-                        "usaha_id": usaha_id,
-                        "nomor_struk": f"{t.strftime('%Y%m%d')}-{usaha_id:03d}-{n + 1:03d}",
-                        "waktu": _wkt(t, 8 + n * 2, 15),
-                        "kasir": "Kasir 1",
-                        "sumber": "pos",
-                        "dibatalkan": False,
-                        "diproses_pada": _wkt(t, 23, 0),
-                    },
-                )
-                struk_ids.append(sid)
-
-            for i, pg in enumerate(daftar):
-                sid = struk_ids[i % jumlah_struk]
-                # Pergerakan ditautkan ke struk asalnya, supaya riwayat barang
-                # bisa diketuk balik ke nota yang menghasilkannya.
-                pg["transaksi_id"] = sid
-                self.tambah(
-                    "transaksi_baris",
-                    {
-                        "transaksi_id": sid,
-                        "nama_menu": nama_barang[pg["barang_id"]],
-                        "jumlah": abs(pg["jumlah"]),
-                        "satuan": satuan_barang[pg["barang_id"]],
-                        # Harga jual adalah FAKTA DARI STRUK, bukan isian aplikasi.
-                        # Tidak ada layar yang menyuntingnya dan `barang` sengaja
-                        # tidak punya kolom harga jual.
-                        "harga_jual_satuan": None,
-                    },
-                )
+        manual = {b["id"] for b in self.baris["barang"] if b["dicatat_manual"]}
+        terjual = [
+            (pg["usaha_id"], pg["barang_id"], pg["waktu"].date(), -pg["jumlah"])
+            for pg in self.baris.get("pergerakan", [])
+            if pg["jenis"] is JenisPergerakan.TERJUAL and pg["barang_id"] not in manual
+        ]
+        jenis = {u["id"]: str(u["jenis_usaha"]) for u in self.baris["usaha"]}
+        beli = {
+            b["id"]: PRODUK_PER_NAMA[b["nama"]].harga_acuan / PRODUK_PER_NAMA[b["nama"]].isi
+            for b in self.baris["barang"]
+            if b["id"] not in manual
+        }
+        harga = modul_nota.harga_jual(
+            [b for b in self.baris["barang"] if b["id"] not in manual], jenis, beli, acak
+        )
+        return modul_nota.bangkitkan(terjual, jenis, harga, acak)
 
     # ----------------------------------------------------------------------
     def bangun_fitur_pesanan(self, counterfactual: list[dict]) -> list[dict]:
@@ -1051,20 +1028,38 @@ URUTAN: tuple[tuple[str, type], ...] = (
 POTONG = 5_000
 
 
-def tulis_basis_data(baris: dict[str, list[dict]]) -> dict[str, int]:
+def tulis_basis_data(
+    baris: dict[str, list[dict]], nota: modul_nota.Nota | None = None
+) -> dict[str, int]:
     """
     Kosongkan lalu isi ulang. Id dibuat sendiri oleh pembangkit supaya relasi
     antar tabel bisa dirangkai di memori; sesudah menulis, urutan (sequence)
     Postgres digeser ke id tertinggi. Kalau langkah terakhir ini dilupakan,
     INSERT pertama dari API akan bentrok kunci primer — dan baru terlihat
     beberapa hari kemudian.
+
+    Nota (`transaksi`, `transaksi_baris`) ditulis lewat COPY dari larik ringkas,
+    bukan INSERT dari dict: jumlahnya jutaan baris. Masih di transaksi yang sama,
+    jadi kalau ada yang gagal, seluruhnya batal.
     """
     jumlah: dict[str, int] = {}
+    nama_barang = {b["id"]: b["nama"] for b in baris.get("barang", [])}
+    satuan_barang = {b["id"]: b["satuan"] for b in baris.get("barang", [])}
     with mesin().begin() as kon:
         nama_tabel = [n for n, _ in URUTAN]
         kon.execute(text("TRUNCATE %s RESTART IDENTITY CASCADE" % ", ".join(nama_tabel)))
 
         for nama, model in URUTAN:
+            if nota is not None and nama == "transaksi":
+                with kon.connection.cursor() as kur:
+                    jumlah[nama] = modul_nota.salin_transaksi(kur, nota)
+                continue
+            if nota is not None and nama == "transaksi_baris":
+                with kon.connection.cursor() as kur:
+                    jumlah[nama] = modul_nota.salin_transaksi_baris(
+                        kur, nota, nama_barang, satuan_barang
+                    )
+                continue
             data = baris.get(nama, [])
             jumlah[nama] = len(data)
             if not data:
@@ -1175,7 +1170,52 @@ def periksa_turunan() -> list[str]:
             "tanggal fitur vs tanggal pesanan: %s baris menyimpang" % bocor
             + ("  [LULUS]" if bocor == 0 else "  [GAGAL]")
         )
+
+        # Nota hanya merinci penjualan, tidak boleh menambah atau mengurangi.
+        beda_nota = kon.execute(text(SQL_NOTA_VS_BUKU_BESAR)).scalar_one()
+        catatan.append(
+            "nota vs pergerakan: %s barang-hari tidak cocok" % beda_nota
+            + ("  [LULUS]" if beda_nota == 0 else "  [GAGAL]")
+        )
+        cacat = kon.execute(text(SQL_NOTA_CACAT)).scalar_one()
+        catatan.append(
+            "nota tanpa baris atau tanpa harga jual: %s" % cacat
+            + ("  [LULUS]" if cacat == 0 else "  [GAGAL]")
+        )
     return catatan
+
+
+#: Dipakai juga di `skrip/02_periksa_konsistensi.sql`; ubah keduanya bersamaan.
+SQL_NOTA_VS_BUKU_BESAR = """
+WITH dari_nota AS (
+    SELECT t.usaha_id, b.id AS barang_id,
+           (t.waktu AT TIME ZONE 'UTC')::date AS tanggal,
+           SUM(tb.jumlah) AS jumlah
+      FROM transaksi_baris tb
+      JOIN transaksi t ON t.id = tb.transaksi_id
+      JOIN barang b ON b.usaha_id = t.usaha_id AND b.nama = tb.nama_menu
+     WHERE NOT t.dibatalkan
+     GROUP BY 1, 2, 3
+), dari_ledger AS (
+    SELECT pg.usaha_id, pg.barang_id,
+           (pg.waktu AT TIME ZONE 'UTC')::date AS tanggal,
+           SUM(-pg.jumlah) AS jumlah
+      FROM pergerakan pg
+      JOIN barang b ON b.id = pg.barang_id
+     WHERE pg.jenis = 'terjual' AND b.dicatat_manual = false
+     GROUP BY 1, 2, 3
+)
+SELECT COUNT(*)
+  FROM dari_nota n
+  FULL OUTER JOIN dari_ledger l USING (usaha_id, barang_id, tanggal)
+ WHERE ABS(COALESCE(n.jumlah, 0) - COALESCE(l.jumlah, 0)) > 0.001
+"""
+
+SQL_NOTA_CACAT = """
+SELECT (SELECT COUNT(*) FROM transaksi t
+         WHERE NOT EXISTS (SELECT 1 FROM transaksi_baris tb WHERE tb.transaksi_id = t.id))
+     + (SELECT COUNT(*) FROM transaksi_baris WHERE harga_jual_satuan IS NULL)
+"""
 
 
 # --------------------------------------------------------------------------
@@ -1239,7 +1279,9 @@ def main() -> None:
     karakter_per_dist = {i + 1: KARAKTER[i] for i in range(len(KARAKTER))}
 
     counterfactual = gen.simulasi(warungs, penawaran, dist_area, dist_kota, karakter_per_dist)
-    gen.buat_struk()
+    # Generator terpisah, diturunkan dari benih yang sama: nota tidak boleh
+    # menggeser angka D1 dan D2 yang dibangkitkan sebelumnya.
+    nota = gen.buat_nota(np.random.default_rng([arg.benih, 1]))
     gen.selaraskan_stok_akhir(warungs)
 
     d1 = gen.baris_permintaan_harian()
@@ -1256,6 +1298,12 @@ def main() -> None:
           % (len(d2), sukses, 100 * sukses / max(1, len(d2))))
     print("    counterfactual    : %6d baris (evaluasi saja, tidak untuk latih)"
           % len(counterfactual))
+    harian = nota.ringkasan_harian()
+    print("Nota                  : %d nota, %d baris, %d usaha-hari"
+          % (nota.n_nota, nota.n_baris, len(harian)))
+    print("    per usaha per hari: median %d nota, omset median Rp%s"
+          % (np.median([r["jumlah_nota"] for r in harian]),
+             f"{np.median([r['omset'] for r in harian]):,.0f}".replace(",", ".")))
     print()
 
     if not arg.tanpa_csv:
@@ -1263,12 +1311,13 @@ def main() -> None:
             ("d1_permintaan_harian.csv", d1),
             ("d2_fitur_pesanan.csv", d2),
             ("d2_counterfactual.csv", counterfactual),
+            ("d1_omset_harian.csv", harian),
         ):
             print("CSV  %s" % ekspor_csv(nama, data))
         print()
 
     if not arg.tanpa_db:
-        jumlah = tulis_basis_data(gen.baris)
+        jumlah = tulis_basis_data(gen.baris, nota)
         lebar = max(len(n) for n in jumlah)
         for nama, n in jumlah.items():
             print("  %-*s %7d" % (lebar, nama, n))
