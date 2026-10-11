@@ -29,6 +29,8 @@ from .kprototypes import gamma_bawaan, kprototypes, siluet
 #: Kolom numerik, urutannya tetap: recency, frequency, monetary, lama berlangganan.
 NUM = ("recency", "frequency", "monetary", "lama_berlangganan")
 KAT = ("jenis_usaha", "kategori_utama")
+#: Kolom angka yang di-log1p sebelum dibakukan (disetujui Ilham 12 Okt 2026).
+LOG_KOLOM = ("frequency", "monetary")
 
 #: Pelanggan dengan kurang dari ini pesanan tidak diikutkan pengelompokan.
 #: Satu pesanan tidak cukup untuk menyebut seseorang "pelanggan rutin" atau
@@ -185,7 +187,16 @@ def segmentasi_satu(df: pd.DataFrame, benih: int = 20261006) -> tuple[pd.DataFra
     if len(df) < max(K_DICOBA[0] * 2, 8):
         return pd.DataFrame(), {"alasan": "pelanggan terlalu sedikit", "pelanggan": len(df)}
 
-    X_num_mentah = df[list(NUM)].to_numpy(dtype=float)
+    X_num_mentah = df[list(NUM)].to_numpy(dtype=float, copy=True)
+    # Frequency dan monetary sangat menceng: beberapa pelanggan besar menarik
+    # pusat kelompok. log1p meredamnya sebelum pembakuan. Di percobaan
+    # (ml/eksperimen/mesin3_stabilitas.py, 12 Okt 2026) segmen jadi lebih
+    # stabil: ARI subsampel 0,876 -> 0,913, distributor terburuk 0,706 -> 0,862.
+    # Pusat kelompok untuk penamaan tetap dibaca dari peringkat relatif, jadi
+    # skala log tidak mengubah arti nama segmen.
+    for c in LOG_KOLOM:
+        i = NUM.index(c)
+        X_num_mentah[:, i] = np.log1p(X_num_mentah[:, i])
     # Dibakukan supaya keempat peubah punya bobot setara. Tanpa ini, monetary
     # yang bernilai jutaan akan menenggelamkan recency yang bernilai puluhan,
     # dan kelompoknya hanya akan memisahkan besar-kecil belanja.
@@ -259,7 +270,7 @@ def jalankan(benih: int = 20261006) -> dict:
                     "jarak_ke_pusat": float(r.jarak_ke_pusat),
                     "jalan_id": jalan_id,
                     "model_nama": "kprototypes",
-                    "model_versi": "0.1",
+                    "model_versi": "0.2",
                     "dijalankan_pada": sekarang,
                     "tanggal_acuan": acuan,
                 }
