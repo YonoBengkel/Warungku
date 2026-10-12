@@ -1,5 +1,5 @@
 """
-Layanan API Warungku. Membaca dan menulis basis data; tidak pernah memanggil model.
+Layanan API Turnify Flow. Membaca dan menulis basis data; tidak pernah memanggil model.
 
 Yang ada di sini sengaja belum lengkap: ia kerangka, bukan API jadi. Yang
 dikejar bukan jumlah endpoint, melainkan membuktikan satu alur tulis yang

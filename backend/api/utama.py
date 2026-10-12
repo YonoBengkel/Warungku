@@ -7,6 +7,7 @@ Titik masuk layanan API.
 from __future__ import annotations
 
 from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
@@ -19,7 +20,7 @@ app = FastAPI(
     title="Turnify Flow API",
     version="0.1.0",
     description=(
-        "Layanan baca-tulis basis data Warungku. Tidak memanggil model: "
+        "Layanan baca-tulis basis data Turnify Flow. Tidak memanggil model: "
         "keluaran model dibaca dari tabel yang ditulis layanan `ml`."
     ),
 )
@@ -39,6 +40,12 @@ app.add_middleware(
 app.include_router(otentikasi.rute)
 app.include_router(gudang.rute)
 app.include_router(distributor.rute)
+
+
+@app.get("/", include_in_schema=False)
+def akar() -> RedirectResponse:
+    """Alamat utama tidak punya halaman; arahkan ke dokumentasi interaktif."""
+    return RedirectResponse("/docs")
 
 
 @app.get("/sehat", tags=["sistem"])

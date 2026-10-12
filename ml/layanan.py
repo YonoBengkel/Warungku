@@ -22,6 +22,7 @@ from contextlib import asynccontextmanager
 from datetime import date, datetime, timedelta, timezone
 
 from fastapi import BackgroundTasks, FastAPI
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 from sqlalchemy import text
 
@@ -48,6 +49,12 @@ app = FastAPI(
 
 #: Diperbarui saat satu kali jalan selesai, dibaca endpoint /sehat.
 _terakhir: dict[str, object] = {}
+
+
+@app.get("/", include_in_schema=False)
+def akar() -> RedirectResponse:
+    """Alamat utama tidak punya halaman; arahkan ke dokumentasi interaktif."""
+    return RedirectResponse("/docs")
 
 
 @app.get("/jadwal", tags=["sistem"])

@@ -1,5 +1,5 @@
 """
-Layanan model Warungku: Mesin 1 (perkiraan permintaan) dan Mesin 2 (saran distributor).
+Layanan model Turnify Flow: Mesin 1 (perkiraan permintaan) dan Mesin 2 (saran distributor).
 
 Dipisah dari `api` karena satu alasan praktis: dependensinya berat (torch,
 pymc) dan waktu mulanya lambat. Kalau digabung, setiap kali API dimuat ulang

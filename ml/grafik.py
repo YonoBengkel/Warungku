@@ -246,7 +246,7 @@ def mape_omset(berkas: str = "hasil_mesin1_omset.json") -> Path | None:
     sumber = [(k, v) for k, v in data.items() if "hasil" in v]
     if not sumber:
         return None
-    judul_sumber = {"simulasi": "Simulasi Warungku (70 UMKM)", "french_bakery": "French Bakery (toko roti nyata)"}
+    judul_sumber = {"simulasi": "Simulasi Turnify Flow (70 UMKM)", "french_bakery": "French Bakery (toko roti nyata)"}
 
     fig, sumbu = plt.subplots(1, len(sumber), figsize=(5.4 * len(sumber), 3.8), squeeze=False)
     for ax, (k, v) in zip(sumbu[0], sumber):
