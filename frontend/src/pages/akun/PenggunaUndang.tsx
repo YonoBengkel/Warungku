@@ -86,7 +86,7 @@ export default function PenggunaUndang() {
       document.getElementById(id)?.focus()
       return
     }
-    setTerkirim({ nama: nama.trim(), hp: angkaHp, peran, tautan: `warungku.id/gabung/${kodeUndangan()}` })
+    setTerkirim({ nama: nama.trim(), hp: angkaHp, peran, tautan: `turnifyflow.id/gabung/${kodeUndangan()}` })
   }
 
   async function salin(teks: string) {

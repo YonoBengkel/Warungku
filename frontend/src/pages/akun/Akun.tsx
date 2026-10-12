@@ -264,7 +264,7 @@ export default function Akun() {
       </div>
 
       <p className="mt-8 text-center text-[0.75rem] text-ink-3">
-        Warungku untuk Pemilik Usaha &middot; versi purwarupa
+        Turnify Flow untuk Pemilik Usaha &middot; versi purwarupa
       </p>
 
       <Konfirmasi

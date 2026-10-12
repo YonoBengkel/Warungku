@@ -85,7 +85,7 @@ export default function AkunKasir() {
           Apakah kamu sudah memiliki data transaksi sebelumnya?
         </h1>
         <p className="mt-1.5 text-[0.9375rem] text-ink-2 leading-relaxed">
-          Warungku berdiri terpisah dari aplikasi kasirmu — kami mengurus stok gudang, kasir mengurus penjualan.
+          Turnify Flow berdiri terpisah dari aplikasi kasirmu — kami mengurus stok gudang, kasir mengurus penjualan.
           Karena itu catatan penjualan yang sudah kamu punya perlu disambungkan ke sini. Kalau tidak, perkiraan
           kebutuhan mulai dari nol dan baru bisa diandalkan setelah dua minggu berjalan.
         </p>

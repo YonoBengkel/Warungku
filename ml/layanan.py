@@ -40,7 +40,7 @@ async def daur_hidup(_app: FastAPI):
 
 
 app = FastAPI(
-    title="Warungku — layanan model",
+    title="Turnify Flow — layanan model",
     version="0.1.0",
     description="Menjalankan Mesin 1, 2, dan 3; menulis hasilnya ke tabel.",
     lifespan=daur_hidup,

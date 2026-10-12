@@ -14,7 +14,7 @@ import { useAplikasi } from '@/store/aplikasi'
 /**
  * Pintu masuk pengunjung yang belum masuk.
  *
- * Satu pekerjaan, dan cuma satu: menjelaskan bahwa Warungku adalah aplikasi
+ * Satu pekerjaan, dan cuma satu: menjelaskan bahwa Turnify Flow adalah aplikasi
  * PENDAMPING kasir, bukan penggantinya. Salah paham soal ini adalah kegagalan
  * paling mahal di halaman ini — pemilik warung yang mengira harus mengganti
  * kasirnya akan langsung menutup halaman, dan yang mengira ini kasir baru akan
@@ -43,10 +43,10 @@ export default function Hero() {
         <div className="max-w-[1100px] mx-auto px-4 sm:px-6 h-16 flex items-center gap-3">
           <span className="flex items-center gap-2.5 mr-auto min-w-0">
             <span className="size-9 rounded-md bg-brand grid place-items-center text-ink-inverse font-extrabold text-[1rem] shrink-0">
-              W
+              T
             </span>
             <span className="font-extrabold text-ink text-[1.0625rem] tracking-tight truncate">
-              Warungku
+              Turnify Flow
             </span>
           </span>
 
@@ -81,9 +81,9 @@ export default function Hero() {
           {/* Paragraf pembuka wajib: penjelasan add-on. */}
           <p className="mt-5 text-[1.0625rem] sm:text-[1.1875rem] text-ink-2 leading-relaxed max-w-[62ch]">
             <strong className="text-ink font-bold">
-              Warungku adalah aplikasi tambahan, bukan aplikasi kasir baru.
+              Turnify Flow adalah aplikasi tambahan, bukan aplikasi kasir baru.
             </strong>{' '}
-            Kasir yang kamu pakai sekarang tetap jalan seperti biasa. Warungku menempel di
+            Kasir yang kamu pakai sekarang tetap jalan seperti biasa. Turnify Flow menempel di
             sampingnya, membaca penjualan yang sudah tercatat di sana, lalu mengurus apa yang
             belum diurus siapa pun: sisa stok di gudang, perkiraan kebutuhan bulan depan, dan
             pemesanan ke distributor.
@@ -104,7 +104,7 @@ export default function Hero() {
         </section>
 
         {/* -------------------------------------------------------- */}
-        {/* Apa yang diurus Warungku                                  */}
+        {/* Apa yang diurus Turnify Flow                                  */}
         {/* -------------------------------------------------------- */}
         <section
           aria-labelledby="judul-tugas"
@@ -169,7 +169,7 @@ export default function Hero() {
               <Langkah
                 nomor={3}
                 judul="Lihat perkiraannya"
-                isi="Warungku menandai barang yang akan habis dan menyiapkan daftar belanjanya."
+                isi="Turnify Flow menandai barang yang akan habis dan menyiapkan daftar belanjanya."
               />
               <Langkah
                 nomor={4}
@@ -225,7 +225,7 @@ export default function Hero() {
       <footer className="border-t border-line">
         <div className="max-w-[1100px] mx-auto px-4 sm:px-6 py-8 flex flex-wrap items-center gap-x-5 gap-y-3">
           <span className="text-[0.8125rem] text-ink-3">
-            Warungku &mdash; purwarupa antarmuka, data contoh.
+            Turnify Flow &mdash; purwarupa antarmuka, data contoh.
           </span>
           <Link
             to="/akun/bantuan"

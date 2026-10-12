@@ -327,7 +327,7 @@ def tabel_ulangan(d: Document, ulang: dict | None, lebar: list[float] | None = N
           lebar=lebar or [5.6, 4.0, 3.2, 2.4])
 
 
-JUDUL_SUMBER = {"simulasi": "Simulasi Warungku", "french_bakery": "French Bakery (data nyata)"}
+JUDUL_SUMBER = {"simulasi": "Simulasi Turnify Flow", "french_bakery": "French Bakery (data nyata)"}
 NAMA_METODE = {
     "naif_musiman": "Naif musiman",
     "aturan_sederhana": "Aturan sederhana (rata-rata 28 hari)",
@@ -1136,7 +1136,7 @@ def laporan_lengkap() -> Path:
     r.font.size = Pt(18)
     r.font.name = HURUF
     r.font.color.rgb = TEAL
-    alinea(d, "Proyek Warungku — platform stok dan pengadaan untuk UMKM", rata="tengah")
+    alinea(d, "Proyek Turnify Flow — platform stok dan pengadaan untuk UMKM", rata="tengah")
     d.add_paragraph()
     alinea(d, "Cabang Rombak#3", rata="tengah")
     alinea(d, tanggal_hari_ini(), rata="tengah")
@@ -1146,7 +1146,7 @@ def laporan_lengkap() -> Path:
     judul(d, "1. Ringkasan")
     alinea(
         d,
-        "Laporan ini mencatat seluruh lapis data dan model di belakang portal Warungku, "
+        "Laporan ini mencatat seluruh lapis data dan model di belakang portal Turnify Flow, "
         "dari skema basis data sampai angka perbandingan model. Frontend tidak disentuh. "
         "Yang dikerjakan: enam lapis basis data, pembangkit dataset simulasi, tiga mesin "
         "analitik beserta percobaan pembandingnya, dua layanan backend terpisah, "
@@ -1616,7 +1616,7 @@ def laporan_lengkap() -> Path:
             ["Tabel kendala dan keranjang sisi server", "Ditunda sesuai keputusan"],
             ["Resep berbilang bahan", "Struktur tabel ada, dataset mengisinya satu-ke-satu sesuai keputusan"],
             ["Dockerfile api dan ml", "Hanya basis data yang di kontainer; keduanya jalan sebagai perintah uvicorn. Lebih jujur daripada Dockerfile yang tidak pernah diuji"],
-            ["Data warung sungguhan", "Angka Warungku berasal dari simulasi; satu toko roti nyata dipakai untuk menguji metode omset. Lihat bagian 10"],
+            ["Data warung sungguhan", "Angka Turnify Flow berasal dari simulasi; satu toko roti nyata dipakai untuk menguji metode omset. Lihat bagian 10"],
             ["Penanda stok mati", "Sell-through hanya cocok untuk menandai barang yang hampir tidak berkurang; penandanya belum dibangun"],
             ["MAPE 5 persen", "Belum tercapai pada tingkat barang per pekan. Lihat bagian 6.7"],
             ["Ramalan omset di aplikasi", "Baru dievaluasi; belum ditulis ke basis data dan belum tampil di portal"],
@@ -1654,7 +1654,7 @@ def laporan_lengkap() -> Path:
         "tersebut, bukan diketik ulang.",
     )
 
-    berkas = TUJUAN / "Laporan-Lengkap-Warungku.docx"
+    berkas = TUJUAN / "Laporan-Lengkap-Turnify-Flow.docx"
     d.save(str(berkas))
     return berkas
 
@@ -1686,7 +1686,7 @@ def laporan_ringkas() -> Path:
     alinea(d, "REKAP PER ASPEK", tebal=True, rata="tengah")
     p = d.add_paragraph()
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r = p.add_run("Apa Saja yang Ditambahkan ke Proyek Warungku")
+    r = p.add_run("Apa Saja yang Ditambahkan ke Proyek Turnify Flow")
     r.bold = True
     r.font.size = Pt(17)
     r.font.name = HURUF
@@ -1866,7 +1866,7 @@ def laporan_ringkas() -> Path:
             ["kendala, keranjang sisi server", "Ditunda sesuai keputusan"],
             ["Resep berbilang bahan", "Struktur tabel ada, dataset mengisinya satu-ke-satu"],
             ["Dockerfile api dan ml", "Hanya basis data di kontainer; demo dijalankan dengan uvicorn"],
-            ["Data warung sungguhan", "Angka Warungku dari simulasi; satu toko roti nyata untuk menguji metode omset"],
+            ["Data warung sungguhan", "Angka Turnify Flow dari simulasi; satu toko roti nyata untuk menguji metode omset"],
             ["Penanda stok mati", "Sell-through hanya cocok untuk ini; belum dibangun"],
             ["MAPE 5 persen", "Belum tercapai pada tingkat barang per pekan"],
             ["Ramalan omset di aplikasi", "Baru dievaluasi; belum ditulis ke basis data dan belum tampil"],
@@ -1874,7 +1874,7 @@ def laporan_ringkas() -> Path:
         lebar=[5.0, 10.0],
     )
 
-    berkas = TUJUAN / "Laporan-Ringkas-Warungku.docx"
+    berkas = TUJUAN / "Laporan-Ringkas-Turnify-Flow.docx"
     d.save(str(berkas))
     return berkas
 

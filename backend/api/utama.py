@@ -16,7 +16,7 @@ from warungku.konfigurasi import alamat_layanan_model
 from . import distributor, gudang, otentikasi
 
 app = FastAPI(
-    title="Warungku API",
+    title="Turnify Flow API",
     version="0.1.0",
     description=(
         "Layanan baca-tulis basis data Warungku. Tidak memanggil model: "

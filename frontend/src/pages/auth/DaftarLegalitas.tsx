@@ -492,9 +492,9 @@ function LayarAuth({
             className="size-9 rounded-md bg-brand text-ink-inverse grid place-items-center font-extrabold text-[1.125rem] leading-none"
             aria-hidden="true"
           >
-            W
+            T
           </span>
-          <span className="text-[1.125rem] font-extrabold text-ink tracking-tight">Warungku</span>
+          <span className="text-[1.125rem] font-extrabold text-ink tracking-tight">Turnify Flow</span>
         </div>
 
         <div className="bg-surface border border-line rounded-lg shadow-e1 p-5 sm:p-6 anim-muncul">

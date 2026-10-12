@@ -79,7 +79,7 @@ export default function AkunPratinjau() {
               )}
   
               <p className="mt-2.5 text-[0.75rem] text-ink-3">
-                Pembeli di Warungku sejak {tanggalPanjang(profil.bergabungSejak)}
+                Pembeli di Turnify Flow sejak {tanggalPanjang(profil.bergabungSejak)}
               </p>
   
               <Pemisah className="my-4" />

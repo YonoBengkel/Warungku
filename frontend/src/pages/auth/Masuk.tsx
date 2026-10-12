@@ -46,7 +46,7 @@ export default function Masuk() {
       if (g) baru.email = g
     }
     if (sandi.length === 0) {
-      baru.sandi = 'Kata sandi belum diisi. Tulis kata sandi yang kamu pakai saat mendaftar. Contoh: warungku2024.'
+      baru.sandi = 'Kata sandi belum diisi. Tulis kata sandi yang kamu pakai saat mendaftar. Contoh: turnify2024.'
     }
     setGalat(baru)
     if (Object.keys(baru).length > 0) {
@@ -60,7 +60,7 @@ export default function Masuk() {
     window.setTimeout(() => {
       setMemuat(false)
       aturMasuk(true)
-      tampilkanRacun('Selamat datang kembali di Warungku.', 'aman')
+      tampilkanRacun('Selamat datang kembali di Turnify Flow.', 'aman')
       navigate('/beranda')
     }, 700)
   }
@@ -68,13 +68,13 @@ export default function Masuk() {
   function isiAkunContoh() {
     setTab('hp')
     setHp(profilAwal.nomorHp)
-    setSandi('warungku2024')
+    setSandi('turnify2024')
     setGalat({})
   }
 
   return (
     <LayarAuth>
-      <h1 className="text-[1.25rem] font-extrabold text-ink tracking-tight">Masuk ke Warungku</h1>
+      <h1 className="text-[1.25rem] font-extrabold text-ink tracking-tight">Masuk ke Turnify Flow</h1>
       <p className="mt-1 text-[0.875rem] text-ink-3 leading-relaxed">
         Pakai nomor HP yang kamu daftarkan. Nomor itu juga yang kami hubungi kalau ada kabar soal pesanan.
       </p>
@@ -191,9 +191,9 @@ function LayarAuth({ children }: { children: ReactNode }) {
             className="size-9 rounded-md bg-brand text-ink-inverse grid place-items-center font-extrabold text-[1.125rem] leading-none"
             aria-hidden="true"
           >
-            W
+            T
           </span>
-          <span className="text-[1.125rem] font-extrabold text-ink tracking-tight">Warungku</span>
+          <span className="text-[1.125rem] font-extrabold text-ink tracking-tight">Turnify Flow</span>
         </div>
         <div className="bg-surface border border-line rounded-lg shadow-e1 p-5 sm:p-6 anim-muncul">{children}</div>
       </div>

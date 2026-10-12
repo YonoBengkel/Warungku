@@ -336,9 +336,9 @@ function LayarAuth({ children }: { children: ReactNode }) {
             className="size-9 rounded-md bg-brand text-ink-inverse grid place-items-center font-extrabold text-[1.125rem] leading-none"
             aria-hidden="true"
           >
-            W
+            T
           </span>
-          <span className="text-[1.125rem] font-extrabold text-ink tracking-tight">Warungku</span>
+          <span className="text-[1.125rem] font-extrabold text-ink tracking-tight">Turnify Flow</span>
         </div>
         <div className="bg-surface border border-line rounded-lg shadow-e1 p-5 sm:p-6 anim-muncul">{children}</div>
       </div>
@@ -429,10 +429,10 @@ function periksaHp(v: string): string | null {
 
 function periksaSandi(v: string): string | null {
   if (v.length === 0) {
-    return 'Kata sandi baru belum diisi. Buat kata sandi minimal 8 karakter yang mudah kamu ingat. Contoh: warungku2024.'
+    return 'Kata sandi baru belum diisi. Buat kata sandi minimal 8 karakter yang mudah kamu ingat. Contoh: turnify2024.'
   }
   if (v.length < 8) {
-    return 'Kata sandi masih kurang dari 8 karakter. Tambahkan huruf atau angka lagi. Contoh: warungku2024.'
+    return 'Kata sandi masih kurang dari 8 karakter. Tambahkan huruf atau angka lagi. Contoh: turnify2024.'
   }
   return null
 }

@@ -86,9 +86,9 @@ export default function KerangkaAplikasi() {
         <div className="px-5 py-5">
           <Link to="/beranda" className="flex items-center gap-2.5">
             <span className="size-9 rounded-md bg-brand grid place-items-center text-ink-inverse font-extrabold text-[1rem]">
-              W
+              T
             </span>
-            <span className="font-extrabold text-ink text-[1.0625rem] tracking-tight">Warungku</span>
+            <span className="font-extrabold text-ink text-[1.0625rem] tracking-tight">Turnify Flow</span>
           </Link>
         </div>
 
@@ -136,12 +136,12 @@ export default function KerangkaAplikasi() {
           <div className="h-14 px-4 sm:px-6 flex items-center gap-2 max-w-[1400px] mx-auto w-full">
             {/* Nama aplikasi, bukan nama toko: di layar sempit nama toko sudah
                 muncul di judul Beranda dan di inisial avatar akun, sementara
-                "Warungku" tidak muncul sama sekali kalau tidak di sini. */}
+                "Turnify Flow" tidak muncul sama sekali kalau tidak di sini. */}
             <Link to="/beranda" className="lg:hidden flex items-center gap-2 mr-auto min-w-0 min-h-11 pr-2">
               <span className="size-8 rounded-md bg-brand grid place-items-center text-ink-inverse font-extrabold text-[0.875rem] shrink-0">
-                W
+                T
               </span>
-              <span className="font-extrabold text-ink text-[0.9375rem] truncate">Warungku</span>
+              <span className="font-extrabold text-ink text-[0.9375rem] truncate">Turnify Flow</span>
             </Link>
             <span className="hidden lg:block mr-auto" />
 
