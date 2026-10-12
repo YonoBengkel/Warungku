@@ -1,60 +1,29 @@
-# Backend Warungku
+# Backend Turnify Flow
 
-Tiga bagian yang sengaja dipisah:
+API baca-tulis dan lapisan basis data. Layanan model ada di [`../ml/`](../ml/),
+pembangkit dataset di [`../data/`](../data/). Cara memasang dan menjalankan
+seluruh proyek ada di [README akar](../README.md); semua perintah dijalankan dari
+**akar repo**.
 
-| Bagian | Isi | Lingkungan |
-| --- | --- | --- |
-| `warungku/` | Model tabel (SQLModel), enum, koneksi | Python 3.14 |
-| `api/` | Layanan baca-tulis basis data | Python 3.14 |
-| `ml/` | Layanan model: Mesin 1 & Mesin 2 | **Python 3.12** |
-| `dataset/` | Pembangkit dataset simulasi | Python 3.14 |
-| `skrip/` | SQL pemeliharaan & pemeriksaan | psql |
-| `uji/` | Uji otomatis | Python 3.14 |
+| Bagian | Isi |
+| --- | --- |
+| `api/` | Endpoint REST (FastAPI, port 8000): otentikasi, gudang, nota kasir, portal distributor |
+| `warungku/` | Model tabel (SQLModel), enum, koneksi, pengaturan. Nama paket internal, belum diganti |
+| `migrations/` | Migrasi Alembic; jalankan dengan `python -m alembic -c backend/alembic.ini upgrade head` |
+| `skrip/` | SQL pemeliharaan dan pemeriksaan konsistensi |
+| `uji/` | Uji API (otentikasi, nota kasir). Uji model ada di `../ml/uji/` |
+| `.env` | Alamat basis data dan layanan model; salin dari `.env.example` |
 
 Aturan yang memisahkan `api` dan `ml`: **layanan model menulis ke tabel, API
 membaca tabel.** API tidak pernah memanggil model saat halaman dibuka. Kalau
 layanan model mati, portal tetap terbuka dengan angka terakhir yang tersimpan,
 dan kolom `tingkat_layanan` menyatakan apa adanya bahwa angkanya tidak segar.
 
-## Mulai dari nol
+`warungku/konfigurasi.py` memuat `backend/.env` dengan jalur pasti, jadi folder
+kerja tidak berpengaruh. Variabel yang sudah diset di lingkungan tetap menang.
 
-```bash
-# 1. basis data
-docker compose up -d
-
-# 2. lingkungan utama
-python -m pip install -r requirements.txt
-cp .env.example .env
-python -m alembic upgrade head
-
-# 3. isi dengan dataset simulasi (~5,8 juta baris, 5 juta di antaranya nota kasir)
-#    Perhatian: ini MENGOSONGKAN lalu mengisi ulang. Keluaran model
-#    (`prediksi`, `rekomendasi_skor`, `segmen_pelanggan`) ikut terhapus lewat
-#    CASCADE, karena angka model yang menunjuk barang yang sudah tidak ada
-#    memang harus pergi. Jalankan ulang ketiga mesin sesudahnya (langkah 7).
-python -m dataset.buat_dataset
-
-# 4. periksa datanya konsisten — keenamnya harus 0
-docker exec -i warungku-db psql -U warungku -d warungku_dev < skrip/02_periksa_konsistensi.sql
-
-# 5. uji otomatis
-python -m pytest -q
-
-# 6. API
-python -m uvicorn api.utama:app --reload --port 8000
-
-# 7. layanan model — lingkungan yang sama, tidak ada venv kedua
-python -m uvicorn ml.layanan:app --port 8001
-curl -X POST localhost:8001/mesin1/jalankan -H "Content-Type: application/json" -d "{}"
-curl -X POST localhost:8001/mesin2/jalankan -H "Content-Type: application/json" -d "{}"
-curl -X POST localhost:8001/mesin3/jalankan
-```
-
-Penjadwal menyala sendiri bersama layanan model: Mesin 1 jam 02.00 WIB, Mesin 2
-dan 3 tiap empat jam. Rinciannya di [`ml/README.md`](ml/README.md).
-
-Akun contoh memakai kata sandi `warungku123` — seluruhnya. Itu data simulasi,
-bukan data orang.
+Akun contoh di dataset simulasi memakai kata sandi `warungku123`, seluruhnya.
+Itu data simulasi, bukan data orang.
 
 ## Kenapa port 5433
 
@@ -124,4 +93,4 @@ Daftar ini ada supaya tidak ada yang menyangka bagian ini sudah selesai.
 permintaan dengan bentuk yang hampir persis diasumsikan Holt-Winters, dan
 kamilah yang membuat distributor termurah menjadi yang terburuk. Keduanya
 menguntungkan kesimpulan yang kami laporkan, dan itu disebut terus terang di
-[`laporan/`](../laporan/).
+[`docs/laporan/`](../docs/laporan/).

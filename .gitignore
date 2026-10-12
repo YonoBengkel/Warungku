@@ -50,9 +50,10 @@ data/data_nyata/**/*.csv
 # Patch Rombak#2: sudah menjadi commit di riwayat git, disimpan lokal saja.
 docs/arsip/patches-rombak2/
 
-# OS
+# OS dan berkas kunci Office (muncul selama dokumen Word sedang dibuka)
 .DS_Store
 Thumbs.db
+~$*
 
 # Log
 *.log
