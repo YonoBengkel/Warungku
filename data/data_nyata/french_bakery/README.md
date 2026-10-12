@@ -12,7 +12,7 @@ data ini tidak pernah dipindah ke Warungku.
 - Sumber: Kaggle, `matthieugimbert/french-bakery-daily-sales`
   (https://www.kaggle.com/datasets/matthieugimbert/french-bakery-daily-sales)
 - Lisensi: "Data files © Original Authors". **Bukan lisensi terbuka.**
-- Berkas `Bakery sales.csv` sengaja tidak dilacak git (lihat `backend/.gitignore`).
+- Berkas `Bakery sales.csv` sengaja tidak dilacak git (lihat `.gitignore` di akar repo).
   Yang dilacak hanya README ini. Anggota tim yang butuh datanya mengunduh sendiri
   dari tautan di atas dan menaruhnya di folder ini dengan nama yang sama.
 - Diterima dari Ilham pada 2026-10-10. SHA-256:

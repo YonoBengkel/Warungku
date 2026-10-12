@@ -14,7 +14,7 @@ Tiga aturan:
 1. **Nota tidak mengubah penjualan.** Jumlah semua baris nota untuk satu barang
    pada satu hari sama persis dengan baris `pergerakan`-nya. Nota hanya membagi
    penjualan yang sudah ada ke para pembeli, tidak menambah atau mengurangi.
-   Diperiksa di `periksa_turunan` dan `skrip/02_periksa_konsistensi.sql`.
+   Diperiksa di `periksa_turunan` dan `backend/skrip/02_periksa_konsistensi.sql`.
 2. **Generator acaknya sendiri.** Nota dibangkitkan sesudah simulasi, dengan
    generator yang diturunkan dari benih yang sama tapi terpisah. Menambah nota
    tidak menggeser satu angka pun di D1 dan D2, jadi hasil model yang sudah

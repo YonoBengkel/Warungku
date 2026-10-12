@@ -1185,7 +1185,7 @@ def periksa_turunan() -> list[str]:
     return catatan
 
 
-#: Dipakai juga di `skrip/02_periksa_konsistensi.sql`; ubah keduanya bersamaan.
+#: Dipakai juga di `backend/skrip/02_periksa_konsistensi.sql`; ubah keduanya bersamaan.
 SQL_NOTA_VS_BUKU_BESAR = """
 WITH dari_nota AS (
     SELECT t.usaha_id, b.id AS barang_id,

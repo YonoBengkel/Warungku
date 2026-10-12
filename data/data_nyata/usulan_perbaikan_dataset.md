@@ -224,7 +224,7 @@ siluetnya.
   `muat` menolaknya dengan NotImplementedError).
 - `data/data_nyata/online_retail_ii/README.md`: asal, lisensi, sidik SHA-256,
   dan keanehan data.
-- Uji dengan CSV buatan kecil, seperti `uji/test_sumber.py` untuk French Bakery.
+- Uji dengan CSV buatan kecil, seperti `ml/uji/test_sumber.py` untuk French Bakery.
 - Perkiraan setengah hari kerja, di luar waktu unduh.
 
 ---

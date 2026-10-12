@@ -111,9 +111,9 @@ pernah ada di data nyata.
 Omset dan jumlah nota dihitung dari nota kasir (`transaksi`, `transaksi_baris`),
 yang sejak 10 Okt 2026 dibangkitkan untuk seluruh 400 hari lengkap dengan harga
 jual. Asumsi harga jual, belanja per nota, dan jam ramai ada di
-[`dataset/nota.py`](../../dataset/nota.py). Nota hanya merinci penjualan di buku
+[`data/dataset/nota.py`](../../data/dataset/nota.py). Nota hanya merinci penjualan di buku
 besar, tidak mengubahnya: pemeriksaan nomor 5 di
-`skrip/02_periksa_konsistensi.sql` membuktikannya.
+`backend/skrip/02_periksa_konsistensi.sql` membuktikannya.
 
 Batas yang perlu ditulis di laporan: pemetaan menu masih 1:1, jadi harga jual
 adalah harga per satuan dasar bahan, dan omset simulasi = nilai jual bahan yang
@@ -121,7 +121,7 @@ terpakai. Harga jual tetap sepanjang 400 hari.
 
 ## Sumber French Bakery
 
-Berkas, lisensi, dan keanehan datanya: [`data_nyata/french_bakery/README.md`](../../data_nyata/french_bakery/README.md).
+Berkas, lisensi, dan keanehan datanya: [`data/data_nyata/french_bakery/README.md`](../../data/data_nyata/french_bakery/README.md).
 Berkas CSV tidak dilacak git; kalau belum ada, `muat` memberi tahu dari mana
 mengunduhnya. Berkas yang sidik SHA-256-nya berbeda dari yang tercatat tetap
 dibaca, dengan peringatan bahwa hasilnya tidak sebanding dengan angka yang
