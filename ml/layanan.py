@@ -62,12 +62,13 @@ def jadwal() -> dict:
 
 class PermintaanJalan(BaseModel):
     usaha_id: int | None = None
-    #: "holt_winters" (ETS, bawaan sejak 10 Okt 2026), "chronos", "moirai", atau
-    #: nama metode garis dasar lain. ETS dipilih karena MAPE pekanannya setara
-    #: Chronos-2 (15,4% melawan 15,6% pada barang lolos saringan) dan
-    #: parameternya bisa dibaca per barang — permintaan dosen. Chronos-2 tetap
-    #: tersedia sebagai pembanding.
-    metode: str = "holt_winters"
+    #: "sarima" (bawaan sejak 12 Okt 2026), "holt_winters" (ETS, bawaan 10–12 Okt),
+    #: "chronos", "moirai", atau nama metode garis dasar lain. SARIMA menang di
+    #: turnamen Mesin 1 (MAPE pekanan 14,8% melawan ETS 17,5% di pekan uji) dan
+    #: rentang p10–p90-nya terkalibrasi di validasi (cakupan 83,2%, di atas p90
+    #: 9,1%; ml/hasil/hasil_eksperimen_mesin1_cakupan.json). Ordenya tetap dan
+    #: koefisiennya bisa dibaca per barang, sesuai permintaan dosen.
+    metode: str = "sarima"
     cakrawala: int = CAKRAWALA
 
 
@@ -126,6 +127,21 @@ def _jalankan_mesin1(usaha_id: int | None, metode: str, cakrawala: int) -> Hasil
         tugas = [(d, len(d)) for d in deret]
         ramalan = ramal_banyak(tugas, cakrawala, ukuran) if tugas else []
         nama_model, versi = "moirai-1.1-R-%s" % ukuran, "uni2ts"
+    elif metode == "sarima":
+        from .mesin1.dasar import holt_winters
+        from .mesin1.sarima import sarima_kuantil
+
+        # Barang yang gagal dipasangi SARIMA memakai ETS, dan itu tercatat per
+        # barang di `model_nama`, bukan disamarkan sebagai SARIMA.
+        ramalan, nama_per_barang = [], []
+        for d in deret:
+            try:
+                ramalan.append(sarima_kuantil(d, len(d), cakrawala))
+                nama_per_barang.append("sarima-1-0-1-0-1-1-7")
+            except Exception:
+                ramalan.append(holt_winters(d, len(d), cakrawala))
+                nama_per_barang.append("ets-holt-winters (cadangan)")
+        nama_model, versi = None, "statsmodels"
     else:
         from .mesin1.dasar import METODE
 
@@ -136,8 +152,11 @@ def _jalankan_mesin1(usaha_id: int | None, metode: str, cakrawala: int) -> Hasil
         else:
             nama_model, versi = metode, "garis-dasar-0.1"
 
+    if nama_model is not None:
+        nama_per_barang = [nama_model] * len(deret)
+
     baris = []
-    for d, r in zip(deret, ramalan):
+    for d, r, nama_d in zip(deret, ramalan, nama_per_barang):
         t0 = d.tanggal[-1]
         matang = _kematangan(len(d))
         for i in range(cakrawala):
@@ -150,7 +169,7 @@ def _jalankan_mesin1(usaha_id: int | None, metode: str, cakrawala: int) -> Hasil
                     "p50": float(np.round(r[0.5][i], 3)),
                     "p90": float(np.round(r[0.9][i], 3)),
                     "jalan_id": jalan_id,
-                    "model_nama": nama_model,
+                    "model_nama": nama_d,
                     "model_versi": versi,
                     "dijalankan_pada": sekarang,
                     "kematangan": matang.value,

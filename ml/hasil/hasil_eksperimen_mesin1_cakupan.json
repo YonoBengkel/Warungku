@@ -1,0 +1,43 @@
+{
+ "titik_asal": [
+  "2026-08-11",
+  "2026-08-18",
+  "2026-08-25",
+  "2026-09-01",
+  "2026-09-08",
+  "2026-09-15",
+  "2026-09-22"
+ ],
+ "cakrawala_hari": 7,
+ "barang": 890,
+ "sasaran": {
+  "cakupan_p10_p90": 0.8,
+  "di_atas_p90": 0.1,
+  "di_bawah_p10": 0.1
+ },
+ "hasil": {
+  "sarima": {
+   "barang_pekan": 6230,
+   "hari_dinilai": 40866,
+   "cakupan_p10_p90": 0.8315225370723829,
+   "di_atas_p90": 0.09112709832134293,
+   "di_bawah_p10": 0.07735036460627416,
+   "lebar_relatif_median": 1.3183062129658958,
+   "mape_pekanan_p50": 21.93523945817157,
+   "pekan_mape": 5386,
+   "cadangan_ets": 280
+  },
+  "ets": {
+   "barang_pekan": 6230,
+   "hari_dinilai": 40866,
+   "cakupan_p10_p90": 0.8123378847942054,
+   "di_atas_p90": 0.10179611412910487,
+   "di_bawah_p10": 0.08586600107668967,
+   "lebar_relatif_median": 1.1446592479249642,
+   "mape_pekanan_p50": 24.18372009842624,
+   "pekan_mape": 5386,
+   "cadangan_ets": 0
+  }
+ },
+ "detik": 708.7
+}
