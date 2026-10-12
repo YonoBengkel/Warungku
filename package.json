@@ -1,0 +1,12 @@
+{
+  "name": "turnify-flow",
+  "private": true,
+  "description": "Turnify Flow: perintah npm dari akar repo diteruskan ke frontend/",
+  "scripts": {
+    "postinstall": "npm --prefix frontend install",
+    "dev": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build",
+    "preview": "npm --prefix frontend run preview",
+    "typecheck": "npm --prefix frontend run typecheck"
+  }
+}
