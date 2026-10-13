@@ -305,9 +305,9 @@ docker push yonobengkel/turnify-flow-db:0.1.0
 Membangun dan mengunggah image versi baru (pemilik repositori Docker Hub):
 
 ```powershell
-docker build -f deployment/Dockerfile -t yonobengkel/turnify-flow-backend:0.2.0 .
+docker build -f deployment/Dockerfile -t yonobengkel/turnify-flow-backend:0.3.0 .
 docker login
-docker push yonobengkel/turnify-flow-backend:0.2.0
+docker push yonobengkel/turnify-flow-backend:0.3.0
 ```
 
 Naikkan nomor versinya (dan nomor di `deployment/docker-compose.yml`) setiap kali
