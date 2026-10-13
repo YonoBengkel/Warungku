@@ -6,6 +6,7 @@ import { Kolom, kelasBingkai } from '@/components/ui/formulir'
 import { IkonKembali, IkonMata, IkonMataTutup } from '@/icons'
 import { cx, nomorHp } from '@/lib/format'
 import { useAplikasi } from '@/store/aplikasi'
+import { TandaMerek } from '@/components/ui/Merek'
 
 const JEDA_KIRIM_ULANG = 60
 
@@ -332,12 +333,7 @@ function LayarAuth({ children }: { children: ReactNode }) {
     <div className="min-h-dvh bg-bg px-4 pt-aman pb-aman">
       <div className="w-full max-w-[28rem] mx-auto py-8 sm:py-12">
         <div className="flex items-center justify-center gap-2.5 mb-6">
-          <span
-            className="size-9 rounded-md bg-brand text-ink-inverse grid place-items-center font-extrabold text-[1.125rem] leading-none"
-            aria-hidden="true"
-          >
-            T
-          </span>
+          <TandaMerek ukuran={36} />
           <span className="text-[1.125rem] font-extrabold text-ink tracking-tight">Turnify Flow</span>
         </div>
         <div className="bg-surface border border-line rounded-lg shadow-e1 p-5 sm:p-6 anim-muncul">{children}</div>

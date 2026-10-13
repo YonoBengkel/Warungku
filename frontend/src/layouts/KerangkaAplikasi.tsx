@@ -13,6 +13,7 @@ import {
 } from '@/icons'
 import { useAplikasi, useJumlahKeranjang, useJumlahPerluTindakan } from '@/store/aplikasi'
 import { Toast } from '@/components/ui/umpanBalik'
+import { TandaMerek } from '@/components/ui/Merek'
 
 /**
  * Kerangka lima tab.
@@ -85,9 +86,7 @@ export default function KerangkaAplikasi() {
       >
         <div className="px-5 py-5">
           <Link to="/beranda" className="flex items-center gap-2.5">
-            <span className="size-9 rounded-md bg-brand grid place-items-center text-ink-inverse font-extrabold text-[1rem]">
-              T
-            </span>
+            <TandaMerek ukuran={36} />
             <span className="font-extrabold text-ink text-[1.0625rem] tracking-tight">Turnify Flow</span>
           </Link>
         </div>
@@ -138,9 +137,7 @@ export default function KerangkaAplikasi() {
                 muncul di judul Beranda dan di inisial avatar akun, sementara
                 "Turnify Flow" tidak muncul sama sekali kalau tidak di sini. */}
             <Link to="/beranda" className="lg:hidden flex items-center gap-2 mr-auto min-w-0 min-h-11 pr-2">
-              <span className="size-8 rounded-md bg-brand grid place-items-center text-ink-inverse font-extrabold text-[0.875rem] shrink-0">
-                T
-              </span>
+              <TandaMerek ukuran={32} />
               <span className="font-extrabold text-ink text-[0.9375rem] truncate">Turnify Flow</span>
             </Link>
             <span className="hidden lg:block mr-auto" />

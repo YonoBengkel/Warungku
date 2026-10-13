@@ -7,6 +7,7 @@ import { IkonKembali, IkonLokasi } from '@/icons'
 import { LABEL_CARA_HITUNG, LABEL_JENIS_USAHA, URUTAN_JENIS_USAHA } from '@/lib/label'
 import type { CaraHitungStok, JenisUsaha } from '@/lib/types'
 import { useAplikasi } from '@/store/aplikasi'
+import { TandaMerek } from '@/components/ui/Merek'
 
 /* Urutan kartu dikunci: yang paling sering dipilih pemilik warung ada di atas. */
 const URUTAN_CARA: CaraHitungStok[] = ['racikan', 'kemasan', 'keduanya']
@@ -298,12 +299,7 @@ function LayarAuth({
     <div className="min-h-dvh bg-bg px-4 pt-aman pb-aman">
       <div className="w-full max-w-[28rem] mx-auto py-8 sm:py-12">
         <div className="flex items-center justify-center gap-2.5 mb-6">
-          <span
-            className="size-9 rounded-md bg-brand text-ink-inverse grid place-items-center font-extrabold text-[1.125rem] leading-none"
-            aria-hidden="true"
-          >
-            T
-          </span>
+          <TandaMerek ukuran={36} />
           <span className="text-[1.125rem] font-extrabold text-ink tracking-tight">Turnify Flow</span>
         </div>
 

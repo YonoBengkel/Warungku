@@ -10,6 +10,7 @@ import {
   IkonSinkron,
 } from '@/icons'
 import { useAplikasi } from '@/store/aplikasi'
+import { TandaMerek } from '@/components/ui/Merek'
 
 /**
  * Pintu masuk pengunjung yang belum masuk.
@@ -42,9 +43,7 @@ export default function Hero() {
       <header className="sticky top-0 z-40 bg-surface/95 backdrop-blur border-b border-line pt-aman">
         <div className="max-w-[1100px] mx-auto px-4 sm:px-6 h-16 flex items-center gap-3">
           <span className="flex items-center gap-2.5 mr-auto min-w-0">
-            <span className="size-9 rounded-md bg-brand grid place-items-center text-ink-inverse font-extrabold text-[1rem] shrink-0">
-              T
-            </span>
+            <TandaMerek ukuran={36} />
             <span className="font-extrabold text-ink text-[1.0625rem] tracking-tight truncate">
               Turnify Flow
             </span>
