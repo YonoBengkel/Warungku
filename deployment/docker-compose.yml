@@ -1,14 +1,49 @@
-# Basis data pengembangan Turnify Flow.
+# Turnify Flow: basis data, API, dan layanan model.
+#
+# Jalankan dari akar repo.
+#
+#   Basis data saja (pengembangan; API dan model dijalankan dengan uvicorn):
+#     docker compose -f deployment/docker-compose.yml up -d
+#
+#   Basis data + API (port 8000) + layanan model (port 8001), dari image Docker:
+#     docker compose -f deployment/docker-compose.yml --profile layanan up -d
+#
+# API dan layanan model ada di profil "layanan" supaya perintah pertama tetap
+# hanya menyalakan basis data dan tidak bentrok dengan uvicorn lokal di port
+# 8000/8001.
+#
+# Image backend diambil dari Docker Hub (yonobengkel/turnify-flow-backend).
+# Kalau belum ada di komputer dan tidak bisa diunduh, Compose membangunnya
+# sendiri dari deployment/Dockerfile.
 #
 # Port 5433 (bukan 5432) supaya tidak bentrok dengan PostgreSQL yang mungkin
-# sudah berjalan di komputermu. Jalankan dari akar repo:
-#   docker compose -f deployment/docker-compose.yml up -d
+# sudah berjalan di komputermu.
 #
 # Nama proyek dikunci "backend". Berkas ini dulu ada di folder backend/, dan
 # Docker Compose memakai nama folder sebagai nama proyek. Volume datanya
 # bernama backend_warungku_data; tanpa baris ini, Compose akan membuat volume
 # baru yang KOSONG dan basis data tampak hilang.
 name: backend
+
+x-backend: &backend
+  image: yonobengkel/turnify-flow-backend:0.1.0
+  build:
+    context: ..
+    dockerfile: deployment/Dockerfile
+  restart: unless-stopped
+  depends_on:
+    db:
+      condition: service_healthy
+  environment: &env-backend
+    # Di dalam jaringan Compose basis data dicapai lewat nama layanannya, "db",
+    # di port aslinya 5432 (5433 hanya port di komputermu).
+    WARUNGKU_DB: postgresql+psycopg2://warungku:warungku@db:5432/warungku_dev
+    WARUNGKU_ML: http://ml:8001
+    # Rahasia token. Isi di deployment/.env (WARUNGKU_RAHASIA=...) supaya login
+    # tidak hangus setiap kali kontainer dinyalakan ulang. Kalau kosong, API
+    # membuat rahasia acak sendiri: tetap aman, hanya harus login ulang.
+    WARUNGKU_RAHASIA: ${WARUNGKU_RAHASIA:-}
+    TZ: Asia/Jakarta
 
 services:
   db:
@@ -28,6 +63,23 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  api:
+    <<: *backend
+    container_name: turnify-api
+    profiles: ["layanan"]
+    ports:
+      - "8000:8000"
+
+  ml:
+    <<: *backend
+    container_name: turnify-ml
+    profiles: ["layanan"]
+    # Penjadwal di dalamnya menjalankan Mesin 1 pukul 02.00 WIB serta Mesin 2
+    # dan 3 setiap empat jam, lalu menulis hasilnya ke basis data.
+    command: ["uvicorn", "ml.layanan:app", "--host", "0.0.0.0", "--port", "8001"]
+    ports:
+      - "8001:8001"
 
 volumes:
   warungku_data:

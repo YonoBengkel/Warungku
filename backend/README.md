@@ -73,15 +73,9 @@ Daftar ini ada supaya tidak ada yang menyangka bagian ini sudah selesai.
 - **`kendala` dan keranjang sisi server.**
 - **OTP WhatsApp.** Kolom `nomor_hp` sudah siap; jalurnya belum dibangun. Yang
   dipakai sekarang email dan kata sandi.
-- **Dockerfile `api` dan `ml`.** Hanya basis data yang di kontainer. Keduanya
-  jalan sebagai dua perintah uvicorn. Ini sengaja: proyeknya didemokan di
-  laptop, dan Dockerfile yang tidak pernah diuji lebih buruk daripada tidak ada.
 
 **Belum dikerjakan:**
 
-- **Aksi distributor.** Endpoint portal distributor baru bisa membaca — pesanan
-  masuk, ringkasan segmen, anggota segmen. Menerima, menolak, dan menandai
-  pengiriman belum ada.
 - **Penyegaran token.** Token berumur 12 jam dan tidak bisa diperpanjang; sesudah
   itu harus masuk lagi. Cukup untuk demo, merepotkan untuk pemakaian harian.
 - **Data warung sungguhan.** Seluruh angka di laporan berasal dari simulasi yang

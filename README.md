@@ -36,7 +36,7 @@ flowchart LR
     jadwal --> m1 & m2 & m3
     m1 & m2 & m3 -- "tulis hasil" --> db
     db -- "baca" --> api
-    fe -. "belum tersambung,<br/>masih data contoh" .-> api
+    fe -- "stok, perkiraan, saran,<br/>pesanan, segmen" --> api
 ```
 
 Satu aturan memisahkan `api` dan `ml`: **layanan model menulis ke tabel, API membaca
@@ -91,14 +91,15 @@ turnify-flow/
 ├── ml/            # Mesin 1, 2, 3, layanan model, percobaan, dan hasilnya
 ├── data/          # Pembangkit dataset simulasi dan data nyata pihak luar
 ├── docs/          # Laporan, dokumen proses bisnis, desain, aset, arsip
-├── deployment/    # docker-compose untuk PostgreSQL
+├── deployment/    # docker-compose (PostgreSQL, API, layanan model) dan Dockerfile backend
 ├── pyproject.toml # Satu proyek Python untuk backend, ml, dan data
-└── requirements.txt
+├── requirements.txt           # Lingkungan lengkap: produksi + eksperimen (Chronos, PyMC, LightGBM)
+└── requirements-produksi.txt  # Hanya yang dipakai model produksi; dipakai image Docker
 ```
 
 | Folder | Isi |
 | --- | --- |
-| `frontend/src/` | Halaman (`pages/`), komponen, kerangka, store Zustand, dan data contoh (`data/dummy.ts`) |
+| `frontend/src/` | Halaman (`pages/`), komponen, kerangka, store Zustand, klien API (`lib/api.ts`, `lib/apiPesanan.ts`), dan data contoh (`data/dummy.ts`) |
 | `backend/api/` | Endpoint REST. Hanya membaca keluaran model, tidak pernah memanggilnya |
 | `backend/warungku/` | Model tabel (SQLModel), enum, koneksi. Nama paketnya belum diganti |
 | `backend/migrations/` | Migrasi Alembic |
@@ -109,7 +110,8 @@ turnify-flow/
 | `ml/hasil/` | Ringkasan hasil percobaan (`hasil_*.json`, dilacak git) |
 | `data/dataset/` | Pembangkit dataset simulasi (D1 permintaan, D2 pesanan berlabel) |
 | `data/data_nyata/` | Data nyata pihak luar; berkas CSV tidak dilacak karena lisensinya |
-| `docs/laporan/` | Laporan Word dan pembangkitnya; angkanya dibaca dari `ml/hasil/` |
+| `docs/laporan/` | Laporan Word/PDF dan pembangkitnya; angkanya dibaca dari `ml/hasil/` dan basis data |
+| `deployment/` | `docker-compose.yml` dan `Dockerfile` image backend |
 
 ---
 
@@ -180,8 +182,9 @@ Get-Content backend\skrip\02_periksa_konsistensi.sql | docker exec -i warungku-d
 python -m pytest -q
 ```
 
-Menjalankan `backend/uji` dan `ml/uji` (100 uji). Sebagian uji membutuhkan basis
-data dari langkah 2 sampai 4.
+Menjalankan `backend/uji` dan `ml/uji` (104 uji). Sebagian uji membutuhkan basis
+data dari langkah 2 sampai 4. Uji backend membuat dan menghapus datanya sendiri,
+jadi tidak mengubah data simulasi.
 
 ### 6. Jalankan
 
@@ -196,9 +199,11 @@ python -m uvicorn ml.layanan:app --port 8001
 ```
 
 ```powershell
-npm --prefix frontend install
-npm --prefix frontend run dev
+npm install
+npm run dev
 ```
+
+`npm install` dan `npm run dev` di akar repo diteruskan ke `frontend/`.
 
 Lalu isi keluaran ketiga mesin sekali (sesudah itu penjadwal yang menjalankannya):
 
@@ -210,12 +215,71 @@ curl.exe -X POST localhost:8001/mesin3/jalankan
 
 | Alamat | Isi |
 | --- | --- |
-| http://localhost:5173 | Portal pemilik usaha dan distributor (data contoh) |
+| http://localhost:5173 | Portal pemilik usaha dan distributor |
 | http://localhost:8000/docs | Dokumentasi API interaktif |
 | http://localhost:8001/docs | Dokumentasi layanan model |
 
 > Tulis `curl.exe`, bukan `curl`. Di PowerShell, `curl` adalah alias
 > `Invoke-WebRequest` yang tidak mengenal `-X`.
+
+**Data contoh atau data server.** Tanpa login sungguhan, portal memakai data contoh
+di memori. Untuk melihat keluaran mesin analitik:
+
+- **Portal pemilik usaha:** di halaman Masuk pilih tab *Pakai Email* lalu tekan
+  *Isikan akun simulasi* (`umkm1@warungku.test`, usaha Kopi Kita Jogja). Stok,
+  perkiraan SARIMA, Prediksi, saran distributor, dan pesanan dibaca dari API.
+- **Portal distributor:** menu *Pelanggan* atau *Pesanan* → *Sambungkan ke server*
+  → *Isikan akun simulasi* (`distributor1@warungku.test`, Sumber Tani Nusantara).
+
+Kata sandi semua akun simulasi adalah `KATA_SANDI_CONTOH` di
+[`data/dataset/buat_dataset.py`](data/dataset/buat_dataset.py). Kalau server mati,
+portal tetap terbuka dengan data contoh dan memberi tahu bahwa datanya contoh.
+
+Isi `WARUNGKU_RAHASIA` di `backend/.env` dengan teks acak yang panjang. Tanpanya
+API membuat rahasia baru setiap kali dinyalakan, dan semua orang harus masuk ulang.
+
+### Menjalankan API dan layanan model dengan Docker
+
+Kalau tidak ingin memasang lingkungan Python untuk menjalankan layanan, API dan
+layanan model tersedia sebagai image Docker:
+[`yonobengkel/turnify-flow-backend`](https://hub.docker.com/r/yonobengkel/turnify-flow-backend).
+Satu image untuk dua layanan; isinya hanya model produksi (SARIMA, Beta-Bernoulli
++ Thompson + fuzzy, K-Prototypes), tanpa Chronos, PyMC, atau LightGBM.
+
+```powershell
+docker compose -f deployment/docker-compose.yml --profile layanan up -d
+```
+
+Perintah ini menyalakan basis data (port 5433), API (port 8000), dan layanan model
+(port 8001). Image diunduh dari Docker Hub; kalau tidak bisa, Compose membangunnya
+dari [`deployment/Dockerfile`](deployment/Dockerfile). Tanpa `--profile layanan`,
+yang menyala hanya basis data, seperti di langkah 2.
+
+```powershell
+docker compose -f deployment/docker-compose.yml --profile layanan stop api ml
+```
+
+Hal yang perlu diketahui:
+
+- **Image tidak membawa data.** Basis data di komputer baru masih kosong: jalankan
+  dulu langkah 3 dan 4 (migrasi dan dataset) dari kode sumber, lalu langkah 6
+  untuk mengisi keluaran ketiga mesin.
+- **Penjadwal ikut menyala** di kontainer `turnify-ml`: Mesin 1 pukul 02.00 WIB,
+  Mesin 2 dan 3 setiap empat jam, dan hasilnya ditulis ke basis data.
+- **Rahasia tidak ada di dalam image.** Isi `WARUNGKU_RAHASIA` di `deployment/.env`
+  (berkas ini tidak dilacak git) supaya login tidak hangus setiap kontainer dinyalakan ulang.
+- **Jangan jalankan bersamaan** dengan `uvicorn` lokal: keduanya memakai port 8000 dan 8001.
+
+Membangun dan mengunggah image versi baru (pemilik repositori Docker Hub):
+
+```powershell
+docker build -f deployment/Dockerfile -t yonobengkel/turnify-flow-backend:0.1.0 .
+docker login
+docker push yonobengkel/turnify-flow-backend:0.1.0
+```
+
+Naikkan nomor versinya (dan nomor di `deployment/docker-compose.yml`) setiap kali
+kode backend atau model berubah.
 
 ### Opsional
 
@@ -224,8 +288,9 @@ curl.exe -X POST localhost:8001/mesin3/jalankan
   wheel untuk Python 3.14. Lisensi bobotnya CC-BY-NC-4.0 (non-komersial).
 - **Data toko roti sungguhan** untuk validasi Mesin 1: cara mengunduhnya di
   [`data/data_nyata/french_bakery/README.md`](data/data_nyata/french_bakery/README.md).
-- **Laporan Word** dibangun ulang dari berkas hasil:
-  `python docs/laporan/bangun_laporan.py`.
+- **Laporan progres untuk dosen** (Word dan PDF) dibangun ulang dari berkas hasil
+  dan basis data: `python docs/laporan/bangun_laporan_dosen.py`. Laporan teknis
+  lama: `python docs/laporan/bangun_laporan.py`.
 
 ---
 
@@ -239,17 +304,31 @@ curl.exe -X POST localhost:8001/mesin3/jalankan
 | POST | `/auth/umkm/masuk` | Masuk sebagai pemilik usaha |
 | POST | `/auth/distributor/masuk` | Masuk sebagai distributor |
 | GET | `/auth/saya` | Siapa pemegang token ini |
-| GET | `/usaha/{usaha_id}/barang` | Daftar barang di gudang |
-| GET | `/usaha/{usaha_id}/barang/{barang_id}/perkiraan` | Perkiraan terbaru Mesin 1, dibaca dari tabel |
+| GET | `/usaha/{usaha_id}/barang` | Daftar barang di gudang, termasuk pemakaian rata-rata 28 hari dan harga per satuan |
+| GET | `/usaha/{usaha_id}/barang/{barang_id}/perkiraan` | Perkiraan terbaru Mesin 1 (p10, p50, p90 per hari), dibaca dari tabel |
+| GET | `/usaha/{usaha_id}/barang/{barang_id}/riwayat` | Pemakaian harian terakhir; hari stok habis ditandai |
 | GET | `/usaha/{usaha_id}/barang/{barang_id}/saran` | Saran distributor terbaru Mesin 2, dibaca dari tabel |
+| GET | `/usaha/{usaha_id}/pemakaian-bulanan` | Pemakaian per 30 hari dan perkiraan 30 hari ke depan, semua barang |
 | POST | `/usaha/{usaha_id}/transaksi` | Terima satu nota kasir; aman dikirim ulang |
-| GET | `/distributor/{distributor_id}/pesanan` | Pesanan yang masuk, terbaru dulu |
+| GET | `/usaha/{usaha_id}/pesanan` | Pesanan usaha ini beserta baris dan jejaknya |
+| POST | `/usaha/{usaha_id}/pesanan` | Kirim keranjang; satu pesanan per distributor, harga disalin saat itu |
+| GET | `/usaha/{usaha_id}/pesanan/{pesanan_id}` | Rincian satu pesanan |
+| POST | `/usaha/{usaha_id}/pesanan/{pesanan_id}/batal` | Batalkan pesanan yang belum dijawab distributor |
+| POST | `/usaha/{usaha_id}/pesanan/{pesanan_id}/terima` | Hitung barang yang datang: stok naik, data latih Mesin 2 tertulis |
+| GET | `/distributor/{distributor_id}/pesanan` | Ringkasan pesanan yang masuk, terbaru dulu |
+| GET | `/distributor/{distributor_id}/pesanan-masuk` | Pesanan masuk lengkap dengan baris, jejak, dan profil pemesan |
+| GET | `/distributor/{distributor_id}/pesanan/{pesanan_id}` | Rincian satu pesanan masuk |
+| POST | `/distributor/{distributor_id}/pesanan/{pesanan_id}/konfirmasi` | Terima pesanan; status menjadi disiapkan |
+| POST | `/distributor/{distributor_id}/pesanan/{pesanan_id}/tolak` | Tolak dengan alasan; status menjadi batal |
+| POST | `/distributor/{distributor_id}/pesanan/{pesanan_id}/kirim` | Barang berangkat; status menjadi dikirim |
+| POST | `/distributor/{distributor_id}/pesanan/{pesanan_id}/sampai` | Bukti antar; stok baru naik setelah pemilik usaha menerima |
 | GET | `/distributor/{distributor_id}/segmen` | Ringkasan segmen pelanggan (Mesin 3) |
 | GET | `/distributor/{distributor_id}/segmen/{segmen}` | Anggota satu segmen beserta angka RFM-nya |
 | GET | `/sehat` | Keadaan layanan dan basis data |
 
 Token pemilik usaha dan token distributor berbeda jenis: portal distributor tidak
-bisa dibuka dengan token pemilik usaha, walau alamatnya ditebak.
+bisa dibuka dengan token pemilik usaha, walau alamatnya ditebak. Urutan status
+pesanan dijaga server: langkah yang dilompati ditolak dengan 409.
 
 ### Layanan model (port 8001)
 
@@ -272,10 +351,15 @@ dijadwalkan dari luar.
 
 Daftar ini ada supaya tidak ada yang menyangka bagian ini sudah selesai.
 
-- **Frontend belum tersambung ke API.** Kedua portal masih membaca data contoh di
-  `frontend/src/data/dummy.ts`. API dan model sudah berjalan sendiri dan teruji.
-- **Aksi distributor di API.** Endpoint portal distributor baru bisa membaca;
-  menerima, menolak, dan menandai pengiriman belum ada.
+- **Sebagian portal masih data contoh.** Yang sudah membaca server: stok,
+  perkiraan, Prediksi, saran distributor, pesanan (buat, terima, batal, dan aksi
+  distributor), serta segmen pelanggan. Yang masih data contoh: keranjang dan
+  katalog penawaran, kontrak, promo, notifikasi, dan profil. Dari data server,
+  pesanan saat ini dibuat lewat tombol *Pesan* di kartu saran Mesin 2.
+- **Portal distributor belum punya halaman masuk sendiri.** Sambungannya lewat
+  kartu *Sambungkan ke server* di menu Pelanggan dan Pesanan.
+- **Bukti antar** (kurir, pengantar, nomor resi) belum ditanyakan portal
+  distributor; di rincian pesanan tertulis "Belum dicatat".
 - **Konektor POS.** Kontrak nota sudah ada dan teruji (idempoten); penyambung ke
   aplikasi kasir tertentu belum dibuat.
 - **Target MAPE 5% dosen.** Tercapai untuk omset toko roti sungguhan (4,0%, hanya
@@ -284,7 +368,7 @@ Daftar ini ada supaya tidak ada yang menyangka bagian ini sudah selesai.
   Satu warna grafik (`--c-seri-3`) masih terlalu mirip ungu merek dan belum diputuskan.
 - **Nama internal** (paket `warungku`, basis data `warungku_dev`) belum diganti
   ke Turnify Flow; yang sudah diganti hanya teks yang terlihat pengguna.
-- **OTP WhatsApp, penyegaran token, Dockerfile layanan, resep berbilang bahan:**
+- **OTP WhatsApp, penyegaran token, resep berbilang bahan:**
   ditunda atas keputusan tim. Rinciannya di [`backend/README.md`](backend/README.md).
 
 ---
@@ -293,7 +377,7 @@ Daftar ini ada supaya tidak ada yang menyangka bagian ini sudah selesai.
 
 | Dokumen | Isi |
 | --- | --- |
-| [`docs/laporan/`](docs/laporan/) | Laporan implementasi lengkap dan ringkas (Word) |
+| [`docs/laporan/`](docs/laporan/) | Laporan progres untuk dosen (Word dan PDF), laporan implementasi lengkap dan ringkas |
 | [`docs/proses-bisnis/`](docs/proses-bisnis/) | Dokumen proses bisnis, flowchart B2B/B2C, Gantt |
 | [`docs/desain/`](docs/desain/) | Spesifikasi antarmuka, laporan revisi UI, bahan rebrand |
 | [`backend/README.md`](backend/README.md) | Aturan angka, invarian buku besar, port 5433 |
