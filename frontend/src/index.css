@@ -28,12 +28,14 @@
   --c-ink-3: #5a6773;
   --c-ink-inverse: #ffffff;
 
-  /* Merek */
-  --c-brand: #0f766e;
-  --c-brand-hover: #115e59;
-  --c-brand-soft: #e6f5f3;
-  --c-brand-soft-ink: #0b544e;
-  --c-brand-ring: #0f766e33;
+  /* Merek — ungu dari Logo.jpeg (#52329f, disampel langsung dari piksel logo).
+     Kontras diverifikasi: brand vs ink-inverse 9,07:1, soft-ink vs soft 11,92:1
+     (ambang WCAG AA teks 4,5:1). Lihat docs/desain/Brief-Rebrand-Turnify-Flow.md §3. */
+  --c-brand: #52329f;
+  --c-brand-hover: #4b3384;
+  --c-brand-soft: #f0edf8;
+  --c-brand-soft-ink: #331579;
+  --c-brand-ring: #52329f33;
 
   /* Status stok & sistem — selalu dipasangkan dengan ikon + label,
      tidak pernah mengandalkan warna saja (WCAG 1.4.1). */
@@ -99,11 +101,11 @@
   --c-ink-3: #7d8c99;
   --c-ink-inverse: #08121a;
 
-  --c-brand: #2dd4bf;
-  --c-brand-hover: #5eead4;
-  --c-brand-soft: #10312f;
-  --c-brand-soft-ink: #7ee7db;
-  --c-brand-ring: #2dd4bf40;
+  --c-brand: #947bd1;
+  --c-brand-hover: #b9a6e7;
+  --c-brand-soft: #1a1132;
+  --c-brand-soft-ink: #ae96e9;
+  --c-brand-ring: #947bd140;
 
   --c-aman: #4ade80;
   --c-aman-soft: #102a1a;
@@ -246,7 +248,10 @@ body {
   top: 0.75rem;
   padding: 0.6rem 1rem;
   background: var(--c-brand);
-  color: #fff;
+  /* text-white tetap di sini pakai nilai mentah, bukan var(--c-ink-inverse), jadi di
+     tema gelap sebelumnya jatuh ke 1,86:1 (di bawah ambang 4,5:1) — cacat lama yang
+     terlewat dari sapuan kontras sebelumnya, ketahuan saat warna merek diganti ungu. */
+  color: var(--c-ink-inverse);
   border-radius: var(--r-sm);
 }
 
