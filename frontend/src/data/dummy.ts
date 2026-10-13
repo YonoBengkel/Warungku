@@ -3074,7 +3074,14 @@ export const daftarUmkm: UmkmPemesan[] = [
 ]
 
 export function umkmById(id: string): UmkmPemesan | undefined {
-  return daftarUmkm.find((u) => u.id === id)
+  return umkmServer.get(id) ?? daftarUmkm.find((u) => u.id === id)
+}
+
+/** Pemesan dari pesanan server, diisi store saat portal distributor tersambung ke API. */
+const umkmServer = new Map<string, UmkmPemesan>()
+export function pasangUmkmServer(daftar: UmkmPemesan[]) {
+  umkmServer.clear()
+  for (const u of daftar) umkmServer.set(u.id, u)
 }
 
 /* ================================================================== */

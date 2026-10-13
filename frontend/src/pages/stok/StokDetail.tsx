@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import type { Barang, Pergerakan } from '@/lib/types'
 import { ChipKedaluwarsa, ChipStok, KartuPerkiraan } from '@/components/domain'
 import { KartuStruk } from '@/components/domain/KartuStruk'
-import { Kartu, Lencana, TombolTautan } from '@/components/ui/dasar'
+import { Kartu, Lencana, Tombol, TombolTautan } from '@/components/ui/dasar'
+import { PengaturJumlah } from '@/components/ui/formulir'
 import { KepalaHalaman, TabSegmen } from '@/components/ui/navigasi'
 import { KeadaanKosong } from '@/components/ui/umpanBalik'
 import { GrafikTren } from '@/components/grafik/GrafikTren'
@@ -360,7 +361,13 @@ export default function StokDetail() {
                 </Kartu>
               )}
 
-              {mesin.status === 'siap' && <KartuSaranMesin saran={mesin.saran} />}
+              {mesin.status === 'siap' && (
+                <KartuSaranMesin
+                  saran={mesin.saran}
+                  jumlahAwal={Math.max(1, perkiraan.saranBeli)}
+                  satuan={barang.kemasan[barang.kemasan.length - 1]?.nama ?? barang.satuan}
+                />
+              )}
 
             </div>
           ) : (
@@ -407,7 +414,31 @@ const SEGMEN_SARAN: Record<string, { label: string; nada: 'aman' | 'info' | 'men
  * bukan galat. Saran yang sudah lewat masa berlakunya tetap ditampilkan,
  * dengan umurnya, karena saran beberapa jam lalu lebih berguna daripada tidak ada.
  */
-function KartuSaranMesin({ saran }: { saran: SaranServer[] }) {
+function KartuSaranMesin({
+  saran,
+  jumlahAwal,
+  satuan,
+}: {
+  saran: SaranServer[]
+  /** Saran jumlah beli dari Mesin 1, dalam kemasan. */
+  jumlahAwal: number
+  satuan: string
+}) {
+  const pesan = useAplikasi((s) => s.pesanDariServer)
+  const navigate = useNavigate()
+  const [dibuka, setDibuka] = useState<number | null>(null)
+  const [jumlah, setJumlah] = useState(jumlahAwal)
+  const [mengirim, setMengirim] = useState(false)
+
+  function kirim(penawaranId: number) {
+    setMengirim(true)
+    pesan(penawaranId, jumlah)
+      .then((id) => {
+        if (id) navigate(`/pesanan/${id}`)
+      })
+      .finally(() => setMengirim(false))
+  }
+
   if (saran.length === 0) {
     return (
       <Kartu padat>
@@ -442,6 +473,38 @@ function KartuSaranMesin({ saran }: { saran: SaranServer[] }) {
                 Skor {s.skor.toFixed(2).replace('.', ',')} &middot; peluang pesanan berhasil {persen(s.peluangSukses * 100)}
               </p>
               {s.alasan && <p className="mt-1 text-[0.8125rem] text-ink-3 leading-relaxed">{s.alasan}</p>}
+              {dibuka === s.penawaranId ? (
+                <div className="mt-2.5 p-3 rounded-md bg-sunken space-y-2.5">
+                  <PengaturJumlah
+                    label={`Jumlah dipesan (${satuan})`}
+                    nilai={jumlah}
+                    ubah={setJumlah}
+                    min={1}
+                    satuan={satuan}
+                    saranModel={jumlahAwal}
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    <Tombol ukuran="kecil" memuat={mengirim} onClick={() => kirim(s.penawaranId)}>
+                      Kirim Pesanan ke {s.namaDistributor}
+                    </Tombol>
+                    <Tombol ukuran="kecil" ragam="garis" onClick={() => setDibuka(null)}>
+                      Batal
+                    </Tombol>
+                  </div>
+                </div>
+              ) : (
+                <Tombol
+                  ukuran="kecil"
+                  ragam={i === 0 ? 'utama' : 'garis'}
+                  className="mt-2"
+                  onClick={() => {
+                    setJumlah(jumlahAwal)
+                    setDibuka(s.penawaranId)
+                  }}
+                >
+                  Pesan dari distributor ini
+                </Tombol>
+              )}
             </li>
           )
         })}

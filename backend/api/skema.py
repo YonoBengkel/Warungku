@@ -229,3 +229,119 @@ class PemakaianBulanan(BaseModel):
     perkiraan_p90: Decimal | None = None
     model_nama: str | None = None
     dijalankan_pada: datetime | None = None
+
+
+# --------------------------------------------------------------------------
+# Pesanan (Tahap 3: jalur tulis)
+# --------------------------------------------------------------------------
+class BarisPesananBaru(BaseModel):
+    penawaran_id: int
+    #: Dalam satuan jual penawaran (dus, kg, karung), bukan satuan simpan.
+    jumlah: Decimal = Field(gt=0)
+
+
+class PesananBaru(BaseModel):
+    """
+    Satu keranjang. Baris dari distributor berbeda dipecah menjadi satu pesanan
+    per distributor, semuanya dengan `kode_belanja` yang sama.
+    """
+
+    baris: list[BarisPesananBaru] = Field(min_length=1)
+    catatan_untuk_distributor: str | None = Field(default=None, max_length=500)
+    #: Pesanan yang lahir dari saran Mesin 1/Mesin 2, untuk mengukur kegunaannya.
+    dari_saran: bool = False
+
+
+class BarisPesananLengkap(BaseModel):
+    id: int
+    penawaran_id: int
+    barang_id: int | None
+    nama: str
+    jumlah: Decimal
+    satuan: str
+    harga_satuan: int
+    harga_normal: int | None
+    promo_id: int | None
+    isi_per_satuan: Decimal
+    jumlah_diterima: Decimal | None
+    alasan_selisih: str | None
+    catatan_penerimaan: str | None
+
+
+class JejakPesananLengkap(BaseModel):
+    waktu: datetime
+    status: str
+    keterangan: str | None
+
+
+class PesananLengkap(BaseModel):
+    """Satu pesanan lengkap dengan baris dan jejaknya. Bentuk yang sama dibaca kedua portal."""
+
+    id: int
+    nomor: str
+    usaha_id: int
+    nama_usaha: str
+    #: Profil singkat pemesan, untuk kartu pemesan di portal distributor.
+    usaha_jenis: str = ""
+    usaha_kota: str = ""
+    usaha_alamat: str = ""
+    usaha_nomor_hp: str = ""
+    usaha_lat: float | None = None
+    usaha_lng: float | None = None
+    distributor_id: int
+    nama_distributor: str
+    kontrak_id: int | None
+    dibuat_pada: datetime
+    status: str
+    status_bayar: str
+    ongkos_kirim: int
+    perkiraan_tiba: datetime | None
+    jumlah_bukti: int
+    dari_saran: bool
+    dari_rutin: bool
+    catatan_untuk_distributor: str | None
+    sudah_diulas: bool
+    kode_belanja: str | None
+    alasan_tolak: str | None
+    kirim_kurir: str | None
+    kirim_pengantar: str | None
+    kirim_nomor_resi: str | None
+    kirim_diterima_oleh: str | None
+    kirim_waktu_sampai: datetime | None
+    kirim_catatan: str | None
+    baris: list[BarisPesananLengkap]
+    jejak: list[JejakPesananLengkap]
+
+
+class BarisPenerimaan(BaseModel):
+    baris_id: int
+    #: Dalam satuan jual, sama dengan `jumlah` di baris pesanan.
+    jumlah_diterima: Decimal = Field(ge=0)
+    alasan_selisih: str | None = Field(default=None, pattern="^(kurang|lebih|rusak|kualitas-beda|salah-barang)$")
+    catatan: str | None = Field(default=None, max_length=500)
+
+
+class Penerimaan(BaseModel):
+    """Hasil hitung barang di tempat. Satu baris per baris pesanan."""
+
+    baris: list[BarisPenerimaan] = Field(min_length=1)
+
+
+class KonfirmasiPesanan(BaseModel):
+    #: Kosong berarti perkiraan tiba yang dihitung saat pesanan dibuat tetap berlaku.
+    perkiraan_tiba: datetime | None = None
+
+
+class TolakPesanan(BaseModel):
+    alasan: str = Field(min_length=3, max_length=500)
+
+
+class KirimPesanan(BaseModel):
+    kurir: str | None = Field(default=None, max_length=120)
+    pengantar: str | None = Field(default=None, max_length=120)
+    nomor_resi: str | None = Field(default=None, max_length=60)
+
+
+class SampaiPesanan(BaseModel):
+    diterima_oleh: str | None = Field(default=None, max_length=120)
+    catatan: str | None = Field(default=None, max_length=500)

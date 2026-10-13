@@ -49,6 +49,7 @@ import {
   kontrakBisaDipakai,
   paketById,
   pasangDataServer,
+  pasangUmkmServer,
   penawaranById,
   profilAwal,
   promoById as promoByIdDasar,
@@ -60,8 +61,26 @@ import {
   warnaTitikUntuk,
 } from '@/data/dummy'
 import { jumlahTampil } from '@/lib/satuan'
-import { ambilBarang, ambilPemakaianBulanan, masukUmkm, sesiTersimpan, simpanSesi } from '@/lib/api'
-import type { SesiServer } from '@/lib/api'
+import {
+  ambilBarang,
+  ambilPemakaianBulanan,
+  masukDistributor,
+  masukUmkm,
+  sesiDistributorTersimpan,
+  sesiTersimpan,
+  simpanSesi,
+  simpanSesiDistributor,
+} from '@/lib/api'
+import type { SesiDistributor, SesiServer } from '@/lib/api'
+import {
+  aksiPesananMasuk,
+  ambilPesanan,
+  ambilPesananMasuk,
+  batalkanPesananServer,
+  buatPesanan,
+  terimaBarangServer,
+} from '@/lib/apiPesanan'
+import type { AksiDistributor } from '@/lib/apiPesanan'
 
 /**
  * Satu tempat penyimpanan untuk seluruh keadaan portal.
@@ -128,6 +147,10 @@ interface KeadaanAplikasi {
    */
   sumberData: 'contoh' | 'server'
   sesiServer: SesiServer | null
+  /** Sesi portal distributor di server. Terpisah dari sesi pemilik usaha: tokennya pun berbeda jenis. */
+  sesiDistributor: SesiDistributor | null
+  /** Pesanan masuk dari server. `null` berarti portal distributor masih memakai data contoh. */
+  pesananMasukServer: PesananMasuk[] | null
   racun: Racun[]
   hasilKirimTerakhir: HasilKirim | null
 
@@ -139,6 +162,11 @@ interface KeadaanAplikasi {
   masukServer: (email: string, kataSandi: string) => Promise<void>
   /** Dipanggil sekali saat aplikasi dibuka: memakai sesi yang masih berlaku di tab ini. */
   pulihkanSesiServer: () => Promise<void>
+  /** Pesan satu penawaran langsung dari saran Mesin 2. Mengembalikan id pesanan baru. */
+  pesanDariServer: (penawaranId: number, jumlah: number) => Promise<string | null>
+  sambungDistributor: (email: string, kataSandi: string) => Promise<void>
+  putusDistributor: () => void
+  muatPesananMasuk: () => Promise<void>
   aturPeran: (p: 'umkm' | 'distributor') => void
 
   /* Profil & kasir */
@@ -254,7 +282,35 @@ function ubahKontrak(
 
 /** Pesanan masuk distributor aktif, termasuk pesanan pemilik aplikasi ini. */
 function cariPesananMasuk(s: KeadaanAplikasi, id: string): PesananMasuk | undefined {
+  if (s.pesananMasukServer) return s.pesananMasukServer.find((p) => p.id === id)
   return gabungPesananMasuk(s.pesanan, s.pesananUmkmLain).find((p) => p.id === id)
+}
+
+/**
+ * Satu aksi distributor ke server, lalu daftar pesanan masuk dimuat ulang.
+ * Kalau pemilik usaha yang sama juga sedang masuk di tab ini, daftar pesanannya
+ * ikut dimuat ulang supaya kedua portal langsung melihat status yang sama.
+ */
+function aksiServer(
+  get: () => KeadaanAplikasi,
+  aksi: AksiDistributor,
+  id: string,
+  badan: Record<string, unknown>,
+  pesan: string,
+): void {
+  const sesi = get().sesiDistributor
+  if (!sesi) return
+  aksiPesananMasuk(sesi, id, aksi, badan)
+    .then(async () => {
+      await get().muatPesananMasuk()
+      const umkm = get().sesiServer
+      if (umkm) {
+        const pesanan = await ambilPesanan(umkm).catch(() => null)
+        if (pesanan) useAplikasi.setState({ pesanan })
+      }
+      get().tampilkanRacun(pesan, aksi === 'tolak' ? 'menipis' : 'aman')
+    })
+    .catch((e: unknown) => get().tampilkanRacun(e instanceof Error ? e.message : 'Aksi gagal disimpan.', 'kritis'))
 }
 
 /** Pesanan ini milik pemilik aplikasi, jadi yang diubah adalah pesanan aslinya. */
@@ -328,6 +384,8 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
   masuk: false,
   sumberData: 'contoh',
   sesiServer: null,
+  sesiDistributor: null,
+  pesananMasukServer: null,
   racun: [],
   hasilKirimTerakhir: null,
 
@@ -347,18 +405,26 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
     // Keluar: sesi server dilepas dan gudang kembali ke data contoh.
     simpanSesi(null)
     pasangDataServer(null)
-    set({ masuk: false, sumberData: 'contoh', sesiServer: null, barang: daftarBarang, profil: profilAwal })
+    set({
+      masuk: false,
+      sumberData: 'contoh',
+      sesiServer: null,
+      barang: daftarBarang,
+      pesanan: daftarPesanan,
+      profil: profilAwal,
+    })
   },
 
   masukServer: async (email, kataSandi) => {
     const sesi = await masukUmkm(email, kataSandi)
-    const barang = await muatGudangServer(sesi)
+    const [barang, pesanan] = await Promise.all([muatGudangServer(sesi), ambilPesanan(sesi).catch(() => [])])
     simpanSesi(sesi)
     set((s) => ({
       masuk: true,
       sumberData: 'server',
       sesiServer: sesi,
       barang,
+      pesanan,
       profil: {
         ...s.profil,
         id: String(sesi.usahaId),
@@ -373,12 +439,13 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
     const sesi = sesiTersimpan()
     if (!sesi || get().sesiServer) return
     try {
-      const barang = await muatGudangServer(sesi)
+      const [barang, pesanan] = await Promise.all([muatGudangServer(sesi), ambilPesanan(sesi).catch(() => [])])
       set((s) => ({
         masuk: true,
         sumberData: 'server',
         sesiServer: sesi,
         barang,
+        pesanan,
         profil: {
           ...s.profil,
           id: String(sesi.usahaId),
@@ -390,6 +457,49 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
       // Token hangus (server dimuat ulang) atau server mati: mulai lagi dari data contoh.
       simpanSesi(null)
       pasangDataServer(null)
+    }
+  },
+
+  pesanDariServer: async (penawaranId, jumlah) => {
+    const sesi = get().sesiServer
+    if (!sesi) return null
+    try {
+      const [baru] = await buatPesanan(sesi, [{ penawaranId, jumlah }], true)
+      set((s) => ({ pesanan: [baru, ...s.pesanan] }))
+      get().tampilkanRacun(`Pesanan ${baru.nomor} terkirim ke distributor.`, 'aman', {
+        label: 'Lihat pesanan',
+        ke: `/pesanan/${baru.id}`,
+      })
+      return baru.id
+    } catch (e) {
+      get().tampilkanRacun(e instanceof Error ? e.message : 'Pesanan gagal dikirim.', 'kritis')
+      return null
+    }
+  },
+
+  sambungDistributor: async (email, kataSandi) => {
+    const sesi = await masukDistributor(email, kataSandi)
+    simpanSesiDistributor(sesi)
+    set({ sesiDistributor: sesi })
+    await get().muatPesananMasuk()
+  },
+
+  putusDistributor: () => {
+    simpanSesiDistributor(null)
+    pasangUmkmServer([])
+    set({ sesiDistributor: null, pesananMasukServer: null })
+  },
+
+  muatPesananMasuk: async () => {
+    const sesi = get().sesiDistributor ?? sesiDistributorTersimpan()
+    if (!sesi) return
+    try {
+      const { pesanan, umkm } = await ambilPesananMasuk(sesi)
+      pasangUmkmServer(umkm)
+      set({ sesiDistributor: sesi, pesananMasukServer: pesanan })
+    } catch {
+      // Token hangus atau server mati: portal kembali ke data contoh.
+      get().putusDistributor()
     }
   },
 
@@ -711,6 +821,31 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
     const pesanan = s.pesanan.find((p) => p.id === pesananId)
     if (!pesanan) return
 
+    // Pesanan server: stok dinaikkan server dari hitungan ini, lalu gudang dimuat ulang.
+    if (s.sesiServer && pesanan.baris.every((b) => b.barisId)) {
+      const sesi = s.sesiServer
+      const baris = pesanan.baris.map((b) => {
+        const info = diterima[b.penawaranId] ?? { jumlah: b.jumlah, alasan: null, catatan: '' }
+        return { barisId: b.barisId!, jumlah: info.jumlah, alasan: info.alasan, catatan: info.catatan }
+      })
+      terimaBarangServer(sesi, pesananId, baris)
+        .then(async (baru) => {
+          const barang = await muatGudangServer(sesi)
+          set((st) => ({ barang, pesanan: st.pesanan.map((p) => (p.id === baru.id ? baru : p)) }))
+          const catatan = baru.status === 'selesai-catatan'
+          get().tampilkanRacun(
+            catatan
+              ? 'Diterima dengan catatan. Stok bertambah sesuai jumlah yang diakui.'
+              : 'Barang diterima. Stok gudang bertambah.',
+            catatan ? 'menipis' : 'aman',
+          )
+        })
+        .catch((e: unknown) =>
+          get().tampilkanRacun(e instanceof Error ? e.message : 'Penerimaan gagal disimpan.', 'kritis'),
+        )
+      return
+    }
+
     let adaSelisih = false
     const catatan: Pergerakan[] = []
     const barangBaru = [...s.barang]
@@ -806,6 +941,15 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
   batalkanPesanan: (pesananId, alasan) => {
     const s = get()
     const pesanan = s.pesanan.find((p) => p.id === pesananId)
+    if (s.sesiServer && pesanan?.baris.every((b) => b.barisId)) {
+      batalkanPesananServer(s.sesiServer, pesananId, alasan || 'Dibatalkan pemilik usaha')
+        .then((baru) => {
+          set((st) => ({ pesanan: st.pesanan.map((p) => (p.id === baru.id ? baru : p)) }))
+          get().tampilkanRacun('Pesanan dibatalkan.', 'menipis')
+        })
+        .catch((e: unknown) => get().tampilkanRacun(e instanceof Error ? e.message : 'Pembatalan gagal.', 'kritis'))
+      return
+    }
     set((st) => ({
       pesanan: st.pesanan.map((p) =>
         p.id !== pesananId
@@ -855,6 +999,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
     })),
 
   terimaPesananMasuk: (id) => {
+    if (get().pesananMasukServer) return aksiServer(get, 'konfirmasi', id, {}, 'Pesanan kamu terima. Sekarang masuk antrean gudang.')
     const pesanan = cariPesananMasuk(get(), id)
     // Hanya pesanan yang belum dijawab yang boleh diterima. Menekan tombol dua
     // kali tidak boleh memundurkan pesanan yang sudah berjalan.
@@ -895,6 +1040,9 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
     // kenapa pesanannya batal, dan alasan kosong membuat jejaknya tidak berguna.
     const alasanBersih = alasan.trim()
     if (!alasanBersih) return
+    if (get().pesananMasukServer) {
+      return aksiServer(get, 'tolak', id, { alasan: alasanBersih }, 'Pesanan ditolak. Alasannya ikut terkirim ke pemilik usaha.')
+    }
     const pesanan = cariPesananMasuk(get(), id)
     if (!pesanan || pesanan.status !== 'menunggu-konfirmasi') return
     if (adalahPesananSendiri(get(), id)) {
@@ -948,6 +1096,12 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
   majukanPesananMasuk: (id) => {
     const pesanan = cariPesananMasuk(get(), id)
     if (!pesanan) return
+    if (get().pesananMasukServer) {
+      if (pesanan.status === 'disiapkan') return aksiServer(get, 'kirim', id, {}, 'Pesanan ditandai sedang dikirim.')
+      if (pesanan.status === 'dikirim')
+        return aksiServer(get, 'sampai', id, {}, 'Pesanan ditandai sudah sampai. Stok pemilik usaha bertambah setelah ia menghitung barangnya.')
+      return
+    }
     const sendiri = adalahPesananSendiri(get(), id)
 
     if (pesanan.status === 'disiapkan') {
@@ -1385,7 +1539,8 @@ export function useSedangDikirim(barangId: string): { jumlah: number; pesananId:
 export function usePesananMasuk(): PesananMasuk[] {
   const pesanan = useAplikasi((s) => s.pesanan)
   const lain = useAplikasi((s) => s.pesananUmkmLain)
-  return useMemo(() => gabungPesananMasuk(pesanan, lain), [pesanan, lain])
+  const server = useAplikasi((s) => s.pesananMasukServer)
+  return useMemo(() => server ?? gabungPesananMasuk(pesanan, lain), [server, pesanan, lain])
 }
 
 /*

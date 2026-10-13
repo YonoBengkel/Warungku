@@ -22,6 +22,7 @@ import {
   TAHAP_PESANAN_MASUK,
 } from '@/lib/label'
 import { umkmById } from '@/data/dummy'
+import { KartuSambungDistributor, TombolPutusDistributor } from '@/components/domain/SambungDistributor'
 import type { PesananMasuk, StatusPesananMasuk } from '@/lib/types'
 import { useAplikasi, usePesananMasukPerStatus } from '@/store/aplikasi'
 
@@ -188,6 +189,7 @@ export function LembarTolak({ pesanan, tutup }: { pesanan: PesananMasuk; tutup: 
 /* ------------------------------------------------------------------ */
 
 export default function PesananMasukDaftar() {
+  const dariServer = useAplikasi((s) => s.pesananMasukServer !== null)
   const [params, setParams] = useSearchParams()
   const perStatus = usePesananMasukPerStatus()
   const terimaPesananMasuk = useAplikasi((s) => s.terimaPesananMasuk)
@@ -211,10 +213,27 @@ export default function PesananMasukDaftar() {
 
   return (
     <div className="pb-6">
-      <h1 className="text-[1.25rem] font-extrabold text-ink tracking-tight">Pesanan</h1>
-      <p className="mt-1 text-[0.8125rem] text-ink-3 leading-snug max-w-[70ch]">
-        Semua pesanan yang masuk ke tokomu, dikelompokkan menurut tahapnya.
-      </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-[1.25rem] font-extrabold text-ink tracking-tight">Pesanan</h1>
+          <p className="mt-1 text-[0.8125rem] text-ink-3 leading-snug max-w-[70ch]">
+            Semua pesanan yang masuk ke tokomu, dikelompokkan menurut tahapnya.
+            {dariServer ? ' Dibaca dari server.' : ' Saat ini memakai data contoh.'}
+          </p>
+        </div>
+        {dariServer && <TombolPutusDistributor />}
+      </div>
+      {!dariServer && (
+        <details className="mt-3 max-w-[32rem]">
+          <summary className="cursor-pointer min-h-11 inline-flex items-center text-[0.8125rem] font-bold text-brand">
+            Pakai pesanan sungguhan dari server
+          </summary>
+          <KartuSambungDistributor
+            className="mt-2"
+            keterangan="Pesanan dari pemilik usaha yang memesan lewat Turnify Flow, termasuk saran Mesin 2."
+          />
+        </details>
+      )}
 
       {/* Ringkasan jumlah. Di 360px barisnya digeser di dalam wadahnya sendiri,
           badan halaman tidak ikut bergeser. */}

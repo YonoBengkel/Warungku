@@ -393,6 +393,8 @@ export const LABEL_SELISIH: Record<AlasanSelisih, string> = {
 }
 
 export interface BarisPesanan {
+  /** Id baris di server; hanya ada untuk pesanan yang dibaca dari API. */
+  barisId?: string
   penawaranId: string
   barangId: string | null
   nama: string

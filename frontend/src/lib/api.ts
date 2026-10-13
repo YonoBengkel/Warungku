@@ -59,7 +59,7 @@ export function simpanSesi(sesi: SesiServer | null) {
   }
 }
 
-async function minta<T>(jalur: string, opsi: RequestInit & { token?: string } = {}): Promise<T> {
+export async function minta<T>(jalur: string, opsi: RequestInit & { token?: string } = {}): Promise<T> {
   const { token, headers, ...sisa } = opsi
   let jawab: Response
   try {
@@ -146,7 +146,7 @@ interface BarangApi {
   catatan: string | null
 }
 
-const angka = (x: string | number | null | undefined) => (x == null ? 0 : Number(x))
+export const angka = (x: string | number | null | undefined) => (x == null ? 0 : Number(x))
 
 function keBarang(b: BarangApi): Barang {
   return {

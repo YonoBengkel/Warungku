@@ -10,6 +10,7 @@ if (!akar) throw new Error('Elemen #root tidak ditemukan di index.html')
 
 // Muat ulang halaman tidak melepas login sungguhan: sesi di tab ini dipulihkan dari server.
 void useAplikasi.getState().pulihkanSesiServer()
+void useAplikasi.getState().muatPesananMasuk()
 
 createRoot(akar).render(
   <StrictMode>
