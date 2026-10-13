@@ -188,7 +188,13 @@ jadi tidak mengubah data simulasi.
 
 ### 6. Jalankan
 
-Masing-masing di terminal sendiri:
+Masing-masing di terminal sendiri. **Kedua perintah `uvicorn` wajib jalan**: tanpa
+API (port 8000) dan layanan model (port 8001), halaman yang membutuhkan server,
+misalnya *Pelanggan* di portal distributor, menampilkan "Server belum menyala",
+dan portal pemilik usaha hanya memakai data contoh. Kalau tidak ingin memakai
+`uvicorn`, nyalakan keduanya dengan Docker (lihat
+[Menjalankan API dan layanan model dengan Docker](#menjalankan-api-dan-layanan-model-dengan-docker));
+pilih salah satu, jangan keduanya, karena portnya sama.
 
 ```powershell
 python -m uvicorn api.utama:app --port 8000
@@ -269,6 +275,12 @@ Hal yang perlu diketahui:
 - **Rahasia tidak ada di dalam image.** Isi `WARUNGKU_RAHASIA` di `deployment/.env`
   (berkas ini tidak dilacak git) supaya login tidak hangus setiap kontainer dinyalakan ulang.
 - **Jangan jalankan bersamaan** dengan `uvicorn` lokal: keduanya memakai port 8000 dan 8001.
+
+Ada juga bahan image basis data yang langsung berisi data simulasi
+([`deployment/db/`](deployment/db/)), untuk komputer yang tidak ingin
+membangkitkan dataset sendiri. Image ini **belum diunggah**, karena berisi seluruh
+data simulasi termasuk akun uji; cara membuatnya ada di
+[`deployment/db/Dockerfile`](deployment/db/Dockerfile).
 
 Membangun dan mengunggah image versi baru (pemilik repositori Docker Hub):
 

@@ -1,0 +1,2 @@
+# Skrip shell dijalankan di dalam kontainer Linux: harus LF, bukan CRLF.
+*.sh text eol=lf
