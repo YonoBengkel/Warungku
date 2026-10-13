@@ -261,3 +261,20 @@ def test_pemilik_bisa_membatalkan_dan_distributor_melihat_pesanan_masuk(dunia):
     # Sudah batal: distributor tidak bisa lagi mengonfirmasi.
     r = klien.post(f"/distributor/{w['distributor']}/pesanan/{p['id']}/konfirmasi", headers=w["kepala_dist"], json={})
     assert r.status_code == 409
+
+
+def test_katalog_mencocokkan_penawaran_ke_barang_pemanggil(dunia):
+    w, klien = dunia, TestClient(app)
+    r = klien.get(f"/usaha/{w['usaha']}/katalog", headers=w["kepala_umkm"])
+    assert r.status_code == 200, r.text
+    k = r.json()
+    assert k["usaha"]["nama"] == "Warung Uji Pesanan"
+    [pn] = [p for p in k["penawaran"] if p["id"] == w["penawaran"]]
+    # Penawaran dicocokkan ke barang milik usaha pemanggil lewat produk master.
+    assert pn["barang_id_terkait"] == w["barang"]
+    [d] = [x for x in k["distributor"] if x["id"] == w["distributor"]]
+    # Distributor tanpa ulasan tidak diberi rating karangan.
+    assert d["rating"] is None and d["jumlah_ulasan"] == 0
+    # Token distributor tidak bisa membuka katalog pemilik usaha.
+    r = klien.get(f"/usaha/{w['usaha']}/katalog", headers=w["kepala_dist"])
+    assert r.status_code == 403

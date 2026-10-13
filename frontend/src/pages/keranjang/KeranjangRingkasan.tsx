@@ -34,6 +34,7 @@ export default function KeranjangRingkasan() {
   const { hargaBerlaku, rincianHarga } = usePenentuHarga()
   const daftarBarang = useAplikasi((s) => s.barang)
   const kirimKeranjang = useAplikasi((s) => s.kirimKeranjang)
+  const kirimKeranjangServer = useAplikasi((s) => s.kirimKeranjangServer)
   const terkunci = useTerkunci()
 
   const [sisaDetik, setSisaDetik] = useState(DETIK_KUNCI)
@@ -72,6 +73,19 @@ export default function KeranjangRingkasan() {
     if (sudahKirim.current) return
     sudahKirim.current = true
     setMengirim(true)
+    // Data server: pesanan dibuat di server dulu, baru pindah halaman. Kalau gagal,
+    // keranjang tetap utuh dan tombol bisa ditekan lagi.
+    if (useAplikasi.getState().sesiServer) {
+      void kirimKeranjangServer().then((hasil) => {
+        if (hasil) {
+          navigate('/keranjang/selesai', { replace: true })
+          return
+        }
+        sudahKirim.current = false
+        setMengirim(false)
+      })
+      return
+    }
     kirimKeranjang()
     navigate('/keranjang/selesai', { replace: true })
   }

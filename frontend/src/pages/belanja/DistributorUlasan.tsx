@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import {
   Avatar,
@@ -15,6 +15,8 @@ import { IkonBintang, IkonBintangIsi, IkonInfo, IkonToko } from '@/icons'
 import { angka, cx, tanggalPendek, waktuLalu } from '@/lib/format'
 import type { Ulasan } from '@/lib/types'
 import { distributorById, ulasanUntuk } from '@/data/dummy'
+import { ambilUlasan } from '@/lib/apiKatalog'
+import { useAplikasi } from '@/store/aplikasi'
 
 /**
  * Daftar ulasan satu distributor.
@@ -105,7 +107,23 @@ export default function DistributorUlasan() {
   const { id = '' } = useParams()
   const [params, setParams] = useSearchParams()
   const distributor = distributorById(id)
-  const semua = useMemo(() => ulasanUntuk(id), [id])
+  const sesi = useAplikasi((s) => s.sesiServer)
+  // Data server: ulasan sungguhan (300 terbaru). Data contoh: daftar ulasan contoh.
+  const [dariServer, setDariServer] = useState<{ id: string; isi: Ulasan[] } | null>(null)
+  useEffect(() => {
+    if (!sesi) return
+    let batal = false
+    ambilUlasan(sesi, id, 300)
+      .then((isi) => !batal && setDariServer({ id, isi }))
+      .catch(() => !batal && setDariServer({ id, isi: [] }))
+    return () => {
+      batal = true
+    }
+  }, [sesi, id])
+  const semua = useMemo(
+    () => (sesi ? (dariServer?.id === id ? dariServer.isi : []) : ulasanUntuk(id)),
+    [sesi, dariServer, id],
+  )
 
   const saringBintang = Number(params.get('bintang') ?? 0)
 

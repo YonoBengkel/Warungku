@@ -345,3 +345,81 @@ class KirimPesanan(BaseModel):
 class SampaiPesanan(BaseModel):
     diterima_oleh: str | None = Field(default=None, max_length=120)
     catatan: str | None = Field(default=None, max_length=500)
+
+
+# --------------------------------------------------------------------------
+# Katalog (Tahap 4)
+# --------------------------------------------------------------------------
+class DistributorKatalog(BaseModel):
+    """Profil distributor untuk pembeli. Rating dihitung dari tabel `ulasan`, bukan diketik."""
+
+    id: int
+    nama: str
+    kota: str
+    deskripsi: str | None
+    warna: str
+    kategori: list[str]
+    area_kirim: list[str]
+    terverifikasi: bool
+    baru: bool
+    sejak: date
+    alamat_gudang: str | None
+    nomor_hp: str | None
+    jam_operasional: str | None
+    minimum_pesanan: int
+    rating: float | None
+    jumlah_ulasan: int
+    jumlah_umkm_pengulas: int
+    jumlah_pesanan_selesai: int
+    aspek_ketepatan: float | None
+    aspek_jumlah: float | None
+    aspek_kondisi: float | None
+
+
+class PenawaranKatalog(BaseModel):
+    id: int
+    distributor_id: int
+    nama: str
+    kategori: str
+    satuan: str
+    harga_satuan: int
+    kemasan_nama: str
+    kemasan_isi: Decimal
+    satuan_isi: str
+    stok_tersedia: Decimal
+    stok_diperbarui_pada: datetime
+    keterangan: str | None
+    aktif: bool
+    #: Barang di gudang usaha pemanggil yang bertambah kalau penawaran ini dibeli.
+    barang_id_terkait: int | None
+
+
+class UsahaRingkas(BaseModel):
+    id: int
+    nama: str
+    jenis_usaha: str
+    kota: str
+    alamat: str
+
+
+class Katalog(BaseModel):
+    usaha: UsahaRingkas
+    distributor: list[DistributorKatalog]
+    penawaran: list[PenawaranKatalog]
+
+
+class UlasanPublik(BaseModel):
+    id: int
+    distributor_id: int
+    nama_usaha: str
+    kota_usaha: str
+    rating: int
+    isi: str | None
+    waktu: datetime
+    nomor_pesanan: str
+    aspek_ketepatan_waktu: int
+    aspek_jumlah_sesuai: int
+    aspek_kondisi_barang: int
+    #: Untuk label sistem "N pesanan · pelanggan sejak ...". Tidak bisa diubah penulis ulasan.
+    jumlah_pesanan_penulis: int
+    pelanggan_sejak: date | None

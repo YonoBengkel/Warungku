@@ -81,6 +81,7 @@ import {
   terimaBarangServer,
 } from '@/lib/apiPesanan'
 import type { AksiDistributor } from '@/lib/apiPesanan'
+import { ambilKatalog } from '@/lib/apiKatalog'
 
 /**
  * Satu tempat penyimpanan untuk seluruh keadaan portal.
@@ -196,6 +197,8 @@ interface KeadaanAplikasi {
   hapusDariKeranjang: (distributorId: string, penawaranId: string) => void
   kosongkanKeranjang: () => void
   kirimKeranjang: () => HasilKirim
+  /** Kirim keranjang ke server (mode data server). `null` kalau gagal; racun sudah ditampilkan. */
+  kirimKeranjangServer: () => Promise<HasilKirim | null>
 
   /* Pesanan */
   kirimDraf: (pesananId: string) => void
@@ -359,6 +362,95 @@ async function muatGudangServer(sesi: SesiServer): Promise<Barang[]> {
   return barang
 }
 
+/* ------------------------------------------------------------------ */
+/* Keranjang tersimpan di peramban                                     */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Keranjang disimpan di localStorage, satu per usaha (data contoh punya kuncinya
+ * sendiri), supaya tidak hilang saat tab HP dimuat ulang. Ini cukup untuk demo:
+ * keranjang tidak ikut pindah perangkat, dan itu disengaja.
+ */
+function kunciKeranjang(sesi: SesiServer | null): string {
+  return sesi ? `turnify-keranjang-usaha-${sesi.usahaId}` : 'turnify-keranjang-contoh'
+}
+
+/** Baris yang penawarannya sudah tidak ada atau nonaktif dibuang saat keranjang dibuka lagi. */
+function bacaKeranjang(kunci: string, katalog: Penawaran[]): SubKeranjang[] {
+  try {
+    const teks = window.localStorage.getItem(kunci)
+    if (!teks) return []
+    const aktif = new Set(katalog.filter((p) => p.aktif !== false).map((p) => p.id))
+    return (JSON.parse(teks) as SubKeranjang[])
+      .map((k) => ({ ...k, baris: k.baris.filter((b) => aktif.has(b.penawaranId)) }))
+      .filter((k) => k.baris.length > 0)
+  } catch {
+    return []
+  }
+}
+
+function simpanKeranjang(kunci: string, keranjang: SubKeranjang[]): void {
+  try {
+    if (keranjang.length === 0) window.localStorage.removeItem(kunci)
+    else window.localStorage.setItem(kunci, JSON.stringify(keranjang))
+  } catch {
+    /* Penyimpanan diblokir (mode privat): keranjang tetap hidup di memori. */
+  }
+}
+
+interface IsiServer {
+  barang: Barang[]
+  pesanan: Pesanan[]
+  katalog: Awaited<ReturnType<typeof ambilKatalog>> | null
+}
+
+/** Semua yang dibaca dari server saat masuk: gudang, pesanan, dan katalog. */
+async function muatSemuaServer(sesi: SesiServer): Promise<IsiServer> {
+  const [barang, pesanan, katalog] = await Promise.all([
+    muatGudangServer(sesi),
+    ambilPesanan(sesi).catch(() => [] as Pesanan[]),
+    ambilKatalog(sesi).catch(() => null),
+  ])
+  return { barang, pesanan, katalog }
+}
+
+/**
+ * Keadaan store untuk mode data server.
+ *
+ * Promo, paket kontrak, kontrak, dan pemberitahuan data contoh dikosongkan:
+ * semuanya merujuk ke barang dan penawaran contoh yang tidak ada di server, dan
+ * menampilkannya di samping data server berarti mencampur angka karangan dengan
+ * angka sungguhan. Keranjang ikut dikosongkan karena barisnya merujuk katalog lama.
+ */
+function keadaanServer(s: KeadaanAplikasi, sesi: SesiServer, isi: IsiServer): Partial<KeadaanAplikasi> & { profil: ProfilUsaha } {
+  const k = isi.katalog
+  return {
+    masuk: true,
+    sumberData: 'server',
+    sesiServer: sesi,
+    barang: isi.barang,
+    pesanan: isi.pesanan,
+    ...(k
+      ? {
+          katalog: k.penawaran,
+          distributor: k.distributor,
+          promo: [],
+          paketKontrak: [],
+          kontrak: [],
+          notifikasi: [],
+          keranjang: bacaKeranjang(kunciKeranjang(sesi), k.penawaran),
+        }
+      : {}),
+    profil: {
+      ...s.profil,
+      id: String(sesi.usahaId),
+      namaUsaha: k?.usaha.nama ?? sesi.namaUsaha ?? s.profil.namaUsaha,
+      namaPemilik: sesi.namaPengguna,
+      ...(k ? { jenisUsaha: k.usaha.jenisUsaha, kota: k.usaha.kota, alamat: k.usaha.alamat } : {}),
+    },
+  }
+}
+
 export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
   profil: profilAwal,
   kasir: dataKasirAwal,
@@ -368,7 +460,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
   kontrak: daftarKontrak,
   pesanan: daftarPesanan,
   notifikasi: daftarNotifikasi,
-  keranjang: [],
+  keranjang: bacaKeranjang(kunciKeranjang(null), daftarPenawaran),
   peran: 'umkm',
   pesananUmkmLain: daftarPesananMasuk,
   kontrakUmkmLain: daftarKontrakUmkmLain,
@@ -412,51 +504,61 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
       barang: daftarBarang,
       pesanan: daftarPesanan,
       profil: profilAwal,
+      katalog: daftarPenawaran,
+      distributor: daftarDistributor,
+      promo: daftarPromo,
+      paketKontrak: daftarPaket,
+      kontrak: daftarKontrak,
+      notifikasi: daftarNotifikasi,
+      keranjang: bacaKeranjang(kunciKeranjang(null), daftarPenawaran),
     })
   },
 
   masukServer: async (email, kataSandi) => {
     const sesi = await masukUmkm(email, kataSandi)
-    const [barang, pesanan] = await Promise.all([muatGudangServer(sesi), ambilPesanan(sesi).catch(() => [])])
+    const isi = await muatSemuaServer(sesi)
     simpanSesi(sesi)
-    set((s) => ({
-      masuk: true,
-      sumberData: 'server',
-      sesiServer: sesi,
-      barang,
-      pesanan,
-      profil: {
-        ...s.profil,
-        id: String(sesi.usahaId),
-        namaUsaha: sesi.namaUsaha ?? s.profil.namaUsaha,
-        namaPemilik: sesi.namaPengguna,
-        email,
-      },
-    }))
+    set((s) => ({ ...keadaanServer(s, sesi, isi), profil: { ...keadaanServer(s, sesi, isi).profil, email } }))
   },
 
   pulihkanSesiServer: async () => {
     const sesi = sesiTersimpan()
     if (!sesi || get().sesiServer) return
     try {
-      const [barang, pesanan] = await Promise.all([muatGudangServer(sesi), ambilPesanan(sesi).catch(() => [])])
-      set((s) => ({
-        masuk: true,
-        sumberData: 'server',
-        sesiServer: sesi,
-        barang,
-        pesanan,
-        profil: {
-          ...s.profil,
-          id: String(sesi.usahaId),
-          namaUsaha: sesi.namaUsaha ?? s.profil.namaUsaha,
-          namaPemilik: sesi.namaPengguna,
-        },
-      }))
+      const isi = await muatSemuaServer(sesi)
+      set((s) => keadaanServer(s, sesi, isi))
     } catch {
       // Token hangus (server dimuat ulang) atau server mati: mulai lagi dari data contoh.
       simpanSesi(null)
       pasangDataServer(null)
+    }
+  },
+
+  kirimKeranjangServer: async () => {
+    const s = get()
+    const sesi = s.sesiServer
+    if (!sesi) return null
+    const dikirim = s.keranjang.filter((k) => !k.disimpanUntukNanti && k.baris.length > 0)
+    const baris = dikirim.flatMap((k) => k.baris.map((b) => ({ penawaranId: Number(b.penawaranId), jumlah: b.jumlah })))
+    if (baris.length === 0) return null
+    try {
+      // Satu permintaan untuk seluruh keranjang: server memecahnya menjadi satu
+      // pesanan per distributor dengan kode belanja yang sama.
+      const dariSaran = dikirim.some((k) => k.baris.some((b) => b.saranSistem != null))
+      const baru = await buatPesanan(sesi, baris, dariSaran)
+      const hasil: HasilKirim = {
+        kodeBelanja: baru[0]?.kodeBelanja ?? baru[0]?.nomor ?? '',
+        pesanan: baru.map((p) => ({ id: p.id, nomor: p.nomor, distributorId: p.distributorId, berhasil: true })),
+      }
+      set((st) => ({
+        pesanan: [...baru, ...st.pesanan],
+        keranjang: st.keranjang.filter((k) => k.disimpanUntukNanti),
+        hasilKirimTerakhir: hasil,
+      }))
+      return hasil
+    } catch (e) {
+      get().tampilkanRacun(e instanceof Error ? e.message : 'Belanja gagal dikirim. Keranjang tidak berubah.', 'kritis')
+      return null
     }
   },
 
@@ -1548,6 +1650,11 @@ export function usePesananMasuk(): PesananMasuk[] {
  * pembaca di data/dummy (penawaranById, distributorById, ...) ikut membaca
  * versi terbaru, termasuk fungsi murni seperti rincianHarga dan rekomendasi.
  */
+// Setiap perubahan keranjang disimpan ke kunci milik usaha yang sedang aktif.
+useAplikasi.subscribe((s, sebelum) => {
+  if (s.keranjang !== sebelum.keranjang) simpanKeranjang(kunciKeranjang(s.sesiServer), s.keranjang)
+})
+
 useAplikasi.subscribe((s, sebelum) => {
   if (s.katalog !== sebelum.katalog || s.distributor !== sebelum.distributor) {
     sinkronKatalog(s.distributor, s.katalog)
