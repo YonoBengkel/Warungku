@@ -4,7 +4,7 @@ Laporan progres teknis untuk dosen pengampu (Word).
     python docs/laporan/diagram.py          # sekali, kalau diagram belum ada
     python docs/laporan/bangun_laporan_dosen.py
 
-Urutan bagian mengikuti laporan PAD2 tim (proses bisnis dan UI/UX), digeser ke
+Urutan bagian mengikuti laporan proses bisnis tim sebelumnya (proses bisnis dan UI/UX), digeser ke
 sisi teknis dan keputusan di baliknya. Skema B2B/B2C dan tanggapan arahan dosen
 sengaja tidak dimuat (keputusan Ilham, 12 Okt 2026).
 
@@ -318,8 +318,8 @@ def grafik_mesin1() -> tuple[Path, Path]:
 
     t = _j("hasil_mesin1_turnamen.json")["uji"]["strategi"]
     nama = {"sarima_untuk_semua": "SARIMA (dipakai sekarang)", "lightgbm_untuk_semua": "LightGBM",
-            "juara_per_kelompok": "Model terbaik per kelompok barang", "chronos_2_untuk_semua": "Chronos-2",
-            "ets_untuk_semua": "ETS (model sebelumnya)", "naif_musiman_untuk_semua": "Naif musiman (pembanding dasar)"}
+            "juara_per_kelompok": "Best model per cluster", "chronos_2_untuk_semua": "Chronos-2",
+            "ets_untuk_semua": "ETS (model sebelumnya)", "naif_musiman_untuk_semua": "Seasonal naive (baseline)"}
     urut = sorted(t, key=lambda k: t[k]["mape"])
     fig, ax = plt.subplots(figsize=(7.2, 3.0))
     for i, k in enumerate(urut):
@@ -329,7 +329,7 @@ def grafik_mesin1() -> tuple[Path, Path]:
     ax.set_yticks(range(len(urut)))
     ax.set_yticklabels([nama.get(k, k) for k in urut])
     ax.invert_yaxis()
-    ax.set_xlabel("Rata-rata meleset per pekan (%), ujian akhir 29 Sep–5 Okt 2026")
+    ax.set_xlabel("MAPE pekanan (%), test set 29 Sep–5 Okt 2026")
     ax.set_xlim(0, max(v["mape"] for v in t.values()) * 1.15)
     ax.grid(axis="x", color="#e5e7eb")
     ax.set_axisbelow(True)
@@ -339,7 +339,7 @@ def grafik_mesin1() -> tuple[Path, Path]:
 
     o = _j("hasil_mesin1_turnamen_omset.json")
     nama_m = {"sarimax": "SARIMAX", "chronos_2_kalender": "Chronos-2 + kalender", "chronos_2": "Chronos-2",
-              "ets": "ETS", "naif_musiman": "Naif musiman", "var": "VAR"}
+              "ets": "ETS", "naif_musiman": "Seasonal naive", "var": "VAR"}
     fig, axs = plt.subplots(1, 2, figsize=(7.2, 2.8), sharex=True)
     for ax, (sumber, judul) in zip(axs, (("simulasi", "Simulasi, 70 UMKM"), ("french_bakery", "Toko roti sungguhan"))):
         u = o[sumber]["uji"]
@@ -355,18 +355,18 @@ def grafik_mesin1() -> tuple[Path, Path]:
         ax.set_title(judul, fontsize=10, loc="left")
         ax.grid(axis="x", color="#e5e7eb")
         ax.set_axisbelow(True)
-    fig.supxlabel("Rata-rata meleset ramalan omset per pekan, % (garis putus oranye: sasaran 5%)", fontsize=9.5)
+    fig.supxlabel("MAPE pekanan omset (%) di test set (garis putus oranye: target 5%)", fontsize=9.5)
     fig.tight_layout()
     g2 = out / "mesin1_omset_uji.png"
     fig.savefig(g2)
     plt.close(fig)
 
-    # Mesin 2: kerugian total tiap cara memilih, nama yang bisa dibaca orang awam.
+    # Mesin 2: total regret tiap kebijakan.
     u = {b["nama"]: b for b in _j("hasil_eksperimen_mesin2_ulangan.json")["hasil"]}
-    nama2 = [("greedy", "Pilih rapor terbaik (greedy)"), ("linucb_a1", "LinUCB"),
-             ("thompson", "Thompson sampling saja"), ("epsilon_greedy_0.1", "Sesekali coba acak (ε-greedy)"),
-             ("thompson+fuzzy (produksi)", "Thompson + fuzzy (dipakai)"), ("greedy+fuzzy", "Rapor terbaik + fuzzy"),
-             ("topsis", "TOPSIS (peringkat berbobot)")]
+    nama2 = [("greedy", "Greedy"), ("linucb_a1", "LinUCB"),
+             ("thompson", "Thompson sampling"), ("epsilon_greedy_0.1", "ε-greedy (ε = 0,1)"),
+             ("thompson+fuzzy (produksi)", "Thompson + fuzzy (dipakai)"), ("greedy+fuzzy", "Greedy + fuzzy"),
+             ("topsis", "TOPSIS")]
     fig, ax = plt.subplots(figsize=(7.2, 3.0))
     for i, (k, n) in enumerate(nama2):
         r = u[k]["regret"]
@@ -378,10 +378,10 @@ def grafik_mesin1() -> tuple[Path, Path]:
     ax.invert_yaxis()
     lo = min(u[k]["regret"]["rata"] for k, _ in nama2)
     ax.set_xlim(lo * 0.85, max(u[k]["regret"]["rata"] for k, _ in nama2) * 1.08)
-    ax.set_xlabel("Kerugian total selama 400 hari, 9.328 keputusan (makin kecil makin baik)")
+    ax.set_xlabel("Total regret selama 400 hari, 9.328 keputusan (makin kecil makin baik)")
     ax.grid(axis="x", color="#e5e7eb")
     ax.set_axisbelow(True)
-    g3 = out / "mesin2_kerugian.png"
+    g3 = out / "mesin2_regret.png"
     fig.savefig(g3)
     plt.close(fig)
     return g1, g2, g3
@@ -453,11 +453,11 @@ def abstrak(L: Laporan, A: dict) -> None:
 
 
 def perubahan(L: Laporan) -> None:
-    L.h1("PERUBAHAN SEJAK LAPORAN PAD2")
-    L.p("Laporan proses bisnis dan UI/UX (PAD2) disusun pada pertengahan September 2026. Sejak itu beberapa hal "
+    L.h1("PERUBAHAN SEJAK LAPORAN PROSES BISNIS")
+    L.p("Laporan proses bisnis dan UI/UX terakhir disusun pada pertengahan September 2026. Sejak itu beberapa hal "
         "berubah, sebagian atas keputusan tim dan sebagian karena hasil pengujian. Tabel di bawah mencatat "
-        "perubahannya, supaya laporan ini bisa dibaca berdampingan dengan PAD2 tanpa menimbulkan pertentangan.")
-    L.tabel("Perubahan dari PAD2 ke laporan ini", ["Hal", "Di PAD2", "Sekarang", "Alasan"], [
+        "perubahannya, supaya laporan ini bisa dibaca berdampingan dengan laporan tersebut tanpa menimbulkan pertentangan.")
+    L.tabel("Perubahan dari laporan proses bisnis ke laporan ini", ["Hal", "Di laporan proses bisnis", "Sekarang", "Alasan"], [
         ["Nama produk", "Warungku", "Turnify Flow, dengan logo baru", "Identitas baru yang menggambarkan perputaran (turnover) stok dan aliran (flow) pasokan"],
         ["Judul dan fokus", "Modul prediksi penjualan", "Sistem analitika rantai pasok dengan tiga mesin", "Yang diramal adalah kebutuhan stok, bukan penjualan; ditambah saran distributor dan profil pelanggan"],
         ["Teknologi", "Antarmuka saja (React)", "Antarmuka, API FastAPI, PostgreSQL, layanan model", "Backend dan model dibangun 5–12 Oktober 2026"],
@@ -471,7 +471,7 @@ def perubahan(L: Laporan) -> None:
 
 def latar_belakang(L: Laporan) -> None:
     L.h1("A. LATAR BELAKANG")
-    L.p("Sebagaimana dijabarkan di laporan PAD2, UMKM kuliner dan ritel kecil di Indonesia sudah banyak memakai "
+    L.p("Sebagaimana dijabarkan di laporan proses bisnis sebelumnya, UMKM kuliner dan ritel kecil di Indonesia sudah banyak memakai "
         "aplikasi kasir digital untuk mencatat penjualan, mencetak struk, dan merekap pendapatan harian. Namun "
         "pemakaiannya berhenti di tahap pencatatan: aplikasi kasir tahu persis apa yang laku hari ini, tetapi tidak "
         "pernah menghitung sisa bahan di gudang, tidak memperkirakan kebutuhan pekan depan, dan tidak membantu "
@@ -494,7 +494,7 @@ def latar_belakang(L: Laporan) -> None:
 
 def rumusan(L: Laporan) -> None:
     L.h1("B. RUMUSAN MASALAH", halaman_baru=False)
-    L.p("Lima rumusan dari PAD2 tetap berlaku. Tiga rumusan teknis ditambahkan untuk tahap analitika data.")
+    L.p("Lima rumusan dari laporan proses bisnis sebelumnya tetap berlaku. Tiga rumusan teknis ditambahkan untuk tahap analitika data.")
     for i, teks in enumerate([
         "Bagaimana merancang aplikasi pendamping yang mengubah data transaksi dari aplikasi kasir menjadi angka sisa "
         "stok gudang yang bisa dipercaya, tanpa mengharuskan pemilik usaha mencatat ulang dan tanpa menggantikan "
@@ -636,7 +636,7 @@ def alur_erd(L: Laporan, A: dict) -> None:
     L.p("Ada dua putaran balik yang membuat sistem belajar dari pemakaiannya sendiri. Pertama, barang yang diterima "
         "menambah stok, sehingga perhitungan berikutnya memakai stok yang baru. Kedua, setiap pesanan dicatat hasilnya: "
         "datang tepat waktu atau terlambat, jumlahnya sesuai atau kurang, kondisinya baik atau rusak. Catatan ini "
-        "memperbarui “rapor” distributor yang dipakai Mesin 2, sehingga sarannya makin tepat seiring bertambahnya pesanan.")
+        "memperbarui catatan keandalan distributor yang dipakai Mesin 2, sehingga rekomendasinya makin tepat seiring bertambahnya pesanan.")
 
     # ERD di halaman mendatar supaya nama tabelnya terbaca.
     L.bagian_baru(mendatar=True)
@@ -665,24 +665,24 @@ def alur_erd(L: Laporan, A: dict) -> None:
 
 def komponen(L: Laporan) -> None:
     L.h1("H. KOMPONEN ALUR KERJA SISTEM")
-    L.p("Tabel ini memperbarui tabel komponen alur kerja di laporan PAD2 dengan kolom status pengerjaan saat ini.")
+    L.p("Tabel ini memperbarui tabel komponen alur kerja di laporan proses bisnis sebelumnya dengan kolom status pengerjaan saat ini.")
     L.tabel("Komponen alur kerja sistem", ["No", "Alur", "Komponen", "Pelaku", "Penjelasan", "Status"], [
-        ["1", "Data penjualan masuk", "Penerimaan nota", "Aplikasi kasir", "Nota dari kasir diterima dan langsung mengurangi stok; nota yang terkirim dua kali tetap dihitung sekali", "Selesai di server"],
-        ["2", "Pemantauan stok", "Stok gudang dan riwayatnya", "Pemilik, manajer, kasir", "Sisa stok tiap barang beserta riwayat keluar-masuknya", "Selesai di server"],
-        ["3", "Pemantauan stok", "Batas aman dan pemberitahuan", "Pemilik, manajer", "Barang yang menipis atau habis ditandai dan diberitahukan", "Selesai di tampilan"],
+        ["1", "Data penjualan masuk", "Penerimaan nota", "Aplikasi kasir", "Nota dari kasir diterima dan langsung mengurangi stok; nota yang terkirim dua kali tetap dihitung sekali", "Selesai di backend"],
+        ["2", "Pemantauan stok", "Stok gudang dan riwayatnya", "Pemilik, manajer, kasir", "Sisa stok tiap barang beserta riwayat keluar-masuknya", "Selesai di backend"],
+        ["3", "Pemantauan stok", "Batas aman dan pemberitahuan", "Pemilik, manajer", "Barang yang menipis atau habis ditandai dan diberitahukan", "Selesai di frontend"],
         ["4", "Perkiraan kebutuhan", "Mesin 1", "Mesin analitik", "Perkiraan pemakaian 30 hari ke depan per barang", "Selesai"],
-        ["5", "Pengadaan", "Katalog dan penawaran", "Distributor, pemilik", "Daftar barang, harga, promo, dan paket kontrak dari distributor", "Selesai di tampilan"],
-        ["6", "Pengadaan", "Saran distributor", "Mesin analitik", "Distributor yang paling layak untuk tiap barang", "Selesai"],
-        ["7", "Pengadaan", "Keranjang dan pemesanan", "Pemilik, manajer", "Keranjang dipecah per distributor lalu dikirim sebagai pesanan", "Selesai di tampilan"],
-        ["8", "Pengadaan", "Kontrak dan kuota bulanan", "Pemilik, distributor", "Kesepakatan harga dan jumlah per bulan untuk jangka waktu tertentu", "Selesai di tampilan"],
-        ["9", "Penerimaan barang", "Penerimaan dan selisih", "Pemilik, manajer, kasir", "Barang yang datang dicek; selisih jumlah atau kondisi dicatat", "Selesai di tampilan"],
+        ["5", "Pengadaan", "Katalog dan penawaran", "Distributor, pemilik", "Daftar barang, harga, promo, dan paket kontrak dari distributor", "Selesai di frontend"],
+        ["6", "Pengadaan", "Rekomendasi distributor", "Mesin analitik", "Distributor yang paling layak untuk tiap barang", "Selesai"],
+        ["7", "Pengadaan", "Keranjang dan pemesanan", "Pemilik, manajer", "Keranjang dipecah per distributor lalu dikirim sebagai pesanan", "Selesai di frontend"],
+        ["8", "Pengadaan", "Kontrak dan kuota bulanan", "Pemilik, distributor", "Kesepakatan harga dan jumlah per bulan untuk jangka waktu tertentu", "Selesai di frontend"],
+        ["9", "Penerimaan barang", "Penerimaan dan selisih", "Pemilik, manajer, kasir", "Barang yang datang dicek; selisih jumlah atau kondisi dicatat", "Selesai di frontend"],
         ["10", "Sisi distributor", "Pesanan masuk", "Distributor", "Pesanan diterima atau ditolak, lalu disiapkan dan dikirim", "Sebagian"],
-        ["11", "Sisi distributor", "Profil pelanggan", "Mesin analitik", "Kelompok pelanggan: andalan, rutin, baru, mulai menjauh", "Selesai"],
+        ["11", "Sisi distributor", "Segmentasi pelanggan", "Mesin analitik", "Segmen pelanggan: andalan, rutin, baru, mulai menjauh", "Selesai"],
         ["12", "Pendukung", "Verifikasi legalitas", "Admin", "Pemeriksaan dokumen usaha sebelum akun aktif", "Rencana"],
     ], [1.0, 2.3, 2.6, 2.4, 5.0, 2.2])
-    L.p(("Arti status. ", "b"), "Selesai di tampilan: layarnya sudah jadi dan bisa dicoba dengan data contoh, tetapi belum "
-        "tersambung ke server. Selesai di server: logika dan penyimpanannya sudah bekerja dan teruji, tetapi layarnya belum "
-        "memakainya. Sebagian: server baru bisa menampilkan data, belum bisa mengubahnya.")
+    L.p(("Arti status. ", "b"), "Selesai di frontend: layarnya sudah jadi dan bisa dicoba dengan data contoh, tetapi belum "
+        "tersambung ke backend. Selesai di backend: logika dan penyimpanannya sudah bekerja dan teruji, tetapi layarnya "
+        "belum memakainya. Sebagian: backend baru bisa menampilkan data, belum bisa mengubahnya.")
 
 
 def dataset(L: Laporan, A: dict) -> None:
@@ -709,12 +709,12 @@ def dataset(L: Laporan, A: dict) -> None:
         "serta cuti bersama 2025–2027. Distributor juga punya kebiasaan: ada yang sering terlambat saat hujan, ada yang "
         "kewalahan dengan pesanan besar, dan ada yang lebih murah tetapi kurang andal.")
     L.h2("3. Dua rancangan penting")
-    L.butir(("Stok habis tidak dianggap tidak laku. ", "b"), "Saat stok habis, penjualan tercatat nol padahal pembelinya ada. "
+    L.butir(("Stok habis tidak dianggap tidak laku (censored demand). ", "b"), "Saat stok habis, penjualan tercatat nol padahal pembelinya ada. "
             "Hari-hari seperti itu ditandai dan tidak dipakai untuk menilai ramalan, supaya mesin tidak menyimpulkan bahwa "
             "barang yang sering kosong adalah barang yang tidak laku.")
-    L.butir(("Kunci jawaban untuk saran distributor. ", "b"), "Untuk setiap pesanan, simulasi juga mencatat apa yang akan "
+    L.butir(("Data counterfactual untuk menilai Mesin 2. ", "b"), "Untuk setiap pesanan, simulasi juga mencatat apa yang akan "
             "terjadi seandainya pemilik memesan ke distributor lain. Catatan ini tidak pernah diperlihatkan ke mesin; ia "
-            "hanya dipakai untuk menilai seberapa jauh saran Mesin 2 dari pilihan terbaik.")
+            "hanya dipakai untuk menilai seberapa jauh rekomendasi Mesin 2 dari pilihan terbaik.")
     L.h2("4. Data toko sungguhan untuk menguji metode")
     L.p("Supaya hasilnya tidak hanya berlaku di simulasi buatan sendiri, metode peramalan juga diuji pada data penjualan "
         "sebuah toko roti di Prancis (French Bakery Daily Sales): sekitar 234 ribu baris penjualan dari Januari 2021 sampai "
@@ -734,158 +734,160 @@ def mesin(L: Laporan, A: dict, g_turnamen: Path, g_omset: Path, g_m2: Path) -> N
     sar = A["saringan"]
     s = t["uji"]["strategi"]
     L.h1("J. MESIN ANALITIK")
-    L.p("Ketiga mesin dinilai dengan cara yang sama. Setiap model dibandingkan dengan cara yang lebih sederhana, dan data "
-        "dibagi tiga: bagian awal untuk melatih, beberapa pekan berikutnya untuk memilih pengaturan, dan satu pekan "
-        "terakhir (29 September sampai 5 Oktober 2026) yang dikunci sebagai ujian akhir. Angka yang dilaporkan berasal "
-        "dari ujian akhir itu, sehingga tidak ada model yang dinilai dengan data yang sudah pernah dilihatnya.")
-    L.p(("Cara membaca angka ramalan. ", "b"), "Akurasi ramalan diukur dengan MAPE, yaitu rata-rata persentase meleset "
-        "ramalan dari kenyataan, dihitung per pekan. MAPE 15% berarti ramalan pekanan rata-rata meleset 15% dari "
-        "pemakaian sebenarnya. Makin kecil makin baik.")
+    L.p("Ketiga mesin dinilai dengan cara yang sama. Setiap model dibandingkan dengan baseline yang lebih sederhana, dan "
+        "data dibagi tiga: training set untuk melatih, validation set (beberapa pekan berikutnya) untuk memilih "
+        "pengaturan, dan test set berupa satu pekan terakhir (29 September sampai 5 Oktober 2026) yang dikunci sampai "
+        "akhir. Angka yang dilaporkan berasal dari test set itu, sehingga tidak ada model yang dinilai dengan data yang "
+        "sudah pernah dilihatnya.")
+    L.p(("Cara membaca angka ramalan. ", "b"), "Akurasi ramalan diukur dengan MAPE (mean absolute percentage error), "
+        "yaitu rata-rata persentase selisih ramalan dari kenyataan, dihitung per pekan. MAPE 15% berarti ramalan pekanan "
+        "rata-rata meleset 15% dari pemakaian sebenarnya. Makin kecil makin baik.")
 
     # ---- Mesin 1 -----------------------------------------------------------
-    L.h2("1. Mesin 1: perkiraan kebutuhan stok")
-    L.p(("Tugasnya. ", "b"), "Memperkirakan berapa banyak tiap barang akan terpakai setiap hari selama 30 hari ke depan. "
-        "Perkiraannya berupa rentang: perkiraan rendah, tengah, dan tinggi. Perkiraan tinggi dipakai sebagai batas aman. "
-        "Kalau sisa stok tidak cukup untuk memenuhi perkiraan tinggi selama menunggu barang dikirim, barang itu berstatus "
-        "menipis dan perlu dipesan.")
+    L.h2("1. Mesin 1: forecasting kebutuhan stok")
+    L.p(("Tugasnya. ", "b"), "Meramal berapa banyak tiap barang akan terpakai setiap hari selama 30 hari ke depan. "
+        "Ramalannya berupa tiga quantile: p10 (perkiraan rendah), p50 (perkiraan tengah), dan p90 (perkiraan tinggi). "
+        "Nilai p90 dipakai sebagai batas aman. Kalau sisa stok tidak cukup untuk memenuhi p90 selama menunggu barang "
+        "dikirim, barang itu berstatus menipis dan perlu dipesan.")
     L.p(("Barang mana yang diramal. ", "b"), f"Tidak semua barang perlu model. Dari {_rb(sar['barang'])} barang milik "
-        f"{sar['usaha']} UMKM, barang yang paling besar nilai belanjanya dan cukup sering terjual diramal dengan model "
-        f"({_rb(sar['diramal'])} barang). Sisanya dihitung dengan aturan sederhana: rata-rata pemakaian harian dikali lama "
-        "pengiriman. Hari-hari yang tidak wajar, misalnya lonjakan pembelian mendadak, ditandai agar tidak mengacaukan "
+        f"{sar['usaha']} UMKM, barang yang paling besar nilai belanjanya (analisis ABC) dan cukup sering terjual diramal "
+        f"dengan model ({_rb(sar['diramal'])} barang). Sisanya dihitung dengan aturan sederhana: rata-rata pemakaian harian "
+        "dikali lead time pengiriman. Outlier, misalnya lonjakan pembelian mendadak, ditandai agar tidak mengacaukan "
         "ramalan, sedangkan hari libur dan Ramadan tetap dianggap wajar karena polanya bisa diperkirakan.")
-    L.p(("Model yang dibandingkan. ", "b"), "Lima model diadu, ditambah satu cara gabungan:")
+    L.p(("Model yang dibandingkan. ", "b"), "Lima model diadu, ditambah satu strategi gabungan:")
     L.tabel("Model yang dibandingkan untuk Mesin 1", ["Model", "Cara kerjanya secara singkat"], [
-        ["Naif musiman", "Pemakaian pekan depan dianggap sama dengan pekan ini. Pembanding paling dasar"],
-        ["ETS", "Meratakan riwayat dengan bobot lebih besar untuk data terbaru. Model yang dipakai sebelumnya"],
-        ["SARIMA", "Membaca pola mingguan dari riwayat, ditambah pengaruh hari libur, gajian, dan Ramadan"],
-        ["LightGBM", "Model pembelajaran mesin berbasis pohon keputusan yang belajar dari banyak barang sekaligus"],
-        ["Chronos-2", "Model siap pakai yang sudah dilatih dari sangat banyak data deret waktu di luar proyek ini"],
-        ["Terbaik per kelompok", "Barang dikelompokkan menurut kemiripan polanya, lalu tiap kelompok memakai model yang paling cocok untuknya"],
-    ], [3.6, 12.0])
-    L.gambar(g_turnamen, "Rata-rata meleset ramalan per pekan di ujian akhir. Ungu: model yang dipakai sekarang; oranye: model sebelumnya", 15.0)
-    L.p(f"SARIMA meleset rata-rata {_pr(s['sarima_untuk_semua']['mape'])} per pekan, lebih baik daripada ETS yang dipakai "
-        f"sebelumnya ({_pr(s['ets_untuk_semua']['mape'])}) dan pembanding dasar ({_pr(s['naif_musiman_untuk_semua']['mape'])}). "
+        ["Seasonal naive", "Pemakaian pekan depan dianggap sama dengan pekan ini. Baseline paling dasar"],
+        ["ETS (exponential smoothing)", "Meratakan riwayat dengan bobot lebih besar untuk data terbaru. Model yang dipakai sebelumnya"],
+        ["SARIMA", "Membaca pola musiman mingguan dari riwayat, ditambah pengaruh hari libur, gajian, dan Ramadan sebagai variabel eksogen"],
+        ["LightGBM", "Gradient boosting berbasis decision tree yang belajar dari banyak barang sekaligus"],
+        ["Chronos-2", "Foundation model time series yang sudah di-pretrain dengan sangat banyak data di luar proyek ini"],
+        ["Best model per cluster", "Barang di-clustering menurut kemiripan polanya, lalu tiap cluster memakai model terbaiknya"],
+    ], [4.2, 11.4])
+    L.gambar(g_turnamen, "MAPE pekanan di test set. Ungu: model yang dipakai sekarang; oranye: model sebelumnya", 15.0)
+    L.p(f"SARIMA mencapai MAPE {_pr(s['sarima_untuk_semua']['mape'])}, lebih baik daripada ETS yang dipakai sebelumnya "
+        f"({_pr(s['ets_untuk_semua']['mape'])}) dan baseline seasonal naive ({_pr(s['naif_musiman_untuk_semua']['mape'])}). "
         f"LightGBM sama akuratnya ({_pr(s['lightgbm_untuk_semua']['mape'])}), tetapi cara kerjanya jauh lebih sulit dijelaskan. "
-        f"Cara terbaik per kelompok ({_pr(s['juara_per_kelompok']['mape'])}) ternyata tidak menambah akurasi, karena "
-        "barang-barangnya tidak terbagi ke dalam kelompok yang tegas; bila dicek ke seluruh barang hasilnya setara ETS "
+        f"Strategi best model per cluster ({_pr(s['juara_per_kelompok']['mape'])}) ternyata tidak menambah akurasi, karena "
+        "barang-barangnya tidak terbagi ke dalam cluster yang tegas; bila dicek ke seluruh barang hasilnya setara ETS "
         f"({_pr(ta['pendukung_validasi_anggota']['juara_perwakilan']['mape'])} melawan "
         f"{_pr(ta['pendukung_validasi_anggota']['ets']['mape'])}).")
-    L.p(("Apakah rentangnya bisa dipercaya? ", "b"), "Karena batas aman memakai perkiraan tinggi, rentangnya harus tepat. "
-        "Rentang yang baik memuat pemakaian sebenarnya sekitar 80% dari waktu, dan pemakaian melebihi perkiraan tinggi "
-        "sekitar 10% dari waktu. Hasil pengecekan di tujuh pekan, 890 barang:")
-    L.tabel("Ketepatan rentang perkiraan", ["Model", "Pemakaian jatuh di dalam rentang (sasaran 80%)", "Pemakaian melebihi perkiraan tinggi (sasaran 10%)"], [
+    L.p(("Apakah prediction interval-nya bisa dipercaya? ", "b"), "Karena batas aman memakai p90, rentang p10–p90 harus "
+        "terkalibrasi. Interval yang baik memuat pemakaian sebenarnya sekitar 80% dari waktu (coverage), dan pemakaian "
+        "melebihi p90 sekitar 10% dari waktu. Hasil pengecekan di tujuh pekan validation set, 890 barang:")
+    L.tabel("Kalibrasi prediction interval p10–p90", ["Model", "Coverage p10–p90 (target 80%)", "Pemakaian di atas p90 (target 10%)"], [
         ["SARIMA (dipakai)", _pr(100 * c["sarima"]["cakupan_p10_p90"]), _pr(100 * c["sarima"]["di_atas_p90"])],
         ["ETS (sebelumnya)", _pr(100 * c["ets"]["cakupan_p10_p90"]), _pr(100 * c["ets"]["di_atas_p90"])],
     ], [4.0, 5.8, 5.8])
     pred = A["db"]["prediksi_terakhir"]
     cad = sum(v for k, v in pred.items() if "cadangan" in k)
-    L.p("Rentang SARIMA tepat sasaran dan sedikit berhati-hati: pemakaian lebih jarang melewati perkiraan tinggi, sehingga "
-        f"stok lebih jarang habis. Pada perhitungan terakhir, {_rb(sum(pred.values()) - cad)} barang diramal dengan SARIMA dan "
-        f"{_rb(cad)} barang memakai ETS sebagai cadangan, karena riwayatnya hampir seluruhnya kosong akibat cacat dataset "
+    L.p("Interval SARIMA tepat sasaran dan sedikit konservatif: pemakaian lebih jarang melewati p90, sehingga stok lebih "
+        f"jarang habis. Pada perhitungan terakhir, {_rb(sum(pred.values()) - cad)} barang diramal dengan SARIMA dan "
+        f"{_rb(cad)} barang memakai ETS sebagai fallback, karena riwayatnya hampir seluruhnya kosong akibat cacat dataset "
         "Bantul (bab I).")
-    L.p(("Perkiraan omset. ", "b"), "Sesuai arahan dosen, omset tiap UMKM juga diramal, baik dari riwayat omset saja "
-        "(ETS, naif musiman) maupun bersama data lain seperti kalender, jumlah barang, dan jumlah nota (SARIMAX, VAR), "
-        "dengan Chronos-2 sebagai pembanding.")
-    L.gambar(g_omset, "Rata-rata meleset ramalan omset per pekan di ujian akhir. Garis putus: sasaran 5%", 15.5)
+    L.p(("Forecasting omset. ", "b"), "Sesuai arahan dosen, omset tiap UMKM juga diramal, baik secara univariat dari "
+        "riwayat omset saja (ETS, seasonal naive) maupun multivariat bersama kalender, jumlah barang, dan jumlah nota "
+        "(SARIMAX, VAR), dengan Chronos-2 sebagai pembanding.")
+    L.gambar(g_omset, "MAPE pekanan omset di test set. Garis putus: target 5%", 15.5)
     L.p(f"Di simulasi, SARIMAX paling akurat ({_pr(o['simulasi']['uji']['sarimax']['mape'])}); sebagian keunggulannya karena "
         "simulasi dibuat dengan kalender yang sama dengan yang diberikan ke SARIMAX. Di toko roti sungguhan, Chronos-2 "
-        f"paling akurat ({_pr(o['french_bakery']['uji']['chronos_2']['mape'])}), sudah di bawah sasaran 5%, tetapi baru diuji "
-        f"selama {o['french_bakery']['uji']['chronos_2']['n_pekan']} pekan sehingga angka itu belum kuat. Chronos-2 juga "
-        "dicoba dilatih ulang khusus dengan data toko roti; hasilnya membaik sedikit, dari "
+        f"paling akurat ({_pr(o['french_bakery']['uji']['chronos_2']['mape'])}), sudah di bawah target 5%, tetapi test set-nya "
+        f"baru {o['french_bakery']['uji']['chronos_2']['n_pekan']} pekan sehingga angka itu belum kuat. Chronos-2 juga dicoba "
+        "di-fine-tune dengan data training toko roti; MAPE-nya membaik sedikit, dari "
         f"{_pr(ft['uji']['tanpa_finetune']['omset']['mape'])} menjadi {_pr(ft['uji']['finetune']['omset']['mape'])}, selisih "
         "yang terlalu kecil untuk dipastikan bukan kebetulan.")
-    L.p(("Tentang sasaran 5%. ", "b"), "Sasaran ini sudah tercapai untuk omset toko roti, tetapi belum untuk pemakaian per "
-        f"barang ({_pr(s['sarima_untuk_semua']['mape'])}). Penjualan satu barang di satu warung jauh lebih acak daripada omset "
-        "seluruh warung: kalau hari ini kopi kurang laku, mungkin teh yang lebih laku, dan keduanya saling menutupi di "
-        "omset. Makin besar yang dijumlahkan, makin kecil melesetnya. Sebagai pembanding luar, salah satu tim terbaik di "
-        "kompetisi peramalan penjualan toko Rossmann melaporkan meleset sekitar 9,3% untuk omset harian per toko "
-        "(Guo dan Berkhahn, 2016).")
+    L.p(("Tentang target MAPE 5%. ", "b"), "Target ini sudah tercapai untuk omset toko roti, tetapi belum untuk pemakaian "
+        f"per barang ({_pr(s['sarima_untuk_semua']['mape'])}). Penjualan satu barang di satu warung jauh lebih acak daripada "
+        "omset seluruh warung: kalau hari ini kopi kurang laku, mungkin teh yang lebih laku, dan keduanya saling menutupi "
+        "di omset. Makin tinggi tingkat agregasinya, makin kecil MAPE-nya. Sebagai pembanding luar, salah satu tim terbaik "
+        "di kompetisi Rossmann Store Sales melaporkan MAPE sekitar 9,3% untuk omset harian per toko (Guo dan Berkhahn, 2016).")
 
     # ---- Mesin 2 -----------------------------------------------------------
     u, sim = A["ulang"], A["simulasi"]
-    L.h2("2. Mesin 2: saran distributor")
-    L.p(("Tugasnya. ", "b"), "Menyarankan ke distributor mana sebaiknya pemilik usaha memesan suatu barang. Jawabannya bisa "
-        "berbeda menurut barang, besar pesanan, musim, dan jarak, sehingga tidak ada satu distributor yang selalu terbaik.")
-    L.p(("Cara kerjanya. ", "b"), "Setiap distributor punya rapor: berapa pesanan yang berhasil (tepat waktu, jumlahnya "
-        "sesuai, kondisinya baik) dan berapa yang gagal. Dari rapor itu sistem memperkirakan peluang distributor berhasil "
-        "pada pesanan berikutnya. Distributor yang baru sedikit pesanannya punya perkiraan yang masih kabur, sehingga "
-        "sesekali tetap diberi kesempatan agar sistem bisa mengenalnya; cara ini disebut Thompson sampling. Perkiraan "
-        "keandalan lalu ditimbang dengan harga lewat sembilan aturan sederhana, misalnya “jika sangat andal dan harganya "
-        "murah, maka sangat layak”. Cara menimbang dengan aturan seperti ini disebut logika fuzzy. Hasil akhirnya skor "
-        "0 sampai 1 dan label sangat layak, layak, atau kurang layak.")
+    L.h2("2. Mesin 2: rekomendasi distributor")
+    L.p(("Tugasnya. ", "b"), "Merekomendasikan ke distributor mana sebaiknya pemilik usaha memesan suatu barang. "
+        "Jawabannya bisa berbeda menurut barang, besar pesanan, musim, dan jarak, sehingga tidak ada satu distributor yang "
+        "selalu terbaik.")
+    L.p(("Cara kerjanya. ", "b"), "Setiap distributor punya catatan berapa pesanan yang berhasil (tepat waktu, jumlahnya "
+        "sesuai, kondisinya baik) dan berapa yang gagal. Dari catatan itu model Beta-Bernoulli memperkirakan peluang "
+        "distributor berhasil pada pesanan berikutnya. Distributor yang baru sedikit pesanannya punya perkiraan yang masih "
+        "lebar, sehingga sesekali tetap diberi kesempatan agar sistem bisa mengenalnya; inilah exploration ala Thompson "
+        "sampling. Perkiraan keandalan lalu ditimbang dengan harga lewat sembilan rule fuzzy Sugeno, misalnya “jika "
+        "keandalan tinggi dan harga murah, maka sangat layak”. Hasil akhirnya skor 0 sampai 1 dan label sangat layak, "
+        "layak, atau kurang layak.")
     L.p(("Cara menilainya. ", "b"), f"Simulasi dijalankan hari demi hari selama 400 hari, {_rb(sim['acuan']['keputusan'])} "
-        "keputusan. Setiap kali memilih, hasilnya dibandingkan dengan distributor terbaik saat itu menurut kunci jawaban "
-        "(bab I). Selisihnya disebut kerugian, lalu dijumlahkan; makin kecil makin baik. Karena ada unsur acak, simulasi "
-        "diulang sepuluh kali.")
-    L.gambar(g_m2, "Kerugian total tiap cara memilih distributor, rata-rata sepuluh ulangan. Garis kecil: sebaran antarulangan", 15.0)
+        "keputusan. Setiap pilihan dibandingkan dengan distributor terbaik saat itu menurut data counterfactual (bab I). "
+        "Selisihnya disebut regret, lalu dijumlahkan; makin kecil makin baik. Karena ada unsur acak, simulasi diulang "
+        "dengan sepuluh random seed.")
+    L.gambar(g_m2, "Total regret tiap kebijakan pemilihan distributor, rata-rata sepuluh seed. Garis kecil: simpangan baku antarseed", 15.0)
     hk = {k: u[k]["harga"]["rata"] for k in ("greedy", "thompson+fuzzy (produksi)", "topsis")}
     L.p("Ada tiga temuan:")
-    L.butir(("Memilih yang termurah justru merugikan. ", "b"), f"Kerugian per keputusannya "
+    L.butir(("Memilih yang termurah justru merugikan. ", "b"), f"Regret per keputusannya "
             f"{_ak(sim['acuan']['termurah_regret'], 2)}, lebih buruk daripada memilih acak ({_ak(sim['acuan']['acak_regret'], 2)}). "
             "Ini dasar keberadaan Mesin 2, meskipun sebagian karena simulasi memang dirancang begitu.")
-    L.butir(("Di simulasi ini, memilih rapor terbaik saja sudah paling baik. ", "b"), "Hanya ada delapan distributor dan "
-            "rapornya dipakai bersama oleh 70 UMKM, sehingga dalam beberapa pekan semuanya sudah dikenal. Setelah itu "
-            "“mencoba-coba” tidak lagi berguna.")
-    L.butir(("Cara yang dipakai sengaja ikut menimbang harga. ", "b"), "Thompson + fuzzy sedikit lebih besar kerugiannya, "
+    L.butir(("Di simulasi ini, greedy sudah paling baik. ", "b"), "Hanya ada delapan distributor dan riwayatnya dipakai "
+            "bersama oleh 70 UMKM, sehingga dalam beberapa pekan semuanya sudah dikenal. Setelah itu exploration tidak "
+            "lagi memberi keuntungan.")
+    L.butir(("Konfigurasi yang dipakai sengaja ikut menimbang harga. ", "b"), "Regret Thompson + fuzzy sedikit lebih besar, "
             f"tetapi harga yang dibayar rata-rata {_ak(100 * (hk['thompson+fuzzy (produksi)'] - 1), 1)}% di atas distributor "
-            f"termurah, dibanding {_ak(100 * (hk['greedy'] - 1), 1)}% bila hanya melihat rapor. Hasilnya tetap lebih baik daripada "
-            "TOPSIS, metode peringkat berbobot yang umum dipakai untuk memilih pemasok.")
-    L.p("Aturan fuzzy juga dibandingkan dengan rumus lurus yang paling sederhana (skor dikurangi selisih harga); hasilnya "
-        "setara. Kelebihan fuzzy ada pada aturannya yang bisa dibaca seperti kalimat, sehingga pemilik usaha bisa diberi "
-        "tahu alasan sebuah saran.")
+            f"termurah, dibanding {_ak(100 * (hk['greedy'] - 1), 1)}% pada greedy. Hasilnya tetap lebih baik daripada TOPSIS, "
+            "metode multi-criteria decision making yang umum dipakai untuk memilih pemasok.")
+    L.p("Rule fuzzy juga dibandingkan dengan baseline linear yang paling sederhana (skor dikurangi selisih harga); hasilnya "
+        "setara. Kelebihan fuzzy ada pada rule-nya yang bisa dibaca seperti kalimat, sehingga pemilik usaha bisa diberi tahu "
+        "alasan sebuah rekomendasi.")
 
     # ---- Mesin 3 -----------------------------------------------------------
     m3, e = A["m3"], A["m3eks"]
-    L.h2("3. Mesin 3: profil pelanggan")
+    L.h2("3. Mesin 3: segmentasi pelanggan")
     L.p(("Tugasnya. ", "b"), "Membantu distributor mengenali pelanggannya: mana yang andal, mana yang baru, dan mana yang "
         "mulai jarang memesan. Mesin ini fitur pendukung di portal distributor.")
-    L.p(("Cara kerjanya. ", "b"), "Setiap pelanggan dicirikan oleh kapan terakhir memesan, seberapa sering memesan, berapa "
-        "nilai belanjanya, sudah berapa lama berlangganan, jenis usahanya, dan kategori barang yang paling sering dibeli. "
-        "Ciri-ciri ini campuran angka dan kategori, sehingga dipakai K-Prototypes, metode pengelompokan yang bisa mengukur "
-        "kemiripan untuk keduanya sekaligus. Nilai belanja dan frekuensi sangat timpang, karena beberapa pelanggan belanja "
-        "jauh lebih banyak daripada yang lain, sehingga skalanya diperkecil dengan logaritma agar pelanggan besar tidak "
-        "mendominasi. Jumlah kelompok (3 sampai 6) ditentukan per distributor, lalu tiap kelompok diberi nama dari cirinya.")
+    L.p(("Cara kerjanya. ", "b"), "Setiap pelanggan dicirikan oleh recency (kapan terakhir memesan), frequency (seberapa "
+        "sering), monetary (nilai belanja), tenure (lama berlangganan), jenis usaha, dan kategori barang yang paling sering "
+        "dibeli. Fitur ini campuran numerik dan kategorikal, sehingga dipakai K-Prototypes, algoritma clustering yang bisa "
+        "mengukur jarak untuk keduanya sekaligus. Frequency dan monetary sangat skewed, karena beberapa pelanggan belanja "
+        "jauh lebih banyak daripada yang lain, sehingga diberi log transform agar pelanggan besar tidak mendominasi. Jumlah "
+        "cluster (3 sampai 6) dipilih per distributor dengan silhouette score, lalu tiap cluster diberi nama dari cirinya.")
     seg = A["db"]["segmen"]
-    L.p(f"Hasilnya, {m3['baris']} pelanggan di {m3['distributor']} distributor terbagi menjadi: "
+    L.p(f"Hasilnya, {m3['baris']} pelanggan di {m3['distributor']} distributor terbagi menjadi segmen: "
         + ", ".join(f"{k.lower()} ({v})" for k, v in seg.items()) + ".")
-    L.p(("Cara menilainya. ", "b"), "Kelompok pelanggan yang baik harus stabil: kalau sebagian pelanggan diambil acak lalu "
-        "dikelompokkan ulang, hasilnya tetap sama. Uji ini diulang 100 kali; nilai 1 berarti selalu sama. Selain stabil, "
-        "kelompoknya juga harus berguna, yaitu bisa memisahkan pelanggan yang mulai menjauh, dan tidak sekadar mengulang "
-        "jenis usaha yang sebenarnya sudah diketahui distributor.")
-    L.tabel("Perbandingan metode pengelompokan, rata-rata 8 distributor",
-            ["Metode", "Kestabilan (0–1)", "Memisahkan pelanggan yang mulai menjauh (0–1)", "Kemiripan dengan jenis usaha (0–1)"], [
-        ["K-Prototypes + logaritma (dipakai)", _ak(e["kprototypes_log"]["ari_rata"], 2), _ak(e["kprototypes_log"]["eta2_rata"]["recency"], 2), _ak(e["kprototypes_log"]["ari_jenis_usaha_rata"], 2)],
-        ["K-Prototypes tanpa logaritma (sebelumnya)", _ak(e["kprototypes_produksi"]["ari_rata"], 2), _ak(e["kprototypes_produksi"]["eta2_rata"]["recency"], 2), _ak(e["kprototypes_produksi"]["ari_jenis_usaha_rata"], 2)],
-        ["Pengelompokan bertingkat (jarak Gower)", _ak(e["gower_aglomeratif"]["ari_rata"], 2), _ak(e["gower_aglomeratif"]["eta2_rata"]["recency"], 2), _ak(e["gower_aglomeratif"]["ari_jenis_usaha_rata"], 2)],
-        ["Pengelompokan berbasis kepadatan (HDBSCAN)", _ak(e["gower_hdbscan"]["ari_rata"], 2), _ak(e["gower_hdbscan"]["eta2_rata"]["recency"], 2), _ak(e["gower_hdbscan"]["ari_jenis_usaha_rata"], 2)],
+    L.p(("Cara menilainya. ", "b"), "Segmen yang baik harus stabil: kalau 80% pelanggan diambil acak lalu di-clustering "
+        "ulang, hasilnya tetap sama. Uji ini diulang 100 kali dan diukur dengan Adjusted Rand Index (ARI); nilai 1 berarti "
+        "selalu sama. Selain stabil, segmennya juga harus berguna, yaitu bisa memisahkan pelanggan yang mulai menjauh "
+        "(diukur dengan η² recency), dan tidak sekadar mengulang jenis usaha yang sebenarnya sudah diketahui distributor.")
+    L.tabel("Perbandingan metode clustering, rata-rata 8 distributor",
+            ["Metode", "Stabilitas (ARI)", "Memisahkan pelanggan yang mulai menjauh (η² recency)", "Kemiripan dengan jenis usaha (ARI)"], [
+        ["K-Prototypes + log transform (dipakai)", _ak(e["kprototypes_log"]["ari_rata"], 2), _ak(e["kprototypes_log"]["eta2_rata"]["recency"], 2), _ak(e["kprototypes_log"]["ari_jenis_usaha_rata"], 2)],
+        ["K-Prototypes tanpa log transform (sebelumnya)", _ak(e["kprototypes_produksi"]["ari_rata"], 2), _ak(e["kprototypes_produksi"]["eta2_rata"]["recency"], 2), _ak(e["kprototypes_produksi"]["ari_jenis_usaha_rata"], 2)],
+        ["Agglomerative clustering (jarak Gower)", _ak(e["gower_aglomeratif"]["ari_rata"], 2), _ak(e["gower_aglomeratif"]["eta2_rata"]["recency"], 2), _ak(e["gower_aglomeratif"]["ari_jenis_usaha_rata"], 2)],
+        ["HDBSCAN (jarak Gower)", _ak(e["gower_hdbscan"]["ari_rata"], 2), _ak(e["gower_hdbscan"]["eta2_rata"]["recency"], 2), _ak(e["gower_hdbscan"]["ari_jenis_usaha_rata"], 2)],
     ], [5.6, 2.8, 3.8, 3.4])
-    L.p("Dua metode pembanding memang lebih stabil, tetapi kelompoknya hampir sama dengan jenis usaha dan nyaris tidak "
-        "bisa memisahkan pelanggan yang mulai menjauh. Bagi distributor, kelompok seperti itu tidak memberi informasi baru. "
-        "Logaritma membuat K-Prototypes lebih stabil tanpa kehilangan kemampuan itu.")
+    L.p("Dua metode pembanding memang lebih stabil, tetapi segmennya hampir sama dengan jenis usaha dan nyaris tidak bisa "
+        "memisahkan pelanggan yang mulai menjauh. Bagi distributor, segmen seperti itu tidak memberi informasi baru. "
+        "Log transform membuat K-Prototypes lebih stabil tanpa kehilangan kemampuan itu.")
 
     # ---- Kesimpulan --------------------------------------------------------
     L.h2("4. Kesimpulan: model yang digunakan")
     L.tabel("Model yang digunakan tiap mesin dan alasannya", ["Mesin", "Model yang digunakan", "Alasan"], [
-        ["Mesin 1: perkiraan kebutuhan stok", "SARIMA, dengan ETS sebagai cadangan",
-         f"Paling akurat bersama LightGBM ({_pr(s['sarima_untuk_semua']['mape'])}, ETS {_pr(s['ets_untuk_semua']['mape'])}), "
-         f"rentangnya tepat sasaran ({_pr(100 * c['sarima']['cakupan_p10_p90'])} dari sasaran 80%), dan cara kerjanya bisa "
-         "dijelaskan. ETS dipakai bila riwayat barang terlalu banyak yang kosong"],
-        ["Mesin 2: saran distributor", "Rapor keandalan (Beta-Bernoulli) + Thompson sampling + logika fuzzy",
-         f"Lebih baik daripada TOPSIS ({_rb(u['thompson+fuzzy (produksi)']['regret']['rata'])} melawan "
-         f"{_rb(u['topsis']['regret']['rata'])}), ikut menimbang harga, dan alasannya bisa dibaca seperti kalimat. Thompson "
-         "dipertahankan untuk distributor baru dan distributor yang mutunya berubah"],
-        ["Mesin 3: profil pelanggan", "K-Prototypes dengan logaritma pada frekuensi dan nilai belanja",
-         f"Satu-satunya kandidat yang langsung menangani angka dan kategori; kestabilan naik dari "
+        ["Mesin 1: forecasting kebutuhan stok", "SARIMA, dengan ETS sebagai fallback",
+         f"MAPE terbaik bersama LightGBM ({_pr(s['sarima_untuk_semua']['mape'])}, ETS {_pr(s['ets_untuk_semua']['mape'])}), "
+         f"prediction interval terkalibrasi (coverage {_pr(100 * c['sarima']['cakupan_p10_p90'])}, target 80%), dan cara "
+         "kerjanya bisa dijelaskan. ETS dipakai bila riwayat barang terlalu banyak yang kosong"],
+        ["Mesin 2: rekomendasi distributor", "Beta-Bernoulli + Thompson sampling + fuzzy Sugeno",
+         f"Regret lebih kecil daripada TOPSIS ({_rb(u['thompson+fuzzy (produksi)']['regret']['rata'])} melawan "
+         f"{_rb(u['topsis']['regret']['rata'])}), ikut menimbang harga, dan rule-nya bisa dibaca seperti kalimat. Thompson "
+         "sampling dipertahankan untuk distributor baru dan distributor yang mutunya berubah"],
+        ["Mesin 3: segmentasi pelanggan", "K-Prototypes dengan log transform pada frequency dan monetary",
+         f"Satu-satunya kandidat yang langsung menangani fitur numerik dan kategorikal; stabilitas naik dari "
          f"{_ak(e['kprototypes_produksi']['ari_rata'], 2)} menjadi {_ak(e['kprototypes_log']['ari_rata'], 2)} dan tetap bisa "
          "memisahkan pelanggan yang mulai menjauh"],
     ], [3.6, 4.4, 7.6])
-    L.p("Untuk Mesin 1, keputusan berpindah dari ETS ke SARIMA diambil setelah dua pengecekan: akurasi di ujian akhir dan "
-        "ketepatan rentang perkiraannya, karena rentang itulah yang menentukan kapan pemilik usaha diminta memesan. Untuk "
-        "Mesin 2, pilihan antara Thompson sampling dan pemilihan rapor terbaik ditunda sampai dataset memuat distributor "
-        "yang baru bergabung dan distributor yang mutunya berubah, dua keadaan yang menjadi alasan Thompson dipakai tetapi "
-        "belum ada di simulasi. Untuk Mesin 3, metode tetap K-Prototypes dan perbaikannya cukup pada cara menyiapkan data.")
+    L.p("Untuk Mesin 1, keputusan berpindah dari ETS ke SARIMA diambil setelah dua pengecekan: MAPE di test set dan "
+        "kalibrasi prediction interval-nya, karena p90 itulah yang menentukan kapan pemilik usaha diminta memesan. Untuk "
+        "Mesin 2, pilihan antara Thompson sampling dan greedy ditunda sampai dataset memuat distributor yang baru bergabung "
+        "dan distributor yang mutunya berubah, dua keadaan yang menjadi alasan exploration diperlukan tetapi belum ada di "
+        "simulasi. Untuk Mesin 3, algoritma tetap K-Prototypes dan perbaikannya cukup pada preprocessing data.")
     L.p("Ketiga hasil ini masih berasal dari data simulasi dan satu data toko roti. Langkah berikutnya adalah memperbaiki "
-        "cacat dataset Bantul, menyambungkan kedua portal ke server, lalu menguji ketiga mesin dengan data warung sungguhan.")
+        "cacat dataset Bantul, menyambungkan frontend kedua portal ke backend, lalu menguji ketiga mesin dengan data "
+        "warung sungguhan.")
 
 
 # ==========================================================================
