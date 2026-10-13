@@ -57,14 +57,51 @@ class HasilStruk(BaseModel):
     tak_dikenali: list[str]
 
 
+class KemasanRingkas(BaseModel):
+    nama: str
+    isi: Decimal
+
+
 class BarangRingkas(BaseModel):
+    """
+    Satu barang di gudang, dengan bentuk yang sama dengan `Barang` di frontend.
+
+    `pemakaian_harian` dihitung dari 28 hari terakhir di `permintaan_harian`,
+    tanpa hari yang tersensor stok habis: hari itu penjualannya nol karena
+    barangnya tidak ada, bukan karena tidak ada yang membeli.
+    """
+
     id: int
     nama: str
+    deskripsi: str | None = None
+    nama_lain: list[str] = []
+    kategori: str = ""
+    kode_barang: str = ""
     satuan: str
+    satuan_tampil: str | None = None
+    kemasan: list[KemasanRingkas] = []
     stok: Decimal
     batas_aman: Decimal
+    batas_aman_saran: Decimal = Decimal(0)
+    sumber_batas_aman: str = "sistem"
+    hari_kirim: int = 2
+    harga_beli_terakhir: int = 0
+    pemakaian_harian: Decimal = Decimal(0)
+    hari_data_terkumpul: int = 0
+    ingatkan_kedaluwarsa: bool = False
+    kedaluwarsa: date | None = None
+    terhubung_kasir: bool = False
     status: str
     dicatat_manual: bool
+    catatan: str | None = None
+
+
+class RiwayatHarian(BaseModel):
+    """Pemakaian satu barang pada satu hari. `stok_habis` berarti angkanya tersensor."""
+
+    tanggal: date
+    jumlah: Decimal
+    stok_habis: bool
 
 
 class PerkiraanRingkas(BaseModel):

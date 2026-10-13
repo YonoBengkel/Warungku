@@ -112,6 +112,8 @@ class Token(BaseModel):
     nama: str
     usaha_id: int | None = None
     distributor_id: int | None = None
+    #: Untuk sapaan di layar; tidak ikut ke dalam token.
+    nama_usaha: str | None = None
     kedaluwarsa_pada: datetime
 
 
@@ -255,7 +257,10 @@ def masuk_umkm(badan: Masuk) -> Token:
                     "Akun ini terdaftar sebagai distributor. Masuk lewat portal distributor.",
                 )
             raise HTTPException(status.HTTP_403_FORBIDDEN, "Akun ini belum punya usaha.")
-        return _buat_token(pengguna, "umkm", usaha_id=anggota.usaha_id)
+        token = _buat_token(pengguna, "umkm", usaha_id=anggota.usaha_id)
+        usaha = sesi.get(Usaha, anggota.usaha_id)
+        token.nama_usaha = usaha.nama if usaha else None
+        return token
 
 
 @rute.post("/distributor/masuk", response_model=Token)

@@ -59,6 +59,8 @@ import {
   warnaTitikUntuk,
 } from '@/data/dummy'
 import { jumlahTampil } from '@/lib/satuan'
+import { ambilBarang, masukUmkm, sesiTersimpan, simpanSesi } from '@/lib/api'
+import type { SesiServer } from '@/lib/api'
 
 /**
  * Satu tempat penyimpanan untuk seluruh keadaan portal.
@@ -118,6 +120,13 @@ interface KeadaanAplikasi {
   /** Mensimulasikan layanan perkiraan yang sedang tidak sehat, untuk menguji turun derajat. */
   layananPerkiraan: 'sehat' | 'tersimpan' | 'mati'
   masuk: boolean
+  /**
+   * Asal data gudang. `server`: barang, perkiraan, dan saran dibaca dari API
+   * (keluaran mesin analitik sungguhan). `contoh`: data contoh di memori.
+   * Bagian lain (pesanan, kontrak, katalog) masih data contoh di kedua mode.
+   */
+  sumberData: 'contoh' | 'server'
+  sesiServer: SesiServer | null
   racun: Racun[]
   hasilKirimTerakhir: HasilKirim | null
 
@@ -125,6 +134,10 @@ interface KeadaanAplikasi {
   aturTema: (t: 'terang' | 'gelap') => void
   aturLayananPerkiraan: (v: 'sehat' | 'tersimpan' | 'mati') => void
   aturMasuk: (v: boolean) => void
+  /** Masuk lewat API. Melempar GalatApi (ditolak) atau ServerTakTerjangkau (server mati). */
+  masukServer: (email: string, kataSandi: string) => Promise<void>
+  /** Dipanggil sekali saat aplikasi dibuka: memakai sesi yang masih berlaku di tab ini. */
+  pulihkanSesiServer: () => Promise<void>
   aturPeran: (p: 'umkm' | 'distributor') => void
 
   /* Profil & kasir */
@@ -300,6 +313,8 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
   // landing page. Rute lain tidak dijaga: ini purwarupa antarmuka, jadi
   // membuka /beranda langsung tetap boleh dan memang dipakai saat memeriksa layar.
   masuk: false,
+  sumberData: 'contoh',
+  sesiServer: null,
   racun: [],
   hasilKirimTerakhir: null,
 
@@ -314,7 +329,54 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
   },
 
   aturLayananPerkiraan: (v) => set({ layananPerkiraan: v }),
-  aturMasuk: (v) => set({ masuk: v }),
+  aturMasuk: (v) => {
+    if (v) return set({ masuk: true })
+    // Keluar: sesi server dilepas dan gudang kembali ke data contoh.
+    simpanSesi(null)
+    set({ masuk: false, sumberData: 'contoh', sesiServer: null, barang: daftarBarang, profil: profilAwal })
+  },
+
+  masukServer: async (email, kataSandi) => {
+    const sesi = await masukUmkm(email, kataSandi)
+    const barang = await ambilBarang(sesi)
+    simpanSesi(sesi)
+    set((s) => ({
+      masuk: true,
+      sumberData: 'server',
+      sesiServer: sesi,
+      barang,
+      profil: {
+        ...s.profil,
+        id: String(sesi.usahaId),
+        namaUsaha: sesi.namaUsaha ?? s.profil.namaUsaha,
+        namaPemilik: sesi.namaPengguna,
+        email,
+      },
+    }))
+  },
+
+  pulihkanSesiServer: async () => {
+    const sesi = sesiTersimpan()
+    if (!sesi || get().sesiServer) return
+    try {
+      const barang = await ambilBarang(sesi)
+      set((s) => ({
+        masuk: true,
+        sumberData: 'server',
+        sesiServer: sesi,
+        barang,
+        profil: {
+          ...s.profil,
+          id: String(sesi.usahaId),
+          namaUsaha: sesi.namaUsaha ?? s.profil.namaUsaha,
+          namaPemilik: sesi.namaPengguna,
+        },
+      }))
+    } catch {
+      // Token hangus (server dimuat ulang) atau server mati: mulai lagi dari data contoh.
+      simpanSesi(null)
+    }
+  },
 
   // Sakelar portal untuk keperluan demo. Di produk sungguhan peran datang dari
   // akun yang masuk, bukan dari tombol yang bisa ditekan siapa saja.

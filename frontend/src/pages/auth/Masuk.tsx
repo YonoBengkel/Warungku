@@ -8,6 +8,7 @@ import { Peringatan } from '@/components/ui/umpanBalik'
 import { IkonMata, IkonMataTutup, IkonTelepon } from '@/icons'
 import { cx, nomorHp } from '@/lib/format'
 import { profilAwal } from '@/data/dummy'
+import { GalatApi, ServerTakTerjangkau } from '@/lib/api'
 import { useAplikasi } from '@/store/aplikasi'
 
 /**
@@ -22,6 +23,7 @@ import { useAplikasi } from '@/store/aplikasi'
 export default function Masuk() {
   const navigate = useNavigate()
   const aturMasuk = useAplikasi((s) => s.aturMasuk)
+  const masukServer = useAplikasi((s) => s.masukServer)
   const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
 
   const [tab, setTab] = useState<'hp' | 'email'>('hp')
@@ -57,18 +59,49 @@ export default function Masuk() {
     /* Isian sengaja tidak dikosongkan saat menunggu: kalau sesuatu meleset,
        pengguna tidak perlu mengetik ulang dari nol. */
     setMemuat(true)
-    window.setTimeout(() => {
-      setMemuat(false)
-      aturMasuk(true)
-      tampilkanRacun('Selamat datang kembali di Turnify Flow.', 'aman')
-      navigate('/beranda')
-    }, 700)
+
+    // Nomor HP belum didukung server (OTP ditunda), jadi tab HP tetap membuka data contoh.
+    if (tab === 'hp') {
+      window.setTimeout(() => {
+        setMemuat(false)
+        aturMasuk(true)
+        tampilkanRacun('Selamat datang kembali di Turnify Flow.', 'aman')
+        navigate('/beranda')
+      }, 700)
+      return
+    }
+
+    masukServer(email.trim(), sandi)
+      .then(() => {
+        tampilkanRacun('Selamat datang kembali. Stok dan perkiraan dibaca dari server.', 'aman')
+        navigate('/beranda')
+      })
+      .catch((e: unknown) => {
+        if (e instanceof ServerTakTerjangkau) {
+          // Server belum dinyalakan: tetap bisa mencoba aplikasinya dengan data contoh.
+          aturMasuk(true)
+          tampilkanRacun('Server belum menyala, jadi yang tampil adalah data contoh.', 'info')
+          navigate('/beranda')
+          return
+        }
+        setGalat({ sandi: e instanceof GalatApi ? e.message : 'Gagal masuk. Coba lagi sebentar lagi.' })
+        setPercobaanGagal((n) => n + 1)
+      })
+      .finally(() => setMemuat(false))
   }
 
   function isiAkunContoh() {
     setTab('hp')
     setHp(profilAwal.nomorHp)
     setSandi('turnify2024')
+    setGalat({})
+  }
+
+  /** Akun contoh di data simulasi: usaha nomor 1, dibuat oleh `python -m dataset.buat_dataset`. */
+  function isiAkunServer() {
+    setTab('email')
+    setEmail(AKUN_SERVER.email)
+    setSandi(AKUN_SERVER.kataSandi)
     setGalat({})
   }
 
@@ -171,6 +204,16 @@ export default function Masuk() {
             <IkonTelepon size={14} />
             Isikan nomor akun contoh
           </button>
+          <span className="block mt-1">
+            Untuk melihat angka dari mesin analitik, masuk lewat email dengan akun simulasi {AKUN_SERVER.email}.
+          </span>
+          <button
+            type="button"
+            onClick={isiAkunServer}
+            className="mt-1 inline-flex items-center gap-1.5 min-h-11 text-[0.8125rem] font-bold underline underline-offset-2"
+          >
+            Isikan akun simulasi (butuh server menyala)
+          </button>
         </Peringatan>
       </div>
     </LayarAuth>
@@ -180,6 +223,12 @@ export default function Masuk() {
 /* ================================================================== */
 /* Bagian yang hanya dipakai layar ini                                */
 /* ================================================================== */
+
+/**
+ * Akun contoh dari pembangkit dataset (`data/dataset/buat_dataset.py`, KATA_SANDI_CONTOH).
+ * Nilai uji untuk basis data lokal, bukan akun sungguhan.
+ */
+const AKUN_SERVER = { email: 'umkm1@warungku.test', kataSandi: 'warungku123' }
 
 /** Kerangka layar di luar 4 tab: satu kolom terpusat, kartu di tengah. */
 function LayarAuth({ children }: { children: ReactNode }) {

@@ -28,9 +28,11 @@ export function GrafikTren({
   labelAktual = 'Pemakaian tercatat',
   labelPrediksi = 'Perkiraan',
   format,
-  formatSumbu = (n: number) => angka(n),
+  // Angka kecil (mis. 0,5 kg) butuh desimal; tanpa itu sumbu terbaca "0 1 1 2 2".
+  formatSumbu = (n: number) => angka(n, Math.abs(n) < 10 ? 2 : 0),
   lebarSumbu = SISI.kiri,
   bulanan = false,
+  labelBatas = 'hari ini',
 }: {
   data: TitikTren[]
   satuan: string
@@ -45,6 +47,8 @@ export function GrafikTren({
   lebarSumbu?: number
   /** Titik data per bulan: sumbu mendatar menulis nama bulan, bukan tanggal. */
   bulanan?: boolean
+  /** Tulisan di garis pemisah riwayat dan perkiraan. */
+  labelBatas?: string
 }) {
   const tulis = format ?? ((n: number) => `${angka(n)} ${satuan}`)
   const tulisTanggal = bulanan ? bulanRingkas : tanggalRingkas
@@ -183,7 +187,7 @@ export function GrafikTren({
                 fontWeight="700"
                 fill="var(--c-sumbu)"
               >
-                hari ini
+                {labelBatas}
               </text>
             </>
           )}

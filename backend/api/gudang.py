@@ -17,16 +17,24 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, HTTPException, Path
+from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from sqlalchemy import text
 from sqlmodel import Session, select
 
 from warungku.basis_data import mesin
 from warungku.enum import JenisPergerakan
-from warungku.model import Barang, PemetaanMenu, PemetaanMenuBahan, Transaksi, TransaksiBaris, Usaha
+from warungku.model import Barang, Kemasan, PemetaanMenu, PemetaanMenuBahan, Transaksi, TransaksiBaris, Usaha
 
 from .otentikasi import usaha_saya
-from .skema import BarangRingkas, HasilStruk, PerkiraanRingkas, SaranDistributor, StrukMasuk
+from .skema import (
+    BarangRingkas,
+    HasilStruk,
+    KemasanRingkas,
+    PerkiraanRingkas,
+    RiwayatHarian,
+    SaranDistributor,
+    StrukMasuk,
+)
 
 rute = APIRouter(prefix="/usaha/{usaha_id}", tags=["gudang"])
 
@@ -54,18 +62,86 @@ def daftar_barang(usaha_id: int = Depends(usaha_saya)) -> list[BarangRingkas]:
         barang = sesi.exec(
             select(Barang).where(Barang.usaha_id == usaha_id).order_by(Barang.nama)
         ).all()
+        kemasan: dict[int, list[KemasanRingkas]] = {}
+        for k in sesi.exec(
+            select(Kemasan).join(Barang, Barang.id == Kemasan.barang_id)
+            .where(Barang.usaha_id == usaha_id).order_by(Kemasan.isi)
+        ).all():
+            kemasan.setdefault(k.barang_id, []).append(KemasanRingkas(nama=k.nama, isi=k.isi))
+        # Rata-rata 28 hari terakhir yang tercatat, tanpa hari tersensor stok habis.
+        pakai = dict(
+            sesi.exec(
+                text(
+                    """
+                    SELECT barang_id, avg(jumlah) FILTER (WHERE NOT stok_habis)
+                      FROM permintaan_harian
+                     WHERE usaha_id = :u
+                       AND tanggal > (SELECT max(tanggal) FROM permintaan_harian WHERE usaha_id = :u) - 28
+                     GROUP BY barang_id
+                    """
+                ).bindparams(u=usaha_id)
+            ).all()
+        )
         return [
             BarangRingkas(
                 id=b.id,
                 nama=b.nama,
+                deskripsi=b.deskripsi,
+                nama_lain=list(b.nama_lain or []),
+                kategori=b.kategori,
+                kode_barang=b.kode_barang,
                 satuan=b.satuan,
+                satuan_tampil=b.satuan_tampil,
+                kemasan=kemasan.get(b.id, []),
                 stok=b.stok,
                 batas_aman=b.batas_aman,
+                batas_aman_saran=b.batas_aman_saran,
+                sumber_batas_aman=str(getattr(b.sumber_batas_aman, "value", b.sumber_batas_aman)),
+                hari_kirim=b.hari_kirim,
+                harga_beli_terakhir=b.harga_beli_terakhir,
+                pemakaian_harian=Decimal(pakai.get(b.id) or 0).quantize(Decimal("0.001")),
+                hari_data_terkumpul=b.hari_data_terkumpul,
+                ingatkan_kedaluwarsa=b.ingatkan_kedaluwarsa,
+                kedaluwarsa=b.kedaluwarsa,
+                terhubung_kasir=b.terhubung_kasir,
                 status=_status(b.stok, b.batas_aman),
                 dicatat_manual=b.dicatat_manual,
+                catatan=b.catatan,
             )
             for b in barang
         ]
+
+
+@rute.get("/barang/{barang_id}/riwayat", response_model=list[RiwayatHarian])
+def riwayat_barang(
+    barang_id: int = Path(ge=1),
+    hari: int = Query(28, ge=1, le=400),
+    usaha_id: int = Depends(usaha_saya),
+) -> list[RiwayatHarian]:
+    """
+    Pemakaian harian `hari` hari terakhir yang tercatat, untuk digambar di samping perkiraan.
+
+    Hari tersensor (stok habis) ikut dikirim dan ditandai, tidak dibuang: grafik
+    yang diam-diam melompati hari kosong membuat barang terlihat lebih stabil
+    daripada kenyataannya.
+    """
+    with Session(mesin()) as sesi:
+        _usaha_atau_404(sesi, usaha_id)
+        b = sesi.get(Barang, barang_id)
+        if b is None or b.usaha_id != usaha_id:
+            raise HTTPException(404, "Barang tidak ditemukan.")
+        baris = sesi.exec(
+            text(
+                """
+                SELECT tanggal, jumlah, stok_habis
+                  FROM permintaan_harian
+                 WHERE usaha_id = :u AND barang_id = :b
+                   AND tanggal > (SELECT max(tanggal) FROM permintaan_harian WHERE barang_id = :b) - :h
+                 ORDER BY tanggal
+                """
+            ).bindparams(u=usaha_id, b=barang_id, h=hari)
+        ).all()
+        return [RiwayatHarian(**dict(r._mapping)) for r in baris]
 
 
 @rute.get("/barang/{barang_id}/perkiraan", response_model=list[PerkiraanRingkas])

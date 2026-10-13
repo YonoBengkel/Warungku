@@ -18,18 +18,18 @@ import {
   IkonPena,
   IkonPeringatan,
 } from '@/icons'
-import { cx, hariLagi, jam, tanggalRingkas, waktuNanti } from '@/lib/format'
+import { cx, hariLagi, jam, persen, tanggalRingkas, waktuLalu, waktuNanti } from '@/lib/format'
 import { angkaTampil, jumlahTampil, satuanTampil, trenTampil } from '@/lib/satuan'
 import { BANTUAN } from '@/lib/label'
 import {
   BATAS_AMAN_BAWAAN,
   dalamKemasan,
   penawaranUntukBarang,
-  perkiraanUntuk,
   statusStok,
   transaksiById,
-  trenBarang,
 } from '@/data/dummy'
+import { useDataMesin } from '@/lib/dataMesin'
+import type { SaranServer } from '@/lib/api'
 import { PESANAN_BERJALAN } from '@/lib/label'
 import { useAplikasi } from '@/store/aplikasi'
 
@@ -52,6 +52,7 @@ export default function StokDetail() {
   const pesanan = useAplikasi((s) => s.pesanan)
   const kontrak = useAplikasi((s) => s.kontrak.find((k) => k.barangId === id && k.status !== 'selesai'))
   const [tab, setTab] = useState<TabDetail>('ringkasan')
+  const mesin = useDataMesin(barang)
 
   /* Dihitung di sini, bukan lewat pembaca bersama, karena pembaca itu menyusun
      objek baru setiap kali store dibaca dan membuat layar ini memuat tanpa henti.
@@ -103,8 +104,8 @@ export default function StokDetail() {
       ? Math.max(0, Math.floor((barang.stok - barang.batasAman) / barang.pemakaianHarian))
       : 0
   const kemasan = dalamKemasan(barang)
-  const perkiraan = perkiraanUntuk(barang)
-  const tren = trenBarang(barang.id)
+  const perkiraan = mesin.perkiraan
+  const tren = mesin.tren
   const penawaran = penawaranUntukBarang(barang.id)
   const kurangCatatan = barang.stok < 0 ? Math.abs(barang.stok) : 0
   const stokTampil = Math.max(0, barang.stok)
@@ -325,7 +326,14 @@ export default function StokDetail() {
 
           {tab === 'ringkasan' ? (
             <div role="tabpanel" aria-label="Ringkasan barang" className="mt-4 space-y-4">
-              <KartuPerkiraan barang={barang} perkiraan={perkiraan} />
+              {mesin.status === 'memuat' ? (
+                <Kartu padat aria-busy="true">
+                  <p className="text-[0.9375rem] font-bold text-ink">{barang.nama}</p>
+                  <p className="mt-1 text-[0.8125rem] text-ink-3">Mengambil perkiraan dari server&hellip;</p>
+                </Kartu>
+              ) : (
+                <KartuPerkiraan barang={barang} perkiraan={perkiraan} />
+              )}
 
               {tren.length > 0 && (
                 <Kartu>
@@ -334,6 +342,7 @@ export default function StokDetail() {
                       <h2 className="text-[0.9375rem] font-bold text-ink leading-tight">Tren pemakaian</h2>
                       <p className="text-[0.8125rem] text-ink-3 mt-0.5 leading-snug">
                         14 hari terakhir dan 7 hari ke depan
+                        {mesin.model && <> &middot; perkiraan {mesin.model}, pita p10&ndash;p90</>}
                       </p>
                     </div>
                     <Link
@@ -344,9 +353,15 @@ export default function StokDetail() {
                       Rapor perkiraan
                     </Link>
                   </div>
-                  <GrafikTren data={trenTampil(barang, tren)} satuan={satuanTampil(barang).nama} />
+                  <GrafikTren
+                    data={trenTampil(barang, tren)}
+                    satuan={satuanTampil(barang).nama}
+                    labelBatas={mesin.model ? 'data terakhir' : undefined}
+                  />
                 </Kartu>
               )}
+
+              {mesin.status === 'siap' && <KartuSaranMesin saran={mesin.saran} />}
 
             </div>
           ) : (
@@ -378,6 +393,66 @@ export default function StokDetail() {
 
 /* ================================================================== */
 /* Potongan khusus halaman ini                                        */
+/* ================================================================== */
+
+const SEGMEN_SARAN: Record<string, { label: string; nada: 'aman' | 'info' | 'menipis' }> = {
+  'sangat-layak': { label: 'Sangat layak', nada: 'aman' },
+  layak: { label: 'Layak', nada: 'info' },
+  'kurang-layak': { label: 'Kurang layak', nada: 'menipis' },
+}
+
+/**
+ * Saran distributor dari Mesin 2 (Beta-Bernoulli + Thompson sampling + fuzzy).
+ *
+ * Mesin 2 hanya menilai barang yang sedang perlu dipesan, jadi daftar kosong
+ * bukan galat. Saran yang sudah lewat masa berlakunya tetap ditampilkan,
+ * dengan umurnya, karena saran beberapa jam lalu lebih berguna daripada tidak ada.
+ */
+function KartuSaranMesin({ saran }: { saran: SaranServer[] }) {
+  if (saran.length === 0) {
+    return (
+      <Kartu padat>
+        <h2 className="text-[0.9375rem] font-bold text-ink leading-tight">Saran distributor</h2>
+        <p className="mt-1 text-[0.8125rem] text-ink-3 leading-relaxed">
+          Belum ada saran untuk barang ini. Saran muncul saat barang mendekati batas aman dan perlu dipesan.
+        </p>
+      </Kartu>
+    )
+  }
+  const lama = saran.some((s) => s.kedaluwarsa)
+  return (
+    <Kartu>
+      <h2 className="text-[0.9375rem] font-bold text-ink leading-tight">Saran distributor</h2>
+      <p className="text-[0.8125rem] text-ink-3 mt-0.5 leading-snug">
+        Dihitung {waktuLalu(saran[0].dijalankanPada)}
+        {lama && ' · sudah lewat masa berlaku, akan diperbarui penjadwal'}
+      </p>
+      <ul className="mt-3 space-y-3">
+        {saran.map((s, i) => {
+          const seg = SEGMEN_SARAN[s.segmen ?? ''] ?? { label: s.segmen ?? '–', nada: 'info' as const }
+          return (
+            <li key={`${s.distributorId}-${s.penawaranId}`} className={cx(i > 0 && 'pt-3 border-t border-line')}>
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-[0.9375rem] font-bold text-ink leading-snug min-w-0">
+                  {i === 0 && <span className="sr-only">Saran utama: </span>}
+                  {s.namaDistributor}
+                </p>
+                <Lencana nada={seg.nada}>{seg.label}</Lencana>
+              </div>
+              <p className="mt-0.5 text-[0.8125rem] text-ink-2">
+                Skor {s.skor.toFixed(2).replace('.', ',')} &middot; peluang pesanan berhasil {persen(s.peluangSukses * 100)}
+              </p>
+              {s.alasan && <p className="mt-1 text-[0.8125rem] text-ink-3 leading-relaxed">{s.alasan}</p>}
+            </li>
+          )
+        })}
+      </ul>
+    </Kartu>
+  )
+}
+
+/* ================================================================== */
+/* Potongan lain                                                      */
 /* ================================================================== */
 
 function nomorPesanan(
