@@ -53,8 +53,28 @@ export function tabDistributorAktif(pathname: string, ke: string): boolean {
  * keterangan, bukan disembunyikan di balik menu.
  */
 function PitaAlatUji({ kelas }: { kelas?: string }) {
+  const sesi = useAplikasi((s) => s.sesiDistributor)
+  const putus = useAplikasi((s) => s.putusDistributor)
   return (
     <div className={cx('bg-menipis-soft border-line px-3 py-2.5', kelas)}>
+      {/* Asal data portal ini: server (dengan akun distributor) atau data contoh. */}
+      <p className="text-[0.75rem] leading-snug text-menipis-ink">
+        {sesi ? (
+          <>
+            Data server &middot; masuk sebagai {sesi.namaPengguna}.{' '}
+            <button type="button" onClick={putus} className="font-bold underline underline-offset-2 min-h-11">
+              Keluar
+            </button>
+          </>
+        ) : (
+          <>
+            Memakai data contoh.{' '}
+            <Link to="/masuk/distributor" className="font-bold underline underline-offset-2 inline-flex items-center min-h-11">
+              Masuk sebagai distributor
+            </Link>
+          </>
+        )}
+      </p>
       <Link
         to="/beranda"
         className="flex items-center gap-2 min-h-11 font-bold text-[0.875rem] text-menipis-ink"

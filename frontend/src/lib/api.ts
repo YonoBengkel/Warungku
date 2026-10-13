@@ -84,6 +84,8 @@ export async function minta<T>(jalur: string, opsi: RequestInit & { token?: stri
     }
     throw new GalatApi(jawab.status, pesan)
   }
+  // 204 No Content (mis. hapus paket) tidak punya badan untuk dibaca.
+  if (jawab.status === 204) return undefined as T
   return (await jawab.json()) as T
 }
 

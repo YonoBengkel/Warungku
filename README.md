@@ -187,7 +187,7 @@ Get-Content backend\skrip\02_periksa_konsistensi.sql | docker exec -i warungku-d
 python -m pytest -q
 ```
 
-Menjalankan `backend/uji` dan `ml/uji` (104 uji). Sebagian uji membutuhkan basis
+Menjalankan `backend/uji` dan `ml/uji` (109 uji). Sebagian uji membutuhkan basis
 data dari langkah 2 sampai 4. Uji backend membuat dan menghapus datanya sendiri,
 jadi tidak mengubah data simulasi.
 
@@ -238,9 +238,12 @@ di memori. Untuk melihat keluaran mesin analitik:
 
 - **Portal pemilik usaha:** di halaman Masuk pilih tab *Pakai Email* lalu tekan
   *Isikan akun simulasi* (`umkm1@warungku.test`, usaha Kopi Kita Jogja). Stok,
-  perkiraan SARIMA, Prediksi, saran distributor, dan pesanan dibaca dari API.
-- **Portal distributor:** menu *Pelanggan* atau *Pesanan* → *Sambungkan ke server*
-  → *Isikan akun simulasi* (`distributor1@warungku.test`, Sumber Tani Nusantara).
+  perkiraan SARIMA, Prediksi, saran distributor, katalog dan keranjang, pesanan,
+  kontrak, dan promo dibaca dari API.
+- **Portal distributor:** halaman *Masuk* → *Masuk ke portal distributor*
+  (`/masuk/distributor`) → *Isikan akun simulasi* (`distributor1@warungku.test`,
+  Sumber Tani Nusantara). Pesanan masuk, kontrak dan paket, promo, dan segmen
+  pelanggan dibaca dari API. Pita di atas portal menunjukkan asal datanya.
 
 Kata sandi semua akun simulasi adalah `KATA_SANDI_CONTOH` di
 [`data/dataset/buat_dataset.py`](data/dataset/buat_dataset.py). Kalau server mati,
@@ -351,6 +354,20 @@ kode backend atau model berubah.
 | POST | `/distributor/{distributor_id}/pesanan/{pesanan_id}/tolak` | Tolak dengan alasan; status menjadi batal |
 | POST | `/distributor/{distributor_id}/pesanan/{pesanan_id}/kirim` | Barang berangkat; status menjadi dikirim |
 | POST | `/distributor/{distributor_id}/pesanan/{pesanan_id}/sampai` | Bukti antar; stok baru naik setelah pemilik usaha menerima |
+| GET | `/usaha/{usaha_id}/katalog` | Distributor (rating dari ulasan), penawaran, paket kontrak, dan promo |
+| GET | `/usaha/{usaha_id}/distributor/{distributor_id}/ulasan` | Ulasan terbaru satu distributor |
+| GET | `/usaha/{usaha_id}/kontrak` | Kontrak usaha ini beserta kuota per bulan |
+| POST | `/usaha/{usaha_id}/kontrak` | Ajukan kontrak dari satu paket; harga dan kuota disalin saat itu |
+| POST | `/usaha/{usaha_id}/kontrak/{kontrak_id}/berhenti` | Ajukan berhenti; kontrak tetap jalan sampai dijawab |
+| POST | `/usaha/{usaha_id}/kontrak/{kontrak_id}/rutin` | Pesanan rutin hidup atau mati |
+| GET | `/distributor/{distributor_id}/katalog` | Penawaran, paket kontrak, dan promo milik sendiri |
+| POST, PUT, DELETE | `/distributor/{distributor_id}/paket[/{paket_id}]` | Kelola paket kontrak; kontrak berjalan tidak ikut berubah |
+| GET | `/distributor/{distributor_id}/kontrak` | Kontrak pelanggan |
+| POST | `/distributor/{distributor_id}/kontrak/{kontrak_id}/setujui` | Masa kontrak dihitung sejak disetujui |
+| POST | `/distributor/{distributor_id}/kontrak/{kontrak_id}/tolak` | Tolak pengajuan, wajib beralasan |
+| POST | `/distributor/{distributor_id}/kontrak/{kontrak_id}/jawab-berhenti` | Setujui atau tolak (beralasan) permintaan berhenti |
+| POST, PUT | `/distributor/{distributor_id}/promo[/{promo_id}]` | Buat atau ubah promo; potongannya masuk ke harga beli sekali |
+| POST | `/distributor/{distributor_id}/promo/{promo_id}/akhiri` | Akhiri promo; pesanan lama tetap memakai harga potongannya |
 | GET | `/distributor/{distributor_id}/segmen` | Ringkasan segmen pelanggan (Mesin 3) |
 | GET | `/distributor/{distributor_id}/segmen/{segmen}` | Anggota satu segmen beserta angka RFM-nya |
 | GET | `/sehat` | Keadaan layanan dan basis data |
@@ -380,15 +397,13 @@ dijadwalkan dari luar.
 
 Daftar ini ada supaya tidak ada yang menyangka bagian ini sudah selesai.
 
-- **Sebagian portal masih data contoh.** Yang sudah membaca server: stok,
-  perkiraan, Prediksi, saran distributor, pesanan (buat, terima, batal, dan aksi
-  distributor), serta segmen pelanggan. Yang masih data contoh: keranjang dan
-  katalog penawaran, kontrak, promo, notifikasi, dan profil. Dari data server,
-  pesanan saat ini dibuat lewat tombol *Pesan* di kartu saran Mesin 2.
-- **Portal distributor belum punya halaman masuk sendiri.** Sambungannya lewat
-  kartu *Sambungkan ke server* di menu Pelanggan dan Pesanan.
-- **Bukti antar** (kurir, pengantar, nomor resi) belum ditanyakan portal
-  distributor; di rincian pesanan tertulis "Belum dicatat".
+- **Yang masih data contoh** meski masuk lewat server: pemberitahuan, profil usaha
+  dan profil distributor (mengubahnya belum tersimpan), data kasir di Beranda,
+  penilaian setelah pesanan selesai, bukti pembayaran, serta katalog penawaran
+  milik distributor (menambah atau menonaktifkan barang). Pesanan rutin hanya
+  menyimpan sakelarnya; draf pesanannya belum dibuat otomatis oleh server.
+- **Keranjang** disimpan di peramban (per usaha), bukan di server, jadi tidak ikut
+  pindah perangkat.
 - **Konektor POS.** Kontrak nota sudah ada dan teruji (idempoten); penyambung ke
   aplikasi kasir tertentu belum dibuat.
 - **Target MAPE 5% dosen.** Tercapai untuk omset toko roti sungguhan (4,0%, hanya

@@ -238,6 +238,9 @@ class BarisPesananBaru(BaseModel):
     penawaran_id: int
     #: Dalam satuan jual penawaran (dus, kg, karung), bukan satuan simpan.
     jumlah: Decimal = Field(gt=0)
+    #: Kontrak aktif yang dipakai baris ini. Harga kontrak menggantikan harga katalog,
+    #: dan pesanan tidak pernah mencampur dua kontrak (satu pesanan, satu kontrak).
+    kontrak_id: int | None = None
 
 
 class PesananBaru(BaseModel):
@@ -402,10 +405,25 @@ class UsahaRingkas(BaseModel):
     alamat: str
 
 
+class PaketKontrakRingkas(BaseModel):
+    id: int
+    penawaran_id: int
+    distributor_id: int
+    kode: str
+    durasi_bulan: int
+    kuota_min_per_bulan: Decimal
+    harga_satuan: int
+    hemat_persen: int
+    ketentuan_kuota_kurang: str | None
+    ketentuan_berhenti: str | None
+
+
 class Katalog(BaseModel):
     usaha: UsahaRingkas
     distributor: list[DistributorKatalog]
     penawaran: list[PenawaranKatalog]
+    paket: list[PaketKontrakRingkas] = []
+    promo: list["PromoLengkap"] = []
 
 
 class UlasanPublik(BaseModel):
@@ -423,3 +441,122 @@ class UlasanPublik(BaseModel):
     #: Untuk label sistem "N pesanan · pelanggan sejak ...". Tidak bisa diubah penulis ulasan.
     jumlah_pesanan_penulis: int
     pelanggan_sejak: date | None
+
+
+# --------------------------------------------------------------------------
+# Kontrak (Tahap 5)
+# --------------------------------------------------------------------------
+class PeriodeKontrak(BaseModel):
+    #: "YYYY-MM"
+    periode: str
+    kuota: Decimal
+    diterima: Decimal
+    selesai: bool
+
+
+class KontrakLengkap(BaseModel):
+    """Satu kontrak, dibaca kedua portal. `status` dihitung saat dibaca (akan-berakhir, selesai)."""
+
+    id: int
+    usaha_id: int
+    nama_usaha: str
+    usaha_jenis: str
+    usaha_kota: str
+    usaha_alamat: str
+    usaha_nomor_hp: str
+    distributor_id: int
+    penawaran_id: int
+    paket_id: int | None
+    barang_id: int | None
+    nama_barang: str
+    durasi_bulan: int
+    kuota_min_per_bulan: Decimal
+    harga_satuan: int
+    satuan: str
+    mulai: datetime
+    berakhir: datetime
+    status: str
+    dalam_perjalanan: Decimal
+    ketentuan_kuota_kurang: str | None
+    pesanan_rutin_aktif: bool
+    pesanan_rutin_berikutnya: date | None
+    alasan_ditolak: str | None
+    pengajuan_berhenti_waktu: datetime | None
+    pengajuan_berhenti_alasan: str | None
+    jawaban_berhenti_waktu: datetime | None
+    jawaban_berhenti_disetujui: bool | None
+    jawaban_berhenti_alasan: str | None
+    periode: list[PeriodeKontrak]
+
+
+class AjukanKontrak(BaseModel):
+    paket_id: int
+
+
+class AlasanWajib(BaseModel):
+    alasan: str = Field(min_length=3, max_length=500)
+
+
+class JawabBerhenti(BaseModel):
+    setuju: bool
+    #: Wajib kalau menolak: pemilik usaha berhak tahu kenapa ia tetap terikat.
+    alasan: str | None = Field(default=None, max_length=500)
+
+
+class PesananRutin(BaseModel):
+    aktif: bool
+
+
+class KatalogDistributor(BaseModel):
+    """Penawaran dan paket kontrak milik satu distributor, untuk portalnya sendiri."""
+
+    penawaran: list[PenawaranKatalog]
+    paket: list[PaketKontrakRingkas]
+    promo: list["PromoLengkap"] = []
+
+
+class SimpanPaket(BaseModel):
+    penawaran_id: int
+    kode: str = Field(min_length=1, max_length=30)
+    durasi_bulan: int = Field(ge=1, le=36)
+    kuota_min_per_bulan: Decimal = Field(gt=0)
+    harga_satuan: int = Field(gt=0)
+    hemat_persen: int = Field(default=0, ge=0, le=100)
+    ketentuan_kuota_kurang: str | None = None
+    ketentuan_berhenti: str | None = None
+
+
+# --------------------------------------------------------------------------
+# Promo (Tahap 5)
+# --------------------------------------------------------------------------
+class TingkatPromo(BaseModel):
+    nama: str = Field(min_length=1, max_length=60)
+    syarat: str | None = None
+    manfaat: str | None = None
+
+
+class PromoLengkap(BaseModel):
+    id: int
+    distributor_id: int
+    jenis: str
+    judul: str
+    keterangan: str | None
+    berakhir: datetime | None
+    potongan_persen: int | None
+    penawaran_ids: list[int]
+    tingkat: list[TingkatPromo]
+
+
+class SimpanPromo(BaseModel):
+    jenis: str = Field(pattern="^(cuci-gudang|produk-baru|membership)$")
+    judul: str = Field(min_length=3, max_length=120)
+    keterangan: str | None = None
+    berakhir: datetime | None = None
+    #: Kosong untuk promo yang tidak memotong harga (mis. produk baru).
+    potongan_persen: int | None = Field(default=None, ge=1, le=90)
+    penawaran_ids: list[int] = []
+    tingkat: list[TingkatPromo] = []
+
+
+Katalog.model_rebuild()
+KatalogDistributor.model_rebuild()

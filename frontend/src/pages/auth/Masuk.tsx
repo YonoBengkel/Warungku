@@ -192,6 +192,15 @@ export default function Masuk() {
           Daftar
         </Link>
       </p>
+      <p className="text-center text-[0.875rem] text-ink-2">
+        Kamu distributor?{' '}
+        <Link
+          to="/masuk/distributor"
+          className="inline-flex items-center min-h-11 px-1 font-bold text-brand hover:underline underline-offset-2"
+        >
+          Masuk ke portal distributor
+        </Link>
+      </p>
 
       {/* Purwarupa: satu ketukan untuk mencoba tanpa mengingat nomor contoh. */}
       <div className="mt-5 pt-4 border-t border-line">

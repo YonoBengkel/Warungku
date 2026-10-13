@@ -2,6 +2,11 @@ import type { Distributor, JenisUsaha, Penawaran, Ulasan } from '@/lib/types'
 import { angka, minta } from '@/lib/api'
 import type { SesiServer } from '@/lib/api'
 import { keIdDistributor } from '@/lib/apiPesanan'
+import { kePaket } from '@/lib/apiKontrak'
+import type { PaketApi } from '@/lib/apiKontrak'
+import { kePromo } from '@/lib/apiPromo'
+import type { PromoApi } from '@/lib/apiPromo'
+import type { PaketKontrak, Promo } from '@/lib/types'
 
 /**
  * Katalog dari API: distributor (dengan rating dari ulasan sungguhan),
@@ -115,11 +120,19 @@ function kePenawaran(p: PenawaranApi): Penawaran {
 
 export async function ambilKatalog(
   sesi: SesiServer,
-): Promise<{ usaha: UsahaServer; distributor: Distributor[]; penawaran: Penawaran[] }> {
+): Promise<{
+  usaha: UsahaServer
+  distributor: Distributor[]
+  penawaran: Penawaran[]
+  paket: PaketKontrak[]
+  promo: Promo[]
+}> {
   const k = await minta<{
     usaha: { id: number; nama: string; jenis_usaha: string; kota: string; alamat: string }
     distributor: DistributorApi[]
     penawaran: PenawaranApi[]
+    paket: PaketApi[]
+    promo: PromoApi[]
   }>(`/usaha/${sesi.usahaId}/katalog`, { token: sesi.token })
   return {
     usaha: {
@@ -131,6 +144,8 @@ export async function ambilKatalog(
     },
     distributor: k.distributor.map(keDistributor),
     penawaran: k.penawaran.map(kePenawaran),
+    paket: (k.paket ?? []).map(kePaket),
+    promo: (k.promo ?? []).map(kePromo),
   }
 }
 

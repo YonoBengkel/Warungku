@@ -29,6 +29,7 @@ const Hero = lazy(() => import('@/pages/Hero'))
 
 /* Otentikasi & pendaftaran */
 const Masuk = lazy(() => import('@/pages/auth/Masuk'))
+const MasukDistributor = lazy(() => import('@/pages/auth/MasukDistributor'))
 const Daftar = lazy(() => import('@/pages/auth/Daftar'))
 const DaftarUsaha = lazy(() => import('@/pages/auth/DaftarUsaha'))
 const DaftarLegalitas = lazy(() => import('@/pages/auth/DaftarLegalitas'))
@@ -131,6 +132,7 @@ export default function App() {
             tata letaknya sendiri */}
         <Route path="/" element={<Hero />} />
         <Route path="/masuk" element={<Masuk />} />
+        <Route path="/masuk/distributor" element={<MasukDistributor />} />
         <Route path="/daftar" element={<Daftar />} />
         <Route path="/daftar/usaha" element={<DaftarUsaha />} />
         <Route path="/daftar/legalitas" element={<DaftarLegalitas />} />

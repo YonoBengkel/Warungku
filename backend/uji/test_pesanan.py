@@ -137,9 +137,15 @@ def dunia():
         kon.execute(text("DELETE FROM pesanan_jejak WHERE pesanan_id IN (SELECT id FROM pesanan WHERE usaha_id = :u)"), {"u": u})
         kon.execute(text("DELETE FROM pesanan_baris WHERE pesanan_id IN (SELECT id FROM pesanan WHERE usaha_id = :u)"), {"u": u})
         kon.execute(text("DELETE FROM pesanan WHERE usaha_id = :u"), {"u": u})
+        kon.execute(text("DELETE FROM kontrak_periode WHERE kontrak_id IN (SELECT id FROM kontrak WHERE usaha_id = :u)"), {"u": u})
+        kon.execute(text("DELETE FROM kontrak WHERE usaha_id = :u"), {"u": u})
+        kon.execute(text("DELETE FROM paket_kontrak WHERE distributor_id = :d"), {"d": d})
+        kon.execute(text("DELETE FROM promo_penawaran WHERE promo_id IN (SELECT id FROM promo WHERE distributor_id = :d)"), {"d": d})
+        kon.execute(text("DELETE FROM tingkat_keanggotaan WHERE promo_id IN (SELECT id FROM promo WHERE distributor_id = :d)"), {"d": d})
         kon.execute(text("DELETE FROM penawaran WHERE distributor_id = :d"), {"d": d})
         kon.execute(text("DELETE FROM barang WHERE usaha_id = :u"), {"u": u})
         kon.execute(text("DELETE FROM keanggotaan WHERE usaha_id = :u"), {"u": u})
+        kon.execute(text("DELETE FROM promo WHERE distributor_id = :d"), {"d": d})
         kon.execute(text("DELETE FROM distributor WHERE id = :d"), {"d": d})
         kon.execute(text("DELETE FROM usaha WHERE id = :u"), {"u": u})
         kon.execute(text("DELETE FROM produk_master WHERE id = :p"), {"p": ids["produk"]})
@@ -278,3 +284,116 @@ def test_katalog_mencocokkan_penawaran_ke_barang_pemanggil(dunia):
     # Token distributor tidak bisa membuka katalog pemilik usaha.
     r = klien.get(f"/usaha/{w['usaha']}/katalog", headers=w["kepala_dist"])
     assert r.status_code == 403
+
+
+
+def _paket(w: dict) -> int:
+    with mesin().begin() as kon:
+        return kon.execute(
+            text(
+                "INSERT INTO paket_kontrak (penawaran_id, distributor_id, kode, durasi_bulan, kuota_min_per_bulan, "
+                "harga_satuan, hemat_persen) VALUES (:p, :d, 'Kontrak Uji', 3, 10, 140000, 7) RETURNING id"
+            ),
+            {"p": w["penawaran"], "d": w["distributor"]},
+        ).scalar_one()
+
+
+def test_kontrak_dari_pengajuan_sampai_kuota_dan_berhenti(dunia):
+    w, klien = dunia, TestClient(app)
+    paket = _paket(w)
+    u, d = f"/usaha/{w['usaha']}", f"/distributor/{w['distributor']}"
+
+    r = klien.post(f"{u}/kontrak", headers=w["kepala_umkm"], json={"paket_id": paket})
+    assert r.status_code == 201 and r.json()["status"] == "menunggu-persetujuan"
+    kid = r.json()["id"]
+    assert r.json()["harga_satuan"] == 140000 and r.json()["barang_id"] == w["barang"]
+    # Mengajukan lagi sebelum dijawab: pengajuan yang sama, bukan kembaran.
+    assert klien.post(f"{u}/kontrak", headers=w["kepala_umkm"], json={"paket_id": paket}).json()["id"] == kid
+    # Belum disetujui: belum bisa dipakai memesan.
+    r = klien.post(f"{u}/pesanan", headers=w["kepala_umkm"],
+                   json={"baris": [{"penawaran_id": w["penawaran"], "jumlah": "4", "kontrak_id": kid}]})
+    assert r.status_code == 422
+
+    r = klien.post(f"{d}/kontrak/{kid}/setujui", headers=w["kepala_dist"], json={})
+    assert r.status_code == 200 and r.json()["status"] == "aktif"
+    assert len(r.json()["periode"]) == 1 and r.json()["periode"][0]["diterima"] == "0.000"
+
+    # Pesan dengan kontrak: harga kontrak, dan masuk hitungan "dalam perjalanan".
+    r = klien.post(f"{u}/pesanan", headers=w["kepala_umkm"],
+                   json={"baris": [{"penawaran_id": w["penawaran"], "jumlah": "4", "kontrak_id": kid}]})
+    assert r.status_code == 201, r.text
+    [p] = r.json()
+    assert p["kontrak_id"] == kid and p["baris"][0]["harga_satuan"] == 140000
+    [k] = [x for x in klien.get(f"{u}/kontrak", headers=w["kepala_umkm"]).json() if x["id"] == kid]
+    assert k["dalam_perjalanan"] == "4.000"
+
+    _majukan_sampai_dikirim(klien, w, p["id"])
+    r = klien.post(f"{u}/pesanan/{p['id']}/terima", headers=w["kepala_umkm"],
+                   json={"baris": [{"baris_id": p["baris"][0]["id"], "jumlah_diterima": "4"}]})
+    assert r.status_code == 200
+    [k] = [x for x in klien.get(f"{d}/kontrak", headers=w["kepala_dist"]).json() if x["id"] == kid]
+    assert k["dalam_perjalanan"] == "0.000" and k["periode"][-1]["diterima"] == "4.000"
+    assert k["nama_usaha"] == "Warung Uji Pesanan"
+
+    # Berhenti: menolak wajib beralasan; disetujui -> dihentikan, kontrak tak bisa dipakai lagi.
+    assert klien.post(f"{u}/kontrak/{kid}/berhenti", headers=w["kepala_umkm"], json={"alasan": "Pindah pemasok"}).status_code == 200
+    assert klien.post(f"{d}/kontrak/{kid}/jawab-berhenti", headers=w["kepala_dist"], json={"setuju": False}).status_code == 422
+    r = klien.post(f"{d}/kontrak/{kid}/jawab-berhenti", headers=w["kepala_dist"], json={"setuju": True})
+    assert r.status_code == 200 and r.json()["status"] == "dihentikan"
+    r = klien.post(f"{u}/pesanan", headers=w["kepala_umkm"],
+                   json={"baris": [{"penawaran_id": w["penawaran"], "jumlah": "1", "kontrak_id": kid}]})
+    assert r.status_code == 422
+
+
+def test_distributor_menolak_kontrak_dengan_alasan(dunia):
+    w, klien = dunia, TestClient(app)
+    paket = _paket(w)
+    kid = klien.post(f"/usaha/{w['usaha']}/kontrak", headers=w["kepala_umkm"], json={"paket_id": paket}).json()["id"]
+    r = klien.post(f"/distributor/{w['distributor']}/kontrak/{kid}/tolak", headers=w["kepala_dist"], json={"alasan": "Kuota belum sanggup"})
+    assert r.status_code == 200 and r.json()["status"] == "ditolak" and r.json()["alasan_ditolak"] == "Kuota belum sanggup"
+    # Distributor lain / token pemilik usaha tidak bisa menyetujui.
+    r = klien.post(f"/distributor/{w['distributor']}/kontrak/{kid}/setujui", headers=w["kepala_umkm"], json={})
+    assert r.status_code == 403
+
+
+def test_distributor_mengelola_paket_dari_katalognya(dunia):
+    w, klien = dunia, TestClient(app)
+    d = f"/distributor/{w['distributor']}"
+    badan = {"penawaran_id": w["penawaran"], "kode": "Paket Uji", "durasi_bulan": 6,
+             "kuota_min_per_bulan": "12", "harga_satuan": 135000, "hemat_persen": 10}
+    r = klien.post(f"{d}/paket", headers=w["kepala_dist"], json=badan)
+    assert r.status_code == 201, r.text
+    pid = r.json()["id"]
+    k = klien.get(f"{d}/katalog", headers=w["kepala_dist"]).json()
+    assert [p["id"] for p in k["penawaran"]] == [w["penawaran"]] and [p["id"] for p in k["paket"]] == [pid]
+    r = klien.put(f"{d}/paket/{pid}", headers=w["kepala_dist"], json={**badan, "harga_satuan": 130000})
+    assert r.status_code == 200 and r.json()["harga_satuan"] == 130000
+    # Paket hanya untuk penawaran milik sendiri.
+    r = klien.post(f"{d}/paket", headers=w["kepala_dist"], json={**badan, "penawaran_id": 1})
+    assert r.status_code == 422
+    assert klien.delete(f"{d}/paket/{pid}", headers=w["kepala_dist"]).status_code == 204
+    assert klien.get(f"{d}/katalog", headers=w["kepala_dist"]).json()["paket"] == []
+
+
+def test_promo_memotong_harga_beli_sekali_sampai_diakhiri(dunia):
+    w, klien = dunia, TestClient(app)
+    d = f"/distributor/{w['distributor']}"
+    r = klien.post(f"{d}/promo", headers=w["kepala_dist"], json={
+        "jenis": "cuci-gudang", "judul": "Cuci Gudang Uji", "potongan_persen": 10,
+        "penawaran_ids": [w["penawaran"]],
+    })
+    assert r.status_code == 201, r.text
+    promo = r.json()["id"]
+    # Pemilik usaha melihat promonya di katalog.
+    k = klien.get(f"/usaha/{w['usaha']}/katalog", headers=w["kepala_umkm"]).json()
+    assert any(p["id"] == promo and p["penawaran_ids"] == [w["penawaran"]] for p in k["promo"])
+    # Harga beli sekali terpotong 10%, harga normal dan asal potongannya tercatat.
+    [p] = klien.post(f"/usaha/{w['usaha']}/pesanan", headers=w["kepala_umkm"],
+                     json={"baris": [{"penawaran_id": w["penawaran"], "jumlah": "1"}]}).json()
+    assert p["baris"][0]["harga_satuan"] == 135000 and p["baris"][0]["harga_normal"] == 150000
+    assert p["baris"][0]["promo_id"] == promo
+    # Diakhiri: pesanan berikutnya kembali ke harga normal.
+    assert klien.post(f"{d}/promo/{promo}/akhiri", headers=w["kepala_dist"], json={}).status_code == 200
+    [p] = klien.post(f"/usaha/{w['usaha']}/pesanan", headers=w["kepala_umkm"],
+                     json={"baris": [{"penawaran_id": w["penawaran"], "jumlah": "1"}]}).json()
+    assert p["baris"][0]["harga_satuan"] == 150000 and p["baris"][0]["promo_id"] is None

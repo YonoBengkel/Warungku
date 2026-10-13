@@ -22,7 +22,7 @@ import {
   TAHAP_PESANAN_MASUK,
 } from '@/lib/label'
 import { umkmById } from '@/data/dummy'
-import { KartuSambungDistributor, TombolPutusDistributor } from '@/components/domain/SambungDistributor'
+import { TombolPutusDistributor } from '@/components/domain/SambungDistributor'
 import type { PesananMasuk, StatusPesananMasuk } from '@/lib/types'
 import { useAplikasi, usePesananMasukPerStatus } from '@/store/aplikasi'
 
@@ -224,15 +224,12 @@ export default function PesananMasukDaftar() {
         {dariServer && <TombolPutusDistributor />}
       </div>
       {!dariServer && (
-        <details className="mt-3 max-w-[32rem]">
-          <summary className="cursor-pointer min-h-11 inline-flex items-center text-[0.8125rem] font-bold text-brand">
-            Pakai pesanan sungguhan dari server
-          </summary>
-          <KartuSambungDistributor
-            className="mt-2"
-            keterangan="Pesanan dari pemilik usaha yang memesan lewat Turnify Flow, termasuk saran Mesin 2."
-          />
-        </details>
+        <p className="mt-3 text-[0.8125rem] text-ink-2">
+          Mau memakai pesanan sungguhan dari server?{' '}
+          <Link to="/masuk/distributor" className="inline-flex items-center min-h-11 font-bold text-brand hover:underline">
+            Masuk sebagai distributor
+          </Link>
+        </p>
       )}
 
       {/* Ringkasan jumlah. Di 360px barisnya digeser di dalam wadahnya sendiri,

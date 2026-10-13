@@ -14,13 +14,13 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from sqlalchemy import text
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from warungku.basis_data import mesin
 from warungku.model import Usaha
 
 from .otentikasi import usaha_saya
-from .skema import DistributorKatalog, Katalog, PenawaranKatalog, UlasanPublik, UsahaRingkas
+from .skema import DistributorKatalog, Katalog, PaketKontrakRingkas, PenawaranKatalog, UlasanPublik, UsahaRingkas
 
 rute = APIRouter(prefix="/usaha/{usaha_id}", tags=["katalog"])
 
@@ -72,7 +72,20 @@ def katalog(usaha_id: int = Depends(usaha_saya)) -> Katalog:
                 """
             ).bindparams(u=usaha_id)
         ).all()
+        paket = sesi.exec(
+            text(
+                """
+                SELECT id, penawaran_id, distributor_id, kode, durasi_bulan, kuota_min_per_bulan,
+                       harga_satuan, hemat_persen, ketentuan_kuota_kurang, ketentuan_berhenti
+                  FROM paket_kontrak ORDER BY penawaran_id, durasi_bulan
+                """
+            )
+        ).all()
+        from .promo import semua_promo
+
         return Katalog(
+            promo=semua_promo(sesi),
+            paket=[PaketKontrakRingkas(**dict(r._mapping)) for r in paket],
             usaha=UsahaRingkas(id=u.id, nama=u.nama, jenis_usaha=_nilai(u.jenis_usaha), kota=u.kota, alamat=u.alamat),
             distributor=[DistributorKatalog(**dict(r._mapping)) for r in distributor],
             penawaran=[PenawaranKatalog(**dict(r._mapping)) for r in penawaran],
@@ -115,3 +128,99 @@ def ulasan_distributor(
             ).bindparams(d=distributor_id, n=batas)
         ).all()
         return [UlasanPublik(**dict(r._mapping)) for r in baris]
+
+
+# --------------------------------------------------------------------------
+# Portal distributor: katalog dan paket kontrak miliknya sendiri
+# --------------------------------------------------------------------------
+from warungku.model import Kontrak, PaketKontrak, Penawaran  # noqa: E402
+
+from .otentikasi import distributor_saya  # noqa: E402
+from .skema import KatalogDistributor, SimpanPaket  # noqa: E402
+
+rute_distributor = APIRouter(prefix="/distributor/{distributor_id}", tags=["katalog"])
+
+
+def _paket_ringkas(p: PaketKontrak) -> PaketKontrakRingkas:
+    return PaketKontrakRingkas(
+        id=p.id, penawaran_id=p.penawaran_id, distributor_id=p.distributor_id, kode=p.kode,
+        durasi_bulan=p.durasi_bulan, kuota_min_per_bulan=p.kuota_min_per_bulan, harga_satuan=p.harga_satuan,
+        hemat_persen=p.hemat_persen, ketentuan_kuota_kurang=p.ketentuan_kuota_kurang,
+        ketentuan_berhenti=p.ketentuan_berhenti,
+    )
+
+
+@rute_distributor.get("/katalog", response_model=KatalogDistributor)
+def katalog_distributor(distributor_id: int = Depends(distributor_saya)) -> KatalogDistributor:
+    with Session(mesin()) as sesi:
+        penawaran = sesi.exec(
+            text(
+                """
+                SELECT id, distributor_id, nama, kategori, satuan, harga_satuan, kemasan_nama, kemasan_isi,
+                       satuan_isi, stok_tersedia, stok_diperbarui_pada, keterangan, aktif,
+                       NULL::int AS barang_id_terkait
+                  FROM penawaran WHERE distributor_id = :d ORDER BY nama
+                """
+            ).bindparams(d=distributor_id)
+        ).all()
+        paket = sesi.exec(
+            select(PaketKontrak).where(PaketKontrak.distributor_id == distributor_id)
+            .order_by(PaketKontrak.penawaran_id, PaketKontrak.durasi_bulan)
+        ).all()
+        from .promo import semua_promo
+
+        return KatalogDistributor(
+            promo=semua_promo(sesi, distributor_id),
+            penawaran=[PenawaranKatalog(**dict(r._mapping)) for r in penawaran],
+            paket=[_paket_ringkas(p) for p in paket],
+        )
+
+
+def _paket_milik(sesi: Session, paket_id: int, distributor_id: int) -> PaketKontrak:
+    p = sesi.get(PaketKontrak, paket_id)
+    if p is None or p.distributor_id != distributor_id:
+        raise HTTPException(404, "Paket kontrak tidak ditemukan.")
+    return p
+
+
+def _isi_paket(p: PaketKontrak, badan: SimpanPaket, sesi: Session, distributor_id: int) -> None:
+    pn = sesi.get(Penawaran, badan.penawaran_id)
+    if pn is None or pn.distributor_id != distributor_id:
+        raise HTTPException(422, "Paket hanya bisa dibuat untuk penawaran milik sendiri.")
+    for kolom, nilai in badan.model_dump().items():
+        setattr(p, kolom, nilai)
+
+
+@rute_distributor.post("/paket", response_model=PaketKontrakRingkas, status_code=201)
+def tambah_paket(badan: SimpanPaket, distributor_id: int = Depends(distributor_saya)):
+    with Session(mesin()) as sesi:
+        p = PaketKontrak(distributor_id=distributor_id, penawaran_id=badan.penawaran_id, kode=badan.kode,
+                         durasi_bulan=badan.durasi_bulan, kuota_min_per_bulan=badan.kuota_min_per_bulan,
+                         harga_satuan=badan.harga_satuan)
+        _isi_paket(p, badan, sesi, distributor_id)
+        sesi.add(p)
+        sesi.commit()
+        return _paket_ringkas(p)
+
+
+@rute_distributor.put("/paket/{paket_id}", response_model=PaketKontrakRingkas)
+def ubah_paket(badan: SimpanPaket, paket_id: int = Path(ge=1), distributor_id: int = Depends(distributor_saya)):
+    """Kontrak yang sudah berjalan tidak ikut berubah: harga dan kuotanya disalin saat diajukan."""
+    with Session(mesin()) as sesi:
+        p = _paket_milik(sesi, paket_id, distributor_id)
+        _isi_paket(p, badan, sesi, distributor_id)
+        sesi.add(p)
+        sesi.commit()
+        return _paket_ringkas(p)
+
+
+@rute_distributor.delete("/paket/{paket_id}", status_code=204)
+def hapus_paket(paket_id: int = Path(ge=1), distributor_id: int = Depends(distributor_saya)):
+    """Kontrak yang memakai paket ini tetap berjalan; rujukannya ke paket dilepas."""
+    with Session(mesin()) as sesi:
+        p = _paket_milik(sesi, paket_id, distributor_id)
+        for k in sesi.exec(select(Kontrak).where(Kontrak.paket_id == p.id)).all():
+            k.paket_id = None
+            sesi.add(k)
+        sesi.delete(p)
+        sesi.commit()

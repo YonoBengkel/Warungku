@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { JudulBagian, Kartu, Lencana } from '@/components/ui/dasar'
-import { KartuSambungDistributor, TombolPutusDistributor } from '@/components/domain/SambungDistributor'
+import { JudulBagian, Kartu, Lencana, TombolTautan } from '@/components/ui/dasar'
+import { TombolPutusDistributor } from '@/components/domain/SambungDistributor'
 import { KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
 import { IkonProfil } from '@/icons'
 import { angka, cx, rupiah, rupiahRingkas, tanggalRingkas, waktuLalu } from '@/lib/format'
@@ -71,10 +71,15 @@ export default function SegmenPelanggan() {
       </div>
 
       {!sesi ? (
-        <KartuSambungDistributor
-          className="mt-4 max-w-[32rem]"
-          keterangan="Segmen pelanggan dihitung mesin analitik dari pesanan sungguhan, jadi halaman ini perlu data server."
-        />
+        <Peringatan nada="netral" className="mt-4 max-w-[32rem]" judul="Perlu data server">
+          Segmen pelanggan dihitung mesin analitik dari pesanan sungguhan, jadi halaman ini perlu masuk dengan akun
+          distributor.
+          <div className="mt-2.5">
+            <TombolTautan ke="/masuk/distributor" ukuran="kecil">
+              Masuk sebagai distributor
+            </TombolTautan>
+          </div>
+        </Peringatan>
       ) : galat ? (
         <Peringatan nada="kritis" className="mt-4" judul="Segmen pelanggan gagal dimuat">
           {galat}

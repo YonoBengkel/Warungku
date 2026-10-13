@@ -197,14 +197,14 @@ export async function ambilPesanan(sesi: SesiServer): Promise<Pesanan[]> {
 
 export async function buatPesanan(
   sesi: SesiServer,
-  baris: Array<{ penawaranId: number; jumlah: number }>,
+  baris: Array<{ penawaranId: number; jumlah: number; kontrakId?: number | null }>,
   dariSaran: boolean,
 ): Promise<Pesanan[]> {
   const isi = await minta<PesananApi[]>(`/usaha/${sesi.usahaId}/pesanan`, {
     method: 'POST',
     token: sesi.token,
     body: JSON.stringify({
-      baris: baris.map((b) => ({ penawaran_id: b.penawaranId, jumlah: b.jumlah })),
+      baris: baris.map((b) => ({ penawaran_id: b.penawaranId, jumlah: b.jumlah, kontrak_id: b.kontrakId ?? null })),
       dari_saran: dariSaran,
     }),
   })

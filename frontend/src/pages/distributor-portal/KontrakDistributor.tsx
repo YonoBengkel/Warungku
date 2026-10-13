@@ -357,8 +357,12 @@ export default function KontrakDistributor() {
   )
   const kontrakBerjalan = useMemo(() => semua.filter(berjalan), [semua])
   const mintaBerhenti = useMemo(() => kontrakBerjalan.filter((k) => k.pengajuanBerhenti), [kontrakBerjalan])
-  const penawaranSaya = katalog.filter((p) => p.distributorId === distributorAktif.id && p.aktif !== false)
-  const paketSaya = paketKontrak.filter((p) => p.distributorId === distributorAktif.id)
+  // Tersambung ke server: penawaran dan paket milik distributor itu sendiri, dari API.
+  const katalogServer = useAplikasi((s) => s.katalogDistributorServer)
+  const penawaranSaya = (katalogServer?.penawaran ?? katalog).filter(
+    (p) => p.distributorId === distributorAktif.id && p.aktif !== false,
+  )
+  const paketSaya = (katalogServer?.paket ?? paketKontrak).filter((p) => p.distributorId === distributorAktif.id)
 
   /* Riwayat singkat toko yang mengajukan: bahan pertimbangan utama sebelum
      mengikat diri menyediakan barang berbulan-bulan. */

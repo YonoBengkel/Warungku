@@ -53,8 +53,8 @@ function duaMingguLagi(): string {
 
 function FormPromo({ promo, tutup }: { promo: Promo | null; tutup: () => void }) {
   const simpanPromo = useAplikasi((s) => s.simpanPromo)
-  const semuaPromo = useAplikasi((s) => s.promo)
-  const katalog = useAplikasi((s) => s.katalog)
+  const semuaPromo = useAplikasi((s) => s.katalogDistributorServer?.promo ?? s.promo)
+  const katalog = useAplikasi((s) => s.katalogDistributorServer?.penawaran ?? s.katalog)
   const penawaranSaya = katalog.filter((p) => p.distributorId === distributorAktif.id && p.aktif !== false)
   const masihBerlaku = promo ? promoMasihBerlaku(promo) : true
 
@@ -296,9 +296,9 @@ function FormPromo({ promo, tutup }: { promo: Promo | null; tutup: () => void })
 /* ================================================================== */
 
 export default function PromoDistributor() {
-  const semuaPromo = useAplikasi((s) => s.promo)
+  const semuaPromo = useAplikasi((s) => s.katalogDistributorServer?.promo ?? s.promo)
   const akhiriPromo = useAplikasi((s) => s.akhiriPromo)
-  const katalog = useAplikasi((s) => s.katalog)
+  const katalog = useAplikasi((s) => s.katalogDistributorServer?.penawaran ?? s.katalog)
 
   const [form, setForm] = useState<{ promo: Promo | null } | null>(null)
   const [akanDiakhiri, setAkanDiakhiri] = useState<Promo | null>(null)

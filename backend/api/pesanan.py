@@ -26,18 +26,19 @@ from __future__ import annotations
 
 import secrets
 from datetime import datetime, timedelta, timezone
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from sqlalchemy import text
 from sqlmodel import Session, select
 
 from warungku.basis_data import mesin
-from warungku.enum import AlasanSelisih, JenisPergerakan, StatusBayar, StatusPesanan
+from warungku.enum import AlasanSelisih, JenisPergerakan, StatusBayar, StatusKontrak, StatusPesanan
 from warungku.model import (
     Barang,
     Distributor,
     FiturPesanan,
+    Kontrak,
     Penawaran,
     Pergerakan,
     Pesanan,
@@ -46,6 +47,7 @@ from warungku.model import (
     Usaha,
 )
 
+from .kontrak import periode_berjalan, status_terbaca
 from .otentikasi import distributor_saya, usaha_saya
 from .skema import (
     BarisPesananLengkap,
@@ -152,6 +154,20 @@ def _kunci_pesanan(sesi: Session, pesanan_id: int, *, usaha_id: int | None = Non
     return p
 
 
+def _lepas_dalam_perjalanan(sesi: Session, p: Pesanan) -> None:
+    """Pesanan berkontrak yang batal tidak lagi dihitung "sedang dikirim" pada kuotanya."""
+    if p.kontrak_id is None:
+        return
+    k = sesi.exec(select(Kontrak).where(Kontrak.id == p.kontrak_id).with_for_update()).first()
+    if k is None:
+        return
+    dipesan = sum(
+        Decimal(b.jumlah) for b in sesi.exec(select(PesananBaris).where(PesananBaris.pesanan_id == p.id)).all()
+    )
+    k.dalam_perjalanan = max(Decimal(0), Decimal(k.dalam_perjalanan) - dipesan)
+    sesi.add(k)
+
+
 def _jejak(sesi: Session, p: Pesanan, status: StatusPesanan, keterangan: str) -> None:
     sesi.add(PesananJejak(pesanan_id=p.id, waktu=_sekarang(), status=status, keterangan=keterangan))
 
@@ -202,7 +218,9 @@ def _harga_berlaku(sesi: Session, penawaran: Penawaran, waktu: datetime) -> tupl
     ).first()
     if r is None:
         return penawaran.harga_satuan, None, None
-    harga = int(round(penawaran.harga_satuan * (100 - r.potongan_persen) / 100))
+    # Setengah ke atas, sama dengan Math.round di layar: round() Python membulatkan
+    # ke genap terdekat, sehingga harga ,5 rupiah bisa selisih 1 dengan yang dilihat pengguna.
+    harga = int((Decimal(penawaran.harga_satuan) * (100 - r.potongan_persen) / 100).quantize(Decimal(1), ROUND_HALF_UP))
     return harga, penawaran.harga_satuan, r.id
 
 
@@ -227,22 +245,39 @@ def buat_pesanan(badan: PesananBaru, usaha_id: int = Depends(usaha_saya)):
         if sesi.get(Usaha, usaha_id) is None:
             raise HTTPException(404, "Usaha tidak ditemukan.")
         waktu = _sekarang()
-        per_distributor: dict[int, list[tuple[Penawaran, Decimal]]] = {}
+        # Satu pesanan per (distributor, kontrak): pesanan tidak pernah mencampur dua
+        # kontrak, supaya kuota tiap kontrak bergerak dari pesanan yang tepat.
+        per_distributor: dict[tuple[int, int | None], list[tuple[Penawaran, Decimal]]] = {}
+        kontrak_dipakai: dict[int, Kontrak] = {}
         for b in badan.baris:
             pn = sesi.get(Penawaran, b.penawaran_id)
             if pn is None or not pn.aktif:
                 raise HTTPException(422, f"Penawaran {b.penawaran_id} tidak ada atau sudah tidak aktif.")
-            per_distributor.setdefault(pn.distributor_id, []).append((pn, Decimal(b.jumlah)))
+            if b.kontrak_id is not None:
+                k = kontrak_dipakai.get(b.kontrak_id) or sesi.exec(
+                    select(Kontrak).where(Kontrak.id == b.kontrak_id).with_for_update()
+                ).first()
+                if (
+                    k is None
+                    or k.usaha_id != usaha_id
+                    or k.penawaran_id != pn.id
+                    or status_terbaca(k) not in (StatusKontrak.AKTIF.value, StatusKontrak.AKAN_BERAKHIR.value)
+                ):
+                    raise HTTPException(422, f"Kontrak {b.kontrak_id} tidak berlaku untuk penawaran {pn.id}.")
+                kontrak_dipakai[k.id] = k
+            per_distributor.setdefault((pn.distributor_id, b.kontrak_id), []).append((pn, Decimal(b.jumlah)))
 
         kode = f"BL-{waktu:%y%m%d}-{secrets.token_hex(3).upper()}" if len(per_distributor) > 1 else None
         dibuat: list[Pesanan] = []
-        for distributor_id, isi in per_distributor.items():
+        for (distributor_id, kontrak_id), isi in per_distributor.items():
+            kontrak = kontrak_dipakai.get(kontrak_id) if kontrak_id is not None else None
             tujuan = [(_barang_tujuan(sesi, usaha_id, pn), pn, n) for pn, n in isi]
             hari_kirim = max((bt.hari_kirim for bt, _, _ in tujuan if bt is not None), default=HARI_KIRIM_BAWAAN)
             p = Pesanan(
                 nomor=f"PS-{waktu:%y%m%d}-T{secrets.token_hex(3).upper()}",
                 usaha_id=usaha_id,
                 distributor_id=distributor_id,
+                kontrak_id=kontrak_id,
                 dibuat_pada=waktu,
                 status=StatusPesanan.MENUNGGU_KONFIRMASI,
                 status_bayar=StatusBayar.BELUM_DIBAYAR,
@@ -256,7 +291,13 @@ def buat_pesanan(badan: PesananBaru, usaha_id: int = Depends(usaha_saya)):
             # Nomor mengikuti pola data lama (PS-yymmdd-id) begitu id diketahui.
             p.nomor = f"PS-{waktu:%y%m%d}-{p.id}"
             for barang, pn, n in tujuan:
-                harga, normal, promo_id = _harga_berlaku(sesi, pn, waktu)
+                if kontrak is not None:
+                    # Harga kontrak adalah kesepakatan yang mengikat: promo tidak memotongnya.
+                    harga, normal, promo_id = kontrak.harga_satuan, None, None
+                    kontrak.dalam_perjalanan = Decimal(kontrak.dalam_perjalanan) + n
+                    sesi.add(kontrak)
+                else:
+                    harga, normal, promo_id = _harga_berlaku(sesi, pn, waktu)
                 sesi.add(
                     PesananBaris(
                         pesanan_id=p.id,
@@ -285,6 +326,7 @@ def batalkan(badan: TolakPesanan, pesanan_id: int = Path(ge=1), usaha_id: int = 
         _wajib_status(p, StatusPesanan.MENUNGGU_KONFIRMASI)
         p.status = StatusPesanan.BATAL
         sesi.add(p)
+        _lepas_dalam_perjalanan(sesi, p)
         _jejak(sesi, p, StatusPesanan.BATAL, f"Dibatalkan pemilik usaha: {badan.alasan}")
         sesi.commit()
         return _lengkap(sesi, p)
@@ -347,6 +389,15 @@ def terima_barang(badan: Penerimaan, pesanan_id: int = Path(ge=1), usaha_id: int
 
         p.status = StatusPesanan.SELESAI_CATATAN if ada_catatan else StatusPesanan.SELESAI
         sesi.add(p)
+        if p.kontrak_id is not None:
+            k = sesi.exec(select(Kontrak).where(Kontrak.id == p.kontrak_id).with_for_update()).first()
+            if k is not None:
+                # Kuota dihitung dari yang DITERIMA, di bulan barang itu diterima.
+                per = periode_berjalan(sesi, k, waktu)
+                per.diterima = Decimal(per.diterima) + sum(Decimal(b.jumlah_diterima or 0) for b in semua.values())
+                sesi.add(per)
+                k.dalam_perjalanan = max(Decimal(0), Decimal(k.dalam_perjalanan) - sum(Decimal(b.jumlah) for b in semua.values()))
+                sesi.add(k)
         _jejak(
             sesi, p, p.status,
             "Barang diterima dengan catatan selisih." if ada_catatan else "Barang diterima lengkap dan sesuai.",
@@ -516,6 +567,7 @@ def tolak(badan: TolakPesanan, pesanan_id: int = Path(ge=1), distributor_id: int
         p.status = StatusPesanan.BATAL
         p.alasan_tolak = badan.alasan
         sesi.add(p)
+        _lepas_dalam_perjalanan(sesi, p)
         _jejak(sesi, p, StatusPesanan.BATAL, f"Ditolak distributor: {badan.alasan}")
         sesi.commit()
         return _lengkap(sesi, p)
