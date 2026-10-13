@@ -16,6 +16,11 @@
 # Kalau belum ada di komputer dan tidak bisa diunduh, Compose membangunnya
 # sendiri dari deployment/Dockerfile.
 #
+# Basis data memakai yonobengkel/turnify-flow-db: PostgreSQL 16 yang berisi data
+# simulasi (akun umkm1 Kopi Kita Jogja, distributor1 Sumber Tani Nusantara, dan
+# keluaran ketiga mesin). Data hanya dipulihkan ke volume yang masih KOSONG, jadi
+# volume yang sudah berisi data tidak pernah ditimpa.
+#
 # Port 5433 (bukan 5432) supaya tidak bentrok dengan PostgreSQL yang mungkin
 # sudah berjalan di komputermu.
 #
@@ -47,7 +52,9 @@ x-backend: &backend
 
 services:
   db:
-    image: postgres:16-alpine
+    image: yonobengkel/turnify-flow-db:0.1.0
+    build:
+      context: db
     container_name: warungku-db
     environment:
       POSTGRES_USER: warungku
@@ -63,6 +70,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+      # Pertama kali dinyalakan, pemulihan data simulasi butuh sekitar satu menit.
+      start_period: 180s
 
   api:
     <<: *backend

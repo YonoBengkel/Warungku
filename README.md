@@ -147,6 +147,11 @@ docker compose -f deployment/docker-compose.yml up -d
 PostgreSQL berjalan di port **5433**, bukan 5432, supaya tidak bentrok dengan
 PostgreSQL yang mungkin sudah ada di komputermu.
 
+Image basis datanya, [`yonobengkel/turnify-flow-db`](https://hub.docker.com/r/yonobengkel/turnify-flow-db),
+**sudah berisi data simulasi**: saat pertama dinyalakan dengan volume kosong, data
+dipulihkan otomatis (sekitar satu menit). Dengan begitu langkah 3 (migrasi) dan
+langkah 4 (dataset) **boleh dilewati**, kecuali kamu ingin membangkitkan ulang datanya.
+
 ### 3. Lingkungan Python
 
 ```powershell
@@ -267,20 +272,32 @@ docker compose -f deployment/docker-compose.yml --profile layanan stop api ml
 
 Hal yang perlu diketahui:
 
-- **Image tidak membawa data.** Basis data di komputer baru masih kosong: jalankan
-  dulu langkah 3 dan 4 (migrasi dan dataset) dari kode sumber, lalu langkah 6
-  untuk mengisi keluaran ketiga mesin.
+- **Data sudah ikut.** Image basis data `turnify-flow-db` membawa seluruh data
+  simulasi beserta keluaran ketiga mesin, jadi di komputer baru tidak perlu Python
+  sama sekali. Akun simulasi `umkm1` dan `distributor1` langsung bisa dipakai.
+- **Volume lama yang kosong tidak diisi ulang.** Data hanya dipulihkan ke volume yang
+  belum pernah dipakai. Kalau sebelumnya pernah menyalakan basis data versi lama
+  (image `postgres` biasa, datanya kosong), hapus volumenya sekali lalu nyalakan lagi:
+  `docker compose -f deployment/docker-compose.yml down -v`. **Jangan** jalankan
+  perintah itu di komputer yang basis datanya sudah berisi data yang ingin disimpan.
 - **Penjadwal ikut menyala** di kontainer `turnify-ml`: Mesin 1 pukul 02.00 WIB,
   Mesin 2 dan 3 setiap empat jam, dan hasilnya ditulis ke basis data.
 - **Rahasia tidak ada di dalam image.** Isi `WARUNGKU_RAHASIA` di `deployment/.env`
   (berkas ini tidak dilacak git) supaya login tidak hangus setiap kontainer dinyalakan ulang.
 - **Jangan jalankan bersamaan** dengan `uvicorn` lokal: keduanya memakai port 8000 dan 8001.
 
-Ada juga bahan image basis data yang langsung berisi data simulasi
-([`deployment/db/`](deployment/db/)), untuk komputer yang tidak ingin
-membangkitkan dataset sendiri. Image ini **belum diunggah**, karena berisi seluruh
-data simulasi termasuk akun uji; cara membuatnya ada di
-[`deployment/db/Dockerfile`](deployment/db/Dockerfile).
+Image basis data dibangun dari cadangan basis data lokal
+([`deployment/db/`](deployment/db/)). Cadangannya tidak dilacak git. Isinya data
+simulasi buatan tim, termasuk akun uji yang kata sandinya terbuka di kode; tidak
+ada data pihak luar.
+
+```powershell
+docker exec warungku-db pg_dump -U warungku -d warungku_dev -Fc -Z 9 --no-owner --no-privileges -f /tmp/warungku_dev.dump
+docker cp warungku-db:/tmp/warungku_dev.dump deployment/db/warungku_dev.dump
+docker exec warungku-db rm /tmp/warungku_dev.dump
+docker build -t yonobengkel/turnify-flow-db:0.1.0 deployment/db
+docker push yonobengkel/turnify-flow-db:0.1.0
+```
 
 Membangun dan mengunggah image versi baru (pemilik repositori Docker Hub):
 
