@@ -1,0 +1,34 @@
+# Konteks build Docker = akar repo. Yang tidak boleh ikut ke image:
+
+# Rahasia. Diberikan saat kontainer dijalankan, tidak pernah ditanam.
+**/.env
+**/.env.*
+!**/.env.example
+
+# Data pihak luar yang lisensinya tidak terbuka (French Bakery), dan keluaran besar.
+data/data_nyata/
+data/keluaran/
+**/*.parquet
+**/*.csv
+
+# Hasil eksperimen model dan log.
+ml/hasil/
+**/*.log
+
+# Bukan bagian backend.
+frontend/
+docs/
+Riwayat Chat/
+tools/
+node_modules/
+
+# Lingkungan dan alat lokal.
+.git/
+.claude/
+.agents/
+.venv*/
+venv/
+**/__pycache__/
+**/*.py[cod]
+.pytest_cache/
+**/uji/

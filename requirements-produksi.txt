@@ -1,0 +1,30 @@
+# Lingkungan PRODUKSI: hanya yang dibutuhkan API (port 8000) dan layanan model
+# (port 8001) saat menjalankan model yang dipasang sekarang.
+#
+#   Mesin 1  SARIMA, fallback ETS        -> statsmodels
+#   Mesin 2  Beta-Bernoulli + Thompson + fuzzy Sugeno -> numpy
+#   Mesin 3  K-Prototypes (implementasi sendiri)      -> numpy, pandas
+#
+# Chronos-2 (torch), PyMC/BART, dan LightGBM sengaja TIDAK ada di sini: ketiganya
+# hanya dipakai eksperimen dan dimuat malas (lazy import) di kode. Tanpa mereka
+# image Docker turun dari beberapa GB ke beberapa ratus MB. Lingkungan lengkap
+# untuk eksperimen tetap requirements.txt.
+#
+# Dipakai oleh deployment/Dockerfile.
+
+# --- API & otentikasi --------------------------------------------------
+fastapi>=0.115
+uvicorn[standard]>=0.30
+sqlmodel>=0.0.22
+psycopg2-binary>=2.9
+python-dotenv>=1.0
+argon2-cffi>=23.1
+pyjwt>=2.8
+email-validator>=2.0
+
+# --- Layanan model ------------------------------------------------------
+apscheduler>=3.10
+numpy>=1.26
+pandas>=2.0
+scipy>=1.11
+statsmodels>=0.14
