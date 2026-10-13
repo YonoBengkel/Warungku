@@ -356,7 +356,6 @@ export default function StokDetail() {
                   <GrafikTren
                     data={trenTampil(barang, tren)}
                     satuan={satuanTampil(barang).nama}
-                    labelBatas={mesin.model ? 'data terakhir' : undefined}
                   />
                 </Kartu>
               )}

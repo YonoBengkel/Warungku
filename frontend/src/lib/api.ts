@@ -1,4 +1,5 @@
 import type { Barang, KematanganPerkiraan, SumberBatasAman, TingkatLayanan } from '@/lib/types'
+import type { BulananBarang } from '@/data/dummy'
 
 /**
  * Satu-satunya tempat frontend berbicara dengan backend.
@@ -135,6 +136,7 @@ interface BarangApi {
   sumber_batas_aman: string
   hari_kirim: number
   harga_beli_terakhir: number
+  harga_beli_per_satuan: string
   pemakaian_harian: string
   hari_data_terkumpul: number
   ingatkan_kedaluwarsa: boolean
@@ -164,7 +166,8 @@ function keBarang(b: BarangApi): Barang {
       ? b.sumber_batas_aman
       : 'sistem') as SumberBatasAman,
     hariKirim: b.hari_kirim,
-    hargaBeliTerakhir: b.harga_beli_terakhir,
+    // Layar mengalikan harga dengan jumlah dalam satuan simpan, jadi yang dipakai harga per satuan.
+    hargaBeliTerakhir: angka(b.harga_beli_per_satuan),
     pemakaianHarian: angka(b.pemakaian_harian),
     hariDataTerkumpul: b.hari_data_terkumpul,
     ingatkanKedaluwarsa: b.ingatkan_kedaluwarsa,
@@ -287,5 +290,155 @@ export async function ambilSaran(sesi: SesiServer, barangId: string): Promise<Sa
     segmen: s.segmen,
     dijalankanPada: s.dijalankan_pada,
     kedaluwarsa: s.kedaluwarsa,
+  }))
+}
+
+/** Pemakaian per 30 hari (12 periode) dan perkiraan 30 hari ke depan, untuk semua barang. */
+export async function ambilPemakaianBulanan(sesi: SesiServer): Promise<Map<string, BulananBarang>> {
+  const isi = await minta<
+    Array<{
+      barang_id: number
+      periode: Array<{ tanggal: string; jumlah: string }>
+      perkiraan_p10: string | null
+      perkiraan_p50: string | null
+      perkiraan_p90: string | null
+    }>
+  >(`/usaha/${sesi.usahaId}/pemakaian-bulanan`, { token: sesi.token })
+  const peta = new Map<string, BulananBarang>()
+  for (const b of isi) {
+    peta.set(String(b.barang_id), {
+      periode: b.periode.map((p) => ({ tanggal: p.tanggal, jumlah: angka(p.jumlah) })),
+      p10: b.perkiraan_p10 == null ? null : angka(b.perkiraan_p10),
+      p50: b.perkiraan_p50 == null ? null : angka(b.perkiraan_p50),
+      p90: b.perkiraan_p90 == null ? null : angka(b.perkiraan_p90),
+    })
+  }
+  return peta
+}
+
+/* ------------------------------------------------------------------ */
+/* Portal distributor (Mesin 3)                                        */
+/* ------------------------------------------------------------------ */
+
+const KUNCI_SESI_DISTRIBUTOR = 'turnify-sesi-distributor'
+
+export interface SesiDistributor {
+  token: string
+  distributorId: number
+  namaPengguna: string
+  kedaluwarsaPada: string
+}
+
+/** Sesi portal distributor terpisah dari sesi UMKM: tokennya pun berbeda jenis. */
+export function sesiDistributorTersimpan(): SesiDistributor | null {
+  try {
+    const teks = window.sessionStorage.getItem(KUNCI_SESI_DISTRIBUTOR)
+    if (!teks) return null
+    const sesi = JSON.parse(teks) as SesiDistributor
+    return new Date(sesi.kedaluwarsaPada).getTime() > Date.now() ? sesi : null
+  } catch {
+    return null
+  }
+}
+
+export function simpanSesiDistributor(sesi: SesiDistributor | null) {
+  try {
+    if (sesi) window.sessionStorage.setItem(KUNCI_SESI_DISTRIBUTOR, JSON.stringify(sesi))
+    else window.sessionStorage.removeItem(KUNCI_SESI_DISTRIBUTOR)
+  } catch {
+    /* Penyimpanan diblokir: sesi hanya hidup di memori. */
+  }
+}
+
+export async function masukDistributor(email: string, kataSandi: string): Promise<SesiDistributor> {
+  const t = await minta<TokenApi & { distributor_id: number | null }>('/auth/distributor/masuk', {
+    method: 'POST',
+    body: JSON.stringify({ email, kata_sandi: kataSandi }),
+  })
+  if (t.distributor_id == null) throw new GalatApi(403, 'Akun ini bukan distributor.')
+  return { token: t.token, distributorId: t.distributor_id, namaPengguna: t.nama, kedaluwarsaPada: t.kedaluwarsa_pada }
+}
+
+export interface RingkasanSegmen {
+  segmen: string
+  namaSegmen: string
+  ciri: string | null
+  saran: string | null
+  jumlah: number
+  rataRecency: number
+  rataFrequency: number
+  rataMonetary: number
+  dijalankanPada: string
+  tanggalAcuan: string
+}
+
+export interface AnggotaSegmen {
+  usahaId: number
+  namaUsaha: string
+  kota: string
+  recency: number
+  frequency: number
+  monetary: number
+  lamaBerlangganan: number
+  jenisUsaha: string
+  kategoriUtama: string
+  jarakKePusat: number
+}
+
+export async function ambilSegmen(sesi: SesiDistributor): Promise<RingkasanSegmen[]> {
+  const isi = await minta<
+    Array<{
+      segmen: string
+      nama_segmen: string
+      ciri: string | null
+      saran: string | null
+      jumlah: number
+      rata_recency: number
+      rata_frequency: number
+      rata_monetary: number
+      dijalankan_pada: string
+      tanggal_acuan: string
+    }>
+  >(`/distributor/${sesi.distributorId}/segmen`, { token: sesi.token })
+  return isi.map((s) => ({
+    segmen: s.segmen,
+    namaSegmen: s.nama_segmen,
+    ciri: s.ciri,
+    saran: s.saran,
+    jumlah: s.jumlah,
+    rataRecency: s.rata_recency,
+    rataFrequency: s.rata_frequency,
+    rataMonetary: s.rata_monetary,
+    dijalankanPada: s.dijalankan_pada,
+    tanggalAcuan: s.tanggal_acuan,
+  }))
+}
+
+export async function ambilAnggotaSegmen(sesi: SesiDistributor, segmen: string): Promise<AnggotaSegmen[]> {
+  const isi = await minta<
+    Array<{
+      usaha_id: number
+      nama_usaha: string
+      kota: string
+      recency: number
+      frequency: number
+      monetary: number
+      lama_berlangganan: number
+      jenis_usaha: string
+      kategori_utama: string
+      jarak_ke_pusat: number
+    }>
+  >(`/distributor/${sesi.distributorId}/segmen/${encodeURIComponent(segmen)}`, { token: sesi.token })
+  return isi.map((a) => ({
+    usahaId: a.usaha_id,
+    namaUsaha: a.nama_usaha,
+    kota: a.kota,
+    recency: a.recency,
+    frequency: a.frequency,
+    monetary: a.monetary,
+    lamaBerlangganan: a.lama_berlangganan,
+    jenisUsaha: a.jenis_usaha,
+    kategoriUtama: a.kategori_utama,
+    jarakKePusat: a.jarak_ke_pusat,
   }))
 }

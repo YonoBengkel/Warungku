@@ -85,7 +85,12 @@ class BarangRingkas(BaseModel):
     batas_aman_saran: Decimal = Decimal(0)
     sumber_batas_aman: str = "sistem"
     hari_kirim: int = 2
+    #: Harga per KEMASAN (Rp 148.000 per kg), seperti tersimpan di tabel.
     harga_beli_terakhir: int = 0
+    #: Harga per SATUAN SIMPAN (Rp 148 per gram) = harga kemasan / isi kemasan terbesar.
+    #: Inilah yang dikalikan dengan jumlah pemakaian; mengalikan harga kemasan dengan gram
+    #: membuat nilai pemakaian seribu kali lipat.
+    harga_beli_per_satuan: Decimal = Decimal(0)
     pemakaian_harian: Decimal = Decimal(0)
     hari_data_terkumpul: int = 0
     ingatkan_kedaluwarsa: bool = False
@@ -198,3 +203,29 @@ class PelangganTersegmen(BaseModel):
     jenis_usaha: str
     kategori_utama: str
     jarak_ke_pusat: float
+
+
+class PeriodePemakaian(BaseModel):
+    #: Titik tengah periode 30 hari, dipakai sebagai label bulan di grafik.
+    tanggal: date
+    #: Perkiraan pemakaian 30 hari: rata-rata hari yang tidak tersensor dikali 30.
+    jumlah: Decimal
+    hari_tercatat: int
+
+
+class PemakaianBulanan(BaseModel):
+    """
+    Pemakaian satu barang per periode 30 hari (terlama dulu), ditambah perkiraan
+    30 hari ke depan dari Mesin 1.
+
+    `p10`/`p90` di sini adalah jumlah p10 dan p90 harian. Jumlah kuantil harian
+    lebih lebar daripada kuantil jumlahnya, jadi pita ini sengaja konservatif.
+    """
+
+    barang_id: int
+    periode: list[PeriodePemakaian]
+    perkiraan_p10: Decimal | None = None
+    perkiraan_p50: Decimal | None = None
+    perkiraan_p90: Decimal | None = None
+    model_nama: str | None = None
+    dijalankan_pada: datetime | None = None

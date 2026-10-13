@@ -1010,6 +1010,11 @@ function awalBulan(selisih: number): string {
  * berbeda untuk bulan yang sama.
  */
 function pemakaianBulan(b: Barang, mundur: number): number {
+  const server = bulananServer?.get(b.id)
+  if (server) {
+    const i = server.periode.length - 1 - mundur
+    return i >= 0 ? Math.round(server.periode[i].jumlah) : 0
+  }
   const rnd = acakBersemai(semaiDari(`${b.id}|${mundur}`))
   // Usaha yang sedang tumbuh: makin ke belakang, makin sepi.
   const arah = Math.max(0.5, 1 - mundur * 0.05)
@@ -1022,10 +1027,35 @@ function pemakaianBulan(b: Barang, mundur: number): number {
  * karena satu bulan kebetulan ramai.
  */
 function perkiraanBulanDepan(b: Barang): number {
+  const server = bulananServer?.get(b.id)
+  if (server?.p50 != null) return Math.round(server.p50)
   const bulanIni = pemakaianBulan(b, 0)
   const bulanLalu = pemakaianBulan(b, 1)
   const laju = bulanLalu > 0 ? bulanIni / bulanLalu : 1
   return Math.max(0, Math.round(bulanIni * Math.min(1.25, Math.max(0.85, laju))))
+}
+
+/**
+ * Pemakaian bulanan dari server (`GET /usaha/{id}/pemakaian-bulanan`).
+ *
+ * Diisi store saat masuk lewat API dan dikosongkan saat keluar. Selama terisi,
+ * `pemakaianBulan` dan `perkiraanBulanDepan` membaca dari sini, sehingga
+ * halaman Prediksi dan Beranda menampilkan riwayat sungguhan dan perkiraan
+ * Mesin 1 tanpa perlu tahu dari mana angkanya.
+ */
+export interface BulananBarang {
+  periode: Array<{ tanggal: string; jumlah: number }>
+  p10: number | null
+  p50: number | null
+  p90: number | null
+}
+let bulananServer: Map<string, BulananBarang> | null = null
+const barangServer = new Map<string, Barang>()
+
+export function pasangDataServer(bulanan: Map<string, BulananBarang> | null, barang: Barang[] = []) {
+  bulananServer = bulanan
+  barangServer.clear()
+  for (const b of barang) barangServer.set(b.id, b)
 }
 
 /** Berapa bulan riwayat yang digambar: setahun penuh, lalu satu bulan perkiraan. */
@@ -1038,27 +1068,40 @@ const BULAN_RIWAYAT = 12
  */
 function trenDari(kumpulan: Barang[], nilai: (b: Barang, jumlah: number) => number = (_b, n) => n): TitikTren[] {
   const titik: TitikTren[] = []
+  // Mode server: tanggal periode diambil dari data, bukan dari kalender data contoh.
+  const acuan = kumpulan.map((b) => bulananServer?.get(b.id)).find((x) => x && x.periode.length > 0)
+  const tanggalKe = (mundur: number): string => {
+    if (!acuan) return awalBulan(-mundur)
+    const i = acuan.periode.length - 1 - mundur
+    const d = new Date(acuan.periode[Math.min(acuan.periode.length - 1, Math.max(0, i))].tanggal)
+    if (i < 0) d.setDate(d.getDate() + 30 * -i)
+    return d.toISOString()
+  }
   for (let i = BULAN_RIWAYAT - 1; i >= 0; i--) {
     titik.push({
-      tanggal: awalBulan(-i),
+      tanggal: tanggalKe(i),
       aktual: kumpulan.reduce((t, b) => t + nilai(b, pemakaianBulan(b, i)), 0),
       prediksi: null,
     })
   }
   const p = kumpulan.reduce((t, b) => t + nilai(b, perkiraanBulanDepan(b)), 0)
+  // Pita p10–p90 dari Mesin 1 kalau semua barang punya; selain itu ±12% seperti data contoh.
+  const pita = (k: 'p10' | 'p90') =>
+    kumpulan.reduce((t, b) => t + nilai(b, Math.round(bulananServer?.get(b.id)?.[k] ?? 0)), 0)
+  const semuaPunyaPita = kumpulan.length > 0 && kumpulan.every((b) => bulananServer?.get(b.id)?.p10 != null)
   titik.push({
-    tanggal: awalBulan(1),
+    tanggal: tanggalKe(-1),
     aktual: null,
     prediksi: p,
-    batasBawah: Math.round(p * 0.88),
-    batasAtas: Math.round(p * 1.12),
+    batasBawah: semuaPunyaPita ? pita('p10') : Math.round(p * 0.88),
+    batasAtas: semuaPunyaPita ? pita('p90') : Math.round(p * 1.12),
   })
   return titik
 }
 
 /** Tren satu barang dalam satuan simpannya; layar mengubahnya ke satuan tampil. */
 export function trenBulanan(barangId: string): TitikTren[] {
-  const b = daftarBarang.find((x) => x.id === barangId)
+  const b = barangServer.get(barangId) ?? daftarBarang.find((x) => x.id === barangId)
   return b ? trenDari([b]) : []
 }
 

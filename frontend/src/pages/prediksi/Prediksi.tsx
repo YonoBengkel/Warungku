@@ -20,7 +20,6 @@ import { angka, cx, rupiah, rupiahSumbu } from '@/lib/format'
 import { angkaTampil, jumlahTampil, satuanTampil, trenTampil } from '@/lib/satuan'
 import { JUDUL, LABEL_ARAH_PREDIKSI } from '@/lib/label'
 import {
-  kategoriBarang,
   layakDiperkirakan,
   nilaiPemakaian,
   penawaranById,
@@ -99,6 +98,8 @@ function labelPendek(nama: string): string {
 export default function Prediksi() {
   const barang = useAplikasi((s) => s.barang)
   const [param, setParam] = useSearchParams()
+  /* Kategori dari barang yang sedang dimuat, data contoh maupun data server. */
+  const kategoriBarang = useMemo(() => Array.from(new Set(barang.map((b) => b.kategori))).sort(), [barang])
 
   /* Nilai yang tidak dikenali dikembalikan ke kategori pertama, bukan dibiarkan
      kosong: alamat halaman bisa saja diketik sendiri atau dibagikan dari versi
@@ -454,6 +455,7 @@ function DetailBarang({
   const tambahKeKeranjang = useAplikasi((s) => s.tambahKeKeranjang)
   const { hargaBerlaku } = usePenentuHarga()
   const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
+  const sumberServer = useAplikasi((s) => s.sumberData === 'server')
 
   /* Dihitung ulang dari barang yang hidup di penyimpanan. Kalau memakai
      daftar yang dibekukan saat aplikasi dimuat, angka saran masih berdasar
@@ -678,16 +680,27 @@ function DetailBarang({
           /* Tidak ada penawaran berarti tidak ada yang bisa dipesan dari sini.
              Dikatakan apa adanya, bukan disembunyikan di balik tombol mati. */
           <Peringatan nada="netral" className="mt-4" judul="Belum bisa dipesan dari halaman ini">
-            Belum ada distributor yang menawarkan {barang.nama} di aplikasi, jadi kami tidak bisa memasukkannya ke
-            keranjang untuk kamu. Kamu masih bisa mencarinya sendiri di daftar Distributor.
+            {sumberServer ? (
+              /* Data server: katalog pemesanan belum tersambung, tapi Mesin 2 sudah
+                 punya saran distributor. Jangan bilang "belum ada distributor". */
+              <>
+                Pemesanan dari data server belum tersambung. Saran distributor untuk {barang.nama} dari mesin
+                analitik bisa dilihat di rincian barang.
+              </>
+            ) : (
+              <>
+                Belum ada distributor yang menawarkan {barang.nama} di aplikasi, jadi kami tidak bisa memasukkannya ke
+                keranjang untuk kamu. Kamu masih bisa mencarinya sendiri di daftar Distributor.
+              </>
+            )}
             <div className="mt-2.5">
               <TombolTautan
-                ke={`/belanja?cari=${encodeURIComponent(barang.nama)}`}
+                ke={sumberServer ? `/stok/${barang.id}` : `/belanja?cari=${encodeURIComponent(barang.nama)}`}
                 ragam="garis"
                 ukuran="kecil"
                 ikonKiri={<IkonToko size={15} />}
               >
-                Cari di Distributor
+                {sumberServer ? 'Lihat Saran Distributor' : 'Cari di Distributor'}
               </TombolTautan>
             </div>
           </Peringatan>

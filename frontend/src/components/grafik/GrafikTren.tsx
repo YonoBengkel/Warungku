@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { PointerEvent } from 'react'
 import type { TitikTren } from '@/lib/types'
+import { useAplikasi } from '@/store/aplikasi'
 import { angka, bulanRingkas, bulanTahun, tanggalRingkas, tanggalLengkapHari } from '@/lib/format'
 import { useLebarWadah, batasRapi, tandaSumbu, garisHalus } from './dasarGrafik'
 
@@ -32,7 +33,7 @@ export function GrafikTren({
   formatSumbu = (n: number) => angka(n, Math.abs(n) < 10 ? 2 : 0),
   lebarSumbu = SISI.kiri,
   bulanan = false,
-  labelBatas = 'hari ini',
+  labelBatas,
 }: {
   data: TitikTren[]
   satuan: string
@@ -50,6 +51,9 @@ export function GrafikTren({
   /** Tulisan di garis pemisah riwayat dan perkiraan. */
   labelBatas?: string
 }) {
+  // Data server berhenti di hari terakhir yang tercatat, belum tentu hari ini.
+  const sumberServer = useAplikasi((s) => s.sumberData === 'server')
+  const tulisBatas = labelBatas ?? (sumberServer ? 'data terakhir' : 'hari ini')
   const tulis = format ?? ((n: number) => `${angka(n)} ${satuan}`)
   const tulisTanggal = bulanan ? bulanRingkas : tanggalRingkas
   const tulisTanggalPanjang = bulanan ? bulanTahun : tanggalLengkapHari
@@ -187,7 +191,7 @@ export function GrafikTren({
                 fontWeight="700"
                 fill="var(--c-sumbu)"
               >
-                {labelBatas}
+                {tulisBatas}
               </text>
             </>
           )}

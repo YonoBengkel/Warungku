@@ -30,6 +30,8 @@ from .skema import (
     BarangRingkas,
     HasilStruk,
     KemasanRingkas,
+    PemakaianBulanan,
+    PeriodePemakaian,
     PerkiraanRingkas,
     RiwayatHarian,
     SaranDistributor,
@@ -53,6 +55,13 @@ def _status(stok: Decimal, batas: Decimal) -> str:
     if stok < batas:
         return "menipis"
     return "aman"
+
+
+def _harga_per_satuan(harga_kemasan: int, kemasan: list[KemasanRingkas]) -> Decimal:
+    """Harga per satuan simpan dari harga kemasan terbesar. Tanpa kemasan, harganya sudah per satuan."""
+    if not kemasan or kemasan[-1].isi <= 0:
+        return Decimal(harga_kemasan)
+    return (Decimal(harga_kemasan) / kemasan[-1].isi).quantize(Decimal("0.0001"))
 
 
 @rute.get("/barang", response_model=list[BarangRingkas])
@@ -99,6 +108,7 @@ def daftar_barang(usaha_id: int = Depends(usaha_saya)) -> list[BarangRingkas]:
                 sumber_batas_aman=str(getattr(b.sumber_batas_aman, "value", b.sumber_batas_aman)),
                 hari_kirim=b.hari_kirim,
                 harga_beli_terakhir=b.harga_beli_terakhir,
+                harga_beli_per_satuan=_harga_per_satuan(b.harga_beli_terakhir, kemasan.get(b.id, [])),
                 pemakaian_harian=Decimal(pakai.get(b.id) or 0).quantize(Decimal("0.001")),
                 hari_data_terkumpul=b.hari_data_terkumpul,
                 ingatkan_kedaluwarsa=b.ingatkan_kedaluwarsa,
@@ -142,6 +152,74 @@ def riwayat_barang(
             ).bindparams(u=usaha_id, b=barang_id, h=hari)
         ).all()
         return [RiwayatHarian(**dict(r._mapping)) for r in baris]
+
+
+@rute.get("/pemakaian-bulanan", response_model=list[PemakaianBulanan])
+def pemakaian_bulanan(
+    periode: int = Query(12, ge=1, le=13),
+    usaha_id: int = Depends(usaha_saya),
+) -> list[PemakaianBulanan]:
+    """
+    Bahan halaman Prediksi: pemakaian tiap barang per 30 hari, lalu perkiraan 30 hari ke depan.
+
+    Sebulan dihitung 30 hari mundur dari hari terakhir yang tercatat, bukan bulan
+    kalender: bulan kalender yang baru berjalan lima hari akan terlihat sepi
+    padahal datanya saja yang belum lengkap. Hari tersensor stok habis tidak
+    dianggap pemakaian nol; pemakaian periode = rata-rata hari tak tersensor x 30.
+    """
+    with Session(mesin()) as sesi:
+        _usaha_atau_404(sesi, usaha_id)
+        riwayat = sesi.exec(
+            text(
+                """
+                WITH akhir AS (SELECT max(tanggal) AS t FROM permintaan_harian WHERE usaha_id = :u)
+                SELECT barang_id,
+                       floor((akhir.t - tanggal) / 30)::int AS k,
+                       min(tanggal) AS awal, max(tanggal) AS ujung,
+                       avg(jumlah) FILTER (WHERE NOT stok_habis) AS rata,
+                       count(*) FILTER (WHERE NOT stok_habis) AS n
+                  FROM permintaan_harian, akhir
+                 WHERE usaha_id = :u AND tanggal > akhir.t - 30 * :p
+                 GROUP BY barang_id, k
+                 ORDER BY barang_id, k DESC
+                """
+            ).bindparams(u=usaha_id, p=periode)
+        ).all()
+        depan = sesi.exec(
+            text(
+                """
+                WITH terbaru AS (
+                    SELECT DISTINCT ON (barang_id) barang_id, jalan_id
+                      FROM prediksi WHERE usaha_id = :u
+                     ORDER BY barang_id, dijalankan_pada DESC
+                )
+                SELECT p.barang_id, sum(p.p10) AS p10, sum(p.p50) AS p50, sum(p.p90) AS p90,
+                       max(p.model_nama) AS model_nama, max(p.dijalankan_pada) AS dijalankan_pada
+                  FROM prediksi p JOIN terbaru t USING (barang_id, jalan_id)
+                 WHERE p.tanggal_target < (SELECT min(tanggal_target) FROM prediksi q
+                                             WHERE q.jalan_id = p.jalan_id AND q.barang_id = p.barang_id) + 30
+                 GROUP BY p.barang_id
+                """
+            ).bindparams(u=usaha_id)
+        ).all()
+        perkiraan = {r.barang_id: r for r in depan}
+        hasil: dict[int, PemakaianBulanan] = {}
+        for r in riwayat:
+            h = hasil.setdefault(r.barang_id, PemakaianBulanan(barang_id=r.barang_id, periode=[]))
+            tengah = r.awal + (r.ujung - r.awal) / 2
+            h.periode.append(
+                PeriodePemakaian(
+                    tanggal=tengah,
+                    jumlah=(Decimal(r.rata) * 30).quantize(Decimal("0.001")) if r.rata is not None else Decimal(0),
+                    hari_tercatat=r.n,
+                )
+            )
+        for bid, h in hasil.items():
+            f = perkiraan.get(bid)
+            if f is not None:
+                h.perkiraan_p10, h.perkiraan_p50, h.perkiraan_p90 = f.p10, f.p50, f.p90
+                h.model_nama, h.dijalankan_pada = f.model_nama, f.dijalankan_pada
+        return list(hasil.values())
 
 
 @rute.get("/barang/{barang_id}/perkiraan", response_model=list[PerkiraanRingkas])

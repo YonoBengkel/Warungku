@@ -48,6 +48,7 @@ import {
   hargaBerlaku as hargaBerlakuDasar,
   kontrakBisaDipakai,
   paketById,
+  pasangDataServer,
   penawaranById,
   profilAwal,
   promoById as promoByIdDasar,
@@ -59,7 +60,7 @@ import {
   warnaTitikUntuk,
 } from '@/data/dummy'
 import { jumlahTampil } from '@/lib/satuan'
-import { ambilBarang, masukUmkm, sesiTersimpan, simpanSesi } from '@/lib/api'
+import { ambilBarang, ambilPemakaianBulanan, masukUmkm, sesiTersimpan, simpanSesi } from '@/lib/api'
 import type { SesiServer } from '@/lib/api'
 
 /**
@@ -290,6 +291,18 @@ function nomorPesananBaru(): string {
   return `PS-${t}-${String(urutPesanan).padStart(2, '0')}`
 }
 
+/**
+ * Barang dan pemakaian bulanan dari server. Pemakaian bulanan dipasang SEBELUM
+ * barang masuk store, supaya layar yang menghitung ulang saat `barang` berubah
+ * langsung membaca angka server. Kalau endpoint bulanan gagal, gudang tetap
+ * terbuka dan halaman Prediksi memakai hitungan data contoh.
+ */
+async function muatGudangServer(sesi: SesiServer): Promise<Barang[]> {
+  const [barang, bulanan] = await Promise.all([ambilBarang(sesi), ambilPemakaianBulanan(sesi).catch(() => null)])
+  pasangDataServer(bulanan, barang)
+  return barang
+}
+
 export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
   profil: profilAwal,
   kasir: dataKasirAwal,
@@ -333,12 +346,13 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
     if (v) return set({ masuk: true })
     // Keluar: sesi server dilepas dan gudang kembali ke data contoh.
     simpanSesi(null)
+    pasangDataServer(null)
     set({ masuk: false, sumberData: 'contoh', sesiServer: null, barang: daftarBarang, profil: profilAwal })
   },
 
   masukServer: async (email, kataSandi) => {
     const sesi = await masukUmkm(email, kataSandi)
-    const barang = await ambilBarang(sesi)
+    const barang = await muatGudangServer(sesi)
     simpanSesi(sesi)
     set((s) => ({
       masuk: true,
@@ -359,7 +373,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
     const sesi = sesiTersimpan()
     if (!sesi || get().sesiServer) return
     try {
-      const barang = await ambilBarang(sesi)
+      const barang = await muatGudangServer(sesi)
       set((s) => ({
         masuk: true,
         sumberData: 'server',
@@ -375,6 +389,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
     } catch {
       // Token hangus (server dimuat ulang) atau server mati: mulai lagi dari data contoh.
       simpanSesi(null)
+      pasangDataServer(null)
     }
   },
 

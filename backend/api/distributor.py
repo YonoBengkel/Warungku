@@ -90,6 +90,10 @@ def ringkasan_segmen(distributor_id: int = Depends(distributor_saya)):
                        MAX(tanggal_acuan)               AS tanggal_acuan
                   FROM segmen_pelanggan
                  WHERE distributor_id = :d
+                   -- Hanya putaran Mesin 3 terbaru. Tabel ini menyimpan setiap putaran,
+                   -- jadi tanpa saringan ini tiap pelanggan terhitung sekali per putaran.
+                   AND jalan_id = (SELECT jalan_id FROM segmen_pelanggan
+                                    WHERE distributor_id = :d ORDER BY dijalankan_pada DESC LIMIT 1)
                  GROUP BY segmen, nama_segmen, ciri, saran
                  ORDER BY jumlah DESC
                 """
@@ -119,6 +123,8 @@ def anggota_segmen(segmen: str = Path(min_length=2), distributor_id: int = Depen
                   FROM segmen_pelanggan s
                   JOIN usaha u ON u.id = s.usaha_id
                  WHERE s.distributor_id = :d AND s.segmen = :g
+                   AND s.jalan_id = (SELECT jalan_id FROM segmen_pelanggan
+                                      WHERE distributor_id = :d ORDER BY dijalankan_pada DESC LIMIT 1)
                  ORDER BY s.monetary DESC
                 """
             ).bindparams(d=distributor_id, g=segmen)

@@ -10,6 +10,7 @@ import {
   IkonLonceng,
   IkonPasokan,
   IkonProfil,
+  IkonToko,
 } from '@/icons'
 import { distributorAktif } from '@/data/dummy'
 import { useAplikasi, useJumlahPerluKonfirmasi } from '@/store/aplikasi'
@@ -31,6 +32,7 @@ const TAB = [
   { ke: '/distributor-portal/pesanan', label: NAV_DISTRIBUTOR.pesanan, Ikon: IkonPasokan },
   { ke: '/distributor-portal/kontrak', label: NAV_DISTRIBUTOR.kontrak, Ikon: IkonKontrak },
   { ke: '/distributor-portal/promo', label: NAV_DISTRIBUTOR.promo, Ikon: IkonBintang },
+  { ke: '/distributor-portal/pelanggan', label: NAV_DISTRIBUTOR.pelanggan, Ikon: IkonToko },
   { ke: '/distributor-portal/profil', label: NAV_DISTRIBUTOR.profil, Ikon: IkonProfil },
 ]
 
