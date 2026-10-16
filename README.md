@@ -67,7 +67,29 @@ git switch "Rombak#3"
 git pull
 ```
 
-### 2. Pilih jalur
+### Paling mudah di Windows: `nyalakan.cmd`
+
+Klik dua kali **`nyalakan.cmd`** di akar repo. Semua langkah jalur B di bawah
+dikerjakan sekaligus:
+- Docker Desktop dan basis data dinyalakan;
+- paket Python dan frontend dipasang bila belum ada;
+- `backend\.env` disiapkan, termasuk rahasia login acak;
+- skema dinaikkan dan UMKM produsen ditambahkan bila belum ada;
+- API, layanan model, dan frontend dibuka di tiga jendela;
+- ketiga mesin dijalankan bila keluarannya belum lengkap;
+- peramban dibuka di halaman Masuk.
+
+Menjalankannya lagi aman: layanan yang sudah menyala dipakai apa adanya.
+
+Selesai memakai? Klik dua kali **`matikan.cmd`**. Datanya tetap tersimpan di
+basis data. Isi dan pilihan kedua skrip ada di [`tools/lokal/`](tools/lokal/).
+
+Yang dibutuhkan hanya Git, Docker Desktop, Node.js, dan Python (tabel di atas).
+Saat pertama kali, image basis data `yonobengkel/turnify-flow-db` diunduh otomatis
+dari Docker Hub (lihat [Image yang diunduh](#image-yang-diunduh)). Kalau ada langkah
+yang gagal, skrip berhenti dan menyebut penyebabnya.
+
+### 2. Pilih jalur (kalau ingin menjalankan sendiri)
 
 | | Jalur A: hanya mencoba | Jalur B: mengembangkan |
 | --- | --- | --- |
@@ -87,7 +109,8 @@ npm run dev
 Buka http://localhost:5173, lalu masuk dengan [akun simulasi](#akun-simulasi).
 
 - **Perintah pertama** menyalakan basis data (port 5433), API (port 8000), dan
-  layanan model (port 8001) dari image Docker Hub. Saat pertama kali, basis data
+  layanan model (port 8001) dari image Docker Hub, yang diunduh otomatis. Image
+  dan tag mana yang dipakai ada di [Image yang diunduh](#image-yang-diunduh). Saat pertama kali, basis data
   memulihkan data simulasi sekitar satu menit; tunggu sampai
   `docker ps` menunjukkan `warungku-db` berstatus `healthy`.
 - **`npm install` dan `npm run dev`** di akar repo diteruskan ke `frontend/`.
@@ -459,14 +482,35 @@ dijadwalkan dari luar. Metode Mesin 1 yang dipakai penjadwal diatur lewat
 
 ## Image Docker
 
-Dua image di Docker Hub, dipakai jalur A:
+### Image yang diunduh
 
-- [`yonobengkel/turnify-flow-backend`](https://hub.docker.com/r/yonobengkel/turnify-flow-backend):
-  satu image untuk API dan layanan model. Isinya hanya model produksi (lihat
-  [`requirements-produksi.txt`](requirements-produksi.txt)), tanpa Chronos atau PyMC.
-- [`yonobengkel/turnify-flow-db`](https://hub.docker.com/r/yonobengkel/turnify-flow-db):
-  PostgreSQL 16 yang memulihkan data simulasi beserta keluaran ketiga mesin saat
-  pertama kali dinyalakan.
+Ada dua image di Docker Hub, keduanya publik (tidak perlu `docker login` untuk
+mengunduh). **Unduh tag yang tertulis di tabel ini**: tag inilah yang dipakai
+[`deployment/docker-compose.yml`](deployment/docker-compose.yml). Tag yang lebih
+lama jangan dipakai: backend `0.2.0` belum memuat kontrak dan promo dari API, dan
+`0.1.0` juga belum memuat katalog.
+
+| Image | Tag yang dipakai | Isi | Halaman Docker Hub |
+| --- | --- | --- | --- |
+| `yonobengkel/turnify-flow-db` | **`0.1.0`** | PostgreSQL 16 yang memulihkan data simulasi (70 UMKM, 8 distributor, 400 hari) beserta keluaran ketiga mesin saat pertama kali dinyalakan | https://hub.docker.com/r/yonobengkel/turnify-flow-db/tags |
+| `yonobengkel/turnify-flow-backend` | **`0.3.0`** | Satu image untuk API (port 8000) dan layanan model (port 8001). Isinya hanya model produksi, lihat [`requirements-produksi.txt`](requirements-produksi.txt); tanpa Chronos atau PyMC | https://hub.docker.com/r/yonobengkel/turnify-flow-backend/tags |
+
+**Tidak perlu mengunduh dengan tangan.** Perintah `docker compose ... up -d` di
+jalur A dan B, juga `nyalakan.cmd`, mengunduh image yang dibutuhkan secara
+otomatis. Kalau ingin mengunduh lebih dulu (misalnya sebelum ke kampus dengan
+internet lambat):
+
+```powershell
+docker pull yonobengkel/turnify-flow-db:0.1.0
+docker pull yonobengkel/turnify-flow-backend:0.3.0
+```
+
+`nyalakan.cmd` dan jalur B hanya memakai image basis data. Image backend hanya
+dipakai jalur A.
+
+> Kedua tag di atas belum memuat perubahan 16 Oktober 2026 (LightGBM, UMKM
+> produsen, gambar produk). Versi barunya (backend `0.4.0`, basis data `0.2.0`)
+> menyusul; tabel ini dan `docker-compose.yml` akan diperbarui bersamaan.
 
 Hal yang perlu diketahui:
 
