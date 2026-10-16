@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
-import { cx, inisial } from '@/lib/format'
+import { cx } from '@/lib/format'
 import { NAV_DISTRIBUTOR } from '@/lib/label'
 import {
   IkonBeranda,
@@ -15,6 +15,7 @@ import {
 import { distributorAktif } from '@/data/dummy'
 import { useAplikasi, useJumlahPerluKonfirmasi } from '@/store/aplikasi'
 import { Toast } from '@/components/ui/umpanBalik'
+import { Avatar } from '@/components/ui/dasar'
 
 /**
  * Kerangka Portal Distributor: empat item, sistem desain yang sama dengan
@@ -121,12 +122,7 @@ export default function KerangkaDistributor() {
       >
         <div className="px-5 py-5">
           <Link to="/distributor-portal" className="flex items-center gap-2.5 min-w-0">
-            <span
-              className="size-9 rounded-md grid place-items-center text-white font-extrabold text-[0.8125rem] shrink-0"
-              style={{ background: distributorAktif.warna }}
-            >
-              {inisial(distributorAktif.nama)}
-            </span>
+            <Avatar nama={distributorAktif.nama} warna={distributorAktif.warna} ukuran={36} />
             <span className="min-w-0">
               <span className="block font-extrabold text-ink text-[1rem] tracking-tight truncate">
                 {distributorAktif.nama}
@@ -169,12 +165,7 @@ export default function KerangkaDistributor() {
               to="/distributor-portal"
               className="lg:hidden flex items-center gap-2 mr-auto min-w-0 min-h-11 pr-2"
             >
-              <span
-                className="size-8 rounded-md grid place-items-center text-white font-extrabold text-[0.8125rem] shrink-0"
-                style={{ background: distributorAktif.warna }}
-              >
-                {inisial(distributorAktif.nama)}
-              </span>
+              <Avatar nama={distributorAktif.nama} warna={distributorAktif.warna} ukuran={32} />
               <span className="font-extrabold text-ink text-[0.9375rem] truncate">
                 {distributorAktif.nama}
               </span>

@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { cx, inisial } from '@/lib/format'
+import { cx } from '@/lib/format'
 import { NAV } from '@/lib/label'
 import {
   IkonBeranda,
@@ -14,6 +14,7 @@ import {
 import { useAplikasi, useJumlahKeranjang, useJumlahPerluTindakan } from '@/store/aplikasi'
 import { Toast } from '@/components/ui/umpanBalik'
 import { TandaMerek } from '@/components/ui/Merek'
+import { Avatar } from '@/components/ui/dasar'
 
 /**
  * Kerangka lima tab.
@@ -115,12 +116,7 @@ export default function KerangkaAplikasi() {
               pathname.startsWith('/akun') ? 'bg-sunken' : 'hover:bg-sunken',
             )}
           >
-            <span
-              className="size-9 rounded-md grid place-items-center text-white font-extrabold text-[0.8125rem] shrink-0"
-              style={{ background: profil.warna }}
-            >
-              {inisial(profil.namaUsaha)}
-            </span>
+            <Avatar nama={profil.namaUsaha} warna={profil.warna} ukuran={36} />
             <span className="min-w-0">
               <span className="block text-[0.875rem] font-bold text-ink truncate">{profil.namaUsaha}</span>
               <span className="block text-[0.75rem] text-ink-3 truncate">Lihat akun</span>
@@ -134,7 +130,7 @@ export default function KerangkaAplikasi() {
         <header className="sticky top-0 z-40 bg-surface/95 backdrop-blur border-b border-line pt-aman">
           <div className="h-14 px-4 sm:px-6 flex items-center gap-2 max-w-[1400px] mx-auto w-full">
             {/* Nama aplikasi, bukan nama toko: di layar sempit nama toko sudah
-                muncul di judul Beranda dan di inisial avatar akun, sementara
+                muncul di judul Beranda dan di logo akun, sementara
                 "Turnify Flow" tidak muncul sama sekali kalau tidak di sini. */}
             <Link to="/beranda" className="lg:hidden flex items-center gap-2 mr-auto min-w-0 min-h-11 pr-2">
               <TandaMerek ukuran={32} />
@@ -175,12 +171,7 @@ export default function KerangkaAplikasi() {
               aria-label="Akun"
               className="lg:hidden size-11 grid place-items-center rounded-md shrink-0"
             >
-              <span
-                className="size-9 rounded-md grid place-items-center text-white font-extrabold text-[0.8125rem]"
-                style={{ background: profil.warna }}
-              >
-                {inisial(profil.namaUsaha)}
-              </span>
+              <Avatar nama={profil.namaUsaha} warna={profil.warna} ukuran={36} />
             </Link>
           </div>
         </header>

@@ -127,8 +127,9 @@ function KartuPenawaran({
 
   return (
     <div className="relative flex gap-3 bg-surface border border-line rounded-lg p-4 min-h-[88px] shadow-e1 transition-[border-color,box-shadow] hover:border-line-strong hover:shadow-e2">
-      {/* Tidak ada foto barang di data, jadi huruf awal yang bekerja.
-          Teks kartu harus tetap terbaca penuh tanpa gambar apa pun. */}
+      {/* Gambar produk (ilustrasi dari tools/buat_gambar.py); huruf awal kalau
+          produknya tidak punya gambar. Teks kartu harus tetap terbaca penuh
+          tanpa gambar apa pun. */}
       <Avatar nama={penawaran.nama} warna={distributor.warna} ukuran={56} />
 
       <div className="min-w-0 grow">

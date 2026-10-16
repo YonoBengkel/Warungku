@@ -1,6 +1,7 @@
 import type { ButtonHTMLAttributes, ReactNode, HTMLAttributes } from 'react'
 import { Link } from 'react-router-dom'
 import { cx } from '@/lib/format'
+import { gambarUntuk } from '@/lib/gambar'
 
 /* ================================================================== */
 /* Tombol                                                             */
@@ -319,6 +320,24 @@ export function Avatar({
   ukuran?: number
   className?: string
 }) {
+  // Logo toko atau gambar produk kalau ada (lihat `gambarUntuk`); huruf awal
+  // tetap menjadi cadangan untuk toko baru dan produk di luar katalog.
+  const gambar = gambarUntuk(nama)
+  if (gambar) {
+    return (
+      <img
+        src={gambar}
+        alt=""
+        aria-hidden="true"
+        width={ukuran}
+        height={ukuran}
+        loading="lazy"
+        decoding="async"
+        style={{ width: ukuran, height: ukuran }}
+        className={cx('inline-block shrink-0', className)}
+      />
+    )
+  }
   const huruf = nama
     .split(/\s+/)
     .filter(Boolean)

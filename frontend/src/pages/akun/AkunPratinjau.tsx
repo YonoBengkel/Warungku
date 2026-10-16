@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Kartu, Lencana, Pemisah, TombolTautan } from '@/components/ui/dasar'
+import { Avatar, Kartu, Lencana, Pemisah, TombolTautan } from '@/components/ui/dasar'
 import { KepalaHalaman } from '@/components/ui/navigasi'
 import { Peringatan } from '@/components/ui/umpanBalik'
 import {
@@ -9,7 +9,7 @@ import {
   IkonTelepon,
   IkonToko,
 } from '@/icons'
-import { inisial, nomorHp, tanggalPanjang } from '@/lib/format'
+import { nomorHp, tanggalPanjang } from '@/lib/format'
 import { LABEL_JENIS_USAHA } from '@/lib/label'
 import { useAplikasi } from '@/store/aplikasi'
 
@@ -56,13 +56,7 @@ export default function AkunPratinjau() {
             </p>
             <Kartu>
               <div className="flex items-start gap-3.5">
-                <span
-                  aria-hidden="true"
-                  style={{ background: profil.warna }}
-                  className="size-16 rounded-lg grid place-items-center text-white font-extrabold text-[1.375rem] shrink-0 tracking-tight"
-                >
-                  {inisial(profil.namaUsaha)}
-                </span>
+                <Avatar nama={profil.namaUsaha} warna={profil.warna} ukuran={64} className="rounded-lg" />
                 <div className="min-w-0 grow">
                   <h2 className="text-[1.0625rem] font-extrabold text-ink leading-tight">{profil.namaUsaha}</h2>
                   <p className="mt-0.5 text-[0.8125rem] text-ink-2">{LABEL_JENIS_USAHA[profil.jenisUsaha].judul}</p>

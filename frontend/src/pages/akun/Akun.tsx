@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Lencana, Tombol } from '@/components/ui/dasar'
+import { Avatar, Lencana, Tombol } from '@/components/ui/dasar'
 import { Konfirmasi } from '@/components/ui/lembar'
 import { KepalaHalaman } from '@/components/ui/navigasi'
 import {
@@ -18,7 +18,7 @@ import {
   IkonGrafik,
   IkonSinkron,
 } from '@/icons'
-import { cx, inisial, tanggalPanjang } from '@/lib/format'
+import { cx, tanggalPanjang } from '@/lib/format'
 import { JUDUL, LABEL_JENIS_USAHA } from '@/lib/label'
 import { useAplikasi } from '@/store/aplikasi'
 
@@ -51,13 +51,7 @@ export default function Akun() {
 
       {/* Kepala identitas usaha */}
       <div className="mt-4 flex items-center gap-3.5">
-        <span
-          aria-hidden="true"
-          style={{ background: profil.warna }}
-          className="size-16 sm:size-[4.5rem] rounded-lg grid place-items-center text-white font-extrabold text-[1.375rem] shrink-0 tracking-tight"
-        >
-          {inisial(profil.namaUsaha)}
-        </span>
+        <Avatar nama={profil.namaUsaha} warna={profil.warna} ukuran={64} className="rounded-lg" />
         <div className="min-w-0">
           <h2 className="text-[1.125rem] font-extrabold text-ink leading-tight truncate">
             {profil.namaUsaha}
