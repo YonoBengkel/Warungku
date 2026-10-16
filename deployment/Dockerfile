@@ -19,6 +19,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+# LightGBM (Mesin 1) memuat OpenMP dari libgomp1, yang tidak ada di image slim.
+RUN apt-get update     && apt-get install -y --no-install-recommends libgomp1     && rm -rf /var/lib/apt/lists/*
+
 # Dependensi dulu, kode belakangan: mengubah kode tidak memicu pemasangan ulang.
 COPY requirements-produksi.txt .
 RUN pip install --no-cache-dir -r requirements-produksi.txt

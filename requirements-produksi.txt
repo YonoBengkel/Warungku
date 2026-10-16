@@ -1,14 +1,16 @@
 # Lingkungan PRODUKSI: hanya yang dibutuhkan API (port 8000) dan layanan model
 # (port 8001) saat menjalankan model yang dipasang sekarang.
 #
-#   Mesin 1  SARIMA, fallback ETS        -> statsmodels
+#   Mesin 1  LightGBM kuantil (sejak 16 Okt 2026)      -> lightgbm
+#            SARIMA dan ETS, bisa dipilih lewat WARUNGKU_METODE_MESIN1 -> statsmodels
 #   Mesin 2  Beta-Bernoulli + Thompson + fuzzy Sugeno -> numpy
 #   Mesin 3  K-Prototypes (implementasi sendiri)      -> numpy, pandas
 #
-# Chronos-2 (torch), PyMC/BART, dan LightGBM sengaja TIDAK ada di sini: ketiganya
-# hanya dipakai eksperimen dan dimuat malas (lazy import) di kode. Tanpa mereka
-# image Docker turun dari beberapa GB ke beberapa ratus MB. Lingkungan lengkap
-# untuk eksperimen tetap requirements.txt.
+# Chronos-2 (torch) dan PyMC/BART sengaja TIDAK ada di sini: keduanya hanya
+# dipakai eksperimen dan dimuat malas (lazy import) di kode. Tanpa mereka image
+# Docker turun dari beberapa GB ke beberapa ratus MB. Lingkungan lengkap untuk
+# eksperimen tetap requirements.txt. LightGBM di Linux butuh libgomp1, yang
+# dipasang di deployment/Dockerfile.
 #
 # Dipakai oleh deployment/Dockerfile.
 
@@ -28,3 +30,4 @@ numpy>=1.26
 pandas>=2.0
 scipy>=1.11
 statsmodels>=0.14
+lightgbm>=4.0
