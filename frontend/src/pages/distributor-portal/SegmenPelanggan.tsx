@@ -6,6 +6,7 @@ import { IkonProfil } from '@/icons'
 import { angka, cx, rupiah, rupiahRingkas, tanggalRingkas, waktuLalu } from '@/lib/format'
 import { GalatApi, ambilAnggotaSegmen, ambilSegmen } from '@/lib/api'
 import { useAplikasi } from '@/store/aplikasi'
+import { KeteranganMetode, METODE_MESIN3 } from '@/components/domain/KeteranganMetode'
 import type { AnggotaSegmen, RingkasanSegmen, SesiDistributor } from '@/lib/api'
 import { LABEL_JENIS_USAHA } from '@/lib/label'
 import type { JenisUsaha } from '@/lib/types'
@@ -66,12 +67,18 @@ export default function SegmenPelanggan() {
             Pelanggan kamu dikelompokkan menurut kapan terakhir memesan, seberapa sering, dan seberapa besar belanjanya.
             Dipakai untuk memutuskan siapa yang perlu ditawari kontrak dan siapa yang perlu dihubungi.
           </p>
+          <KeteranganMetode
+            className="mt-3 max-w-[70ch]"
+            mesin="Mesin 3"
+            metode={METODE_MESIN3.metode}
+            masukan={METODE_MESIN3.masukan}
+          />
         </div>
         {sesi && <TombolPutusDistributor />}
       </div>
 
       {!sesi ? (
-        <Peringatan nada="netral" className="mt-4 max-w-[32rem]" judul="Perlu data server">
+        <Peringatan nada="netral" className="mt-4 max-w-[32rem]" judul="Perlu masuk sebagai distributor">
           Segmen pelanggan dihitung mesin analitik dari pesanan sungguhan, jadi halaman ini perlu masuk dengan akun
           distributor.
           <div className="mt-2.5">

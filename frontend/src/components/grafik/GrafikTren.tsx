@@ -9,11 +9,14 @@ import { useLebarWadah, batasRapi, tandaSumbu, garisHalus } from './dasarGrafik'
  * Tren pemakaian: yang sudah terjadi dan yang diperkirakan akan terjadi.
  *
  * Keputusan yang dipegang:
- * - Aktual dan prediksi adalah UKURAN YANG SAMA pada rentang waktu berbeda,
- *   jadi keduanya memakai satu warna. Yang membedakan adalah gaya garis
- *   (utuh untuk yang sudah terjadi, putus-putus untuk perkiraan) dan pita
- *   ketidakpastian. Memberi mereka dua warna berbeda akan menyiratkan dua hal
- *   berbeda, dan itu keliru.
+ * - Aktual dan perkiraan memakai dua warna (seri-1 dan merah perkiraan) dan dua
+ *   gaya garis (utuh dan putus-putus), atas permintaan dosen pengampu
+ *   (16 Okt 2026). Dulu satu warna; sekarang kedua garis bisa tumpang tindih
+ *   di hari yang sudah tercatat (perkiraan uji balik), jadi keduanya harus
+ *   bisa dibedakan. Gaya garis tetap ada supaya warna tidak bekerja sendirian.
+ * - Sesudah hari terakhir yang tercatat, hanya garis perkiraan yang tersisa.
+ *   Kalau datanya tidak tumpang tindih (data contoh, grafik bulanan), garis
+ *   perkiraan disambung ke titik aktual terakhir supaya tidak terputus.
  * - Pita ketidakpastian selalu ditampilkan kalau ada. Menyembunyikan rentang
  *   membuat perkiraan terlihat lebih pasti daripada kenyataannya.
  * - Ada tampilan tabel, supaya angka tetap terbaca oleh pembaca layar dan oleh
@@ -54,7 +57,8 @@ export function GrafikTren({
   // Data server berhenti di hari terakhir yang tercatat, belum tentu hari ini.
   const sumberServer = useAplikasi((s) => s.sumberData === 'server')
   const tulisBatas = labelBatas ?? (sumberServer ? 'data terakhir' : 'hari ini')
-  const tulis = format ?? ((n: number) => `${angka(n)} ${satuan}`)
+  // Desimal untuk angka kecil (mis. 0,87 kg), supaya rentang tidak terbaca "0 kg–1 kg".
+  const tulis = format ?? ((n: number) => `${angka(n, Math.abs(n) < 10 ? 2 : 0)} ${satuan}`)
   const tulisTanggal = bulanan ? bulanRingkas : tanggalRingkas
   const tulisTanggalPanjang = bulanan ? bulanTahun : tanggalLengkapHari
   const sisi = { ...SISI, kiri: lebarSumbu }
@@ -84,8 +88,14 @@ export function GrafikTren({
       if (d.prediksi != null) titikPrediksi.push([x(i), y(d.prediksi)])
     })
 
-    // Sambungkan garis prediksi ke titik aktual terakhir supaya tidak terputus.
-    if (indeksSambung >= 0 && data[indeksSambung].aktual != null && titikPrediksi.length > 0) {
+    // Sambungkan garis prediksi ke titik aktual terakhir supaya tidak terputus,
+    // tapi hanya kalau perkiraan baru mulai sesudahnya (tidak tumpang tindih).
+    const disambung =
+      indeksSambung >= 0 &&
+      data[indeksSambung].aktual != null &&
+      data[indeksSambung].prediksi == null &&
+      titikPrediksi.length > 0
+    if (disambung) {
       titikPrediksi.unshift([x(indeksSambung), y(data[indeksSambung].aktual!)])
     }
 
@@ -97,6 +107,14 @@ export function GrafikTren({
         pitaBawah.push([x(i), y(d.batasBawah)])
       }
     })
+
+    // Sama seperti garisnya: pita yang baru mulai sesudah data terakhir ditarik
+    // dari titik aktual terakhir, sehingga perkiraan satu bulan pun punya pita.
+    if (disambung && pitaAtas.length > 0) {
+      const awal: [number, number] = [x(indeksSambung), y(data[indeksSambung].aktual!)]
+      pitaAtas.unshift(awal)
+      pitaBawah.unshift(awal)
+    }
 
     const jalurPita =
       pitaAtas.length > 1
@@ -120,7 +138,13 @@ export function GrafikTren({
   }, [data, lebar, tinggi, lebarSumbu])
 
   const nilaiTerakhirPrediksi = [...data].reverse().find((d) => d.prediksi != null)?.prediksi
-  const langkahLabel = Math.max(1, Math.ceil(data.length / 6))
+  const adaPita = data.some((t) => t.batasBawah != null && t.batasAtas != null)
+  // Label tanggal kira-kira selebar 60px: di layar sempit jumlahnya dikurangi
+  // supaya "22 Sep" dan "26 Sep" tidak bertabrakan.
+  const muatLabel = Math.max(2, Math.min(6, Math.floor((g.w - sisi.kiri - sisi.kanan) / 60)))
+  const langkahLabel = Math.max(1, Math.ceil(data.length / muatLabel))
+  const tampilLabel = (i: number) =>
+    i === data.length - 1 || (i % langkahLabel === 0 && data.length - 1 - i >= langkahLabel / 2)
 
   function saatGerak(e: PointerEvent<SVGSVGElement>) {
     const kotak = e.currentTarget.getBoundingClientRect()
@@ -169,7 +193,7 @@ export function GrafikTren({
           ))}
 
           {/* Pita ketidakpastian prediksi */}
-          {g.jalurPita && <path d={g.jalurPita} fill="var(--c-seri-1)" opacity="0.1" />}
+          {g.jalurPita && <path d={g.jalurPita} fill="var(--c-seri-perkiraan)" opacity="0.12" />}
 
           {/* Batas hari ini */}
           {g.indeksSambung >= 0 && g.indeksSambung < data.length - 1 && (
@@ -184,9 +208,11 @@ export function GrafikTren({
                 strokeDasharray="3 3"
                 opacity="0.65"
               />
+              {/* Dekat tepi kanan (grafik bulanan) tulisan pindah ke kiri garis supaya tidak terpotong. */}
               <text
-                x={g.x(g.indeksSambung) + 5}
+                x={g.x(g.indeksSambung) + (g.x(g.indeksSambung) > g.w - sisi.kanan - 75 ? -5 : 5)}
                 y={sisi.atas + 9}
+                textAnchor={g.x(g.indeksSambung) > g.w - sisi.kanan - 75 ? 'end' : 'start'}
                 fontSize="10"
                 fontWeight="700"
                 fill="var(--c-sumbu)"
@@ -195,17 +221,6 @@ export function GrafikTren({
               </text>
             </>
           )}
-
-          {/* Garis perkiraan: putus-putus karena belum terjadi */}
-          <path
-            d={g.jalurPrediksi}
-            fill="none"
-            stroke="var(--c-seri-1)"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeDasharray="5 4"
-          />
 
           {/* Garis tercatat */}
           <path
@@ -217,13 +232,25 @@ export function GrafikTren({
             strokeLinejoin="round"
           />
 
+          {/* Garis perkiraan di atas garis tercatat: celah putus-putusnya
+              membiarkan garis tercatat tetap terlihat saat tumpang tindih. */}
+          <path
+            d={g.jalurPrediksi}
+            fill="none"
+            stroke="var(--c-seri-perkiraan)"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeDasharray="5 4"
+          />
+
           {/* Penanda ujung dengan cincin permukaan supaya tetap terbaca */}
           {g.ujungPrediksi && (
             <circle
               cx={g.ujungPrediksi[0]}
               cy={g.ujungPrediksi[1]}
               r="4.5"
-              fill="var(--c-seri-1)"
+              fill="var(--c-seri-perkiraan)"
               stroke="var(--c-surface)"
               strokeWidth="2"
             />
@@ -240,20 +267,32 @@ export function GrafikTren({
                 stroke="var(--c-ink-3)"
                 strokeWidth="1"
               />
-              <circle
-                cx={g.x(sorot)}
-                cy={g.y(data[sorot].aktual ?? data[sorot].prediksi ?? 0)}
-                r="5"
-                fill="var(--c-seri-1)"
-                stroke="var(--c-surface)"
-                strokeWidth="2"
-              />
+              {data[sorot].prediksi != null && (
+                <circle
+                  cx={g.x(sorot)}
+                  cy={g.y(data[sorot].prediksi!)}
+                  r="5"
+                  fill="var(--c-seri-perkiraan)"
+                  stroke="var(--c-surface)"
+                  strokeWidth="2"
+                />
+              )}
+              {data[sorot].aktual != null && (
+                <circle
+                  cx={g.x(sorot)}
+                  cy={g.y(data[sorot].aktual!)}
+                  r="5"
+                  fill="var(--c-seri-1)"
+                  stroke="var(--c-surface)"
+                  strokeWidth="2"
+                />
+              )}
             </>
           )}
 
           {/* Label sumbu tanggal, dijarangkan supaya tidak bertabrakan */}
           {data.map((t, i) =>
-            i % langkahLabel === 0 || i === data.length - 1 ? (
+            tampilLabel(i) ? (
               <text
                 key={t.tanggal}
                 x={g.x(i)}
@@ -277,12 +316,13 @@ export function GrafikTren({
             }}
           >
             <div className="font-bold">{tulisTanggalPanjang(d.tanggal)}</div>
-            <div className="mt-0.5 opacity-90 tabular">
-              {d.aktual != null
-                ? `${labelAktual}: ${tulis(d.aktual)}`
-                : `${labelPrediksi}: ${tulis(d.prediksi ?? 0)}`}
-            </div>
-            {d.aktual == null && d.batasBawah != null && d.batasAtas != null && (
+            {d.aktual != null && (
+              <div className="mt-0.5 opacity-90 tabular">{`${labelAktual}: ${tulis(d.aktual)}`}</div>
+            )}
+            {d.prediksi != null && (
+              <div className="mt-0.5 opacity-90 tabular">{`${labelPrediksi}: ${tulis(d.prediksi)}`}</div>
+            )}
+            {d.batasBawah != null && d.batasAtas != null && (
               <div className="opacity-70 tabular">
                 Rentang {tulis(d.batasBawah)}&ndash;{tulis(d.batasAtas)}
               </div>
@@ -291,7 +331,7 @@ export function GrafikTren({
         )}
       </div>
 
-      {/* Kunci baca: dua gaya garis, bukan dua warna */}
+      {/* Kunci baca: dua warna dan dua gaya garis, ditambah pita rentang */}
       <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[0.75rem] text-ink-3">
         <span className="inline-flex items-center gap-1.5">
           <svg width="18" height="8" aria-hidden="true">
@@ -306,7 +346,7 @@ export function GrafikTren({
               y1="4"
               x2="18"
               y2="4"
-              stroke="var(--c-seri-1)"
+              stroke="var(--c-seri-perkiraan)"
               strokeWidth="2"
               strokeLinecap="round"
               strokeDasharray="5 4"
@@ -319,6 +359,14 @@ export function GrafikTren({
             </span>
           )}
         </span>
+        {g.jalurPita && (
+          <span className="inline-flex items-center gap-1.5">
+            <svg width="18" height="10" aria-hidden="true">
+              <rect x="0" y="0" width="18" height="10" rx="2" fill="var(--c-seri-perkiraan)" opacity="0.18" />
+            </svg>
+            Rentang perkiraan
+          </span>
+        )}
         <button
           type="button"
           onClick={() => setTampilTabel((v) => !v)}
@@ -346,6 +394,11 @@ export function GrafikTren({
                 <th scope="col" className="py-2 px-3 font-semibold text-right">
                   {labelPrediksi}
                 </th>
+                {adaPita && (
+                  <th scope="col" className="py-2 px-3 font-semibold text-right">
+                    Rentang
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -358,6 +411,13 @@ export function GrafikTren({
                   <td className="py-1.5 px-3 text-right tabular text-ink-2">
                     {t.prediksi != null ? tulis(t.prediksi) : '–'}
                   </td>
+                  {adaPita && (
+                    <td className="py-1.5 px-3 text-right tabular text-ink-3 whitespace-nowrap">
+                      {t.batasBawah != null && t.batasAtas != null
+                        ? `${tulis(t.batasBawah)}–${tulis(t.batasAtas)}`
+                        : '–'}
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

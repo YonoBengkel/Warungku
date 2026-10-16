@@ -1,0 +1,126 @@
+{
+ "titik_asal_validasi": [
+  "2026-08-11",
+  "2026-08-18",
+  "2026-08-25",
+  "2026-09-01",
+  "2026-09-08",
+  "2026-09-15",
+  "2026-09-22"
+ ],
+ "titik_asal_uji": "2026-09-29",
+ "cakrawala_hari": 7,
+ "barang": 890,
+ "sasaran": {
+  "cakupan_p10_p90": 0.8,
+  "di_atas_p90": 0.1,
+  "di_bawah_p10": 0.1
+ },
+ "kandidat_validasi": {
+  "median, alpha 0,10/0,90": {
+   "barang_pekan": 6230,
+   "hari_dinilai": 40866,
+   "cakupan_p10_p90": 0.7517251504918514,
+   "di_atas_p90": 0.10463465961924338,
+   "di_bawah_p10": 0.1436401898889052,
+   "lebar_relatif_median": 1.1253553665739573,
+   "mape_pekanan_p50": 22.960983863120543,
+   "pekan_mape": 5386,
+   "cadangan_ets": 0
+  },
+  "L2, alpha 0,10/0,90": {
+   "barang_pekan": 6230,
+   "hari_dinilai": 40866,
+   "cakupan_p10_p90": 0.7517251504918514,
+   "di_atas_p90": 0.10463465961924338,
+   "di_bawah_p10": 0.1436401898889052,
+   "lebar_relatif_median": 1.0547597877952906,
+   "mape_pekanan_p50": 20.510759946177235,
+   "pekan_mape": 5386,
+   "cadangan_ets": 0
+  },
+  "L2, alpha 0,08/0,90": {
+   "barang_pekan": 6230,
+   "hari_dinilai": 40866,
+   "cakupan_p10_p90": 0.8132188127049381,
+   "di_atas_p90": 0.10463465961924338,
+   "di_bawah_p10": 0.08214652767581852,
+   "lebar_relatif_median": 1.0860677065726994,
+   "mape_pekanan_p50": 20.510759946177235,
+   "pekan_mape": 5386,
+   "cadangan_ets": 0
+  },
+  "L2, alpha 0,06/0,90": {
+   "barang_pekan": 6230,
+   "hari_dinilai": 40866,
+   "cakupan_p10_p90": 0.8330886311359076,
+   "di_atas_p90": 0.10463465961924338,
+   "di_bawah_p10": 0.062276709244849016,
+   "lebar_relatif_median": 1.1210636508726664,
+   "mape_pekanan_p50": 20.510759946177235,
+   "pekan_mape": 5386,
+   "cadangan_ets": 0
+  },
+  "L2, alpha 0,06/0,92": {
+   "barang_pekan": 6230,
+   "hari_dinilai": 40866,
+   "cakupan_p10_p90": 0.8530073900063623,
+   "di_atas_p90": 0.08471590074878872,
+   "di_bawah_p10": 0.062276709244849016,
+   "lebar_relatif_median": 1.1941839836317407,
+   "mape_pekanan_p50": 20.510759946177235,
+   "pekan_mape": 5386,
+   "cadangan_ets": 0
+  }
+ },
+ "terpilih": "L2, alpha 0,08/0,90",
+ "validasi": {
+  "lightgbm": {
+   "barang_pekan": 6230,
+   "hari_dinilai": 40866,
+   "cakupan_p10_p90": 0.8132188127049381,
+   "di_atas_p90": 0.10463465961924338,
+   "di_bawah_p10": 0.08214652767581852,
+   "lebar_relatif_median": 1.0860677065726994,
+   "mape_pekanan_p50": 20.510759946177235,
+   "pekan_mape": 5386,
+   "cadangan_ets": 0
+  },
+  "sarima": {
+   "barang_pekan": 6230,
+   "hari_dinilai": 40866,
+   "cakupan_p10_p90": 0.8315225370723829,
+   "di_atas_p90": 0.09112709832134293,
+   "di_bawah_p10": 0.07735036460627416,
+   "lebar_relatif_median": 1.3183062129658958,
+   "mape_pekanan_p50": 21.93523945817157,
+   "pekan_mape": 5386,
+   "cadangan_ets": 280
+  }
+ },
+ "uji": {
+  "lightgbm": {
+   "barang_pekan": 890,
+   "hari_dinilai": 5791,
+   "cakupan_p10_p90": 0.8159212571231221,
+   "di_atas_p90": 0.11034363667760318,
+   "di_bawah_p10": 0.07373510619927473,
+   "lebar_relatif_median": 1.0997967749316393,
+   "mape_pekanan_p50": 23.049015673916543,
+   "pekan_mape": 746,
+   "cadangan_ets": 0
+  },
+  "sarima": {
+   "barang_pekan": 890,
+   "hari_dinilai": 5791,
+   "cakupan_p10_p90": 0.8283543429459506,
+   "di_atas_p90": 0.08392332930409256,
+   "di_bawah_p10": 0.08772232774995684,
+   "lebar_relatif_median": 1.289939471986252,
+   "mape_pekanan_p50": 23.40349173952645,
+   "pekan_mape": 746,
+   "cadangan_ets": 40
+  }
+ },
+ "detik": 528.2
+}

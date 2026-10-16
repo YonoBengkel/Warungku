@@ -120,6 +120,9 @@ class PerkiraanRingkas(BaseModel):
     dijalankan_pada: datetime
     kematangan: str
     tingkat_layanan: str
+    #: True untuk ramalan uji balik (tanggal sudah lewat): ramalan yang dibuat dari
+    #: 14 hari sebelum data terakhir, untuk dibandingkan dengan pemakaian sebenarnya.
+    uji_balik: bool = False
 
 
 class SaranDistributor(BaseModel):

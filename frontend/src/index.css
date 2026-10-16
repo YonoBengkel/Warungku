@@ -67,6 +67,12 @@
   --c-seri-1: #0ba393;
   --c-seri-2: #eb6834;
   --c-seri-3: #4a3aa7;
+  /* Garis perkiraan Mesin 1: merah atas permintaan dosen pengampu (16 Okt 2026).
+     Token grafik, BUKAN warna status kritis. Berpasangan dengan seri-1 (garis
+     aktual) dan lolos validasi: pemisahan buta warna dE 10,9 (deutan),
+     penglihatan normal dE 29,9, kontras >= 3:1. Gaya putus-putus menjadi
+     penanda kedua, jadi warna tidak bekerja sendirian. */
+  --c-seri-perkiraan: #e34948;
   --c-grid: #e6eaee;
   --c-sumbu: #9aa5b1;
 
@@ -131,6 +137,8 @@
   --c-seri-1: #0da596;
   --c-seri-2: #e2703a;
   --c-seri-3: #8577dd;
+  /* Pasangan gelap seri-1: dE 9,5 (deutan), 26,9 (normal), kontras >= 3:1. */
+  --c-seri-perkiraan: #e66767;
   --c-grid: #22303b;
   --c-sumbu: #64717d;
 
@@ -180,6 +188,7 @@
   --color-seri-1: var(--c-seri-1);
   --color-seri-2: var(--c-seri-2);
   --color-seri-3: var(--c-seri-3);
+  --color-seri-perkiraan: var(--c-seri-perkiraan);
   --color-grid: var(--c-grid);
   --color-sumbu: var(--c-sumbu);
 

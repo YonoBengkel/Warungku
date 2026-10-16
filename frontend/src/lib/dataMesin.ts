@@ -9,7 +9,7 @@ import { useAplikasi } from '@/store/aplikasi'
  * Keluaran mesin analitik untuk satu barang, dari mana pun asalnya.
  *
  * Mode `contoh`: hitungan dari data contoh di memori, seperti sebelumnya.
- * Mode `server`: perkiraan Mesin 1 (SARIMA), riwayat pemakaian, dan saran
+ * Mode `server`: perkiraan Mesin 1 (LightGBM), riwayat pemakaian, dan saran
  * Mesin 2 dibaca dari API. Bentuk keluarannya sama di kedua mode, jadi
  * layar tidak perlu bercabang.
  */
@@ -18,7 +18,7 @@ export interface DataMesin {
   perkiraan: Perkiraan
   tren: TitikTren[]
   saran: SaranServer[]
-  /** Nama model yang menghasilkan perkiraan, mis. "SARIMA". Kosong di mode contoh. */
+  /** Nama model yang menghasilkan perkiraan, mis. "LightGBM". Kosong di mode contoh. */
   model: string | null
 }
 
@@ -69,12 +69,14 @@ export function useDataMesin(barang: Barang | undefined): DataMesin {
   if (!hasil || hasil.id !== id) {
     return { status: 'memuat', perkiraan: kosong(barang.id), tren: [], saran: [], model: null }
   }
+  // Baris uji balik hanya untuk grafik; hitungan stok memakai perkiraan ke depan saja.
+  const depan = hasil.perkiraan.filter((h) => !h.ujiBalik)
   return {
     status: 'siap',
-    perkiraan: perkiraanDariServer(barang, hasil.perkiraan),
+    perkiraan: perkiraanDariServer(barang, depan),
     tren: trenDariServer(hasil.riwayat, hasil.perkiraan),
     saran: hasil.saran,
-    model: hasil.perkiraan[0] ? namaModel(hasil.perkiraan[0].model) : null,
+    model: depan[0] ? namaModel(depan[0].model) : null,
   }
 }
 
@@ -97,11 +99,13 @@ function kosong(barangId: string): Perkiraan {
 export function namaModel(kode: string): string {
   const m = /^sarima-(\d)-(\d)-(\d)-(\d)-(\d)-(\d)-(\d+)$/.exec(kode)
   if (m) return `SARIMA(${m[1]},${m[2]},${m[3]})(${m[4]},${m[5]},${m[6]})${m[7]}`
+  if (kode.startsWith('lightgbm')) return 'LightGBM'
+  if (kode.startsWith('ets') || kode.startsWith('holt')) return 'ETS (Holt-Winters)'
   return kode.split('-')[0].toUpperCase()
 }
 
 /**
- * Perkiraan di layar dari kuantil SARIMA.
+ * Perkiraan di layar dari kuantil Mesin 1 (hanya hari sesudah data terakhir).
  *
  * - Hari cukup: berapa hari sisa stok bertahan bila pemakaian mengikuti p50.
  * - Pakai 3 hari: jumlah p10 sampai jumlah p90 tiga hari pertama.
@@ -137,14 +141,27 @@ function perkiraanDariServer(b: Barang, hari: HariPerkiraan[]): Perkiraan {
   }
 }
 
-/** 14 hari pemakaian tercatat, lalu 7 hari p50 dengan pita p10–p90. Hari tersensor tidak digambar. */
+/**
+ * 14 hari pemakaian tercatat, lalu 7 hari p50 dengan pita p10–p90.
+ *
+ * Di 14 hari tercatat itu ikut digambar perkiraan uji balik (dibuat dari titik
+ * 14 hari sebelum data terakhir), jadi garis aktual dan garis perkiraan
+ * tumpang tindih. Sesudah data terakhir hanya garis perkiraan yang tersisa.
+ * Hari tersensor (stok habis) tidak digambar di garis aktual.
+ */
 function trenDariServer(riwayat: HariRiwayat[], perkiraan: HariPerkiraan[]): TitikTren[] {
-  const titik: TitikTren[] = riwayat.map((h) => ({
-    tanggal: h.tanggal,
-    aktual: h.stokHabis ? null : Math.round(h.jumlah),
-    prediksi: null,
-  }))
-  for (const h of perkiraan.slice(0, HARI_DEPAN)) {
+  const balik = new Map(perkiraan.filter((h) => h.ujiBalik).map((h) => [h.tanggal, h]))
+  const titik: TitikTren[] = riwayat.map((h) => {
+    const b = balik.get(h.tanggal)
+    return {
+      tanggal: h.tanggal,
+      aktual: h.stokHabis ? null : Math.round(h.jumlah),
+      prediksi: b ? Math.round(b.p50) : null,
+      ...(b ? { batasBawah: Math.round(b.p10), batasAtas: Math.round(b.p90) } : {}),
+    }
+  })
+  const terakhir = riwayat[riwayat.length - 1]?.tanggal ?? ''
+  for (const h of perkiraan.filter((x) => !x.ujiBalik && x.tanggal > terakhir).slice(0, HARI_DEPAN)) {
     titik.push({
       tanggal: h.tanggal,
       aktual: null,

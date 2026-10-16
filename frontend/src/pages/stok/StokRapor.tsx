@@ -67,7 +67,10 @@ export default function StokRapor() {
     const rnd = acak(barang.id.split('').reduce((a, c) => a + c.charCodeAt(0), 131))
     const baris: BarisRapor[] = titik.map((t) => {
       const nyata = t.aktual as number
-      const perkiraan = Math.max(1, Math.round(nyata * (0.88 + rnd() * 0.24)))
+      // Sama dengan garis perkiraan uji balik di grafik Tren pemakaian. rnd()
+      // tetap dipanggil supaya urutan acak hari kehabisan tidak bergeser.
+      const cadangan = Math.max(1, Math.round(nyata * (0.88 + rnd() * 0.24)))
+      const perkiraan = t.prediksi != null ? Math.max(1, t.prediksi) : cadangan
       const habis = rnd() < 0.1
       return {
         tanggal: t.tanggal,

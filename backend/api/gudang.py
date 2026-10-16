@@ -196,8 +196,8 @@ def pemakaian_bulanan(
                 SELECT p.barang_id, sum(p.p10) AS p10, sum(p.p50) AS p50, sum(p.p90) AS p90,
                        max(p.model_nama) AS model_nama, max(p.dijalankan_pada) AS dijalankan_pada
                   FROM prediksi p JOIN terbaru t USING (barang_id, jalan_id)
-                 WHERE p.tanggal_target < (SELECT min(tanggal_target) FROM prediksi q
-                                             WHERE q.jalan_id = p.jalan_id AND q.barang_id = p.barang_id) + 30
+                 WHERE p.tanggal_target > (SELECT max(tanggal) FROM permintaan_harian h WHERE h.barang_id = p.barang_id)
+                   AND p.tanggal_target <= (SELECT max(tanggal) FROM permintaan_harian h WHERE h.barang_id = p.barang_id) + 30
                  GROUP BY p.barang_id
                 """
             ).bindparams(u=usaha_id)
@@ -238,6 +238,8 @@ def perkiraan_barang(barang_id: int = Path(ge=1), usaha_id: int = Depends(usaha_
             text(
                 """
                 SELECT barang_id, tanggal_target, p10, p50, p90, model_nama,
+                       tanggal_target <= (SELECT max(tanggal) FROM permintaan_harian h
+                                           WHERE h.barang_id = :b) AS uji_balik,
                        model_versi, dijalankan_pada, kematangan, tingkat_layanan
                   FROM prediksi
                  WHERE usaha_id = :u AND barang_id = :b

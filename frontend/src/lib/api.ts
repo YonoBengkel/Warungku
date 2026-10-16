@@ -189,7 +189,7 @@ export async function ambilBarang(sesi: SesiServer): Promise<Barang[]> {
 /* Keluaran mesin analitik                                             */
 /* ------------------------------------------------------------------ */
 
-/** Satu hari perkiraan Mesin 1 (SARIMA): quantile p10, p50, p90 dalam satuan dasar barang. */
+/** Satu hari perkiraan Mesin 1: quantile p10, p50, p90 dalam satuan dasar barang. */
 export interface HariPerkiraan {
   tanggal: string
   p10: number
@@ -199,6 +199,12 @@ export interface HariPerkiraan {
   dijalankanPada: string
   kematangan: KematanganPerkiraan
   tingkatLayanan: TingkatLayanan
+  /**
+   * Uji balik: perkiraan untuk hari yang sudah tercatat, dibuat dari titik
+   * 14 hari sebelum data terakhir. Digambar menumpang garis aktual supaya
+   * terlihat seberapa dekat perkiraan dengan kenyataan. Bukan perkiraan ke depan.
+   */
+  ujiBalik: boolean
 }
 
 export interface HariRiwayat {
@@ -246,6 +252,7 @@ export async function ambilPerkiraan(sesi: SesiServer, barangId: string): Promis
       dijalankan_pada: string
       kematangan: string
       tingkat_layanan: string
+      uji_balik?: boolean
     }>
   >(`/usaha/${sesi.usahaId}/barang/${barangId}/perkiraan`, { token: sesi.token })
   return isi.map((h) => ({
@@ -257,6 +264,7 @@ export async function ambilPerkiraan(sesi: SesiServer, barangId: string): Promis
     dijalankanPada: h.dijalankan_pada,
     kematangan: KEMATANGAN[h.kematangan] ?? 'kasar',
     tingkatLayanan: LAYANAN[h.tingkat_layanan] ?? 'tersimpan',
+    ujiBalik: h.uji_balik ?? false,
   }))
 }
 
@@ -304,6 +312,7 @@ export async function ambilPemakaianBulanan(sesi: SesiServer): Promise<Map<strin
       perkiraan_p10: string | null
       perkiraan_p50: string | null
       perkiraan_p90: string | null
+      model_nama: string | null
     }>
   >(`/usaha/${sesi.usahaId}/pemakaian-bulanan`, { token: sesi.token })
   const peta = new Map<string, BulananBarang>()
@@ -313,6 +322,7 @@ export async function ambilPemakaianBulanan(sesi: SesiServer): Promise<Map<strin
       p10: b.perkiraan_p10 == null ? null : angka(b.perkiraan_p10),
       p50: b.perkiraan_p50 == null ? null : angka(b.perkiraan_p50),
       p90: b.perkiraan_p90 == null ? null : angka(b.perkiraan_p90),
+      model: b.model_nama,
     })
   }
   return peta

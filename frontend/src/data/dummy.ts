@@ -957,6 +957,20 @@ export function trenBarang(barangId: string): TitikTren[] {
   if (perkiraan.kematangan === 'belum-bisa') return titik
 
   const lebarDasar = perkiraan.kematangan === 'kasar' ? 0.2 : 0.1
+
+  // Perkiraan uji balik untuk 14 hari tercatat, seperti di mode server: garis
+  // perkiraan menumpang garis aktual. Angka acaknya terpisah supaya nilai
+  // aktual di atas tidak berubah.
+  const rndBalik = acakBersemai(barangId.split('').reduce((a, c) => a + c.charCodeAt(0), 11))
+  for (const t of titik) {
+    const hari = new Date(t.tanggal).getDay()
+    const p = Math.round(b.pemakaianHarian * (hari === 0 || hari === 6 ? 1.32 : 0.95) * (0.94 + rndBalik() * 0.12))
+    const lebar = lebarDasar + 0.15
+    t.prediksi = p
+    t.batasBawah = Math.round(p * (1 - lebar))
+    t.batasAtas = Math.round(p * (1 + lebar))
+  }
+
   for (let i = 1; i <= 7; i++) {
     const d = new Date(HARI_INI)
     d.setDate(d.getDate() + i)
@@ -1048,9 +1062,19 @@ export interface BulananBarang {
   p10: number | null
   p50: number | null
   p90: number | null
+  /** Kode model Mesin 1 yang membuat perkiraan barang ini, mis. "lightgbm-kuantil". */
+  model: string | null
 }
 let bulananServer: Map<string, BulananBarang> | null = null
 const barangServer = new Map<string, Barang>()
+
+/** Model Mesin 1 yang paling banyak dipakai pada data server; `null` di data contoh. */
+export function modelBulananServer(): string | null {
+  if (!bulananServer) return null
+  const hitung = new Map<string, number>()
+  for (const b of bulananServer.values()) if (b.model) hitung.set(b.model, (hitung.get(b.model) ?? 0) + 1)
+  return [...hitung.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null
+}
 
 export function pasangDataServer(bulanan: Map<string, BulananBarang> | null, barang: Barang[] = []) {
   bulananServer = bulanan

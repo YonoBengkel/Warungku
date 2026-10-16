@@ -69,13 +69,12 @@ def jadwal() -> dict:
 
 class PermintaanJalan(BaseModel):
     usaha_id: int | None = None
-    #: "sarima" (bawaan sejak 12 Okt 2026), "holt_winters" (ETS, bawaan 10–12 Okt),
-    #: "chronos", "moirai", atau nama metode garis dasar lain. SARIMA menang di
-    #: turnamen Mesin 1 (MAPE pekanan 14,8% melawan ETS 17,5% di pekan uji) dan
-    #: rentang p10–p90-nya terkalibrasi di validasi (cakupan 83,2%, di atas p90
-    #: 9,1%; ml/hasil/hasil_eksperimen_mesin1_cakupan.json). Ordenya tetap dan
-    #: koefisiennya bisa dibaca per barang, sesuai permintaan dosen.
-    metode: str = "sarima"
+    #: "lightgbm" (bawaan sejak 16 Okt 2026, permintaan dosen pengampu), "sarima"
+    #: (bawaan 12–16 Okt), "holt_winters" (ETS, bawaan 10–12 Okt), "chronos",
+    #: "moirai", atau nama metode garis dasar lain. LightGBM kuantil di pekan uji:
+    #: MAPE pekanan 23,0% vs SARIMA 23,4% pada semua barang, cakupan p10–p90 81,6%
+    #: (ml/hasil/hasil_eksperimen_mesin1_lgbm.json).
+    metode: str = "lightgbm"
     cakrawala: int = CAKRAWALA
 
 
@@ -134,6 +133,11 @@ def _jalankan_mesin1(usaha_id: int | None, metode: str, cakrawala: int) -> Hasil
         tugas = [(d, len(d)) for d in deret]
         ramalan = ramal_banyak(tugas, cakrawala, ukuran) if tugas else []
         nama_model, versi = "moirai-1.1-R-%s" % ukuran, "uni2ts"
+    elif metode == "lightgbm":
+        from .mesin1.lgbm import NAMA_MODEL, ramal_kuantil
+
+        ramalan = ramal_kuantil([(d, len(d)) for d in deret], cakrawala) if deret else []
+        nama_model, versi = NAMA_MODEL, "lightgbm"
     elif metode == "sarima":
         from .mesin1.dasar import holt_winters
         from .mesin1.sarima import sarima_kuantil
@@ -183,6 +187,36 @@ def _jalankan_mesin1(usaha_id: int | None, metode: str, cakrawala: int) -> Hasil
                     "tingkat_layanan": TingkatLayanan.SEGAR.value,
                 }
             )
+
+    # Uji balik: ramalan 14 hari terakhir yang dibuat seolah-olah dari 14 hari
+    # sebelumnya (data sesudah titik itu tidak dilihat model). Disimpan di jalan
+    # yang sama dengan tanggal_target <= hari terakhir data; endpoint membedakannya
+    # dari ramalan ke depan lewat tanggal. Inilah garis forecast yang tumpang
+    # tindih dengan garis aktual di grafik.
+    if metode == "lightgbm" and deret:
+        from .mesin1.lgbm import ramal_kuantil
+
+        mundur = 14
+        tugas_balik = [(d, len(d) - mundur) for d in deret if len(d) > mundur + 35]
+        for (d, akhir), r in zip(tugas_balik, ramal_kuantil(tugas_balik, mundur)):
+            t0 = d.tanggal[akhir - 1]
+            for i in range(mundur):
+                baris.append(
+                    {
+                        "usaha_id": d.usaha_id,
+                        "barang_id": d.barang_id,
+                        "tanggal_target": t0 + timedelta(days=i + 1),
+                        "p10": float(np.round(r[0.1][i], 3)),
+                        "p50": float(np.round(r[0.5][i], 3)),
+                        "p90": float(np.round(r[0.9][i], 3)),
+                        "jalan_id": jalan_id,
+                        "model_nama": nama_model,
+                        "model_versi": "lightgbm/uji-balik",
+                        "dijalankan_pada": sekarang,
+                        "kematangan": _kematangan(len(d)).value,
+                        "tingkat_layanan": TingkatLayanan.SEGAR.value,
+                    }
+                )
 
     if baris:
         from warungku.model import Prediksi

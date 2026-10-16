@@ -65,7 +65,7 @@ def _catat(nama: str, fungsi) -> None:
 def _mesin1() -> dict:
     from .layanan import _jalankan_mesin1
 
-    return _jalankan_mesin1(None, os.environ.get("WARUNGKU_METODE_MESIN1", "sarima"), 30).model_dump()
+    return _jalankan_mesin1(None, os.environ.get("WARUNGKU_METODE_MESIN1", "lightgbm"), 30).model_dump()
 
 
 def _mesin2() -> dict:

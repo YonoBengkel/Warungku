@@ -30,6 +30,7 @@ import {
   transaksiById,
 } from '@/data/dummy'
 import { useDataMesin } from '@/lib/dataMesin'
+import { KeteranganMetode, METODE_MESIN2 } from '@/components/domain/KeteranganMetode'
 import type { SaranServer } from '@/lib/api'
 import { PESANAN_BERJALAN } from '@/lib/label'
 import { useAplikasi } from '@/store/aplikasi'
@@ -358,6 +359,13 @@ export default function StokDetail() {
                     data={trenTampil(barang, tren)}
                     satuan={satuanTampil(barang).nama}
                   />
+                  {tren.some((t) => t.aktual != null && t.prediksi != null) && (
+                    <p className="mt-2 text-[0.75rem] text-ink-3 leading-relaxed">
+                      Di 14 hari terakhir, garis merah adalah perkiraan yang dibuat 14 hari sebelumnya, tanpa melihat
+                      pemakaian sesudahnya. Bandingkan dengan garis pemakaian tercatat untuk melihat seberapa dekat
+                      perkiraannya.
+                    </p>
+                  )}
                 </Kartu>
               )}
 
@@ -443,6 +451,7 @@ function KartuSaranMesin({
     return (
       <Kartu padat>
         <h2 className="text-[0.9375rem] font-bold text-ink leading-tight">Saran distributor</h2>
+        <KeteranganMetode className="mt-2" mesin="Mesin 2" metode={METODE_MESIN2.metode} masukan={METODE_MESIN2.masukan} />
         <p className="mt-1 text-[0.8125rem] text-ink-3 leading-relaxed">
           Belum ada saran untuk barang ini. Saran muncul saat barang mendekati batas aman dan perlu dipesan.
         </p>
@@ -453,6 +462,7 @@ function KartuSaranMesin({
   return (
     <Kartu>
       <h2 className="text-[0.9375rem] font-bold text-ink leading-tight">Saran distributor</h2>
+        <KeteranganMetode className="mt-2" mesin="Mesin 2" metode={METODE_MESIN2.metode} masukan={METODE_MESIN2.masukan} />
       <p className="text-[0.8125rem] text-ink-3 mt-0.5 leading-snug">
         Dihitung {waktuLalu(saran[0].dijalankanPada)}
         {lama && ' · sudah lewat masa berlaku, akan diperbarui penjadwal'}

@@ -21,6 +21,7 @@ import { angkaTampil, jumlahTampil, satuanTampil, trenTampil } from '@/lib/satua
 import { JUDUL, LABEL_ARAH_PREDIKSI } from '@/lib/label'
 import {
   layakDiperkirakan,
+  modelBulananServer,
   nilaiPemakaian,
   penawaranById,
   rekomendasiDari,
@@ -28,6 +29,7 @@ import {
   trenKategoriRupiah,
 } from '@/data/dummy'
 import { useAplikasi, usePenentuHarga } from '@/store/aplikasi'
+import { KeteranganMetode, metodeMesin1 } from '@/components/domain/KeteranganMetode'
 
 /**
  * Halaman Prediksi: dua keadaan, dibedakan oleh query string.
@@ -145,6 +147,11 @@ export default function Prediksi() {
         <p className="text-[0.8125rem] text-ink-3">Perkiraan untuk bulan depan</p>
       </div>
       <p className="mt-1 text-[0.875rem] text-ink-2 leading-relaxed max-w-[62ch]">{KALIMAT_MELESET}</p>
+      <KeteranganMetode
+        className="mt-3 max-w-[62ch]"
+        mesin="Mesin 1"
+        {...metodeMesin1(modelBulananServer())}
+      />
 
       {barangMentah && !barangTerpilih ? (
         /* Tautan lama atau id yang salah salin. Halaman tidak boleh jadi buntu. */
@@ -542,7 +549,7 @@ function DetailBarang({
                   />
                 </div>
                 <p className="mt-2 text-[0.75rem] text-ink-3 leading-relaxed">
-                  Garis putus-putus dan pita di sekelilingnya adalah perkiraan, bukan kenyataan. Ia bisa meleset ke
+                  Garis merah putus-putus dan pita di sekelilingnya adalah perkiraan, bukan kenyataan. Ia bisa meleset ke
                   atas maupun ke bawah.
                 </p>
               </div>
@@ -684,7 +691,7 @@ function DetailBarang({
               /* Data server: katalog pemesanan belum tersambung, tapi Mesin 2 sudah
                  punya saran distributor. Jangan bilang "belum ada distributor". */
               <>
-                Pemesanan dari data server belum tersambung. Saran distributor untuk {barang.nama} dari mesin
+                Pemesanan dari halaman ini belum tersambung. Saran distributor untuk {barang.nama} dari mesin
                 analitik bisa dilihat di rincian barang.
               </>
             ) : (
