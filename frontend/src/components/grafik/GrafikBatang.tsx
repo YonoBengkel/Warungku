@@ -103,6 +103,13 @@ export function GrafikBatang({
         ))}
 
         {data.map((d, i) => {
+          // Label sekitar 38px: di layar sempit dijarangkan supaya "Okt '25"
+          // dan "Nov '25" tidak bertumpuk. Batang yang disorot selalu berlabel.
+          const langkah = Math.max(1, Math.ceil(38 / Math.max(1, g.slot)))
+          const berlabel =
+            d.sorot ||
+            i === data.length - 1 ||
+            (i % langkah === 0 && data.length - 1 - i >= langkah / 2)
           const t = (d.nilai / g.maks) * g.ph
           const x = sisi.kiri + g.slot * i + (g.slot - g.tebal) / 2
           const y = sisi.atas + g.ph - t
@@ -137,16 +144,18 @@ export function GrafikBatang({
                   {tulis(d.nilai)}
                 </text>
               )}
-              <text
-                x={x + g.tebal / 2}
-                y={tinggi - 7}
-                textAnchor="middle"
-                fontSize="10.5"
-                fill={d.sorot || aktif ? 'var(--c-ink)' : 'var(--c-sumbu)'}
-                fontWeight={d.sorot ? 700 : 400}
-              >
-                {d.label}
-              </text>
+              {(berlabel || aktif) && (
+                <text
+                  x={x + g.tebal / 2}
+                  y={tinggi - 7}
+                  textAnchor={i === data.length - 1 && langkah > 1 ? 'end' : 'middle'}
+                  fontSize="10.5"
+                  fill={d.sorot || aktif ? 'var(--c-ink)' : 'var(--c-sumbu)'}
+                  fontWeight={d.sorot ? 700 : 400}
+                >
+                  {d.label}
+                </text>
+              )}
             </g>
           )
         })}

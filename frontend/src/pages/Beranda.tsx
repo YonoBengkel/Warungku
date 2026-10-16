@@ -107,7 +107,10 @@ export default function Beranda() {
 
     /* Dipakai dua kali: sebagai tujuan kartu "habis" (kalau barangnya memang
        ada di dalamnya) dan sebagai kartu saran belanja sendiri. */
-    const saran = saranBelanja[0]
+    // Saran belanja contoh merujuk barang data contoh. Di mode data server
+    // barangnya tidak ada, dan kartu tanpa nama barang ("…, dan 2 lainnya")
+    // lebih membingungkan daripada tidak ada kartu sama sekali.
+    const saran = saranBelanja.find((s) => s.baris.some((r) => barang.some((b) => b.id === r.barangId)))
 
     /* 1. Stok habis dan menipis */
     const kritis = barang
@@ -129,7 +132,7 @@ export default function Beranda() {
          lalu penawaran langsung, lalu pencarian di Distributor. */
       const penawaranPertama = penawaranUntukBarang(b.id)[0]
       const barisSaran = saran?.baris.find((r) => r.barangId === b.id)
-      const kePesan = barisSaran
+      const kePesan = barisSaran && saran
         ? `/pesan-cepat/${saran.id}`
         : penawaranPertama
           ? `/penawaran/${penawaranPertama.id}`

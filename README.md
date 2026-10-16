@@ -175,7 +175,17 @@ Sekitar 10 menit. Perintah ini **mengosongkan lalu mengisi ulang** basis data,
 termasuk keluaran model (`prediksi`, `rekomendasi_skor`, `segmen_pelanggan`).
 Jalankan ketiga mesin lagi sesudahnya (langkah 6).
 
-Periksa datanya konsisten (keenam angkanya harus 0):
+Di akhir, perintah yang sama menambahkan satu UMKM produsen, Dapur Sambal Bu
+Ratmi ([`data/dataset/umkm_produksi.py`](data/dataset/umkm_produksi.py)): bahan
+baku, resep, sesi masak, dan kiriman ke ritel selama 400 hari yang sama. Ia
+memakai generator acaknya sendiri, jadi 70 UMKM lainnya tidak berubah. Untuk
+membangkitkan ulang usaha ini saja:
+
+```powershell
+python -m dataset.umkm_produksi --ulang
+```
+
+Periksa datanya konsisten (ketujuh angkanya harus 0):
 
 ```powershell
 Get-Content backend\skrip\02_periksa_konsistensi.sql | docker exec -i warungku-db psql -U warungku -d warungku_dev
@@ -187,7 +197,7 @@ Get-Content backend\skrip\02_periksa_konsistensi.sql | docker exec -i warungku-d
 python -m pytest -q
 ```
 
-Menjalankan `backend/uji` dan `ml/uji` (109 uji). Sebagian uji membutuhkan basis
+Menjalankan `backend/uji` dan `ml/uji` (115 uji). Sebagian uji membutuhkan basis
 data dari langkah 2 sampai 4. Uji backend membuat dan menghapus datanya sendiri,
 jadi tidak mengubah data simulasi.
 
@@ -237,9 +247,13 @@ curl.exe -X POST localhost:8001/mesin3/jalankan
 di memori. Untuk melihat keluaran mesin analitik:
 
 - **Portal pemilik usaha:** di halaman Masuk pilih tab *Pakai Email* lalu tekan
-  *Isikan akun simulasi* (`umkm1@warungku.test`, usaha Kopi Kita Jogja). Stok,
-  perkiraan SARIMA, Prediksi, saran distributor, katalog dan keranjang, pesanan,
+  *Isikan akun simulasi: Kopi Kita Jogja* (`umkm1@warungku.test`). Stok,
+  perkiraan LightGBM, Prediksi, saran distributor, katalog dan keranjang, pesanan,
   kontrak, dan promo dibaca dari API.
+- **UMKM produsen:** tombol *Isikan akun simulasi produsen: Dapur Sambal Bu Ratmi*
+  (`produksi1@warungku.test`). Ada tab tambahan **Produksi**: stok barang jadi,
+  resep, catat sesi masak (memotong bahan baku), dan kiriman ke pembeli usaha
+  (Indomaret, swalayan, toko oleh-oleh, katering).
 - **Portal distributor:** halaman *Masuk* → *Masuk ke portal distributor*
   (`/masuk/distributor`) → *Isikan akun simulasi* (`distributor1@warungku.test`,
   Sumber Tani Nusantara). Pesanan masuk, kontrak dan paket, promo, dan segmen

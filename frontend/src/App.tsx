@@ -53,6 +53,7 @@ const KelolaKategori = lazy(() => import('@/pages/stok/KelolaKategori'))
 
 /* Tab 3 */
 const Prediksi = lazy(() => import('@/pages/prediksi/Prediksi'))
+const Produksi = lazy(() => import('@/pages/produksi/Produksi'))
 
 /* Tab 4 — berkasnya tetap bernama belanja, labelnya "Distributor" */
 const Belanja = lazy(() => import('@/pages/belanja/Belanja'))
@@ -154,6 +155,7 @@ export default function App() {
           <Route path="/stok/:id/rapor" element={<StokRapor />} />
 
           <Route path="/prediksi" element={<Prediksi />} />
+          <Route path="/produksi" element={<Produksi />} />
 
           <Route path="/belanja" element={<Belanja />} />
           <Route path="/distributor/:id" element={<DistributorProfil />} />

@@ -74,7 +74,7 @@ export default function Masuk() {
 
     masukServer(email.trim(), sandi)
       .then(() => {
-        tampilkanRacun('Selamat datang kembali. Stok dan perkiraan dibaca dari server.', 'aman')
+        tampilkanRacun('Selamat datang kembali. Stok dan perkiraan sudah dimuat dari data usahamu.', 'aman')
         navigate('/beranda')
       })
       .catch((e: unknown) => {
@@ -98,11 +98,11 @@ export default function Masuk() {
     setGalat({})
   }
 
-  /** Akun contoh di data simulasi: usaha nomor 1, dibuat oleh `python -m dataset.buat_dataset`. */
-  function isiAkunServer() {
+  /** Akun contoh di data simulasi, dibuat oleh `python -m dataset.buat_dataset`. */
+  function isiAkunServer(akun: { email: string; kataSandi: string }) {
     setTab('email')
-    setEmail(AKUN_SERVER.email)
-    setSandi(AKUN_SERVER.kataSandi)
+    setEmail(akun.email)
+    setSandi(akun.kataSandi)
     setGalat({})
   }
 
@@ -219,10 +219,17 @@ export default function Masuk() {
           </span>
           <button
             type="button"
-            onClick={isiAkunServer}
-            className="mt-1 inline-flex items-center gap-1.5 min-h-11 text-[0.8125rem] font-bold underline underline-offset-2"
+            onClick={() => isiAkunServer(AKUN_SERVER)}
+            className="mt-1 flex items-center gap-1.5 min-h-11 text-[0.8125rem] font-bold underline underline-offset-2"
           >
-            Isikan akun simulasi (butuh server menyala)
+            Isikan akun simulasi: Kopi Kita Jogja
+          </button>
+          <button
+            type="button"
+            onClick={() => isiAkunServer(AKUN_PRODUKSI)}
+            className="flex items-center gap-1.5 min-h-11 text-[0.8125rem] font-bold underline underline-offset-2"
+          >
+            Isikan akun simulasi produsen: Dapur Sambal Bu Ratmi
           </button>
         </Peringatan>
       </div>
@@ -239,6 +246,8 @@ export default function Masuk() {
  * Nilai uji untuk basis data lokal, bukan akun sungguhan.
  */
 const AKUN_SERVER = { email: 'umkm1@warungku.test', kataSandi: 'warungku123' }
+/** UMKM produsen dari `data/dataset/umkm_produksi.py`; kata sandinya sama dengan akun contoh lain. */
+const AKUN_PRODUKSI = { email: 'produksi1@warungku.test', kataSandi: AKUN_SERVER.kataSandi }
 
 /** Kerangka layar di luar 4 tab: satu kolom terpusat, kartu di tengah. */
 function LayarAuth({ children }: { children: ReactNode }) {

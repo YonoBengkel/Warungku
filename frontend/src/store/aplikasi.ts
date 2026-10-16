@@ -161,6 +161,8 @@ interface KeadaanAplikasi {
    */
   sumberData: 'contoh' | 'server'
   sesiServer: SesiServer | null
+  /** True selama sesi dari tab ini sedang dipulihkan sesudah halaman dimuat ulang. */
+  memulihkanSesi: boolean
   /** Sesi portal distributor di server. Terpisah dari sesi pemilik usaha: tokennya pun berbeda jenis. */
   sesiDistributor: SesiDistributor | null
   /** Pesanan masuk dari server. `null` berarti portal distributor masih memakai data contoh. */
@@ -185,6 +187,8 @@ interface KeadaanAplikasi {
   sambungDistributor: (email: string, kataSandi: string) => Promise<void>
   putusDistributor: () => void
   muatPesananMasuk: () => Promise<void>
+  /** Muat ulang stok gudang dari server, mis. sesudah produksi memotong bahan baku. */
+  segarkanGudangServer: () => Promise<void>
   aturPeran: (p: 'umkm' | 'distributor') => void
 
   /* Profil & kasir */
@@ -529,6 +533,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
   masuk: false,
   sumberData: 'contoh',
   sesiServer: null,
+  memulihkanSesi: sesiTersimpan() != null,
   sesiDistributor: null,
   pesananMasukServer: null,
   kontrakMasukServer: null,
@@ -578,14 +583,18 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
 
   pulihkanSesiServer: async () => {
     const sesi = sesiTersimpan()
-    if (!sesi || get().sesiServer) return
+    if (!sesi || get().sesiServer) {
+      set({ memulihkanSesi: false })
+      return
+    }
     try {
       const isi = await muatSemuaServer(sesi)
-      set((s) => keadaanServer(s, sesi, isi))
+      set((s) => ({ ...keadaanServer(s, sesi, isi), memulihkanSesi: false }))
     } catch {
       // Token hangus (server dimuat ulang) atau server mati: mulai lagi dari data contoh.
       simpanSesi(null)
       pasangDataServer(null)
+      set({ memulihkanSesi: false })
     }
   },
 
@@ -651,6 +660,13 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
     simpanSesiDistributor(null)
     pasangUmkmServer([])
     set({ sesiDistributor: null, pesananMasukServer: null, kontrakMasukServer: null, katalogDistributorServer: null })
+  },
+
+  segarkanGudangServer: async () => {
+    const sesi = get().sesiServer
+    if (!sesi) return
+    const barang = await muatGudangServer(sesi)
+    set({ barang })
   },
 
   muatPesananMasuk: async () => {

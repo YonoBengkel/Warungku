@@ -6,6 +6,7 @@ import {
   IkonBeranda,
   IkonKotak,
   IkonTrenNaik,
+  IkonPanci,
   IkonToko,
   IkonPasokan,
   IkonLonceng,
@@ -40,10 +41,19 @@ const TAB = [
   { ke: '/pesanan', label: NAV.pesanan, Ikon: IkonPasokan },
 ]
 
+/**
+ * Usaha produsen (jenis `produksi-makanan`) mendapat tab keenam, Produksi,
+ * tepat sesudah Stok: bahan baku di Stok berubah menjadi barang jadi di sini.
+ * Usaha lain tetap lima tab. Di 360px tiap tab dapat 60px; label terpanjang
+ * "Distributor" sekitar 56px, jadi masih muat.
+ */
+const TAB_PRODUKSI = [TAB[0], TAB[1], { ke: '/produksi', label: NAV.produksi, Ikon: IkonPanci }, ...TAB.slice(2)]
+
 /** Halaman detail tetap menyorot tab induknya, supaya pengguna tidak merasa tersesat. */
 const INDUK: Array<[RegExp, string]> = [
   [/^\/(beranda)/, '/beranda'],
   [/^\/stok/, '/stok'],
+  [/^\/produksi/, '/produksi'],
   [/^\/prediksi/, '/prediksi'],
   [/^\/(belanja|distributor|penawaran)/, '/belanja'],
   [/^\/(pesanan|kontrak|mitra)/, '/pesanan'],
@@ -64,6 +74,7 @@ export default function KerangkaAplikasi() {
   const perluTindakan = useJumlahPerluTindakan()
   const isiKeranjang = useJumlahKeranjang()
   const aktif = tabInduk(pathname)
+  const tab = profil.jenisUsaha === 'produksi-makanan' ? TAB_PRODUKSI : TAB
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', tema === 'gelap')
@@ -93,7 +104,7 @@ export default function KerangkaAplikasi() {
         </div>
 
         <div className="px-3 flex flex-col gap-1">
-          {TAB.map(({ ke, label, Ikon }) => (
+          {tab.map(({ ke, label, Ikon }) => (
             <NavLink
               key={ke}
               to={ke}
@@ -190,7 +201,7 @@ export default function KerangkaAplikasi() {
         className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-surface border-t border-line pb-aman"
       >
         <div className="flex">
-          {TAB.map(({ ke, label, Ikon }) => {
+          {tab.map(({ ke, label, Ikon }) => {
             const terpilih = aktif === ke
             return (
               <NavLink

@@ -1202,7 +1202,8 @@ WITH dari_nota AS (
            SUM(-pg.jumlah) AS jumlah
       FROM pergerakan pg
       JOIN barang b ON b.id = pg.barang_id
-     WHERE pg.jenis = 'terjual' AND b.dicatat_manual = false
+     -- Bahan baku yang terpakai produksi (UMKM produsen) tidak lewat nota kasir.
+     WHERE pg.jenis = 'terjual' AND b.dicatat_manual = false AND pg.produksi_id IS NULL
      GROUP BY 1, 2, 3
 )
 SELECT COUNT(*)
@@ -1322,6 +1323,17 @@ def main() -> None:
         for nama, n in jumlah.items():
             print("  %-*s %7d" % (lebar, nama, n))
         print("  %-*s %7d" % (lebar, "TOTAL", sum(jumlah.values())))
+        print()
+        # UMKM produsen ditambahkan SESUDAH data utama, dengan generator acaknya
+        # sendiri, supaya 70 UMKM di atas tidak bergeser (lihat umkm_produksi.py).
+        # Ia tidak ikut diekspor ke CSV.
+        from .umkm_produksi import NAMA_USAHA, tambahkan
+
+        tambahan = tambahkan()
+        print("UMKM produsen    : %s, %d baris, pesanan terpenuhi %d%%" % (
+            NAMA_USAHA, sum(n for k, n in tambahan.items() if k != "persen_terpenuhi"),
+            tambahan["persen_terpenuhi"],
+        ))
         print()
         print("Pemeriksaan konsistensi:")
         for c in periksa_turunan():

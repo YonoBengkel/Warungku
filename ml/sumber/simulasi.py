@@ -115,7 +115,11 @@ def omset() -> pd.DataFrame:
     lebaran = np.array([sedang_lebaran(t.date()) for t in tanggal], dtype=bool)
 
     bagian = []
-    for e in sorted(harian["entitas_id"].unique()):
+    # Hanya usaha yang punya nota kasir. UMKM produsen (sejak 16 Okt 2026,
+    # `dataset/umkm_produksi.py`) tidak memakai kasir: pendapatannya kiriman
+    # antarusaha di tabel `penjualan`, berpola mingguan, dan memasukkannya ke
+    # sini akan mengubah angka evaluasi omset 70 warung.
+    for e in sorted(set(harian["entitas_id"]) & set(angka["entitas_id"])):
         a = angka[angka["entitas_id"] == e].set_index("tanggal")
         h = harian[harian["entitas_id"] == e].set_index("tanggal")["stok_habis_parsial"]
         bagian.append(

@@ -566,7 +566,9 @@ function BarisRiwayat({
       : undefined
 
   let judul = 'Pergerakan stok'
-  if (gerak.jenis === 'terjual') judul = dicatatManual ? 'Pemakaian dicatat manual' : 'Terjual dari kasir'
+  // Bahan baku UMKM produsen: pemakaiannya datang dari sesi masak, bukan kasir.
+  if (gerak.jenis === 'terjual' && gerak.keterangan?.startsWith('Dipakai produksi')) judul = 'Dipakai produksi'
+  else if (gerak.jenis === 'terjual') judul = dicatatManual ? 'Pemakaian dicatat manual' : 'Terjual dari kasir'
   else if (gerak.jenis === 'masuk') judul = nomorPesanan ? `Masuk dari pesanan ${nomorPesanan}` : 'Barang masuk'
   else if (gerak.jenis === 'hitung-fisik') judul = 'Hasil hitung fisik'
   else if (gerak.jenis === 'koreksi') judul = 'Koreksi stok'

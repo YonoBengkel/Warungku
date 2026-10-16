@@ -39,6 +39,7 @@ export const NAV = {
   prediksi: 'Prediksi',
   belanja: 'Distributor',
   pesanan: 'Pesanan',
+  produksi: 'Produksi',
 } as const
 
 export const JUDUL = {
@@ -207,6 +208,7 @@ export const URUTAN_JENIS_USAHA: JenisUsaha[] = [
   'warung-makan',
   'roti-kue',
   'warung-kelontong',
+  'produksi-makanan',
   'lainnya',
 ]
 
@@ -216,6 +218,10 @@ export const LABEL_JENIS_USAHA: Record<JenisUsaha, { judul: string; contoh: stri
   'warung-makan': { judul: 'Warung makan & angkringan', contoh: 'Nasi rames, bakmi, angkringan' },
   'roti-kue': { judul: 'Roti & kue', contoh: 'Roti bakar, toko kue, jajanan pasar' },
   'warung-kelontong': { judul: 'Warung kelontong', contoh: 'Warung Madura, toko sembako' },
+  'produksi-makanan': {
+    judul: 'Produksi makanan rumahan',
+    contoh: 'Sambal, kue kering, keripik yang dijual ke toko dan ritel',
+  },
   lainnya: { judul: 'Lainnya', contoh: 'Usaha makanan atau minuman yang tidak ada di daftar' },
 }
 

@@ -32,6 +32,15 @@ function Svg({ size = 20, children, ...rest }: Props) {
 
 /* ---------- Navigasi utama ---------- */
 
+/** Panci berasap: tab Produksi untuk usaha produsen. */
+export const IkonPanci = (p: Props) => (
+  <Svg {...p}>
+    <path d="M4 11h16v6a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4z" />
+    <path d="M2 11h20" />
+    <path d="M9 7.5c-.8-.9.8-1.6 0-2.5M12.5 7.5c-.8-.9.8-1.6 0-2.5M16 7.5c-.8-.9.8-1.6 0-2.5" />
+  </Svg>
+)
+
 export const IkonBeranda = (p: Props) => (
   <Svg {...p}>
     <path d="M3 10.2 12 3l9 7.2" />

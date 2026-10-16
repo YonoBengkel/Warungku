@@ -104,6 +104,19 @@ export function ChipKedaluwarsa({ tanggal }: { tanggal: string }) {
  */
 export function PitaDataKasir() {
   const kasir = useAplikasi((s) => s.kasir)
+  const produsen = useAplikasi((s) => s.profil.jenisUsaha === 'produksi-makanan')
+
+  // Usaha produsen tidak memakai kasir: pemakaian bahan datang dari sesi masak.
+  if (produsen) {
+    return (
+      <PitaDasar nada="netral" ikon={<IkonPena size={15} />}>
+        <span>Pemakaian bahan baku dicatat dari sesi masak</span>
+        <Link to="/produksi" className="font-bold underline underline-offset-2 shrink-0">
+          Buka Produksi
+        </Link>
+      </PitaDasar>
+    )
+  }
 
   if (kasir.sumber === 'belum-dipilih' || kasir.status === 'belum-terhubung') {
     return (

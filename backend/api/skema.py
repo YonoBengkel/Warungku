@@ -563,3 +563,107 @@ class SimpanPromo(BaseModel):
 
 Katalog.model_rebuild()
 KatalogDistributor.model_rebuild()
+
+
+# --------------------------------------------------------------------------
+# Produksi dan penjualan antarusaha (UMKM produsen, sejak 16 Okt 2026)
+# --------------------------------------------------------------------------
+class BahanResep(BaseModel):
+    barang_id: int
+    nama: str
+    satuan: str
+    #: Takaran untuk SATU satuan produk jadi, dalam satuan dasar bahan.
+    takaran: Decimal
+    stok: Decimal
+    #: Berapa satuan produk jadi yang bisa dibuat dari stok bahan ini saja.
+    cukup_untuk: int
+
+
+class ProdukJadiRingkas(BaseModel):
+    id: int
+    nama: str
+    satuan: str
+    isi_bersih: str | None
+    stok: Decimal
+    batas_aman: Decimal
+    harga_jual: int
+    ukuran_sesi: int
+    resep: list[BahanResep]
+    #: Satuan terbanyak yang bisa dibuat dengan stok bahan sekarang (bahan pembatas).
+    bisa_dibuat: int
+    terjual_28_hari: Decimal
+    #: Perkiraan pesanan 7 hari ke depan: rata-rata hari yang sama dalam 4 pekan terakhir.
+    perkiraan_7_hari: Decimal
+    #: Kelipatan 6 yang menutup perkiraan pekan depan plus batas aman, dikurangi stok.
+    saran_produksi: int
+
+
+class PembeliRingkas(BaseModel):
+    id: int
+    nama: str
+    jenis: str
+    kota: str | None
+    ketentuan: str | None
+    sejak: date | None
+    kiriman_28_hari: int
+    nilai_28_hari: int
+    terakhir: datetime | None
+
+
+class OmsetBulanan(BaseModel):
+    bulan: str
+    total: int
+    kiriman: int
+
+
+class RingkasanProduksi(BaseModel):
+    #: Hari terakhir yang tercatat; perkiraan dihitung dari sini.
+    tanggal_acuan: date
+    produk: list[ProdukJadiRingkas]
+    pembeli: list[PembeliRingkas]
+    omset_bulanan: list[OmsetBulanan]
+
+
+class ProduksiBaru(BaseModel):
+    produk_jadi_id: int
+    jumlah: Decimal = Field(gt=0, le=10_000)
+    catatan: str | None = Field(default=None, max_length=500)
+
+
+class ProduksiRingkas(BaseModel):
+    id: int
+    waktu: datetime
+    produk_jadi_id: int
+    nama_produk: str
+    jumlah: Decimal
+    oleh: str | None
+    catatan: str | None
+
+
+class BarisPenjualanBaru(BaseModel):
+    produk_jadi_id: int
+    jumlah: Decimal = Field(gt=0, le=10_000)
+
+
+class PenjualanBaru(BaseModel):
+    pembeli_id: int
+    baris: list[BarisPenjualanBaru] = Field(min_length=1, max_length=20)
+    catatan: str | None = Field(default=None, max_length=500)
+
+
+class BarisPenjualanRingkas(BaseModel):
+    produk_jadi_id: int
+    nama: str
+    jumlah: Decimal
+    harga_satuan: int
+
+
+class PenjualanRingkas(BaseModel):
+    id: int
+    nomor: str
+    waktu: datetime
+    pembeli_id: int
+    nama_pembeli: str
+    total: int
+    catatan: str | None
+    baris: list[BarisPenjualanRingkas]

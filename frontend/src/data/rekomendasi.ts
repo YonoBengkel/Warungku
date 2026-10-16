@@ -32,6 +32,7 @@ export const KATEGORI_JENIS_USAHA: Record<JenisUsaha, string[] | null> = {
   'warung-makan': ['Bahan Makanan', 'Protein', 'Pemanis', 'Kopi & Teh', 'Pendukung', 'Kemasan'],
   'roti-kue': ['Bahan Makanan', 'Protein', 'Susu & Olahan', 'Pemanis', 'Kemasan'],
   'warung-kelontong': ['Bahan Makanan', 'Pemanis', 'Susu & Olahan', 'Kopi & Teh', 'Pendukung'],
+  'produksi-makanan': ['Bahan Makanan', 'Protein', 'Pemanis', 'Kemasan'],
   lainnya: null,
 }
 

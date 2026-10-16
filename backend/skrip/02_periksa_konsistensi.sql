@@ -71,7 +71,8 @@ WITH dari_nota AS (
            SUM(-pg.jumlah) AS jumlah
       FROM pergerakan pg
       JOIN barang b ON b.id = pg.barang_id
-     WHERE pg.jenis = 'terjual' AND b.dicatat_manual = false
+     -- Bahan baku yang terpakai produksi (UMKM produsen) tidak lewat nota kasir.
+     WHERE pg.jenis = 'terjual' AND b.dicatat_manual = false AND pg.produksi_id IS NULL
      GROUP BY 1, 2, 3
 )
 SELECT COUNT(*) AS barang_hari_tidak_cocok
@@ -86,3 +87,12 @@ SELECT (SELECT COUNT(*) FROM transaksi t
          WHERE NOT EXISTS (SELECT 1 FROM transaksi_baris tb WHERE tb.transaksi_id = t.id))
      + (SELECT COUNT(*) FROM transaksi_baris WHERE harga_jual_satuan IS NULL)
        AS nota_cacat;
+
+\echo '7. stok barang jadi harus sama dengan produksi dikurangi penjualan'
+-- `produk_jadi.stok` adalah nilai berjalan UMKM produsen, sama seperti
+-- `barang.stok`. Penjaganya ada di backend/api/produksi.py.
+SELECT COUNT(*) AS produk_jadi_tidak_cocok
+  FROM produk_jadi pj
+ WHERE ABS(pj.stok
+           - COALESCE((SELECT SUM(jumlah) FROM produksi p WHERE p.produk_jadi_id = pj.id), 0)
+           + COALESCE((SELECT SUM(jumlah) FROM penjualan_baris pb WHERE pb.produk_jadi_id = pj.id), 0)) > 0.001;

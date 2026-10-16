@@ -27,6 +27,8 @@ class JenisUsaha(TeksEnum):
     WARUNG_MAKAN = "warung-makan"
     ROTI_KUE = "roti-kue"
     WARUNG_KELONTONG = "warung-kelontong"
+    #: UMKM yang memproduksi barang dan menjualnya ke usaha lain (sejak 16 Okt 2026).
+    PRODUKSI_MAKANAN = "produksi-makanan"
     LAINNYA = "lainnya"
 
 

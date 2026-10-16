@@ -27,6 +27,8 @@ export type JenisUsaha =
   | 'warung-makan'
   | 'roti-kue'
   | 'warung-kelontong'
+  /** Produsen yang menjual ke usaha lain, mis. sambal rumahan ke ritel (sejak 16 Okt 2026). */
+  | 'produksi-makanan'
   | 'lainnya'
 export type StatusVerifikasi = 'menunggu' | 'terverifikasi' | 'perlu-diperbaiki'
 export type TingkatVerifikasi = 'penuh' | 'dasar'

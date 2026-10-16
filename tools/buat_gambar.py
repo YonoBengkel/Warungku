@@ -9,7 +9,8 @@ inisial. Sementara belum ada foto sungguhan, gambarnya ilustrasi SVG buatan
 sendiri. Keluaran:
 
 * `frontend/public/gambar/produk/<slug>.svg` — satu ilustrasi per produk di
-  `KATALOG` (30), digambar tangan di bawah.
+  `KATALOG` (30), di katalog tambahan UMKM produsen (4), dan per barang jadinya
+  (2 toples sambal), digambar tangan di bawah.
 * `frontend/public/gambar/logo/<slug>.svg` — logo 8 distributor (digambar
   tangan, warnanya sama dengan warna distributor di basis data) dan logo semua
   UMKM di `UMKM`. Logo UMKM dirakit dari piktogram jenis usahanya; bentuk,
@@ -32,6 +33,8 @@ AKAR = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(AKAR / "data"), str(AKAR / "backend")]
 
 from dataset.katalog import DISTRIBUTOR, KATALOG, UMKM  # noqa: E402
+from dataset.umkm_produksi import JENIS as JENIS_PRODUSEN  # noqa: E402
+from dataset.umkm_produksi import KATALOG_TAMBAHAN, NAMA_USAHA as NAMA_PRODUSEN, PRODUK_JADI  # noqa: E402
 from warungku.enum import JenisUsaha  # noqa: E402
 
 KELUAR_PRODUK = AKAR / "frontend" / "public" / "gambar" / "produk"
@@ -71,6 +74,7 @@ UBIN = {
     "Protein": "#FDEAE3",
     "Kemasan": "#ECEFF4",
     "Pendukung": "#E2F5F7",
+    "Produk Jadi": "#FFE7E0",
 }
 BAYANGAN = '<ellipse cx="32" cy="55" rx="17" ry="2.6" fill="#000" opacity=".09"/>'
 
@@ -327,6 +331,65 @@ PRODUK: dict[str, str] = {
 }
 
 
+def _toples_sambal(isi: str, kilap: str, label_isi: str) -> str:
+    """Toples kaca 200 ml berisi sambal, tutup kotak-kotak merah putih."""
+    return (
+        '<path d="M20 24h24v25a5 5 0 0 1-5 5H25a5 5 0 0 1-5-5z" fill="#F4FAFD" opacity=".9"/>'
+        f'<path d="M21.5 30h21v19a3.6 3.6 0 0 1-3.6 3.6H25.1a3.6 3.6 0 0 1-3.6-3.6z" fill="{isi}"/>'
+        f'<path d="M24 32c3-1 6 1 9 0s6-1 8 0" stroke="{kilap}" stroke-width="1.6" fill="none" stroke-linecap="round"/>'
+        '<rect x="18" y="15" width="28" height="10" rx="2.5" fill="#D9363E"/>'
+        + "".join(f'<rect x="{18 + 4 * i}" y="{15 + (i % 2) * 5}" width="4" height="5" fill="#fff" opacity=".85"/>' for i in range(7))
+        + '<rect x="24" y="36" width="16" height="11" rx="2" fill="#FFF6E5"/>'
+        + label_isi
+    )
+
+
+PRODUK.update({
+    # --- Bahan baku tambahan untuk UMKM produsen ---
+    "Bawang Putih": (
+        '<path d="M32 15c-1 4-1 6 0 8" stroke="#9BA88A" stroke-width="2" fill="none" stroke-linecap="round"/>'
+        '<path d="M32 22c-11 2-17 10-15 19 2 8 10 12 15 12s13-4 15-12c2-9-4-17-15-19z" fill="#FDFBF7" stroke="#B9A27E" stroke-width="1.6"/>'
+        '<path d="M32 23c-4 5-5 17 0 29M32 23c4 5 5 17 0 29M32 23c-9 4-13 14-9 27M32 23c9 4 13 14 9 27" stroke="#C9B28C" stroke-width="1.4" fill="none"/>'
+        '<path d="M24 30c-2 4-2 9 0 13" stroke="#C9A3C4" stroke-width="1.6" fill="none" stroke-linecap="round" opacity=".7"/>'
+        '<path d="M26 50c2 2 4 3 6 3s4-1 6-3" stroke="#C9B48F" stroke-width="1.4" fill="none" stroke-linecap="round"/>'
+    ),
+    "Teri Nasi": (
+        '<path d="M12 40h40c0 8-9 14-20 14s-20-6-20-14z" fill="#6E8FA8"/>'
+        '<path d="M12 40h40" stroke="#5A7891" stroke-width="2"/>'
+        + "".join(
+            f'<g transform="translate({x} {y}) rotate({r})"><ellipse rx="6" ry="1.7" fill="#C9D3DC"/>'
+            f'<path d="M5.5 0l3-2v4z" fill="#AEBAC6"/><circle cx="-4.2" cy="-.3" r=".6" fill="#3A4652"/></g>'
+            for x, y, r in ((24, 34, -15), (34, 31, 10), (41, 36, -5), (28, 38, 8), (37, 39, -20), (20, 39, 25), (31, 27, -8))
+        )
+    ),
+    "Garam Dapur": (
+        '<path d="M19 18h26l2 34a2 2 0 0 1-2 2H19a2 2 0 0 1-2-2z" fill="#fff" stroke="#D5DCE4" stroke-width="1.2"/>'
+        '<path d="M19 18l2-5h22l2 5z" fill="#E9EEF3"/>'
+        '<rect x="19" y="28" width="26" height="14" fill="#2F6FB5"/>'
+        + "".join(f'<rect x="{x}" y="{y}" width="3.2" height="3.2" rx=".6" fill="#fff" transform="rotate(20 {x} {y})"/>'
+                  for x, y in ((25, 32), (31, 31), (37, 33), (28, 37), (34, 37)))
+    ),
+    "Toples Kaca 200 ml": (
+        '<path d="M20 24h24v25a5 5 0 0 1-5 5H25a5 5 0 0 1-5-5z" fill="#DDEFFB" stroke="#9CC3E0" stroke-width="1.4"/>'
+        '<path d="M24 30v18" stroke="#fff" stroke-width="2.4" stroke-linecap="round" opacity=".9"/>'
+        '<rect x="18" y="15" width="28" height="10" rx="2.5" fill="#C9A227"/>'
+        '<path d="M18 20h28" stroke="#A88514" stroke-width="1.2"/>'
+        '<path d="M44 40h6M44 46h4" stroke="#9CC3E0" stroke-width="1.6" stroke-linecap="round"/>'
+    ),
+    # --- Barang jadi UMKM produsen ---
+    "Sambal Bawang": _toples_sambal(
+        "#C8321E", "#F07A4F",
+        '<circle cx="29" cy="41.5" r="3" fill="#F3EBDD" stroke="#C9B48F" stroke-width=".8"/>'
+        '<path d="M34 44c2-4 4-5 6-5" stroke="#D7263D" stroke-width="2.4" fill="none" stroke-linecap="round"/>',
+    ),
+    "Sambal Goreng Teri": _toples_sambal(
+        "#9E2A17", "#D9653F",
+        '<g transform="translate(32 41.5)"><ellipse rx="5.5" ry="1.8" fill="#8FA3B5"/>'
+        '<path d="M5 0l3-2v4z" fill="#8FA3B5"/><circle cx="-3.8" cy="-.3" r=".6" fill="#2E3A46"/></g>',
+    ),
+})
+
+
 def gambar_produk(nama: str, kategori: str) -> str:
     return svg(f'<rect width="64" height="64" rx="14" fill="{UBIN[kategori]}"/>{BAYANGAN}{PRODUK[nama]}')
 
@@ -552,21 +615,23 @@ def main() -> None:
     KELUAR_LOGO.mkdir(parents=True, exist_ok=True)
 
     produk: dict[str, str] = {}
-    for p in KATALOG:
-        berkas = f"{slug(p.nama)}.svg"
-        (KELUAR_PRODUK / berkas).write_text(gambar_produk(p.nama, p.kategori), encoding="utf-8")
-        produk[p.nama] = berkas
+    semua = [(p.nama, p.kategori) for p in (*KATALOG, *KATALOG_TAMBAHAN)]
+    semua += [(pj.nama, "Produk Jadi") for pj in PRODUK_JADI]
+    for nama, kategori in semua:
+        berkas = f"{slug(nama)}.svg"
+        (KELUAR_PRODUK / berkas).write_text(gambar_produk(nama, kategori), encoding="utf-8")
+        produk[nama] = berkas
 
     logo: dict[str, str] = {}
     for d in DISTRIBUTOR:
         berkas = f"{slug(d.nama)}.svg"
         (KELUAR_LOGO / berkas).write_text(svg(LOGO_DISTRIBUTOR[d.nama]), encoding="utf-8")
         logo[d.nama] = berkas
-    for u in UMKM:
-        berkas = f"{slug(u.nama)}.svg"
-        kelompok = JENIS_KE_KELOMPOK.get(u.jenis, "produksi")
-        (KELUAR_LOGO / berkas).write_text(logo_umkm(u.nama, kelompok), encoding="utf-8")
-        logo[u.nama] = berkas
+    for nama, jenis in [(u.nama, u.jenis) for u in UMKM] + [(NAMA_PRODUSEN, JENIS_PRODUSEN)]:
+        berkas = f"{slug(nama)}.svg"
+        kelompok = JENIS_KE_KELOMPOK.get(jenis, "produksi")
+        (KELUAR_LOGO / berkas).write_text(logo_umkm(nama, kelompok), encoding="utf-8")
+        logo[nama] = berkas
 
     baris = [
         "/**",

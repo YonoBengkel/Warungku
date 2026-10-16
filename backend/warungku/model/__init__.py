@@ -27,6 +27,7 @@ from .gudang import (
     TransaksiBaris,
 )
 from .inti import Berkas, Distributor, Keanggotaan, Pengguna, ProdukMaster, Usaha
+from .produksi import Pembeli, Penjualan, PenjualanBaris, Produksi, ProdukJadi, ResepBahan
 from .niaga import (
     Kontrak,
     KontrakPeriode,
@@ -60,6 +61,13 @@ __all__ = [
     "TransaksiBaris",
     "Pergerakan",
     "DataKasir",
+    # Lapis 3b: produksi dan penjualan B2B
+    "ProdukJadi",
+    "ResepBahan",
+    "Produksi",
+    "Pembeli",
+    "Penjualan",
+    "PenjualanBaris",
     # Lapis 4
     "Penawaran",
     "PaketKontrak",

@@ -36,6 +36,12 @@ export const GAMBAR_PRODUK: Record<string, string> = {
   'Es Batu Kristal': 'es-batu-kristal.svg',
   'Air Mineral Galon': 'air-mineral-galon.svg',
   'Tisu Makan': 'tisu-makan.svg',
+  'Bawang Putih': 'bawang-putih.svg',
+  'Teri Nasi': 'teri-nasi.svg',
+  'Garam Dapur': 'garam-dapur.svg',
+  'Toples Kaca 200 ml': 'toples-kaca-200-ml.svg',
+  'Sambal Bawang': 'sambal-bawang.svg',
+  'Sambal Goreng Teri': 'sambal-goreng-teri.svg',
 }
 
 /** Nama toko (UMKM dan distributor) → berkas di `/gambar/logo/`. */
@@ -118,4 +124,5 @@ export const LOGO_TOKO: Record<string, string> = {
   'Toko Kelontong Pakem': 'toko-kelontong-pakem.svg',
   'Toko Sembako Rejeki Lancar': 'toko-sembako-rejeki-lancar.svg',
   'Toko Kelontong Seturan': 'toko-kelontong-seturan.svg',
+  'Dapur Sambal Bu Ratmi': 'dapur-sambal-bu-ratmi.svg',
 }

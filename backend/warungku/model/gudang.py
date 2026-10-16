@@ -212,6 +212,8 @@ class Pergerakan(SQLModel, table=True):
     #: Asal pergerakan, supaya riwayat bisa diketuk balik ke sumbernya.
     pesanan_id: int | None = Field(default=None, foreign_key="pesanan.id", index=True)
     transaksi_id: int | None = Field(default=None, foreign_key="transaksi.id", index=True)
+    #: Bahan baku yang terpakai satu sesi produksi (UMKM produsen).
+    produksi_id: int | None = Field(default=None, foreign_key="produksi.id", index=True)
     oleh: str | None = Field(default=None, max_length=120)
 
 
