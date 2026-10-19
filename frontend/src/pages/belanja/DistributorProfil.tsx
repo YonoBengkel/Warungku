@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dasar'
 import { KepalaHalaman } from '@/components/ui/navigasi'
 import { HargaBeli } from '@/components/domain/KartuPromo'
-import { BilahProgres, KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
+import { BilahProgres, KeadaanKosong, Penjelasan, Peringatan } from '@/components/ui/umpanBalik'
 import {
   IkonBintangIsi,
   IkonCentangLingkaran,
@@ -22,7 +22,7 @@ import {
   IkonPanahKanan,
   IkonToko,
 } from '@/icons'
-import { angka, nomorHp, rupiah, tanggalPendek, waktuLalu } from '@/lib/format'
+import { angka, bintang, nomorHp, rupiah, tanggalPendek, waktuLalu } from '@/lib/format'
 import type { Distributor, Penawaran } from '@/lib/types'
 import { distributorById, paketUntukPenawaran } from '@/data/dummy'
 import { useAplikasi, usePenentuHarga } from '@/store/aplikasi'
@@ -44,12 +44,6 @@ const LABEL_SUB: Array<{ kunci: keyof Distributor['subRating']; label: string }>
   { kunci: 'jumlahSesuai', label: 'Jumlah sesuai pesanan' },
   { kunci: 'kondisiBarang', label: 'Kondisi barang' },
 ]
-
-/* Nilai bintang selalu satu desimal. `angka(4, 1)` menghasilkan "4", dan "4"
-   berdampingan dengan "4,7" terbaca seperti dua skala yang berbeda. */
-function satuDesimal(n: number): string {
-  return n.toFixed(1).replace('.', ',')
-}
 
 function nadaNilai(n: number): 'aman' | 'merek' | 'menipis' | 'kritis' {
   if (n >= 4.5) return 'aman'
@@ -125,7 +119,7 @@ export default function DistributorProfil() {
           <KeadaanKosong
             ikon={<IkonToko size={26} />}
             judul="Distributor ini tidak ada lagi"
-            pesan="Tautan yang kamu buka menunjuk ke distributor yang sudah tidak terdaftar. Isinya mungkin dihapus atau tautannya salah salin."
+            pesan="Mungkin sudah tidak terdaftar, atau tautannya salah salin."
             aksi={<TombolTautan ke="/belanja?tab=distributor">Lihat Daftar Distributor</TombolTautan>}
           />
         </Kartu>
@@ -194,12 +188,14 @@ export default function DistributorProfil() {
                   Distributor Baru &middot; belum ada ulasan &middot; bergabung {distributor.sejak}
                 </Lencana>
                 <p className="mt-2.5 text-isi text-ink-2 leading-relaxed">
-                  Kami tidak menampilkan nilai bintang sebelum ada ulasan pertama, karena angka nol akan terbaca
-                  sebagai penilaian buruk padahal mereka memang belum pernah dinilai.
+                  Nilai bintang baru tampil setelah ada ulasan pertama.
                 </p>
+                <Penjelasan label="Kenapa?">
+                  Angka nol akan terbaca sebagai penilaian buruk, padahal distributor ini memang belum pernah dinilai.
+                </Penjelasan>
                 <p className="mt-2 text-isi text-ink-2 leading-relaxed">
-                  Sudah {angka(distributor.jumlahPesananSelesai)} pesanan selesai lewat aplikasi. Kalau kamu ingin
-                  mencoba, mulai dari jumlah kecil dulu sebelum mengikat kontrak panjang.
+                  Sudah {angka(distributor.jumlahPesananSelesai)} pesanan selesai; coba mulai dari jumlah kecil
+                  sebelum mengikat kontrak panjang.
                 </p>
               </>
             ) : (
@@ -207,7 +203,7 @@ export default function DistributorProfil() {
                 <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
                   <span className="inline-flex items-baseline gap-1.5 text-angka font-extrabold text-ink leading-none tracking-tight">
                     <IkonBintangIsi size={22} className="text-menipis self-center" />
-                    {satuDesimal(distributor.rating ?? 0)}
+                    {bintang(distributor.rating ?? 0)}
                     <HanyaPembacaLayar> dari 5 bintang</HanyaPembacaLayar>
                   </span>
                   <span className="text-isi text-ink-2">
@@ -224,7 +220,7 @@ export default function DistributorProfil() {
                         <div className="flex items-baseline justify-between gap-3 mb-1.5">
                           <span className="text-isi text-ink-2 font-medium">{label}</span>
                           <span className="text-isi font-bold text-ink tabular">
-                            {satuDesimal(nilai)} <span className="font-normal text-ink-3">dari 5</span>
+                            {bintang(nilai)} <span className="font-normal text-ink-3">dari 5</span>
                           </span>
                         </div>
                         <BilahProgres nilai={nilai} maks={5} nada={nadaNilai(nilai)} tinggi={8} label={label} />
@@ -251,8 +247,7 @@ export default function DistributorProfil() {
               punya dasar yang bisa diperiksa. */}
           {belumDiulas ? (
             <Peringatan nada="info" judul="Penilaianmu ditunggu">
-              Pesanan {belumDiulas.nomor} dari distributor ini sudah selesai, jadi kamu bisa menuliskan
-              penilaiannya dari halaman pesanan itu.
+              Pesanan {belumDiulas.nomor} sudah selesai; tulis penilaiannya dari halaman pesanan itu.
               <div className="mt-2.5">
                 <Link
                   to={`/pesanan/${belumDiulas.id}`}
@@ -345,7 +340,7 @@ export default function DistributorProfil() {
                   padat
                   ikon={<IkonToko size={24} />}
                   judul="Belum ada barang yang dipasang"
-                  pesan="Distributor ini belum memasang satu pun barang untuk dijual di aplikasi. Coba lihat distributor lain yang mengirim ke kotamu."
+                  pesan="Coba lihat distributor lain yang mengirim ke kotamu."
                   aksi={<TombolTautan ke="/belanja">Cari barang di Distributor</TombolTautan>}
                 />
               </Kartu>

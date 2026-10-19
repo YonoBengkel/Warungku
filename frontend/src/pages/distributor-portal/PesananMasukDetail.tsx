@@ -58,12 +58,20 @@ const TITIK_JEJAK: Record<StatusPesananMasuk, { latar: string; Ikon: typeof Ikon
 
 export default function PesananMasukDetail() {
   const { id = '' } = useParams()
-  const pesanan = usePesananMasuk().find((p) => p.id === id)
+  const semuaMasuk = usePesananMasuk()
+  const pesanan = semuaMasuk.find((p) => p.id === id)
+  /* Pesanan menunggu berikutnya (terlama dulu, sama dengan urutan tab
+     Menunggu), supaya sesudah menjawab satu pesanan distributor tidak perlu
+     kembali ke daftar dulu. */
+  const berikutnya = semuaMasuk
+    .filter((x) => x.status === 'menunggu-konfirmasi' && x.id !== id)
+    .sort((a, b) => new Date(a.dibuatPada).getTime() - new Date(b.dibuatPada).getTime())[0]
   const { promoById } = usePenentuHarga()
   const terimaPesananMasuk = useAplikasi((s) => s.terimaPesananMasuk)
   const majukanPesananMasuk = useAplikasi((s) => s.majukanPesananMasuk)
   const [lembarTolak, setLembarTolak] = useState(false)
   const dariServer = useAplikasi((s) => s.pesananMasukServer !== null)
+  const diproses = useAplikasi((s) => s.pesananDiproses.includes(id))
   const [lembarBukti, setLembarBukti] = useState(false)
 
   if (!pesanan) {
@@ -108,6 +116,18 @@ export default function PesananMasukDetail() {
         judul={p.nomor}
         keterangan={umkm?.nama ?? 'Pemilik usaha'}
         kembaliKe={`/distributor-portal/pesanan?tahap=${pesanan.status}`}
+        aksi={
+          berikutnya && (
+            <TombolTautan
+              ke={`/distributor-portal/pesanan/${berikutnya.id}`}
+              ragam="tautan"
+              ukuran="kecil"
+              ikonKanan={<IkonPanahKanan size={15} />}
+            >
+              Menunggu berikutnya
+            </TombolTautan>
+          )
+        }
       />
 
       <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
@@ -347,6 +367,7 @@ export default function PesananMasukDetail() {
               <Tombol
                 penuh
                 ukuran="besar"
+                memuat={diproses}
                 ikonKiri={<IkonCentang size={18} />}
                 onClick={() => terimaPesananMasuk(p.id)}
               >
@@ -356,6 +377,7 @@ export default function PesananMasukDetail() {
                 ragam="garis"
                 penuh
                 ukuran="besar"
+                disabled={diproses}
                 ikonKiri={<IkonSilang size={18} />}
                 onClick={() => setLembarTolak(true)}
               >
@@ -366,6 +388,7 @@ export default function PesananMasukDetail() {
             <Tombol
               penuh
               ukuran="besar"
+              memuat={diproses}
               // Data server: catat bukti antar dulu. Data contoh: langsung maju seperti sebelumnya.
               onClick={() => (dariServer ? setLembarBukti(true) : majukanPesananMasuk(p.id))}
             >

@@ -4,7 +4,7 @@ import { JudulBagian, Kartu, Lencana, Pemisah, Tombol, TombolTautan } from '@/co
 import { Kolom } from '@/components/ui/formulir'
 import { Lembar } from '@/components/ui/lembar'
 import { KepalaHalaman, TabSegmen } from '@/components/ui/navigasi'
-import { BilahProgres, KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
+import { BilahProgres, KeadaanKosong, Penjelasan, Peringatan } from '@/components/ui/umpanBalik'
 import {
   IkonCentangLingkaran,
   IkonJam,
@@ -85,10 +85,13 @@ export default function AkunKasir() {
           Apakah kamu sudah memiliki data transaksi sebelumnya?
         </h1>
         <p className="mt-1.5 text-kartu text-ink-2 leading-relaxed">
-          Turnify Flow berdiri terpisah dari aplikasi kasirmu — kami mengurus stok gudang, kasir mengurus penjualan.
-          Karena itu catatan penjualan yang sudah kamu punya perlu disambungkan ke sini. Kalau tidak, perkiraan
-          kebutuhan mulai dari nol dan baru bisa diandalkan setelah dua minggu berjalan.
+          Sambungkan catatan penjualanmu supaya perkiraan kebutuhan tidak mulai dari nol.
         </p>
+        <Penjelasan label="Kenapa perlu?">
+          Turnify Flow berdiri terpisah dari aplikasi kasirmu: kami mengurus stok gudang, kasir mengurus
+          penjualan. Tanpa catatan penjualan lama, perkiraan kebutuhan baru bisa diandalkan setelah dua minggu
+          berjalan.
+        </Penjelasan>
 
         <div className="mt-5">
           <DaftarKonektor />
@@ -179,8 +182,7 @@ function TabSambungan({ jumlahPerluDibereskan }: { jumlahPerluDibereskan: number
             <div className="min-w-0">
               <h2 className="text-[1rem] font-bold text-ink">Kamu mencatat pemakaian harian sendiri</h2>
               <p className="mt-1 text-isi text-ink-2 leading-relaxed">
-                Setiap sore kamu mengisi berapa banyak tiap bahan yang terpakai hari itu, lalu stok berkurang
-                sesuai angka tersebut. Perkiraan kebutuhan tetap jalan selama catatannya rutin.
+                Isi pemakaian bahan tiap sore; stok ikut berkurang dan perkiraan tetap jalan selama rutin.
               </p>
             </div>
           </div>
@@ -376,8 +378,7 @@ function DaftarKonektor() {
       </ul>
 
       <p className="pt-3 text-kecil text-ink-3 leading-relaxed">
-        Apa pun yang kamu pilih sekarang bisa diganti nanti lewat Akun &rsaquo; Data dari Kasir. Tidak ada kolom
-        harga jual di mana pun — itu tetap tinggal di aplikasi kasirmu.
+        Bisa diganti nanti lewat Akun &rsaquo; Data dari Kasir; harga jual tetap tinggal di kasirmu.
       </p>
 
       <Lembar
@@ -394,18 +395,14 @@ function DaftarKonektor() {
       >
         <div className="pb-4 space-y-3 text-isi text-ink-2 leading-relaxed">
           <p>
-            Yang kami baca cuma tiga kolom: <strong className="text-ink">tanggal</strong>,{' '}
+            Yang dibaca cuma <strong className="text-ink">tanggal</strong>,{' '}
             <strong className="text-ink">nama barang atau menu</strong>, dan{' '}
-            <strong className="text-ink">jumlah yang terjual</strong>. Kolom lain kami lewati, termasuk kolom
-            harga kalau ada.
+            <strong className="text-ink">jumlah terjual</strong>; kolom lain, termasuk harga, dilewati.
           </p>
-          <p>
-            Satu baris untuk satu barang pada satu tanggal sudah cukup. Berkas berbentuk tabel — spreadsheet atau
-            CSV — yang paling mudah kami baca.
-          </p>
+          <p>Satu baris per barang per tanggal; spreadsheet atau CSV paling mudah dibaca.</p>
           <p className="text-ink-3">
-            Pengiriman berkas belum bisa dicoba di purwarupa ini. Sementara menunggu, sambungkan{' '}
-            {POS_TUNGGAL.nama} atau catat pemakaian harian supaya stok tetap ikut berkurang.
+            Pengiriman berkas belum bisa dicoba di purwarupa ini; sambungkan {POS_TUNGGAL.nama} atau catat
+            pemakaian harian dulu.
           </p>
         </div>
       </Lembar>
@@ -639,8 +636,7 @@ function TabPerluDibereskan({
     <div>
       {menu.length > 0 && (
         <Peringatan nada="menipis" judul={`${menu.length} menu belum dipasangkan ke bahan`}>
-          Penjualannya tetap tercatat. Yang tertinggal cuma stok bahannya, jadi selama belum dipasangkan angka
-          stok di aplikasi lebih besar daripada isi rak yang sebenarnya.
+          Penjualan tercatat, tapi stok bahannya tidak berkurang sehingga terbaca lebih banyak dari isi rak.
         </Peringatan>
       )}
 
@@ -677,8 +673,7 @@ function TabPerluDibereskan({
               judul={`Penjualan pukul ${PENJUALAN_KEMBAR.jam} masuk ${PENJUALAN_KEMBAR.jumlah} kali`}
               detail={
                 <>
-                  Salinannya sudah kami abaikan, jadi stok hanya berkurang satu kali. Tidak ada yang perlu kamu
-                  lakukan kalau di jam itu memang cuma ada satu pembeli.
+                  Salinannya sudah diabaikan; kalau memang cuma satu pembeli, tidak perlu apa-apa.
                 </>
               }
               utama={
@@ -720,8 +715,7 @@ function TabPerluDibereskan({
               judul={`Satuan tidak cocok: kasir mencatat “porsi”, bahan memakai ${bahanPorsi.satuan}`}
               detail={
                 <>
-                  Kasir mengirim penjualan dalam hitungan porsi, sedangkan {bahanPorsi.nama} disimpan dalam{' '}
-                  {bahanPorsi.satuan}. Selama takarannya belum ditentukan, stok bahan ini tidak ikut berkurang.
+                  Selama takarannya belum ditentukan, stok {bahanPorsi.nama} tidak ikut berkurang.
                 </>
               }
               utama={
@@ -742,8 +736,7 @@ function TabPerluDibereskan({
 
       {menu.length > 0 && (
         <p className="mt-4 text-isi text-ink-3 leading-relaxed max-w-[70ch]">
-          Penjualan yang sudah lewat tidak ikut dikurangi otomatis. Setelah memasangkan, cocokkan sisa stok lewat
-          Koreksi Stok di detail tiap barang.
+          Penjualan lama tidak ikut dikurangi; setelah memasangkan, cocokkan stok lewat Koreksi Stok.
         </p>
       )}
 
@@ -922,7 +915,7 @@ function TabRiwayat() {
         <JudulBagian
           id="riwayat-struk"
           judul="Struk terbaru"
-          keterangan={`Inilah bentuk struk yang dikenal aplikasi — format ${POS_TUNGGAL.nama}, satu-satunya yang kami baca. Harga jual tidak ikut masuk ke sini; itu tetap tinggal di aplikasi kasirmu.`}
+          keterangan={`Format ${POS_TUNGGAL.nama}, satu-satunya yang kami baca; harga jual tidak ikut masuk.`}
         />
         <ul aria-labelledby="riwayat-struk" className="grid gap-2.5 lg:grid-cols-2 lg:items-start">
           {STRUK_TERBARU.map((t) => (
@@ -934,11 +927,11 @@ function TabRiwayat() {
       </div>
 
       <p className="mt-4 text-isi text-ink-3 leading-relaxed max-w-[70ch]">
-        Riwayat lebih lama dari 30 hari tidak disimpan. Kalau ada angka stok yang terasa tidak masuk akal, buka{' '}
+        Riwayat disimpan 30 hari. Angka stok terasa aneh? Lihat riwayat pergerakannya di{' '}
         <Link to="/stok" className="font-semibold text-brand hover:underline">
           daftar Stok
-        </Link>{' '}
-        dan lihat riwayat pergerakan barangnya.
+        </Link>
+        .
       </p>
     </div>
   )

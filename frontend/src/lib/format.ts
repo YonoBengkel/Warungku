@@ -59,6 +59,24 @@ export function jumlahSatuan(n: number, satuan: string): string {
   return `${angka(n, desimal)} ${satuan}`
 }
 
+/**
+ * Jumlah yang dibandingkan sebaris (kuota, pemakaian, selisih): desimal
+ * mengikuti angkanya, bukan besarannya. Aturan "satu desimal hanya di bawah
+ * 10" menulis pemakaian 23,4 sebagai "23" tapi selisihnya "6,6", dan layar
+ * tampak salah hitung. Dulu disalin di tiga halaman paket kontrak.
+ */
+export function angkaJumlah(n: number): string {
+  return angka(n, Number.isInteger(n) ? 0 : 1)
+}
+
+/**
+ * Nilai bintang selalu satu desimal: "4,0", bukan "4". Berdampingan dengan
+ * "4,8", angka "4" terbaca seperti skala lain.
+ */
+export function bintang(n: number): string {
+  return n.toFixed(1).replace('.', ',')
+}
+
 export function persen(n: number, desimal = 0): string {
   return `${angka(n, desimal)}%`
 }

@@ -220,7 +220,7 @@ export default function DaftarLegalitas() {
                 </Lencana>
               }
               aktif={!belumPunyaNib}
-              isi="Kamu mengisi NIB dan angkanya cocok dengan data OSS. Semua distributor, termasuk yang menetapkan syarat legalitas, bisa menerima pengajuan kontrak kamu."
+              isi="NIB-mu cocok dengan data OSS; semua distributor bisa menerima pengajuan kontrakmu."
             />
             <BarisLencana
               lencana={
@@ -229,7 +229,7 @@ export default function DaftarLegalitas() {
                 </Lencana>
               }
               aktif={belumPunyaNib}
-              isi="Tempat usaha kamu terbukti nyata lewat foto. Kamu tetap bisa memesan dan berkontrak dengan sebagian besar distributor; sebagian kecil mensyaratkan NIB."
+              isi="Usahamu terbukti lewat foto; sebagian kecil distributor tetap mensyaratkan NIB."
             />
           </div>
         </section>
@@ -269,8 +269,7 @@ export default function DaftarLegalitas() {
             <li>Salin 13 angkanya, tanpa spasi dan tanpa titik.</li>
           </ol>
           <p className="mt-3 text-isi text-ink-3 leading-relaxed">
-            Lembarnya hilang? Nomor yang sama bisa dilihat lagi dengan masuk ke akun OSS kamu. Kalau memang belum
-            pernah mendaftar, centang &ldquo;Usaha saya belum punya NIB&rdquo; dan lanjut pakai foto.
+            Lembarnya hilang? Lihat lagi di akun OSS-mu, atau centang &ldquo;Usaha saya belum punya NIB&rdquo;.
           </p>
         </div>
       </Lembar>

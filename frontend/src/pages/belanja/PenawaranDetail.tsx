@@ -24,7 +24,7 @@ import {
   IkonPanahKanan,
   IkonToko,
 } from '@/icons'
-import { angka, rupiah, waktuLalu } from '@/lib/format'
+import { angka, bintang, rupiah, waktuLalu } from '@/lib/format'
 import { isiKemasan, jumlahBawaan, jumlahTampil, kalimatIsiKemasan } from '@/lib/satuan'
 import { BANTUAN } from '@/lib/label'
 import {
@@ -80,7 +80,7 @@ export default function PenawaranDetail() {
           <KeadaanKosong
             ikon={<IkonToko size={26} />}
             judul="Penawaran ini sudah tidak ada"
-            pesan="Distributor mungkin sudah menurunkan barang ini dari daftar jualnya, atau tautannya salah salin. Cari barang yang sama dari distributor lain."
+            pesan="Mungkin sudah diturunkan distributornya. Cari barang yang sama di distributor lain."
             aksi={<TombolTautan ke="/belanja">Cari barang di Distributor</TombolTautan>}
           />
         </Kartu>
@@ -152,8 +152,7 @@ export default function PenawaranDetail() {
 
       {tidakDijual && (
         <Peringatan nada="netral" judul="Distributor sedang tidak menjual barang ini" className="mt-3 lg:max-w-[70ch]">
-          {distributor.nama} menyembunyikannya dari katalog. Kontrak dan pesanan yang sudah ada tetap berjalan; untuk
-          pesanan baru, cari barang yang sama dari distributor lain.
+          Kontrak dan pesanan lama tetap jalan; untuk pesanan baru, cari distributor lain.
         </Peringatan>
       )}
 
@@ -239,7 +238,7 @@ export default function PenawaranDetail() {
                   ) : (
                     <span className="inline-flex flex-wrap items-center gap-x-1.5 text-isi text-ink-2">
                       <IkonBintangIsi size={14} className="text-menipis" />
-                      <strong className="text-ink">{distributor.rating.toFixed(1).replace('.', ',')}</strong>
+                      <strong className="text-ink">{bintang(distributor.rating)}</strong>
                       <HanyaPembacaLayar>dari 5 bintang &middot;</HanyaPembacaLayar>
                       {distributor.jumlahUlasan} ulasan dari {distributor.jumlahUmkmPengulas} UMKM &middot;{' '}
                       {angka(distributor.jumlahPesananSelesai)} pesanan selesai
@@ -281,8 +280,7 @@ export default function PenawaranDetail() {
             <Kartu padat>
               <h2 className="text-isi font-bold text-ink">Belum ada di daftar stok kamu</h2>
               <p className="mt-1.5 text-isi text-ink-2 leading-relaxed">
-                Barang ini belum terdaftar di gudangmu, jadi kami belum bisa menghitung pemakaian dan perkiraan
-                kebutuhannya. Stok baru bertambah otomatis setelah pesanan pertama kamu terima.
+                Pemakaiannya belum bisa dihitung; stok bertambah sendiri setelah pesanan pertama diterima.
               </p>
               <TombolTautan ke="/stok/baru" ragam="garis" ukuran="kecil" className="mt-2.5">
                 Tambah ke daftar stok
@@ -328,8 +326,7 @@ export default function PenawaranDetail() {
 
           {paket.length === 0 && (
             <Peringatan nada="netral" judul="Distributor belum membuka kontrak untuk barang ini">
-              Kamu tetap bisa membeli sekali sebanyak yang kamu butuhkan. Harga kontrak baru bisa dibandingkan
-              kalau distributor sudah memasang paketnya.
+              Kamu tetap bisa beli sekali sebanyak yang kamu butuhkan.
             </Peringatan>
           )}
         </div>
@@ -358,8 +355,7 @@ export default function PenawaranDetail() {
               <>
                 {' '}
                 <span className="block mt-1 font-semibold text-menipis-ink">
-                  Stok distributor sedang kosong, jadi belum bisa dibeli sekali. Kamu masih bisa mengikat kontrak
-                  supaya kebagian kiriman berikutnya.
+                  Stok distributor kosong; kamu masih bisa ikat kontrak untuk kiriman berikutnya.
                 </span>
               </>
             )}
@@ -471,16 +467,15 @@ export default function PenawaranDetail() {
 
           {kontrakUntukPenawaranIni && (
             <Peringatan nada="info" judul="Pembelian ini ikut menghitung kuota kontrak">
-              Kamu punya kontrak berjalan untuk barang ini. Jumlah yang kamu ambil sekarang akan dihitung sebagai
-              pemenuhan kuota bulan ini setelah barangnya kamu terima.
+              Jumlah ini masuk kuota bulan ini setelah barangnya kamu terima.
               {/* Angka besar di atas adalah harga eceran; yang dipakai di sini
                   harga kontrak. Selisihnya disebutkan supaya tidak terbaca
                   sebagai dua angka yang saling bertentangan. */}
               {hargaSatuanBerlaku !== penawaran.hargaSatuan && (
                 <>
                   {' '}
-                  Harganya pun mengikuti kontrak, {rupiah(hargaSatuanBerlaku)}/{penawaran.satuan}, bukan harga
-                  eceran {rupiah(penawaran.hargaSatuan)}/{penawaran.satuan}.
+                  Harganya ikut kontrak, {rupiah(hargaSatuanBerlaku)}/{penawaran.satuan}, bukan eceran{' '}
+                  {rupiah(penawaran.hargaSatuan)}/{penawaran.satuan}.
                 </>
               )}
             </Peringatan>

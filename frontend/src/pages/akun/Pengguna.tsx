@@ -11,7 +11,7 @@ import {
   type NadaLencana,
 } from '@/components/ui/dasar'
 import { PilihanKartu } from '@/components/ui/formulir'
-import { KeadaanKosong } from '@/components/ui/umpanBalik'
+import { KeadaanKosong, Penjelasan } from '@/components/ui/umpanBalik'
 import { Konfirmasi, Lembar } from '@/components/ui/lembar'
 import { IkonCentang, IkonProfil, IkonSampah, IkonSilang, IkonTambah } from '@/icons'
 import { nomorHp as formatHp } from '@/lib/format'
@@ -284,10 +284,13 @@ export default function Pengguna() {
             </div>
 
             <p className="mt-3 text-isi text-ink-3 leading-relaxed">
-              Peran <strong className="text-ink-2">Pemilik</strong> tidak ada di daftar ini karena ia melekat pada
-              akun usaha dan tidak bisa diberikan ke orang lain. Pemilik bisa melakukan semua pekerjaan Manajer,
-              ditambah menambah atau menghapus pengguna dan mengubah Data Usaha &amp; Legalitas.
+              Peran <strong className="text-ink-2">Pemilik</strong> tidak ada di sini karena melekat pada akun
+              usaha.
             </p>
+            <Penjelasan label="Apa bedanya dengan Manajer?">
+              Peran Pemilik tidak bisa diberikan ke orang lain. Pemilik bisa melakukan semua pekerjaan Manajer,
+              ditambah menambah atau menghapus pengguna dan mengubah Data Usaha &amp; Legalitas.
+            </Penjelasan>
           </section>
         </div>
       </div>

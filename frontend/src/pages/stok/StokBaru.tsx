@@ -5,7 +5,7 @@ import { Kartu, Lencana, Pemisah, Tombol, TombolIkon, TombolTautan } from '@/com
 import { AreaTeks, Kolom, Pilihan, Sakelar } from '@/components/ui/formulir'
 import { KepalaHalaman } from '@/components/ui/navigasi'
 import { Konfirmasi } from '@/components/ui/lembar'
-import { Peringatan } from '@/components/ui/umpanBalik'
+import { Penjelasan, Peringatan } from '@/components/ui/umpanBalik'
 import { IkonPanahKanan, IkonSampah, IkonSilang, IkonTambah } from '@/icons'
 import { angka, cx } from '@/lib/format'
 import {
@@ -388,8 +388,7 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
             </Tombol>
           </div>
           <p className="mt-1.5 text-isi text-ink-3 leading-snug">
-            Sebutan ini ikut dicari. Kalau kamu biasa mengetik &ldquo;skm&rdquo; atau &ldquo;telor&rdquo;,
-            tulis di sini supaya barangnya ketemu.
+            Sebutan lain ikut dicari, misalnya &ldquo;skm&rdquo; atau &ldquo;telor&rdquo;.
           </p>
           {namaLain.length > 0 && (
             <ul className="mt-2 flex flex-wrap gap-2">
@@ -456,9 +455,12 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
       <Kartu>
         <h2 className="text-kartu font-bold text-ink">Satuan</h2>
         <p className="mt-1 text-isi text-ink-3 leading-relaxed">
-          Stok disimpan dalam satuan pakai, satuan terkecil yang dikurangi kasir per porsi. Yang kamu baca di
-          daftar Stok adalah satuan tampil di bawah.
+          Stok disimpan dalam satuan pakai, satuan terkecil yang dikurangi kasir.
         </p>
+        <Penjelasan label="Apa bedanya?">
+          Satuan pakai adalah takaran yang dikurangi kasir per porsi. Yang kamu baca di daftar Stok adalah
+          satuan tampil di bawah.
+        </Penjelasan>
 
         <div className="mt-3.5">
           <Pilihan label="Satuan pakai" wajib value={satuan} onChange={(e) => setSatuan(e.target.value)}>
@@ -669,7 +671,7 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
           aktif={ingatkanKedaluwarsa}
           ubah={setIngatkanKedaluwarsa}
           label="Ingatkan tanggal kedaluwarsa"
-          keterangan="Mati secara bawaan. Nyalakan untuk susu, daging, sayur, dan roti. Kami hanya mencatat satu tanggal, tidak memecah stok per batch."
+          keterangan="Nyalakan untuk susu, daging, sayur, dan roti. Hanya satu tanggal dicatat, tidak per batch."
         />
 
         {ingatkanKedaluwarsa && (
@@ -692,7 +694,7 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
           aktif={dicatatManual}
           ubah={setDicatatManual}
           label="Barang ini memang dicatat manual"
-          keterangan="Untuk gas, tisu, dan barang yang tidak dijual lewat kasir. Chip peringatan hilang permanen dan barangnya tidak ikut menyusun perkiraan."
+          keterangan="Untuk gas, tisu, dan barang di luar kasir: tanpa chip peringatan dan tanpa perkiraan."
         />
 
         <div className="mt-3">
@@ -743,13 +745,14 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
         pesan={
           <>
             <p>
-              <strong>Stok yang sudah tercatat tidak dihitung ulang.</strong> Angka stok sekarang lahir dari
-              penerimaan barang yang nyata, jadi mengubahnya otomatis justru membuat catatan lama jadi salah.
+              <strong>Stok yang sudah tercatat tidak dihitung ulang.</strong> Isi baru berlaku untuk penerimaan
+              berikutnya.
             </p>
-            <p className="mt-2.5">
-              Isi kemasan yang baru berlaku untuk penerimaan berikutnya. Kalau angka stok sekarang memang
-              sudah tidak cocok, luruskan lewat Koreksi Stok.
-            </p>
+            <Penjelasan label="Kenapa?" className="mt-1">
+              Angka stok sekarang lahir dari penerimaan barang yang nyata, jadi mengubahnya otomatis justru
+              membuat catatan lama salah. Kalau angka stok sekarang sudah tidak cocok, luruskan lewat Koreksi
+              Stok.
+            </Penjelasan>
           </>
         }
         onSetuju={terapkan}

@@ -4,7 +4,7 @@ import type { Barang, RekomendasiPrediksi } from '@/lib/types'
 import { BarisData, Kartu, Tombol, TombolTautan } from '@/components/ui/dasar'
 import { BarisChip, BilahAksi, Chip } from '@/components/ui/navigasi'
 import { PengaturJumlah } from '@/components/ui/formulir'
-import { BilahProgres, KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
+import { BilahProgres, KeadaanKosong, Penjelasan, Peringatan } from '@/components/ui/umpanBalik'
 import { GrafikTren } from '@/components/grafik/GrafikTren'
 import { GrafikBatang, Percikan } from '@/components/grafik/GrafikBatang'
 import {
@@ -55,7 +55,7 @@ import { KeteranganMetode, metodeMesin1 } from '@/components/domain/KeteranganMe
  */
 
 const KALIMAT_MELESET =
-  'Semua angka di halaman ini perkiraan yang disusun dari pemakaian yang sudah tercatat. Perkiraan bisa meleset, jadi pakai sebagai saran, bukan jaminan.'
+  'Semua angka di sini perkiraan; pakai sebagai saran, bukan jaminan.'
 
 /** Ruang label sumbu untuk Rupiah ringkas ("12,5 jt"), lebih lebar dari angka biasa. */
 const LEBAR_SUMBU_RUPIAH = 48
@@ -165,7 +165,7 @@ export default function Prediksi() {
         <KeadaanKosong
           ikon={<IkonKotak size={26} />}
           judul="Barang ini sudah tidak ada di daftar"
-          pesan="Mungkin barangnya sudah dihapus, atau tautannya sudah lama. Perkiraan untuk barang lain masih bisa kamu buka dari kategorinya."
+          pesan="Mungkin barangnya sudah dihapus, atau tautannya sudah lama."
           aksi={<TombolTautan ke="/prediksi">Buka Prediksi</TombolTautan>}
           aksiKedua={
             <TombolTautan ke="/stok" ragam="garis">
@@ -260,7 +260,7 @@ function GrafikKategori({ kategori, daftar }: { kategori: string; daftar: Barang
             tingkat="h3"
             ikon={<IkonKotak size={26} />}
             judul="Datanya belum cukup untuk digambar"
-            pesan="Belum ada barang di kategori ini yang riwayat pemakaiannya sudah 14 hari. Grafiknya muncul setelah datanya terkumpul."
+            pesan="Grafik muncul setelah ada barang dengan riwayat pemakaian 14 hari."
           />
         )}
       </Kartu>
@@ -293,7 +293,7 @@ function DaftarBarangKategori({
             tingkat="h3"
             ikon={<IkonKotak size={26} />}
             judul="Belum ada barang di kategori ini"
-            pesan="Kategori ini masih kosong, jadi belum ada yang bisa diperkirakan. Barang yang kamu tambahkan ke kategori ini akan muncul di sini."
+            pesan="Barang yang kamu tambahkan ke kategori ini akan muncul di sini."
             aksi={<TombolTautan ke="/stok/baru">Tambah Barang</TombolTautan>}
           />
         </Kartu>
@@ -556,11 +556,11 @@ function DetailBarang({
                   />
                 </div>
                 {/* Nama garis pembatas sama dengan yang tertulis di grafik. */}
-                <p className="mt-2 text-kecil text-ink-3 leading-relaxed">
+                <Penjelasan label="Cara membaca grafik" className="mt-1">
                   Sebelum garis &ldquo;{sumberServer ? 'data terakhir' : 'hari ini'}&rdquo;, garis merah adalah perkiraan
                   tiap bulan yang dibuat sebelum bulan itu dimulai; bandingkan dengan pemakaian tercatat. Sesudahnya, garis
                   merah dan bayangannya adalah perkiraan bulan depan, yang bisa meleset ke atas maupun ke bawah.
-                </p>
+                </Penjelasan>
               </div>
             ) : (
               <p className="mt-4 text-isi text-ink-3 leading-relaxed">
@@ -592,14 +592,12 @@ function DetailBarang({
               <div className="mt-3">
                 {barang.dicatatManual ? (
                   <p className="text-isi text-ink-2 leading-relaxed">
-                    Barang ini kamu catat manual, jadi pemakaiannya tidak kami hitung sendiri dan perkiraannya tidak
-                    kami buat. Jumlah belinya kamu yang paling tahu.
+                    Barang ini dicatat manual, jadi tidak diperkirakan; jumlah belinya kamu yang tentukan.
                   </p>
                 ) : (
                   <>
                     <p className="text-isi text-ink-2 leading-relaxed">
-                      Perkiraan untuk {barang.nama} belum bisa dibuat. Riwayat pemakaiannya baru terkumpul{' '}
-                      {barang.hariDataTerkumpul} dari 14 hari yang diperlukan.
+                      Perkiraan muncul setelah riwayat pemakaiannya terkumpul 14 hari.
                     </p>
                     <div className="mt-3">
                       <BilahProgres
@@ -643,14 +641,13 @@ function DetailBarang({
                 <p className="text-isi text-ink-2 leading-snug">
                   {rekomendasi.arah === 'kurang' ? (
                     <>
-                      Menurut perkiraan, stok {barang.nama} justru sudah berlebih.{' '}
-                      <strong className="text-ink">Tidak ada saran beli</strong> untuk bulan depan — kalau tetap mau
-                      memesan, atur sendiri jumlahnya.
+                      Stok {barang.nama} sudah berlebih. <strong className="text-ink">Tidak ada saran beli</strong>;
+                      atur sendiri kalau tetap mau pesan.
                     </>
                   ) : rekomendasi.arah === 'tetap' ? (
                     <>
-                      <strong className="text-ink">{kalimatSaran(rekomendasi)}</strong>. Kamu tetap boleh memesan
-                      kalau mau, tapi jumlahnya kamu sendiri yang tentukan.
+                      <strong className="text-ink">{kalimatSaran(rekomendasi)}</strong>. Kalau tetap mau pesan, atur
+                      sendiri jumlahnya.
                     </>
                   ) : (
                     <>
@@ -700,13 +697,11 @@ function DetailBarang({
               /* Data server: katalog pemesanan belum tersambung, tapi Mesin 2 sudah
                  punya saran distributor. Jangan bilang "belum ada distributor". */
               <>
-                Pemesanan dari halaman ini belum tersambung. Saran distributor untuk {barang.nama} dari mesin
-                analitik bisa dilihat di rincian barang.
+                Lihat saran distributor untuk {barang.nama} di rincian barang.
               </>
             ) : (
               <>
-                Belum ada distributor yang menawarkan {barang.nama} di aplikasi, jadi kami tidak bisa memasukkannya ke
-                keranjang untuk kamu. Kamu masih bisa mencarinya sendiri di daftar Distributor.
+                Belum ada distributor yang menawarkan {barang.nama}; coba cari sendiri di daftar Distributor.
               </>
             )}
             <div className="mt-2.5">

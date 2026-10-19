@@ -173,6 +173,8 @@ interface KeadaanAplikasi {
   katalogDistributorServer: { penawaran: Penawaran[]; paket: PaketKontrak[]; promo: Promo[] } | null
   racun: Racun[]
   hasilKirimTerakhir: HasilKirim | null
+  /** Pesanan masuk yang aksinya sedang dikirim ke server. Tombolnya memuat dan tidak bisa ditekan dua kali. */
+  pesananDiproses: string[]
 
   /* Tampilan & sesi */
   aturTema: (t: 'terang' | 'gelap') => void
@@ -234,7 +236,10 @@ interface KeadaanAplikasi {
   tandaiSudahDiulas: (pesananId: string, ulasan?: UlasanPelanggan) => void
 
   /* Pesanan masuk (portal distributor) */
-  terimaPesananMasuk: (id: string) => void
+  /** `diam`: tanpa pemberitahuan per pesanan; dipakai aksi massal yang memberi satu ringkasan. */
+  terimaPesananMasuk: (id: string, diam?: boolean) => void
+  /** Terima beberapa pesanan sekaligus, dengan satu pemberitahuan ringkasan. */
+  terimaSemuaPesananMasuk: (ids: string[]) => void
   tolakPesananMasuk: (id: string, alasan: string) => void
   /** `bukti` hanya dipakai di data server: isian kurir/pengantar/resi (kirim) atau penerima/catatan (sampai). */
   majukanPesananMasuk: (id: string, bukti?: Record<string, string | null>) => void
@@ -358,6 +363,9 @@ function aksiServer(
 ): void {
   const sesi = get().sesiDistributor
   if (!sesi) return
+  // Ketukan kedua selagi yang pertama belum selesai diabaikan, bukan dikirim lagi.
+  if (get().pesananDiproses.includes(id)) return
+  useAplikasi.setState((s) => ({ pesananDiproses: [...s.pesananDiproses, id] }))
   aksiPesananMasuk(sesi, id, aksi, badan)
     .then(async () => {
       await get().muatPesananMasuk()
@@ -369,6 +377,7 @@ function aksiServer(
       get().tampilkanRacun(pesan, aksi === 'tolak' ? 'menipis' : 'aman')
     })
     .catch((e: unknown) => get().tampilkanRacun(e instanceof Error ? e.message : 'Aksi gagal disimpan.', 'kritis'))
+    .finally(() => useAplikasi.setState((s) => ({ pesananDiproses: s.pesananDiproses.filter((x) => x !== id) })))
 }
 
 /** Pesanan ini milik pemilik aplikasi, jadi yang diubah adalah pesanan aslinya. */
@@ -540,6 +549,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
   katalogDistributorServer: null,
   racun: [],
   hasilKirimTerakhir: null,
+  pesananDiproses: [],
 
   aturTema: (t) => {
     try {
@@ -1186,7 +1196,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
       ),
     })),
 
-  terimaPesananMasuk: (id) => {
+  terimaPesananMasuk: (id, diam = false) => {
     if (get().pesananMasukServer) return aksiServer(get, 'konfirmasi', id, {}, 'Pesanan kamu terima. Sekarang masuk antrean gudang.')
     const pesanan = cariPesananMasuk(get(), id)
     // Hanya pesanan yang belum dijawab yang boleh diterima. Menekan tombol dua
@@ -1199,7 +1209,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
           keterangan: 'Distributor menerima pesanan dan mulai menyiapkan barang.',
         }),
       }))
-      get().tampilkanRacun(`Pesanan ${pesanan.nomor} kamu terima. Sekarang masuk antrean gudang.`, 'aman')
+      if (!diam) get().tampilkanRacun(`Pesanan ${pesanan.nomor} kamu terima. Sekarang masuk antrean gudang.`, 'aman')
       return
     }
     set((s) => ({
@@ -1220,7 +1230,38 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
             },
       ),
     }))
-    get().tampilkanRacun(`Pesanan ${pesanan.nomor} kamu terima. Sekarang masuk antrean gudang.`, 'aman')
+    if (!diam) get().tampilkanRacun(`Pesanan ${pesanan.nomor} kamu terima. Sekarang masuk antrean gudang.`, 'aman')
+  },
+
+  terimaSemuaPesananMasuk: (ids) => {
+    const sesi = get().sesiDistributor
+    if (!get().pesananMasukServer || !sesi) {
+      for (const id of ids) get().terimaPesananMasuk(id, true)
+      get().tampilkanRacun(`${ids.length} pesanan kamu terima. Semuanya masuk antrean gudang.`, 'aman')
+      return
+    }
+    const baru = ids.filter((id) => !get().pesananDiproses.includes(id))
+    if (baru.length === 0) return
+    set((s) => ({ pesananDiproses: [...s.pesananDiproses, ...baru] }))
+    // Endpoint server per pesanan: dikirim bersamaan, lalu satu ringkasan.
+    Promise.allSettled(baru.map((id) => aksiPesananMasuk(sesi, id, 'konfirmasi', {})))
+      .then(async (hasil) => {
+        const gagal = hasil.filter((h) => h.status === 'rejected').length
+        await get().muatPesananMasuk()
+        const umkm = get().sesiServer
+        if (umkm) {
+          const pesanan = await ambilPesanan(umkm).catch(() => null)
+          if (pesanan) useAplikasi.setState({ pesanan })
+        }
+        const diterima = baru.length - gagal
+        get().tampilkanRacun(
+          gagal === 0
+            ? `${diterima} pesanan kamu terima. Semuanya masuk antrean gudang.`
+            : `${diterima} pesanan diterima, ${gagal} gagal disimpan. Coba terima yang tersisa sekali lagi.`,
+          gagal === 0 ? 'aman' : 'menipis',
+        )
+      })
+      .finally(() => set((s) => ({ pesananDiproses: s.pesananDiproses.filter((x) => !baru.includes(x)) })))
   },
 
   tolakPesananMasuk: (id, alasan) => {

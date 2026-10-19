@@ -325,8 +325,7 @@ export default function PromoDistributor() {
         <div className="min-w-0">
           <h1 className="text-judul font-extrabold text-ink tracking-tight">Promo</h1>
           <p className="mt-1 text-isi text-ink-3 leading-snug max-w-[70ch]">
-            Promo yang kamu pasang tampil di Beranda pemilik usaha. Potongannya langsung masuk ke harga beli sekali;
-            harga kontrak tidak ikut terpotong.
+            Promo tampil di Beranda pemilik usaha. Potongan hanya untuk beli sekali.
           </p>
         </div>
         <Tombol ikonKiri={<IkonTambah size={17} />} onClick={() => setForm({ promo: null })}>
@@ -345,7 +344,7 @@ export default function PromoDistributor() {
             <KeadaanKosong
               ikon={<IkonBintang size={26} />}
               judul="Belum ada promo yang berjalan"
-              pesan="Pasang promo untuk mengabarkan barang baru atau melepas stok yang menumpuk. Kartunya langsung muncul di Beranda pemilik usaha."
+              pesan="Pasang promo untuk mengabarkan barang baru atau melepas stok yang menumpuk."
               aksi={<Tombol onClick={() => setForm({ promo: null })}>Buat Promo</Tombol>}
             />
           </Kartu>
@@ -416,7 +415,7 @@ export default function PromoDistributor() {
         onSetuju={() => akanDiakhiri && akhiriPromo(akanDiakhiri.id)}
         pesan={
           akanDiakhiri &&
-          `Kartu "${akanDiakhiri.judul}" hilang dari Beranda pemilik usaha dan harga kembali normal. Pesanan yang sudah dibuat tetap memakai harga promonya.`
+          `Kartu "${akanDiakhiri.judul}" hilang dari Beranda dan harga kembali normal; pesanan lama tetap memakai harga promo.`
         }
       />
     </div>

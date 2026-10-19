@@ -125,7 +125,7 @@ export default function PetaSebaranBarang() {
         <KeadaanKosong
           ikon={<IkonKotak size={26} />}
           judul="Barangnya tidak ada di katalogmu"
-          pesan="Tautannya mungkin sudah lama, atau barangnya bukan milik tokomu. Sebaran semua barang tetap bisa kamu lihat."
+          pesan="Tautannya mungkin sudah lama, atau barangnya bukan milik tokomu."
           aksi={<TombolTautan ke="/distributor-portal/sebaran">Lihat Sebaran Semua Barang</TombolTautan>}
         />
       </div>
@@ -204,7 +204,7 @@ export default function PetaSebaranBarang() {
                 tingkat="h3"
                 ikon={<IkonLokasi size={26} />}
                 judul="Belum ada titik"
-                pesan="Tidak ada pesanan berjalan di sini, dan pesanan yang sudah sampai lebih dari 12 jam lalu memang hilang sendiri dari peta. Peta terisi lagi begitu ada pesanan baru."
+                pesan="Pesanan yang sampai lebih dari 12 jam lalu hilang sendiri; peta terisi lagi saat ada pesanan baru."
               />
             </Kartu>
           ) : (
@@ -305,10 +305,7 @@ export default function PetaSebaranBarang() {
                 </>
               ) : (
                 <>
-                  <p className="text-isi text-ink-2 leading-relaxed">
-                    Angka di dalam titik adalah jumlah pesanan toko itu. Tekan titiknya untuk membuka rincian, atau
-                    pilih namanya di bawah kalau titiknya berdempetan.
-                  </p>
+                  <p className="text-isi text-ink-2 leading-relaxed">Titik berdempetan? Pilih namanya di bawah.</p>
                   <ul className="mt-3 space-y-1.5">
                     {daftarTitikTerurut.map(({ t, nama }) => (
                       <li key={t.umkmId}>

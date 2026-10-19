@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import type { Barang, BarisSaran, SaranBelanja } from '@/lib/types'
 import { Kartu, Lencana, Pemisah, Tombol, TombolTautan } from '@/components/ui/dasar'
 import { KotakCentang, PengaturJumlah, PilihanKartu } from '@/components/ui/formulir'
-import { KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
+import { KeadaanKosong, Penjelasan, Peringatan } from '@/components/ui/umpanBalik'
 import { BilahAksi, KepalaHalaman } from '@/components/ui/navigasi'
 import { Lembar } from '@/components/ui/lembar'
 import { KuotaBulanIni } from '@/components/domain'
@@ -221,16 +221,15 @@ export default function PesanCepat() {
           Teks pengantarnya tetap ditahan ~68 karakter supaya enak dibaca. */}
       <div className="mx-auto w-full max-w-2xl lg:max-w-6xl">
         <p className="mt-4 text-isi text-ink-2 leading-relaxed max-w-[68ch]">
-          Jumlah di bawah ini sudah diisi dari perkiraan pemakaianmu. Ubah sesukamu &mdash; angka saran tetap
-          ditampilkan supaya kamu bisa membandingkan.
+          Jumlah sudah diisi dari saran; ubah bila perlu.
         </p>
+        <Penjelasan label="Selengkapnya" className="max-w-[68ch]">
+          Jumlahnya dihitung dari perkiraan pemakaianmu, dan angka saran tetap ditampilkan supaya kamu bisa
+          membandingkan. Kalau halaman ini ditutup, barang yang sudah masuk keranjang tetap tersimpan dan muncul
+          lagi sebagai pita &ldquo;Belanja belum dikirim&rdquo; di Beranda.
+        </Penjelasan>
 
-        <p className="mt-2 text-isi text-ink-3 leading-relaxed max-w-[68ch]">
-          Kalau kamu tutup halaman ini, barang yang sudah masuk keranjang tetap tersimpan dan muncul lagi sebagai
-          pita &ldquo;Belanja belum dikirim&rdquo; di Beranda.
-        </p>
-
-        <div className="mt-4 grid gap-3 lg:grid-cols-2 lg:items-start">
+        <div className="mt-2 grid gap-3 lg:grid-cols-2 lg:items-start">
           {saran.baris.map((r) => {
             const b = barangDari(r.barangId)
             if (!b) return null
@@ -290,8 +289,7 @@ export default function PesanCepat() {
                 {r.varian === 'tanpa-pemasok' || !pw ? (
                   <div className="mt-3">
                     <Peringatan nada="netral" judul={`Belum ada distributor yang memasok ${b.nama} di daerah kamu`}>
-                      Kalau kamu tetap membelinya sendiri di pasar atau toko grosir, catat pembeliannya supaya angka
-                      stok dan perkiraan tetap benar.
+                      Beli sendiri di pasar atau grosir? Catat pembeliannya supaya stok dan perkiraan tetap benar.
                     </Peringatan>
                     <TombolTautan
                       ke={`/stok/${b.id}/koreksi`}

@@ -20,6 +20,7 @@ import { BATAS_PETA, umkmById } from '@/data/dummy'
 import { KETERANGAN_TITIK, LABEL_TITIK, WARNA_TITIK_TOKEN } from '@/lib/label'
 import { angka } from '@/lib/format'
 import type { TitikPeta, WarnaTitik } from '@/lib/types'
+import { Penjelasan } from '@/components/ui/umpanBalik'
 
 /* ================================================================== */
 /* Ukuran dan pemetaan koordinat                                      */
@@ -307,10 +308,12 @@ export function PetaSebaran({
       </svg>
 
       <p className="mt-2 text-kecil text-ink-3 leading-snug">
-        Ini gambaran sebaran, bukan peta sesungguhnya. Letaknya diperkirakan dari koordinat toko dan
-        titik yang terlalu rapat sedikit dirapikan supaya tidak saling menutup. Angka di dalam titik
-        adalah jumlah pesanan toko itu.
+        Gambaran sebaran, bukan peta sesungguhnya. Angka di titik adalah jumlah pesanan toko itu.
       </p>
+      <Penjelasan label="Seberapa tepat letaknya?">
+        Letaknya diperkirakan dari koordinat toko, dan titik yang terlalu rapat sedikit dirapikan supaya
+        tidak saling menutup.
+      </Penjelasan>
       {posisi.length === 0 && (
         <p className="mt-1 text-isi text-ink-2">Belum ada titik yang perlu ditampilkan.</p>
       )}
@@ -397,8 +400,8 @@ export function KartuHitungTitik({ titik }: { titik: TitikPeta[] }) {
       {/* Tanpa kalimat ini, jumlah toko ketiga kartu terbaca lebih banyak
           daripada jumlah titik di peta, dan itu terlihat seperti salah hitung. */}
       <p className="mt-2 text-kecil text-ink-3 leading-snug">
-        Satu toko bisa muncul di lebih dari satu kartu kalau pesanannya berbeda kondisi. Di peta ia
-        tetap satu titik saja, berwarna kondisi yang paling mendesak.
+        Satu toko bisa masuk beberapa kartu, tapi di peta tetap satu titik berwarna kondisi paling
+        mendesak.
       </p>
     </div>
   )

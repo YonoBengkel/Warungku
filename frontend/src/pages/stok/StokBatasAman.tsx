@@ -86,7 +86,7 @@ export default function StokBatasAman() {
           barang,
           barang.pemakaianHarian,
         )} per hari, dan barang ini sampai ${barang.hariKirim} hari setelah dipesan.`
-      : `Disarankan ${jumlahTampil(barang, saran)}. Pemakaian hariannya belum terbaca, jadi angka ini masih kasar dan akan kami perbarui setelah ada riwayat penjualan.`
+      : `Disarankan ${jumlahTampil(barang, saran)}. Angka ini masih kasar sampai ada riwayat penjualan.`
 
   /* Ditulis sebagai const supaya penjagaan "barang tidak ditemukan" di atas
      tetap berlaku di dalam kedua penangan ini. */
@@ -161,8 +161,7 @@ export default function StokBatasAman() {
               </div>
             }
           >
-            Naikkan batas aman jadi {jumlahTampil(barang, saran)}? Kami tidak mengubahnya sendiri karena
-            angka yang kamu atur biasanya punya alasan yang tidak terbaca dari data.
+            Naikkan batas aman jadi {jumlahTampil(barang, saran)}? Kami tidak mengubahnya tanpa izinmu.
           </Peringatan>
         )}
 
@@ -230,26 +229,25 @@ export default function StokBatasAman() {
                 onChange={(e) => setHariKirim(e.target.value)}
                 akhiran="hari"
                 galat={hariKirimGalat}
-                bantuan="Dihitung dari tanggal kamu memesan sampai barangnya benar-benar sampai. Makin lama kiriman, makin tinggi batas amannya."
+                bantuan="Dari tanggal pesan sampai barang tiba. Makin lama kiriman, makin tinggi batas amannya."
               />
             </div>
 
             {barang.pemakaianHarian > 0 && nilai > 0 && (
               <p className="mt-3 text-isi text-ink-2 leading-relaxed">
-                Dengan angka ini, kami mengingatkan kamu saat sisa tinggal{' '}
+                Kamu diingatkan saat sisa{' '}
                 <strong className="text-ink">
                   {angka(nilai, desimalTampil(barang))} {satuanTampil(barang).nama}
-                </strong>{' '}
-                &mdash; kira-kira{' '}
+                </strong>
+                , kira-kira{' '}
                 <strong className="text-ink">
                   {angka(Math.floor(dariTampil(barang, nilai) / barang.pemakaianHarian))} hari
                 </strong>{' '}
-                sebelum benar-benar habis.
+                sebelum habis.
                 {hariKirimAngka > Math.floor(dariTampil(barang, nilai) / barang.pemakaianHarian) && (
                   <>
                     {' '}
-                    Kiriman butuh {hariKirimAngka} hari, jadi angka ini berisiko membuat kamu kehabisan
-                    sebelum barang sampai.
+                    Kiriman butuh {hariKirimAngka} hari, jadi kamu bisa kehabisan sebelum barang sampai.
                   </>
                 )}
               </p>

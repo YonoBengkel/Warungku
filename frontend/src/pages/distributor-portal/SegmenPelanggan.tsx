@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { JudulBagian, Kartu, Lencana, TombolTautan } from '@/components/ui/dasar'
 import { TombolPutusDistributor } from '@/components/domain/SambungDistributor'
-import { KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
+import { KeadaanKosong, Penjelasan, Peringatan } from '@/components/ui/umpanBalik'
 import { IkonProfil } from '@/icons'
 import { angka, cx, rupiah, rupiahRingkas, tanggalRingkas, waktuLalu } from '@/lib/format'
 import { GalatApi, ambilAnggotaSegmen, ambilSegmen } from '@/lib/api'
@@ -70,9 +70,12 @@ export default function SegmenPelanggan() {
         <div className="min-w-0">
           <h1 className="text-judul font-extrabold text-ink tracking-tight">Pelanggan</h1>
           <p className="mt-1 text-isi text-ink-3 leading-snug max-w-[70ch]">
-            Pelanggan kamu dikelompokkan menurut kapan terakhir memesan, seberapa sering, dan seberapa besar belanjanya.
-            Dipakai untuk memutuskan siapa yang perlu ditawari kontrak dan siapa yang perlu dihubungi.
+            Dipakai untuk memutuskan siapa ditawari kontrak dan siapa perlu dihubungi.
           </p>
+          <Penjelasan label="Cara dikelompokkan" className="max-w-[70ch]">
+            Pelanggan kamu dikelompokkan menurut kapan terakhir memesan, seberapa sering, dan seberapa besar
+            belanjanya.
+          </Penjelasan>
           <KeteranganMetode
             className="mt-3 max-w-[70ch]"
             mesin="Mesin 3"
@@ -85,8 +88,7 @@ export default function SegmenPelanggan() {
 
       {!sesi ? (
         <Peringatan nada="netral" className="mt-4 max-w-[32rem]" judul="Perlu masuk sebagai distributor">
-          Segmen pelanggan dihitung mesin analitik dari pesanan sungguhan, jadi halaman ini perlu masuk dengan akun
-          distributor.
+          Segmen pelanggan dihitung dari pesanan sungguhan di akun distributormu.
           <div className="mt-2.5">
             <TombolTautan ke="/masuk/distributor" ukuran="kecil">
               Masuk sebagai distributor

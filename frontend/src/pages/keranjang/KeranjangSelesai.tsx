@@ -69,7 +69,7 @@ export default function KeranjangSelesai() {
           <KeadaanKosong
             ikon={<IkonPasokan size={26} />}
             judul="Belum ada belanja yang baru dikirim"
-            pesan="Ringkasan pengiriman hanya muncul tepat setelah kamu membuat pesanan. Semua pesanan lama tetap tersimpan di daftar Pesanan."
+            pesan="Ringkasan ini hanya muncul tepat setelah memesan; pesanan lama ada di daftar Pesanan."
             aksi={<TombolTautan ke="/pesanan">Lihat Pesanan Saya</TombolTautan>}
             aksiKedua={
               <TombolTautan ke="/belanja" ragam="garis">
@@ -107,8 +107,8 @@ export default function KeranjangSelesai() {
           </h2>
           <p className="mt-1 text-isi text-ink-2 leading-relaxed">
             {gagal === 0
-              ? 'Distributor akan mengonfirmasi satu per satu. Kamu bisa memantau setiap pesanan di tab Pesanan.'
-              : `${gagal} pesanan masih menunggu di HP kamu. Yang sudah terkirim tidak perlu diulang — kirim ulang hanya baris yang belum berangkat.`}
+              ? 'Distributor mengonfirmasi satu per satu; pantau di tab Pesanan.'
+              : `${gagal} pesanan masih di HP kamu; kirim ulang hanya baris yang belum berangkat.`}
           </p>
         </div>
       </div>

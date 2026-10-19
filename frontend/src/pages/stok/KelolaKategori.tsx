@@ -4,7 +4,7 @@ import { Tombol, TombolIkon, TombolTautan } from '@/components/ui/dasar'
 import { Kolom, Pilihan } from '@/components/ui/formulir'
 import { Lembar } from '@/components/ui/lembar'
 import { KepalaHalaman } from '@/components/ui/navigasi'
-import { KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
+import { KeadaanKosong, Penjelasan, Peringatan } from '@/components/ui/umpanBalik'
 import { IkonPena, IkonSaring, IkonSampah, IkonTambah } from '@/icons'
 import { angka } from '@/lib/format'
 import { useAplikasi } from '@/store/aplikasi'
@@ -211,9 +211,7 @@ export default function KelolaKategori() {
 
         <div className="lg:col-span-5 mt-6 lg:mt-0 space-y-3">
           <Peringatan nada="netral" judul="Kategori itu penyaring, bukan folder">
-            Barang tidak disimpan di dalam kategori. Kategori cuma label yang memudahkan kamu
-            menyaring daftar Stok. Mengganti nama atau menggabungkan kategori tidak pernah mengubah
-            jumlah stok maupun riwayat barangnya.
+            Ganti nama atau gabung kategori tidak mengubah stok maupun riwayat barang.
           </Peringatan>
 
           {/* Di HP tombol tambah cukup berupa ikon di kepala halaman; di desktop
@@ -293,8 +291,7 @@ export default function KelolaKategori() {
         <div className="pb-4">
           {kategoriLain.length === 0 ? (
             <p className="text-kartu text-ink-2 leading-relaxed">
-              Ini satu-satunya kategori yang kamu punya, jadi belum ada tujuan untuk menggabungkannya.
-              Buat dulu kategori lain, lalu gabungkan yang ini ke sana.
+              Belum ada kategori tujuan. Buat dulu kategori lain, lalu gabungkan ke sana.
             </p>
           ) : (
             <>
@@ -316,7 +313,7 @@ export default function KelolaKategori() {
               </Pilihan>
               <p className="mt-3 text-isi text-ink-3 leading-relaxed">
                 {jumlahTarget === 0
-                  ? `Kategori ${target} belum berisi barang, jadi tidak ada yang dipindahkan. Namanya saja yang hilang dari daftar penyaring.`
+                  ? `Kategori ${target} kosong; hanya namanya yang hilang dari daftar penyaring.`
                   : `${angka(jumlahTarget)} barang akan berpindah label ke ${tujuan || 'kategori tujuan'}.`}
               </p>
             </>
@@ -342,15 +339,12 @@ export default function KelolaKategori() {
         }
       >
         <div className="pb-4 text-kartu text-ink-2 leading-relaxed space-y-3">
-          <p>
-            Kategori yang masih dipakai tidak bisa dihapus. Kalau labelnya hilang, {angka(jumlahTarget)}{' '}
-            barang itu tidak akan muncul lagi di penyaring mana pun, padahal barangnya tetap ada di rak
-            dan tetap perlu dibeli ulang.
-          </p>
-          <p>
-            Yang biasanya kamu maksud adalah memindahkannya: gabungkan kategori ini ke kategori lain,
-            lalu namanya hilang sendiri dari daftar.
-          </p>
+          <p>Kategori yang masih dipakai tidak bisa dihapus. Gabungkan saja ke kategori lain.</p>
+          <Penjelasan label="Kenapa?">
+            Kalau labelnya hilang, {angka(jumlahTarget)} barang itu tidak muncul lagi di penyaring mana
+            pun, padahal barangnya tetap ada di rak dan tetap perlu dibeli ulang. Setelah digabung, nama
+            kategori ini hilang sendiri dari daftar.
+          </Penjelasan>
         </div>
       </Lembar>
 
@@ -373,8 +367,7 @@ export default function KelolaKategori() {
         }
       >
         <p className="pb-4 text-kartu text-ink-2 leading-relaxed">
-          Kategori ini belum dipakai barang mana pun, jadi menghapusnya tidak mengubah stok apa pun.
-          Kamu bisa membuatnya lagi kapan saja.
+          Kategori ini kosong, jadi stok tidak berubah. Kamu bisa membuatnya lagi kapan saja.
         </p>
       </Lembar>
     </div>

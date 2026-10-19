@@ -4,7 +4,7 @@ import { ChipStok } from '@/components/domain'
 import { Avatar, Kartu, Lencana, Tombol, TombolTautan } from '@/components/ui/dasar'
 import { PengaturJumlah } from '@/components/ui/formulir'
 import { TabSegmen } from '@/components/ui/navigasi'
-import { KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
+import { KeadaanKosong, Penjelasan, Peringatan } from '@/components/ui/umpanBalik'
 import { GrafikBatang } from '@/components/grafik/GrafikBatang'
 import { IkonPanci, IkonPeringatan, IkonKirim } from '@/icons'
 import { GalatApi } from '@/lib/api'
@@ -119,8 +119,7 @@ export default function Produksi() {
         )}
       </div>
       <p className="mt-1 text-isi text-ink-2 leading-relaxed max-w-[62ch]">
-        Bahan baku dari gudang dimasak menjadi barang jadi, lalu dikirim ke toko dan ritel yang memesan. Setiap sesi
-        masak memotong bahan baku sesuai resep.
+        Setiap sesi masak memotong bahan baku sesuai resep, lalu hasilnya dikirim ke pemesan.
       </p>
 
       <TabSegmen<Tab>
@@ -175,10 +174,15 @@ function TabProduksi({
           <KartuProduk key={p.id} produk={p} sesudahSimpan={sesudahSimpan} />
         ))}
       </div>
-      <p className="text-kecil text-ink-3 leading-relaxed max-w-[62ch]">
-        Perkiraan pesanan 7 hari: rata-rata pesanan pada hari yang sama dalam 4 pekan terakhir, karena toko dan ritel
-        memesan dengan jadwal mingguan. Kebutuhan bahan baku diramal Mesin 1 di halaman Prediksi.
-      </p>
+      <div className="max-w-[62ch]">
+        <p className="text-kecil text-ink-3 leading-relaxed">
+          Kebutuhan bahan baku diramal Mesin 1 di halaman Prediksi.
+        </p>
+        <Penjelasan label="Cara menghitung perkiraan pesanan">
+          Perkiraan pesanan 7 hari adalah rata-rata pesanan pada hari yang sama dalam 4 pekan terakhir, karena
+          toko dan ritel memesan dengan jadwal mingguan.
+        </Penjelasan>
+      </div>
 
       <Kartu>
         <h2 className="text-kartu font-bold text-ink">Riwayat masak 3 pekan terakhir</h2>

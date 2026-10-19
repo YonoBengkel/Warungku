@@ -10,7 +10,7 @@ import {
   TombolTautan,
 } from '@/components/ui/dasar'
 import { BarisChip, Chip, KepalaHalaman } from '@/components/ui/navigasi'
-import { BilahProgres, KeadaanKosong } from '@/components/ui/umpanBalik'
+import { BilahProgres, KeadaanKosong, Penjelasan } from '@/components/ui/umpanBalik'
 import { IkonBintang, IkonBintangIsi, IkonInfo, IkonToko } from '@/icons'
 import { angka, cx, tanggalPendek, waktuLalu } from '@/lib/format'
 import type { Ulasan } from '@/lib/types'
@@ -187,8 +187,8 @@ export default function DistributorUlasan() {
             judul="Belum ada ulasan untuk distributor ini"
             pesan={
               distributor.baru
-                ? `${distributor.nama} baru bergabung ${distributor.sejak} dan belum ada UMKM yang menulis ulasan. Kami tidak menampilkan nilai bintang sebelum ada ulasan pertama.`
-                : `Belum ada UMKM yang menulis ulasan untuk ${distributor.nama}. Kamu bisa jadi yang pertama setelah pesanan kamu selesai.`
+                ? `${distributor.nama} baru bergabung ${distributor.sejak}; bintang tampil setelah ulasan pertama.`
+                : 'Kamu bisa jadi yang pertama setelah pesananmu selesai.'
             }
             aksi={<TombolTautan ke={`/distributor/${distributor.id}`}>Kembali ke profil</TombolTautan>}
             aksiKedua={
@@ -295,7 +295,7 @@ export default function DistributorUlasan() {
                   padat
                   ikon={<IkonBintang size={24} />}
                   judul={`Tidak ada ulasan ${saringBintang} bintang`}
-                  pesan="Belum ada UMKM yang memberi nilai sebanyak itu untuk distributor ini. Coba lihat semua ulasan supaya gambarannya utuh."
+                  pesan="Lihat semua ulasan supaya gambarannya utuh."
                   aksi={<Tombol onClick={() => aturBintang(0)}>Tampilkan semua ulasan</Tombol>}
                 />
               </Kartu>
@@ -308,9 +308,11 @@ export default function DistributorUlasan() {
             )}
 
             <p className="mt-5 text-isi text-ink-3 leading-relaxed px-1">
-              Kamu bisa menulis ulasan setelah pesanan kamu selesai. Penilaian yang sudah terkirim tidak bisa
-              dihapus sendiri, supaya rekam jejaknya tetap bisa dipercaya distributor maupun UMKM lain.
+              Ulasan bisa ditulis setelah pesananmu selesai dan tidak bisa dihapus sendiri.
             </p>
+            <Penjelasan label="Kenapa tidak bisa dihapus?" className="px-1">
+              Supaya rekam jejaknya tetap bisa dipercaya distributor maupun UMKM lain.
+            </Penjelasan>
           </div>
         </div>
       )}

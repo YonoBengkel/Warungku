@@ -4,7 +4,7 @@ import type { BatangData } from '@/components/grafik/GrafikBatang'
 import { GrafikBatang } from '@/components/grafik/GrafikBatang'
 import { Kartu, Lencana, TombolTautan } from '@/components/ui/dasar'
 import { KepalaHalaman } from '@/components/ui/navigasi'
-import { BilahProgres, KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
+import { BilahProgres, KeadaanKosong, Penjelasan, Peringatan } from '@/components/ui/umpanBalik'
 import { IkonCentang, IkonKotak, IkonPeringatan, IkonSilang } from '@/icons'
 import { angka, cx, jumlahSatuan, namaHariSingkat, tanggalRingkas } from '@/lib/format'
 import { satuanTampil } from '@/lib/satuan'
@@ -147,14 +147,12 @@ export default function StokRapor() {
             </h2>
             {barang.dicatatManual ? (
               <p className="mt-2 text-isi text-ink-2 leading-relaxed">
-                {barang.nama} kamu tandai sebagai barang yang dicatat manual, jadi kami memang tidak
-                menyusun perkiraan untuknya. Pengingat batas aman tetap berjalan seperti biasa.
+                {barang.nama} dicatat manual, jadi tidak diperkirakan; pengingat batas aman tetap jalan.
               </p>
             ) : (
               <>
                 <p className="mt-2 text-isi text-ink-2 leading-relaxed">
-                  Rapor ini membandingkan perkiraan kami dengan kenyataan. Untuk {barang.nama}, kami
-                  belum pernah mengeluarkan perkiraan, jadi belum ada yang bisa dinilai.
+                  Rapor ini mengadu perkiraan dengan kenyataan, dan {barang.nama} belum punya perkiraan.
                 </p>
                 {/* Bilah ini hanya masuk akal selagi datanya memang belum cukup.
                     Barang baru yang riwayat pemakaiannya belum terbentuk tidak
@@ -174,9 +172,7 @@ export default function StokRapor() {
                   </div>
                 ) : (
                   <p className="mt-4 text-isi text-ink-3 leading-relaxed">
-                    Riwayat pemakaiannya belum terbentuk, jadi belum ada perkiraan lama yang bisa
-                    diadu dengan kenyataan. Rapor ini terisi sendiri setelah beberapa hari penjualan
-                    tercatat.
+                    Rapor terisi sendiri setelah beberapa hari penjualan tercatat.
                   </p>
                 )}
               </>
@@ -229,7 +225,7 @@ export default function StokRapor() {
             <p className="mt-2 text-isi text-ink-3 leading-relaxed">
               {rapor.habis === 0
                 ? `Semua ${angka(rapor.baris.length)} hari terakhir ikut dinilai karena stoknya tidak pernah habis.`
-                : `${angka(rapor.habis)} hari lain dari ${angka(rapor.baris.length)} hari terakhir tidak ikut dinilai karena stoknya habis — penjualan hari itu tidak menggambarkan permintaan yang sebenarnya.`}
+                : `${angka(rapor.habis)} dari ${angka(rapor.baris.length)} hari terakhir tidak dinilai karena stoknya habis.`}
             </p>
           </Kartu>
 
@@ -346,10 +342,11 @@ export default function StokRapor() {
           </Kartu>
 
           <Peringatan nada="info" judul="Kenapa hari kehabisan stok dibuang">
-            Kalau hari itu tetap dihitung, sistem akan menyimpulkan permintaan {barang.nama} sedang
-            turun &mdash; padahal barangnya yang tidak ada. Akibatnya saran belanja berikutnya ikut
-            mengecil, barang makin sering habis, dan datanya makin melenceng. Karena itu tanggalnya
-            ditandai otomatis dan tidak dipakai menyusun perkiraan.
+            Kalau dihitung, permintaan {barang.nama} terbaca turun padahal barangnya yang tidak ada.
+            <Penjelasan label="Akibatnya?">
+              Saran belanja berikutnya ikut mengecil, barang makin sering habis, dan datanya makin
+              melenceng. Karena itu tanggalnya ditandai otomatis dan tidak dipakai menyusun perkiraan.
+            </Penjelasan>
           </Peringatan>
 
           <div className="flex flex-col sm:flex-row gap-2.5">

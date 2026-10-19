@@ -17,7 +17,7 @@ import {
   IkonTambah,
   IkonToko,
 } from '@/icons'
-import { angka, bacaAngkaIndonesia, cx, nomorHp, rupiah, tanggalPendek } from '@/lib/format'
+import { angka, bacaAngkaIndonesia, bintang, cx, nomorHp, rupiah, tanggalPendek } from '@/lib/format'
 import { kalimatIsiKemasan } from '@/lib/satuan'
 import type { Distributor, InfoUsahaDistributor, Penawaran } from '@/lib/types'
 import { KATEGORI_BARANG, WILAYAH_KIRIM, umkmById } from '@/data/dummy'
@@ -218,7 +218,7 @@ function FormBarang({
         <div>
           <p className="text-isi font-semibold text-ink-2 mb-1.5">
             Isi 1 {satuan.trim() || 'satuan jual'}
-            <span className="text-kritis ml-0.5" aria-hidden="true">
+            <span className="text-ink-3 ml-0.5" aria-hidden="true">
               *
             </span>
           </p>
@@ -588,7 +588,7 @@ export default function ProfilDistributor() {
               <div className="grid grid-cols-3 gap-3">
                 <Metrik
                   label="Rata-rata"
-                  nilai={distributor.rating == null ? '—' : angka(distributor.rating, 1)}
+                  nilai={distributor.rating == null ? '—' : bintang(distributor.rating)}
                   bantuan="dari 5 bintang"
                   nada="merek"
                 />
@@ -729,7 +729,7 @@ export default function ProfilDistributor() {
                                 i <= u.rating ? <IkonBintangIsi key={i} size={13} /> : <IkonBintang key={i} size={13} />,
                               )}
                             </span>
-                            <span className="text-isi font-bold text-ink">{angka(u.rating, 1)} dari 5</span>
+                            <span className="text-isi font-bold text-ink">{bintang(u.rating)} dari 5</span>
                           </span>
                         </div>
                         {u.isi && (

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Avatar, Kartu, Lencana, Pemisah, TombolTautan } from '@/components/ui/dasar'
 import { KepalaHalaman } from '@/components/ui/navigasi'
-import { Peringatan } from '@/components/ui/umpanBalik'
+import { Penjelasan, Peringatan } from '@/components/ui/umpanBalik'
 import {
   IkonLokasi,
   IkonMataTutup,
@@ -45,8 +45,7 @@ export default function AkunPratinjau() {
       <div className="mt-4 max-w-2xl lg:max-w-5xl lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start">
         <div>
           <Peringatan nada="info" judul="Ini hanya pratinjau">
-            Beginilah kartu usahamu terlihat di layar distributor yang belum pernah menerima pesanan darimu. Tidak
-            ada yang terkirim dari halaman ini.
+            Begini kartumu terlihat oleh distributor yang belum pernah menerima pesananmu.
           </Peringatan>
 
           {/* Kartu usaha, dirender persis seperti sisi distributor */}
@@ -103,10 +102,12 @@ export default function AkunPratinjau() {
         <div className="mt-5 lg:mt-0 rounded-md bg-sunken p-4">
           <h2 className="text-kartu font-bold text-ink">Kenapa ada yang disembunyikan?</h2>
           <p className="mt-1 text-isi text-ink-2 leading-relaxed max-w-[70ch]">
-            Alamat dan nomor HP adalah dua hal yang paling sering dipakai untuk menawarkan barang tanpa kamu minta.
-            Karena itu bawaannya tertutup sampai kamu sendiri yang memulai transaksi. Barang tetap bisa diantar:
-            begitu pesanan dibuat, distributor yang bersangkutan langsung melihat keduanya.
+            Alamat dan nomor HP paling sering dipakai untuk menawarkan barang tanpa kamu minta.
           </p>
+          <Penjelasan label="Lalu barangnya diantar ke mana?" className="max-w-[70ch]">
+            Bawaannya tertutup sampai kamu sendiri yang memulai transaksi. Begitu pesanan dibuat, distributor yang
+            bersangkutan langsung melihat alamat dan nomor HP-mu.
+          </Penjelasan>
           <div className="mt-3.5 flex flex-wrap gap-2.5">
             <TombolTautan ke="/akun/profil" ragam="garis" ukuran="kecil" ikonKiri={<IkonPena size={15} />}>
               Ubah yang terlihat

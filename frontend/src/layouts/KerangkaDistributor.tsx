@@ -109,7 +109,7 @@ export default function KerangkaDistributor() {
   }, [pathname])
 
   return (
-    <div className="min-h-dvh bg-bg lg:flex">
+    <div className="kerangka-distributor min-h-dvh bg-bg lg:flex">
       <a href="#konten" className="skip-link">
         Langsung ke isi halaman
       </a>

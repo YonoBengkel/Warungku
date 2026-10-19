@@ -12,7 +12,7 @@ import {
   IkonPanahKanan,
   IkonToko,
 } from '@/icons'
-import { angka, cx, rupiah, tanggalPendek } from '@/lib/format'
+import { angka, bintang, cx, rupiah, tanggalPendek } from '@/lib/format'
 import { BANTUAN, LABEL_KONTRAK } from '@/lib/label'
 import { distributorById } from '@/data/dummy'
 import type { Kontrak } from '@/lib/types'
@@ -140,7 +140,7 @@ export default function Mitra() {
                     distributor.rating != null && (
                       <span className="inline-flex items-center gap-1 text-ink-2">
                         <IkonBintangIsi size={14} className="text-menipis" />
-                        <strong className="text-ink">{angka(distributor.rating, 1)}</strong>
+                        <strong className="text-ink">{bintang(distributor.rating)}</strong>
                         <span>dari {distributor.jumlahUlasan} ulasan</span>
                       </span>
                     )

@@ -659,7 +659,7 @@ export function BarisStok({ barang, sedangDikirim }: { barang: Barang; sedangDik
         <ChipStok status={status} />
         <span className="text-isi text-ink-2">
           sisa {jumlahTampil(barang, barang.stok)}
-          {cukup != null && barang.pemakaianHarian > 0 && <> &middot; cukup &plusmn;{cukup} hari</>}
+          {cukup != null && cukup > 0 && barang.pemakaianHarian > 0 && <> &middot; cukup &plusmn;{cukup} hari</>}
         </span>
       </div>
 
@@ -695,16 +695,21 @@ export function KartuPesanan({ pesanan }: { pesanan: Pesanan }) {
   const utama = pesanan.baris[0]
   const lain = pesanan.baris.length - 1
 
+  /* Seluruh kartu tetap bisa ditekan lewat tautan yang direntangkan di nama
+     distributor; tombol "Terima Barang" duduk di atasnya, jadi tidak ada
+     tautan di dalam tautan. */
+  const bisaDiterima = pesanan.status === 'dikirim'
   return (
-    <Link
-      to={`/pesanan/${pesanan.id}`}
-      className="block bg-surface border border-line rounded-lg p-4 min-h-[72px] transition-[border-color,box-shadow] hover:border-line-strong hover:shadow-e2 active:bg-surface-2"
-    >
+    <div className="relative bg-surface border border-line rounded-lg p-4 min-h-[72px] transition-[border-color,box-shadow] hover:border-line-strong hover:shadow-e2 active:bg-surface-2">
       <div className="flex items-start gap-3">
         <Avatar nama={distributor?.nama ?? '?'} warna={distributor?.warna} ukuran={40} />
         <div className="min-w-0 grow">
           <div className="flex items-start justify-between gap-2">
-            <p className="text-kartu font-bold text-ink truncate">{distributor?.nama}</p>
+            <p className="text-kartu font-bold text-ink truncate">
+              <Link to={`/pesanan/${pesanan.id}`} className="after:absolute after:inset-0 after:rounded-lg">
+                {distributor?.nama}
+              </Link>
+            </p>
             <ChipPesanan status={pesanan.status} />
           </div>
           <p className="mt-0.5 text-isi text-ink-2 truncate">
@@ -714,7 +719,7 @@ export function KartuPesanan({ pesanan }: { pesanan: Pesanan }) {
           <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-kecil text-ink-3">
             <span className="tabular">{rupiah(total)}</span>
             {pesanan.status === 'dikirim' && pesanan.pengiriman ? (
-              <span className="text-brand font-semibold">Sudah sampai, tinggal kamu hitung</span>
+              <span className="text-brand font-semibold">Sudah sampai, tinggal dihitung</span>
             ) : (
               pesanan.perkiraanTiba &&
               pesanan.status !== 'selesai' &&
@@ -732,7 +737,14 @@ export function KartuPesanan({ pesanan }: { pesanan: Pesanan }) {
         </div>
         <IkonPanahKanan size={18} className="shrink-0 text-ink-3 mt-1" />
       </div>
-    </Link>
+      {bisaDiterima && (
+        <div className="relative z-10 mt-3 pl-[52px]">
+          <TombolTautan ke={`/pesanan/${pesanan.id}/terima`} ragam="sekunder" ukuran="kecil" penuh="hp">
+            Terima Barang
+          </TombolTautan>
+        </div>
+      )}
+    </div>
   )
 }
 

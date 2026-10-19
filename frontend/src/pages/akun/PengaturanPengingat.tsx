@@ -34,32 +34,28 @@ const PENGINGAT: Array<{
     judul: 'Stok menipis',
     ikon: IkonPeringatan,
     isi: 'Dikirim saat sisa stok menyentuh batas aman, dan saat sisanya tinggal untuk sehari.',
-    matikan:
-      'Kalau dimatikan, kamu baru tahu barang habis ketika membuka halaman Stok sendiri. Angka stoknya tetap dihitung, cuma tidak ada yang mengetuk pundakmu.',
+    matikan: 'Kamu baru tahu barang habis saat membuka halaman Stok sendiri; angkanya tetap dihitung.',
   },
   {
     kunci: 'saran-belanja',
     judul: 'Saran belanja',
     ikon: IkonKeranjang,
     isi: 'Satu kiriman per hari berisi semua barang yang perlu dibeli, bukan satu pesan per barang.',
-    matikan:
-      'Kalau dimatikan, daftar sarannya tetap disusun dan tetap bisa dibuka dari Beranda. Yang hilang hanya pengingatnya, jadi kamu perlu ingat sendiri untuk mengeceknya.',
+    matikan: 'Daftar saran tetap disusun di Beranda, tapi kamu harus ingat sendiri untuk mengeceknya.',
   },
   {
     kunci: 'pesanan',
     judul: 'Status pesanan',
     ikon: IkonPasokan,
     isi: 'Dikirim saat distributor menerima pesanan, saat barang dikirim, dan saat kiriman sudah sampai.',
-    matikan:
-      'Kalau dimatikan, kamu bisa melewatkan kiriman yang sudah datang. Stok baru bertambah setelah kamu menekan Barang Sudah Sampai, jadi angka stok bisa tertinggal berhari-hari tanpa kamu sadari.',
+    matikan: 'Kiriman yang datang bisa terlewat; stok baru bertambah setelah kamu tekan Barang Sudah Sampai.',
   },
   {
     kunci: 'kontrak',
     judul: 'Kontrak',
     ikon: IkonKontrak,
     isi: 'Dikirim saat kuota bulan ini masih kurang menjelang akhir periode, dan saat masa kontrak mau habis.',
-    matikan:
-      'Kalau dimatikan, kamu bisa melewatkan akhir periode kuota dan tanggal berakhirnya kontrak. Aplikasi tidak bisa mengejar keduanya untukmu — ketentuannya ada di kontrak, bukan di sini.',
+    matikan: 'Akhir periode kuota dan berakhirnya kontrak bisa terlewat tanpa kamu sadari.',
   },
 ]
 
@@ -195,13 +191,11 @@ export default function PengaturanPengingat() {
                     Saran belanja datang sekali sehari, pukul {JAM_SARAN} WIB
                   </p>
                   <p className="mt-1 text-isi text-ink-2 leading-relaxed">
-                    Jamnya dipatok, tidak bisa diubah. Satu jam tetap membuat kamu tahu kapan harus mengeceknya,
-                    sementara barangnya sendiri dikumpulkan jadi satu kiriman &mdash; bukan satu pesan per barang.
+                    Jamnya dipatok supaya kamu tahu kapan harus mengecek.
                   </p>
                   {!aktif['saran-belanja'] && (
                     <p className="mt-2 text-isi text-menipis-ink bg-menipis-soft rounded-sm px-3 py-2 leading-relaxed">
-                      Pengingat saran belanja sedang kamu matikan, jadi kiriman pukul {JAM_SARAN} ini tidak berjalan.
-                      Daftarnya tetap disusun dan bisa dibuka sendiri dari Beranda.
+                      Pengingat ini sedang mati; daftar sarannya tetap bisa dibuka dari Beranda.
                     </p>
                   )}
                 </div>
@@ -211,8 +205,7 @@ export default function PengaturanPengingat() {
 
               <p className="flex items-start gap-2 text-isi text-ink-2 leading-relaxed">
                 <IkonPeringatan size={16} className="shrink-0 mt-0.5 text-ink-3" />
-                Peringatan stok yang sisanya tinggal untuk sehari tidak menunggu jam ini. Yang itu dikirim seketika,
-                karena menundanya sampai besok pagi sudah terlambat.
+                Stok yang tinggal untuk sehari diperingatkan seketika, tanpa menunggu jam ini.
               </p>
             </Kartu>
           </section>
@@ -243,8 +236,7 @@ export default function PengaturanPengingat() {
               </div>
               {!dalamAplikasi && (
                 <Peringatan nada="menipis" className="mt-3">
-                  Dengan kedua saluran mati, tidak ada pengingat yang sampai ke kamu sama sekali. Daftar Perlu Diurus
-                  di Beranda tetap terisi, tapi kamu harus membukanya sendiri.
+                  Tidak ada pengingat yang sampai; daftar Perlu Diurus di Beranda harus kamu buka sendiri.
                 </Peringatan>
               )}
             </Kartu>
@@ -275,9 +267,8 @@ export default function PengaturanPengingat() {
                   1
                 </span>
                 <p className="text-isi text-ink-2 leading-relaxed">
-                  <strong className="text-ink">Satu barang cuma punya satu pemberitahuan aktif.</strong> Kalau
-                  keadaannya memburuk, isi pemberitahuan yang lama diperbarui dari "sisa 2 hari" jadi "sisa 1 hari" —
-                  tidak lahir baris baru yang menumpuk.
+                  <strong className="text-ink">Satu barang cuma punya satu pemberitahuan aktif.</strong> Isinya
+                  diperbarui, misalnya "sisa 2 hari" jadi "sisa 1 hari".
                 </p>
               </li>
               <li className="flex items-start gap-3">
@@ -285,8 +276,8 @@ export default function PengaturanPengingat() {
                   2
                 </span>
                 <p className="text-isi text-ink-2 leading-relaxed">
-                  <strong className="text-ink">Barang yang sudah kamu pesan langsung dibisukan.</strong> Ia berhenti
-                  mengingatkan sampai pesanannya selesai atau dibatalkan, karena kamu sudah mengerjakan bagianmu.
+                  <strong className="text-ink">Barang yang sudah kamu pesan langsung dibisukan</strong> sampai
+                  pesanannya selesai atau dibatalkan.
                 </p>
               </li>
               <li className="flex items-start gap-3">
@@ -294,9 +285,8 @@ export default function PengaturanPengingat() {
                   3
                 </span>
                 <p className="text-isi text-ink-2 leading-relaxed">
-                  <strong className="text-ink">Semua barang yang perlu dibeli digabung jadi satu kiriman.</strong>{' '}
-                  Sepuluh barang menipis tetap jadi satu pemberitahuan pukul {JAM_SARAN}, dan di dalamnya ada tombol
-                  "Ingatkan nanti" kalau hari ini kamu memang belum sempat belanja.
+                  <strong className="text-ink">Semua barang yang perlu dibeli digabung jadi satu kiriman</strong>{' '}
+                  pukul {JAM_SARAN}, lengkap dengan tombol "Ingatkan nanti".
                 </p>
               </li>
             </ol>
@@ -304,8 +294,7 @@ export default function PengaturanPengingat() {
             <Pemisah className="my-4" />
 
             <p className="text-isi text-ink-3 leading-relaxed">
-              Angka merah di lonceng hanya menghitung yang benar-benar butuh tindakan darimu. Kabar yang sekadar
-              memberi tahu tidak ikut dihitung supaya angkanya tetap punya arti.
+              Angka merah di lonceng hanya menghitung yang butuh tindakanmu, bukan kabar biasa.
             </p>
           </Kartu>
         </div>

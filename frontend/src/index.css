@@ -412,3 +412,18 @@ body {
 .pt-aman {
   padding-top: env(safe-area-inset-top, 0px);
 }
+
+/* Tinggi bilah global yang menempel di atas (56px + garis 1px + poni HP).
+   Kepala halaman detail dan baris saring Stok menempel tepat di bawahnya;
+   dulu keduanya menempel di top-0 dan tertutup bilah global saat digulir.
+   Di desktop bilah global portal UMKM disembunyikan (lonceng dan keranjang
+   pindah ke navigasi samping), jadi tingginya nol. */
+.kerangka-umkm,
+.kerangka-distributor {
+  --kepala-global: calc(3.5rem + 1px + env(safe-area-inset-top, 0px));
+}
+@media (min-width: 64rem) {
+  .kerangka-umkm {
+    --kepala-global: 0px;
+  }
+}

@@ -156,8 +156,8 @@ export default function DataUsaha() {
         {perluDiperbaiki ? (
           <Peringatan nada="kritis" judul="Yang perlu kamu betulkan">
             {adaSorotan
-              ? 'Pemeriksa kami menandai bagian di bawah ini. Kolom yang bermasalah diberi bingkai merah pada formulir; kolom lain tidak perlu kamu ubah.'
-              : 'Pemeriksa kami menandai hal berikut. Cocokkan lagi setiap isian di bawah dengan dokumen usahamu, lalu kirim ulang.'}
+              ? 'Betulkan kolom berbingkai merah saja; kolom lain tidak perlu diubah.'
+              : 'Cocokkan lagi setiap isian di bawah dengan dokumen usahamu.'}
             <ul className="mt-2 space-y-1 list-disc pl-4">
               {alasan.length > 0 ? (
                 alasan.map((a) => <li key={a}>{a}</li>)
@@ -176,8 +176,7 @@ export default function DataUsaha() {
           </Peringatan>
         ) : (
           <Peringatan nada="aman" judul="Data usaha sudah diperiksa">
-            Kalau kamu mengubah salah satu isian di bawah, pemeriksaan diulang dari awal dan lencana verifikasi
-            sementara kembali jadi &ldquo;sedang diperiksa&rdquo;.
+            Mengubah isian di bawah membuat lencanamu kembali &ldquo;sedang diperiksa&rdquo;.
           </Peringatan>
         )}
 
@@ -233,8 +232,7 @@ export default function DataUsaha() {
         <div className="rounded-lg border border-dashed border-line-strong bg-surface-2 p-4">
           <h2 className="text-kartu font-bold text-ink">Alat uji tampilan verifikasi</h2>
           <p className="mt-1 text-isi text-ink-3 leading-relaxed">
-            Hanya untuk pengembang. Tombol ini memindahkan keadaan verifikasi supaya ketiga tampilannya bisa dilihat
-            tanpa menunggu pemeriksa. Tidak ada apa pun yang terkirim.
+            Hanya untuk pengembang: ganti keadaan verifikasi tanpa mengirim apa pun.
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             {(

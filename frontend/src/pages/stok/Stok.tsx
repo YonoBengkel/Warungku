@@ -4,7 +4,7 @@ import type { Barang } from '@/lib/types'
 import { BarisStok, ChipStok } from '@/components/domain'
 import { Lencana, Tombol, TombolTautan } from '@/components/ui/dasar'
 import { BarisChip, Chip } from '@/components/ui/navigasi'
-import { KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
+import { KeadaanKosong, Penjelasan, Peringatan } from '@/components/ui/umpanBalik'
 import { Lembar } from '@/components/ui/lembar'
 import { PilihanKartu } from '@/components/ui/formulir'
 import { IkonCari, IkonKotak, IkonPanahBawah, IkonPanahAtas, IkonSaring, IkonSilang, IkonTambah } from '@/icons'
@@ -282,7 +282,7 @@ export default function Stok() {
        tabel. */
     <div className="pb-6 lg:pb-0 lg:h-[calc(100dvh-6.5rem-1px)] lg:flex lg:flex-col">
       {/* ---------------- Kepala lengket ---------------- */}
-      <div className="sticky top-14 z-20 -mx-4 px-4 sm:-mx-6 sm:px-6 pt-1 pb-3 bg-bg/96 backdrop-blur-sm border-b border-line lg:shrink-0">
+      <div className="sticky top-[var(--kepala-global,0px)] z-20 -mx-4 px-4 sm:-mx-6 sm:px-6 pt-1 pb-3 bg-bg/96 backdrop-blur-sm border-b border-line lg:shrink-0">
         <div className="flex items-center gap-2 flex-wrap mb-3">
           <h1 className="text-judul font-extrabold text-ink tracking-tight mr-auto">Stok</h1>
           <TombolTautan ke="/stok/baru" ukuran="kecil" ikonKiri={<IkonTambah size={15} />}>
@@ -422,8 +422,11 @@ export default function Stok() {
             </Tombol>
           }
         >
-          Angka {BATAS_AMAN_BAWAAN} dipakai sampai kamu mengaturnya sendiri, dan belum tentu cocok untuk tiap barang.
-          Saran sistem dihitung dari pemakaian harian dan berapa lama kiriman biasanya sampai.
+          Angka bawaan belum tentu cocok untuk tiap barang.
+          <Penjelasan label="Cara saran dihitung">
+            Angka {BATAS_AMAN_BAWAAN} dipakai sampai kamu mengaturnya sendiri. Saran sistem dihitung dari pemakaian
+            harian dan berapa lama kiriman biasanya sampai.
+          </Penjelasan>
         </Peringatan>
       )}
 

@@ -114,7 +114,7 @@ export default function Dashboard() {
             nada="menipis"
             ikon={<IkonJam size={19} />}
             judul={`${perluKonfirmasi} pesanan menunggu kamu jawab`}
-            detail="Selama belum diterima atau ditolak, pemilik usaha tidak tahu barangnya jadi dikirim atau tidak."
+            detail="Pemesan menunggu kepastian barangnya jadi dikirim atau tidak."
             aksiLabel="Lihat Pesanan Masuk"
             aksiKe="/distributor-portal/pesanan?tahap=menunggu-konfirmasi"
           />
@@ -131,8 +131,7 @@ export default function Dashboard() {
                 Tidak ada pesanan yang menunggu
               </h3>
               <p className="mt-1 text-isi text-ink-2 leading-relaxed max-w-[60ch]">
-                Semua pesanan yang masuk sudah kamu jawab. Pesanan baru muncul di sini begitu ada
-                yang memesan.
+                Pesanan baru muncul di sini begitu ada yang memesan.
               </p>
             </div>
           </Kartu>

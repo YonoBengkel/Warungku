@@ -85,7 +85,7 @@ export default function KerangkaAplikasi() {
   }, [pathname])
 
   return (
-    <div className="min-h-dvh bg-bg lg:flex">
+    <div className="kerangka-umkm min-h-dvh bg-bg lg:flex">
       <a href="#konten" className="skip-link">
         Langsung ke isi halaman
       </a>
@@ -119,6 +119,27 @@ export default function KerangkaAplikasi() {
           ))}
         </div>
 
+        {/* Di desktop lonceng dan keranjang ada di sini, bukan di bilah atas
+            selebar layar yang isinya hanya dua ikon. */}
+        <div className="mt-3 mx-3 pt-3 border-t border-line flex flex-col gap-1">
+          <TautanSamping
+            ke="/notifikasi"
+            aktif={pathname.startsWith('/notifikasi')}
+            Ikon={IkonLonceng}
+            label="Pemberitahuan"
+            jumlah={perluTindakan}
+            nadaJumlah="kritis"
+          />
+          <TautanSamping
+            ke="/keranjang"
+            aktif={pathname.startsWith('/keranjang')}
+            Ikon={IkonKeranjang}
+            label="Keranjang"
+            jumlah={isiKeranjang}
+            nadaJumlah="merek"
+          />
+        </div>
+
         <div className="mt-auto p-3 border-t border-line">
           <Link
             to="/akun"
@@ -138,16 +159,15 @@ export default function KerangkaAplikasi() {
 
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Kepala halaman global: tiga ikon tetap di semua tab */}
-        <header className="sticky top-0 z-40 bg-surface/95 backdrop-blur border-b border-line pt-aman">
+        <header className="lg:hidden sticky top-0 z-40 bg-surface/95 backdrop-blur border-b border-line pt-aman">
           <div className="h-14 px-4 sm:px-6 flex items-center gap-2 max-w-[1400px] mx-auto w-full">
             {/* Nama aplikasi, bukan nama toko: di layar sempit nama toko sudah
                 muncul di judul Beranda dan di logo akun, sementara
                 "Turnify Flow" tidak muncul sama sekali kalau tidak di sini. */}
-            <Link to="/beranda" className="lg:hidden flex items-center gap-2 mr-auto min-w-0 min-h-11 pr-2">
+            <Link to="/beranda" className="flex items-center gap-2 mr-auto min-w-0 min-h-11 pr-2">
               <TandaMerek ukuran={32} />
               <span className="font-extrabold text-ink text-kartu truncate">Turnify Flow</span>
             </Link>
-            <span className="hidden lg:block mr-auto" />
 
             <Link
               to="/notifikasi"
@@ -189,7 +209,7 @@ export default function KerangkaAplikasi() {
 
         <main
           id="konten"
-          className="flex-1 px-4 sm:px-6 pb-[calc(var(--nav-h)+1rem)] lg:pb-8 pt-4 max-w-[1400px] mx-auto w-full"
+          className="flex-1 px-4 sm:px-6 pb-[calc(var(--nav-h)+1rem)] lg:pb-8 pt-4 lg:pt-6 max-w-[1400px] mx-auto w-full"
         >
           <Outlet />
         </main>
@@ -256,5 +276,46 @@ export default function KerangkaAplikasi() {
         ))}
       </div>
     </div>
+  )
+}
+
+/** Tautan di navigasi samping desktop dengan angka (pemberitahuan, keranjang). */
+function TautanSamping({
+  ke,
+  aktif,
+  Ikon,
+  label,
+  jumlah,
+  nadaJumlah,
+}: {
+  ke: string
+  aktif: boolean
+  Ikon: typeof IkonLonceng
+  label: string
+  jumlah: number
+  nadaJumlah: 'kritis' | 'merek'
+}) {
+  return (
+    <Link
+      to={ke}
+      aria-label={jumlah > 0 ? `${label}, ${jumlah}` : label}
+      className={cx(
+        'flex items-center gap-3 h-11 px-3 rounded-md font-semibold text-isi transition-colors',
+        aktif ? 'bg-brand-soft text-brand-soft-ink' : 'text-ink-2 hover:bg-sunken hover:text-ink',
+      )}
+    >
+      <Ikon size={20} />
+      <span className="grow">{label}</span>
+      {jumlah > 0 && (
+        <span
+          className={cx(
+            'min-w-[1.25rem] h-5 px-1.5 rounded-full text-[0.6875rem] font-bold grid place-items-center tabular text-ink-inverse',
+            nadaJumlah === 'kritis' ? 'bg-kritis' : 'bg-brand',
+          )}
+        >
+          {jumlah}
+        </span>
+      )}
+    </Link>
   )
 }

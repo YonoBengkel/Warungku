@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { HanyaPembacaLayar, Lencana, Tombol } from '@/components/ui/dasar'
 import { AreaTeks } from '@/components/ui/formulir'
-import { Lembar } from '@/components/ui/lembar'
+import { Konfirmasi, Lembar } from '@/components/ui/lembar'
 import { BarisChip, Chip, TabSegmen } from '@/components/ui/navigasi'
 import { KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
 import {
@@ -14,7 +14,7 @@ import {
   IkonKirim,
   IkonSilang,
 } from '@/icons'
-import { angka, cx, rupiah, waktuLalu } from '@/lib/format'
+import { bintang, cx, rupiah, waktuLalu } from '@/lib/format'
 import {
   ALASAN_TOLAK,
   LABEL_PESANAN_MASUK,
@@ -85,6 +85,10 @@ export function LembarTolak({ pesanan, tutup }: { pesanan: PesananMasuk; tutup: 
   const tolakPesananMasuk = useAplikasi((s) => s.tolakPesananMasuk)
   const [alasanTerpilih, setAlasanTerpilih] = useState<string | null>(null)
   const [catatan, setCatatan] = useState('')
+  /* Peringatan "alasan wajib" baru muncul setelah Tolak ditekan tanpa alasan.
+     Menampilkannya sejak lembar dibuka terasa seperti dimarahi sebelum
+     sempat mengetik apa pun. */
+  const [dicoba, setDicoba] = useState(false)
 
   const catatanBersih = catatan.trim()
   const catatanCukup = catatanBersih.length >= MIN_CATATAN
@@ -102,7 +106,10 @@ export function LembarTolak({ pesanan, tutup }: { pesanan: PesananMasuk; tutup: 
     : `Alasan penolakan belum diisi. Pilih satu alasan siap pakai di atas, atau tulis sendiri minimal ${MIN_CATATAN} huruf. Contoh: "Stok Arabika Gayo habis sampai Senin depan."`
 
   function kirim() {
-    if (!bolehKirim) return
+    if (!bolehKirim) {
+      setDicoba(true)
+      return
+    }
     /* Chip dan catatan digabung jadi satu kalimat, bukan dua baris terpisah:
        yang sampai ke pemilik usaha harus terbaca sebagai alasan utuh. Catatan
        yang sudah terlanjur diketik tidak pernah dibuang diam-diam, sependek
@@ -129,17 +136,14 @@ export function LembarTolak({ pesanan, tutup }: { pesanan: PesananMasuk; tutup: 
           <Tombol ragam="garis" penuh onClick={tutup}>
             Tidak jadi
           </Tombol>
-          <Tombol ragam="bahaya" penuh disabled={!bolehKirim} onClick={kirim}>
+          <Tombol ragam="bahaya" penuh onClick={kirim}>
             Tolak Pesanan
           </Tombol>
         </div>
       }
     >
       <div className="pb-4 space-y-4">
-        <p className="text-isi text-ink-2 leading-relaxed">
-          Alasannya ikut terkirim ke pemilik usaha, jadi tulis yang benar-benar terjadi. Tanpa
-          alasan, mereka cuma melihat pesanannya hilang.
-        </p>
+        <p className="text-isi text-ink-2 leading-relaxed">Alasan ini dikirim ke pemesan.</p>
 
         <div>
           <p className="text-isi font-semibold text-ink-2 mb-2.5">Alasan siap pakai</p>
@@ -164,7 +168,7 @@ export function LembarTolak({ pesanan, tutup }: { pesanan: PesananMasuk; tutup: 
           onChange={(e) => setCatatan(e.target.value)}
         />
 
-        {!bolehKirim && (
+        {dicoba && !bolehKirim && (
           <Peringatan nada="menipis" judul="Alasan wajib diisi">
             {pesanKurang}
           </Peringatan>
@@ -183,6 +187,8 @@ export default function PesananMasukDaftar() {
   const [params, setParams] = useSearchParams()
   const perStatus = usePesananMasukPerStatus()
   const terimaPesananMasuk = useAplikasi((s) => s.terimaPesananMasuk)
+  const terimaSemuaPesananMasuk = useAplikasi((s) => s.terimaSemuaPesananMasuk)
+  const [tanyaTerimaSemua, setTanyaTerimaSemua] = useState(false)
   const majukanPesananMasuk = useAplikasi((s) => s.majukanPesananMasuk)
 
   const [pesananDitolak, setPesananDitolak] = useState<PesananMasuk | null>(null)
@@ -243,6 +249,19 @@ export default function PesananMasukDaftar() {
           {LABEL_PESANAN_MASUK[tahap]}
         </h2>
 
+        {/* Aksi massal hanya untuk Terima: keputusannya seragam untuk banyak
+            pesanan kecil. Tolak tetap satu per satu karena butuh alasan. */}
+        {tahap === 'menunggu-konfirmasi' && daftar.length > 1 && (
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-isi text-ink-2">
+              {daftar.length} pesanan menunggu, yang paling lama di atas.
+            </p>
+            <Tombol ukuran="kecil" ikonKiri={<IkonCentang size={15} />} onClick={() => setTanyaTerimaSemua(true)}>
+              Terima Semua ({daftar.length})
+            </Tombol>
+          </div>
+        )}
+
         {daftar.length === 0 ? (
           <KeadaanKosong
             tingkat="h3"
@@ -264,6 +283,24 @@ export default function PesananMasukDaftar() {
           </div>
         )}
       </section>
+
+      <Konfirmasi
+        terbuka={tanyaTerimaSemua}
+        tutup={() => setTanyaTerimaSemua(false)}
+        judul={`Terima ${daftar.length} pesanan sekaligus?`}
+        pesan={
+          <>
+            Total {rupiah(daftar.reduce((a, x) => a + totalPesananMasuk(x), 0))} dari{' '}
+            {new Set(daftar.map((x) => x.umkmId)).size} pemesan. Semuanya pindah ke Disiapkan di Gudang. Pesanan yang
+            barangnya tidak cukup sebaiknya ditolak dulu satu per satu.
+          </>
+        }
+        labelSetuju={`Ya, terima ${daftar.length}`}
+        onSetuju={() => {
+          terimaSemuaPesananMasuk(daftar.map((x) => x.id))
+          setTanyaTerimaSemua(false)
+        }}
+      />
 
       {pesananDitolak && (
         <LembarTolak
@@ -328,6 +365,7 @@ function BarisPesanan({
 }) {
   const umkm = umkmById(pesanan.umkmId)
   const perluDijawab = pesanan.status === 'menunggu-konfirmasi'
+  const diproses = useAplikasi((s) => s.pesananDiproses.includes(pesanan.id))
   const labelMaju =
     pesanan.status === 'disiapkan'
       ? 'Tandai Sedang Dikirim'
@@ -381,7 +419,7 @@ function BarisPesanan({
           {pesanan.ulasan ? (
             <span className="inline-flex items-center gap-1 font-semibold text-ink">
               <IkonBintangIsi size={13} className="text-menipis" />
-              {angka(pesanan.ulasan.rating, 1)} dari 5
+              {bintang(pesanan.ulasan.rating)} dari 5
             </span>
           ) : (
             <span className="text-ink-3">Belum dinilai</span>
@@ -399,10 +437,10 @@ function BarisPesanan({
           {/* Ukuran "sedang" (44px penuh), bukan "kecil": ini aksi utama kartu
               dan tingginya harus benar-benar terlihat, bukan cuma dilebarkan
               diam-diam oleh pseudo-element. */}
-          <Tombol ragam="sekunder" penuh ikonKiri={<IkonCentang size={16} />} onClick={terima}>
+          <Tombol ragam="sekunder" penuh memuat={diproses} ikonKiri={<IkonCentang size={16} />} onClick={terima}>
             Terima
           </Tombol>
-          <Tombol ragam="garis" penuh ikonKiri={<IkonSilang size={16} />} onClick={tolak}>
+          <Tombol ragam="garis" penuh disabled={diproses} ikonKiri={<IkonSilang size={16} />} onClick={tolak}>
             Tolak
           </Tombol>
         </div>
@@ -410,7 +448,7 @@ function BarisPesanan({
 
       {labelMaju && (
         <div className="relative z-10 mt-3">
-          <Tombol ragam="sekunder" penuh onClick={majukan}>
+          <Tombol ragam="sekunder" penuh memuat={diproses} onClick={majukan}>
             {labelMaju}
           </Tombol>
         </div>

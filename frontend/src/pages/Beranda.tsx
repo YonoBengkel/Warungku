@@ -245,9 +245,14 @@ export default function Beranda() {
       })
     }
 
-    /* 5. Barang yang sudah sampai dan menunggu diperiksa */
+    /* 5. Barang yang sudah sampai dan menunggu diperiksa. Syaratnya sama
+       dengan kartu pesanan: ada bukti antar dari distributor, ATAU perkiraan
+       tibanya sudah lewat. Dulu hanya yang kedua, jadi kiriman yang ditandai
+       sampai lebih awal tidak muncul di Beranda. */
     for (const p of pesanan.filter(
-      (x) => x.status === 'dikirim' && x.perkiraanTiba && +new Date(x.perkiraanTiba) <= Date.now(),
+      (x) =>
+        x.status === 'dikirim' &&
+        (x.pengiriman != null || (x.perkiraanTiba != null && +new Date(x.perkiraanTiba) <= Date.now())),
     )) {
       const d = distributorById(p.distributorId)
       hasil.push({
@@ -470,7 +475,6 @@ export default function Beranda() {
           <JudulBagian
             id="judul-promo"
             judul="Promo dari Distributor"
-            keterangan="Berganti sendiri sampai kamu menggesernya. Setelah itu ia berhenti dan menunggu kamu."
           />
           <Korsel
             label="Promo dari distributor"
@@ -486,7 +490,6 @@ export default function Beranda() {
         <JudulBagian
           id="judul-perlu-tindakan"
           judul="Perlu Tindakan"
-          keterangan="Empat pintasan ke daftar yang sudah tersaring."
         />
         <div
           aria-label="Pintasan ke daftar stok dan kontrak yang perlu ditindak"
@@ -551,11 +554,22 @@ export default function Beranda() {
              satu-satunya jalan cepat ke "Barang Sudah Sampai". Kartu yang
              berpindah sendiri bisa membuat tugas terlewat, atau tombol kartu lain
              tertekan saat ia sedang bergerak. */
-          <Korsel
-            label="Yang perlu kamu urus hari ini"
-            kelasItem="w-[88%] sm:w-[22rem] lg:w-[calc((100%-0.75rem)/2)]"
-            isi={tugas.map((t) => ({ kunci: t.kunci, elemen: t.elemen }))}
-          />
+          <>
+            <div className="lg:hidden">
+              <Korsel
+                label="Yang perlu kamu urus hari ini"
+                kelasItem="w-[88%] sm:w-[22rem]"
+                isi={tugas.map((t) => ({ kunci: t.kunci, elemen: t.elemen }))}
+              />
+            </div>
+            {/* Di desktop semua tugas tampil sekaligus dalam kisi: ruangnya ada,
+                dan tugas di balik tombol geser mudah terlewat. */}
+            <ul className="hidden lg:grid lg:grid-cols-2 xl:grid-cols-3 gap-3">
+              {tugas.map((t) => (
+                <li key={t.kunci}>{t.elemen}</li>
+              ))}
+            </ul>
+          </>
         )}
       </section>
 

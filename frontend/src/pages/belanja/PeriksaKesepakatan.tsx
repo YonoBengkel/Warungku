@@ -7,7 +7,7 @@ import { BilahAksi, KepalaHalaman } from '@/components/ui/navigasi'
 import { BilahProgres, KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
 import { TombolTerkunci, useTerkunci } from '@/components/domain'
 import { IkonJam, IkonKontrak, IkonPeringatan, IkonSalin, IkonToko } from '@/icons'
-import { angka, jam, rupiah, tanggalLengkapHari, tanggalPanjang, tanggalPendek } from '@/lib/format'
+import { angkaJumlah, jam, rupiah, tanggalLengkapHari, tanggalPanjang, tanggalPendek } from '@/lib/format'
 import { BANTUAN, LABEL_KONTRAK } from '@/lib/label'
 import type { Penawaran } from '@/lib/types'
 import { distributorById, paketById, penawaranById } from '@/data/dummy'
@@ -28,12 +28,6 @@ import { useAplikasi } from '@/store/aplikasi'
  * yang sama itu sah secara bisnis - yang tidak boleh adalah membiarkannya
  * terjadi tanpa pemilik usaha sadar kewajibannya berlipat.
  */
-
-/* Desimal mengikuti angkanya, bukan besarannya, supaya kuota gabungan dan
-   pemakaian yang dibandingkan sebaris tidak ditulis dengan ketelitian berbeda. */
-function fmtJml(n: number): string {
-  return angka(n, Number.isInteger(n) ? 0 : 1)
-}
 
 function pemakaianDalamSatuanJual(pemakaianHarian: number, penawaran: Penawaran): number {
   const isi = penawaran.kemasanJual?.isi ?? 1
@@ -120,7 +114,7 @@ export default function PeriksaKesepakatan() {
           <KeadaanKosong
             ikon={<IkonToko size={26} />}
             judul="Paket kontrak ini tidak ada lagi"
-            pesan="Tidak ada yang bisa ditinjau karena paketnya sudah tidak tersedia. Lihat lagi paket yang masih dipasang distributor untuk barang ini."
+            pesan="Paketnya sudah tidak tersedia. Lihat paket lain yang masih dipasang distributor."
             aksi={
               <TombolTautan ke={penawaran ? `/penawaran/${id}/kontrak` : '/belanja'}>
                 {penawaran ? 'Lihat paket yang tersedia' : 'Cari barang di Distributor'}
@@ -156,8 +150,8 @@ export default function PeriksaKesepakatan() {
     `Barang: ${penawaran.nama}`,
     `Distributor: ${distributor.nama} (${distributor.kota})`,
     `Paket: ${paket.kode} - ${paket.durasiBulan} bulan, sampai ${tanggalPanjang(selesai)}`,
-    `Minimal ambil per bulan: ${fmtJml(kuota)} ${satuan}`,
-    `Total wajib diambil: ${fmtJml(totalWajib)} ${satuan}`,
+    `Minimal ambil per bulan: ${angkaJumlah(kuota)} ${satuan}`,
+    `Total wajib diambil: ${angkaJumlah(totalWajib)} ${satuan}`,
     `Harga kontrak: ${rupiah(paket.hargaSatuan)}/${satuan}`,
     `Total komitmen: ${rupiah(totalKomitmen)}`,
     `Diajukan oleh: ${profil.namaUsaha} (${profil.namaPemilik})`,
@@ -244,8 +238,7 @@ export default function PeriksaKesepakatan() {
 
           {/* Kalimat yang tidak boleh dilunakkan */}
           <Peringatan nada="menipis" judul="Ini satu-satunya kesempatan membatalkan">
-            Setelah distributor menyetujui, kontrak tidak bisa dibatalkan sendiri. Selama masih menunggu, kamu
-            masih boleh menariknya kembali tanpa alasan apa pun.
+            Setelah disetujui, kontrak tidak bisa kamu batalkan; sebelum itu boleh ditarik tanpa alasan.
           </Peringatan>
 
           <div className="flex flex-col sm:flex-row gap-2.5">
@@ -303,22 +296,22 @@ export default function PeriksaKesepakatan() {
               nilai={`${paket.durasiBulan} bulan`}
               bantuan={`Sampai ${tanggalPanjang(selesai)}`}
             />
-            <BarisKuitansi label="Minimal ambil tiap bulan" nilai={`${fmtJml(kuota)} ${satuan}`} />
+            <BarisKuitansi label="Minimal ambil tiap bulan" nilai={`${angkaJumlah(kuota)} ${satuan}`} />
             <BarisKuitansi
               label="Total wajib diambil selama kontrak"
-              nilai={`${fmtJml(totalWajib)} ${satuan}`}
+              nilai={`${angkaJumlah(totalWajib)} ${satuan}`}
               bantuan={`${rupiah(paket.hargaSatuan)} per ${satuan}`}
             />
             {/* Total komitmen diulang di sini, bukan cuma di layar sebelumnya */}
             <BarisKuitansi
               label="Total Komitmen Kamu"
               nilai={rupiah(totalKomitmen)}
-              bantuan={`${fmtJml(kuota)} ${satuan} x ${rupiah(paket.hargaSatuan)} x ${paket.durasiBulan} bulan`}
+              bantuan={`${angkaJumlah(kuota)} ${satuan} x ${rupiah(paket.hargaSatuan)} x ${paket.durasiBulan} bulan`}
               utama
             />
           </div>
           <p className="mt-2 text-kecil text-ink-3 leading-relaxed">
-            Angka di atas belum termasuk ongkos kirim. {BANTUAN.bayarLuarPanjang}
+            Belum termasuk ongkos kirim. {BANTUAN.bayarLuar}
           </p>
         </Kartu>
 
@@ -332,8 +325,7 @@ export default function PeriksaKesepakatan() {
                   Kamu sudah punya kontrak untuk {penawaran.nama}
                 </h2>
                 <p className="mt-1 text-isi text-menipis-ink leading-relaxed">
-                  Ini tidak dilarang. Banyak usaha sengaja memakai dua pemasok untuk barang yang sama. Yang perlu
-                  kamu pastikan cuma satu: kewajiban keduanya berjalan bersamaan.
+                  Boleh, banyak usaha memakai dua pemasok. Ingat, kewajiban keduanya berjalan bersamaan.
                 </p>
               </div>
             </div>
@@ -347,7 +339,7 @@ export default function PeriksaKesepakatan() {
                       <div className="min-w-0">
                         <p className="text-isi font-bold text-ink truncate">{d?.nama}</p>
                         <p className="text-kecil text-ink-3">
-                          Minimal {fmtJml(k.kuotaMinPerBulan)} {k.satuan}/bulan &middot; berakhir{' '}
+                          Minimal {angkaJumlah(k.kuotaMinPerBulan)} {k.satuan}/bulan &middot; berakhir{' '}
                           {tanggalPendek(k.berakhir)}
                         </p>
                       </div>
@@ -364,11 +356,11 @@ export default function PeriksaKesepakatan() {
             </ul>
 
             <p className="mt-3 text-isi font-semibold text-menipis-ink leading-relaxed">
-              Sekarang {fmtJml(kuotaSekarang)} {satuan}/bulan, kalau kontrak ini jalan jadi{' '}
-              {fmtJml(kuotaGabungan)} {satuan}/bulan.{' '}
+              Sekarang {angkaJumlah(kuotaSekarang)} {satuan}/bulan, kalau kontrak ini jalan jadi{' '}
+              {angkaJumlah(kuotaGabungan)} {satuan}/bulan.{' '}
               {pemakaian > 0
-                ? `Pemakaianmu sekitar ${fmtJml(pemakaian)} ${satuan}/bulan${dariKamu ? ' (perkiraan yang kamu isi sendiri)' : ''}.`
-                : 'Pemakaianmu belum bisa kami hitung, jadi bandingkan sendiri dengan kenyataan warungmu.'}
+                ? `Pemakaianmu sekitar ${angkaJumlah(pemakaian)} ${satuan}/bulan${dariKamu ? ' (isianmu sendiri)' : ''}.`
+                : 'Pemakaianmu belum terhitung; bandingkan sendiri dengan kenyataan.'}
             </p>
 
             <div className="mt-3 space-y-2.5 bg-surface rounded-md p-3.5">
@@ -376,7 +368,7 @@ export default function PeriksaKesepakatan() {
                 <div className="flex items-baseline justify-between gap-3 mb-1.5">
                   <span className="text-isi text-ink-2 font-medium">Kewajiban kalau kontrak ini jalan</span>
                   <span className="text-isi font-bold text-ink tabular">
-                    {fmtJml(kuotaGabungan)} {satuan}/bulan
+                    {angkaJumlah(kuotaGabungan)} {satuan}/bulan
                   </span>
                 </div>
                 <BilahProgres
@@ -391,7 +383,7 @@ export default function PeriksaKesepakatan() {
                 <div className="flex items-baseline justify-between gap-3 mb-1.5">
                   <span className="text-isi text-ink-2 font-medium">Pemakaianmu per bulan</span>
                   <span className="text-isi font-bold text-ink tabular">
-                    {pemakaian > 0 ? `${fmtJml(pemakaian)} ${satuan}/bulan` : 'belum terhitung'}
+                    {pemakaian > 0 ? `${angkaJumlah(pemakaian)} ${satuan}/bulan` : 'belum terhitung'}
                   </span>
                 </div>
                 <BilahProgres
@@ -410,14 +402,14 @@ export default function PeriksaKesepakatan() {
         <Kartu>
           <h2 className="text-kartu font-bold text-ink">Yang kamu setujui</h2>
           <p className="mt-1 text-isi text-ink-3 leading-relaxed">
-            Centang satu per satu. Tiap baris adalah kewajiban yang berbeda, jadi tidak kami gabung jadi satu.
+            Centang satu per satu; tiap baris kewajiban yang berbeda.
           </p>
 
           <div className="mt-3 space-y-3">
             <KotakCentang dicentang={centang1} ubah={setCentang1}>
               Saya wajib mengambil minimal{' '}
               <strong className="text-ink">
-                {fmtJml(kuota)} {satuan}
+                {angkaJumlah(kuota)} {satuan}
               </strong>{' '}
               setiap bulan.
             </KotakCentang>
@@ -430,7 +422,7 @@ export default function PeriksaKesepakatan() {
             <KotakCentang dicentang={centang3} ubah={setCentang3}>
               Total yang wajib saya ambil selama kontrak{' '}
               <strong className="text-ink">
-                {fmtJml(totalWajib)} {satuan}
+                {angkaJumlah(totalWajib)} {satuan}
               </strong>
               , senilai <strong className="text-ink">{rupiah(totalKomitmen)}</strong>.
             </KotakCentang>
@@ -439,7 +431,7 @@ export default function PeriksaKesepakatan() {
                 Saya tahu saya sudah punya kontrak berjalan untuk barang ini, dan kewajiban keduanya berjalan
                 bersamaan jadi{' '}
                 <strong className="text-ink">
-                  {fmtJml(kuotaGabungan)} {satuan}
+                  {angkaJumlah(kuotaGabungan)} {satuan}
                 </strong>{' '}
                 per bulan.
               </KotakCentang>
@@ -467,8 +459,8 @@ export default function PeriksaKesepakatan() {
         </Kartu>
 
         <p className="text-isi text-ink-3 leading-relaxed px-1">
-          Mengajukan belum berarti terikat. Kontrak baru berjalan setelah {distributor.nama} menyetujui, dan
-          sebelum itu kamu masih bisa membatalkan pengajuannya.
+          Mengajukan belum mengikat: kontrak berjalan setelah {distributor.nama} menyetujui, sebelum itu bisa
+          kamu batalkan.
         </p>
 
         {/* Status yang akan terbentuk ditulis sebelum tombol, bukan sesudahnya,
@@ -484,7 +476,7 @@ export default function PeriksaKesepakatan() {
         ringkasan={
           <div className="flex items-baseline justify-between gap-3">
             <span className="text-isi text-ink-3">
-              Total komitmen {paket.durasiBulan} bulan &middot; {fmtJml(totalWajib)} {satuan}
+              Total komitmen {paket.durasiBulan} bulan &middot; {angkaJumlah(totalWajib)} {satuan}
             </span>
             <span className="text-[1.125rem] font-extrabold text-ink tabular">{rupiah(totalKomitmen)}</span>
           </div>

@@ -3,9 +3,9 @@ import { useParams, useSearchParams } from 'react-router-dom'
 import { JudulBagian, Kartu, Lencana, TombolTautan } from '@/components/ui/dasar'
 import { PengaturJumlah } from '@/components/ui/formulir'
 import { KepalaHalaman } from '@/components/ui/navigasi'
-import { KeadaanKosong } from '@/components/ui/umpanBalik'
+import { KeadaanKosong, Penjelasan } from '@/components/ui/umpanBalik'
 import { IkonInfo, IkonKontrak, IkonToko } from '@/icons'
-import { angka, cx, rupiah } from '@/lib/format'
+import { angkaJumlah, cx, rupiah } from '@/lib/format'
 import type { PaketKontrak, Penawaran } from '@/lib/types'
 import { distributorById, paketUntukPenawaran, penawaranById } from '@/data/dummy'
 import { useAplikasi } from '@/store/aplikasi'
@@ -24,13 +24,6 @@ import { useAplikasi } from '@/store/aplikasi'
  */
 
 type NadaVonis = 'aman' | 'menipis' | 'netral'
-
-/* Desimal ditentukan oleh angkanya sendiri, bukan oleh besarannya. Aturan lama
-   ("satu desimal hanya di bawah 10") membuat pemakaian 23,4 ditulis "23"
-   sementara selisihnya ditulis "6,6" — layar jadi seperti salah hitung. */
-function fmtJml(n: number): string {
-  return angka(n, Number.isInteger(n) ? 0 : 1)
-}
 
 /** Pemakaian bulanan barang gudang, diterjemahkan ke satuan jual distributor. */
 function pemakaianDalamSatuanJual(pemakaianHarian: number, penawaran: Penawaran): number {
@@ -62,7 +55,7 @@ function vonisPaket(
   if (paket.kuotaMinPerBulan > pemakaian * 1.02) {
     return {
       nada: 'menipis',
-      teks: `Ketat — kuota ${fmtJml(paket.kuotaMinPerBulan)} ${satuan} di atas pemakaianmu ${fmtJml(pemakaian)} ${satuan} per bulan`,
+      teks: `Ketat — kuota ${angkaJumlah(paket.kuotaMinPerBulan)} ${satuan} di atas pemakaianmu ${angkaJumlah(pemakaian)} ${satuan} per bulan`,
     }
   }
   if (paket.durasiBulan >= 4) {
@@ -70,7 +63,7 @@ function vonisPaket(
   }
   return {
     nada: 'aman',
-    teks: `Pas — kuota ${fmtJml(paket.kuotaMinPerBulan)} ${satuan} masih di bawah pemakaianmu ${fmtJml(pemakaian)} ${satuan} per bulan`,
+    teks: `Pas — kuota ${angkaJumlah(paket.kuotaMinPerBulan)} ${satuan} masih di bawah pemakaianmu ${angkaJumlah(pemakaian)} ${satuan} per bulan`,
   }
 }
 
@@ -148,7 +141,7 @@ export default function PilihPaket() {
           <KeadaanKosong
             ikon={<IkonToko size={26} />}
             judul="Penawaran ini sudah tidak ada"
-            pesan="Paket kontraknya ikut hilang karena barangnya sudah tidak dijual lagi di aplikasi. Cari barang yang sama dari distributor lain."
+            pesan="Barangnya sudah tidak dijual, jadi paketnya ikut hilang. Cari di distributor lain."
             aksi={<TombolTautan ke="/belanja">Cari barang di Distributor</TombolTautan>}
           />
         </Kartu>
@@ -165,7 +158,7 @@ export default function PilihPaket() {
           <KeadaanKosong
             ikon={<IkonKontrak size={26} />}
             judul="Belum ada paket kontrak untuk barang ini"
-            pesan={`${distributor.nama} belum memasang paket kontrak untuk ${penawaran.nama}. Kamu tetap bisa membeli sekali sebanyak yang kamu butuhkan.`}
+            pesan="Kamu tetap bisa beli sekali sebanyak yang kamu butuhkan."
             aksi={<TombolTautan ke={`/penawaran/${id}`}>Kembali ke penawaran</TombolTautan>}
             aksiKedua={
               <TombolTautan ke={`/belanja?cari=${encodeURIComponent(penawaran.nama)}`} ragam="garis">
@@ -181,10 +174,10 @@ export default function PilihPaket() {
   const satuan = penawaran.satuan
   const barisTabel: Array<{ label: string; isi: (p: PaketKontrak) => string; tebal?: boolean }> = [
     { label: 'Durasi', isi: (p) => `${p.durasiBulan} bulan` },
-    { label: 'Minimal ambil per bulan', isi: (p) => `${fmtJml(p.kuotaMinPerBulan)} ${satuan}` },
+    { label: 'Minimal ambil per bulan', isi: (p) => `${angkaJumlah(p.kuotaMinPerBulan)} ${satuan}` },
     {
       label: 'TOTAL wajib diambil selama kontrak',
-      isi: (p) => `${fmtJml(p.kuotaMinPerBulan * p.durasiBulan)} ${satuan}`,
+      isi: (p) => `${angkaJumlah(p.kuotaMinPerBulan * p.durasiBulan)} ${satuan}`,
       tebal: true,
     },
     { label: 'Harga per satuan', isi: (p) => `${rupiah(p.hargaSatuan)}/${satuan}` },
@@ -217,22 +210,23 @@ export default function PilihPaket() {
           <p className="text-isi leading-relaxed">
             Pemakaianmu sekitar{' '}
             <strong>
-              {fmtJml(pemakaian)} {satuan}/bulan
+              {angkaJumlah(pemakaian)} {satuan}/bulan
             </strong>{' '}
-            (rata-rata 3 bulan terakhir, {rentangTigaBulan()}). Angka inilah yang dipakai membandingkan kuota di
-            bawah.
+            (rata-rata 3 bulan terakhir, {rentangTigaBulan()}), patokan kuota di bawah.
           </p>
         </div>
       ) : (
         <Kartu className="mt-4">
           <h2 className="text-kartu font-bold text-ink">Kira-kira berapa kamu pakai per bulan?</h2>
           <p className="mt-1 text-isi text-ink-3 leading-relaxed">
-            {barang
-              ? 'Data pemakaian dari kasir belum cukup untuk barang ini, jadi angkanya kamu yang tentukan.'
-              : 'Barang ini belum ada di daftar stok kamu, jadi kami belum punya riwayat pemakaiannya.'}{' '}
-            Isi kira-kira saja; angka ini cuma dipakai membandingkan kuota di layar ini dan tidak disimpan sebagai
-            data pemakaian.
+            Isi kira-kira saja; angka ini hanya untuk membandingkan kuota.
           </p>
+          <Penjelasan label="Kenapa diminta?">
+            {barang
+              ? 'Data pemakaian dari kasir belum cukup untuk barang ini.'
+              : 'Barang ini belum ada di daftar stok kamu, jadi riwayat pemakaiannya belum ada.'}{' '}
+            Angka yang kamu isi tidak disimpan sebagai data pemakaian.
+          </Penjelasan>
           <div className="mt-3">
             <PengaturJumlah
               nilai={pakaiManual}
@@ -246,14 +240,14 @@ export default function PilihPaket() {
           {pakaiManual > 0 ? (
             <div className="mt-2.5">
               <Lencana nada="netral" besar>
-                Perkiraan kamu: {fmtJml(pakaiManual)} {satuan}/bulan
+                Perkiraan kamu: {angkaJumlah(pakaiManual)} {satuan}/bulan
               </Lencana>
             </div>
           ) : (
             <p className="mt-2.5 text-isi text-ink-3 leading-relaxed">
-              Sebagai patokan, paket di bawah minta antara {fmtJml(Math.min(...paket.map((p) => p.kuotaMinPerBulan)))}{' '}
-              dan {fmtJml(Math.max(...paket.map((p) => p.kuotaMinPerBulan)))} {satuan} tiap bulan. Selama kolom ini
-              masih nol, kami tidak menilai satu pun paket cocok atau tidak.
+              Paket di bawah minta {angkaJumlah(Math.min(...paket.map((p) => p.kuotaMinPerBulan)))}&ndash;
+              {angkaJumlah(Math.max(...paket.map((p) => p.kuotaMinPerBulan)))} {satuan} per bulan; selama kolom ini nol,
+              belum ada yang dinilai.
             </p>
           )}
         </Kartu>
@@ -266,8 +260,8 @@ export default function PilihPaket() {
           judul={`Bandingkan ${paket.length} paket kontrak`}
           keterangan={
             pemakaian > 0
-              ? `Baris yang sama dibaca berdampingan, semuanya ditimbang terhadap pemakaianmu ${fmtJml(pemakaian)} ${satuan}/bulan.`
-              : 'Baris yang sama dibaca berdampingan. Isi dulu perkiraan pemakaianmu di atas supaya tiap paket ikut dinilai cocok atau tidak.'
+              ? `Semua ditimbang terhadap pemakaianmu ${angkaJumlah(pemakaian)} ${satuan}/bulan.`
+              : 'Isi dulu perkiraan pemakaianmu di atas supaya tiap paket bisa dinilai.'
           }
         />
       </div>
@@ -424,13 +418,16 @@ export default function PilihPaket() {
 
       {/* Alasan satu baris untuk label "Paling pas buat kamu" */}
       {idPalingPas && (
-        <p className="mt-3 text-isi text-ink-2 leading-relaxed px-1">
-          <strong className="text-ink">Kenapa dilabeli paling pas:</strong>{' '}
-          {idPalingPas.muat
-            ? `kuotanya masih di bawah pemakaianmu ${fmtJml(pemakaian)} ${satuan}/bulan dan harganya paling murah di antara paket yang muat.`
-            : `semua paket kuotanya di atas pemakaianmu ${fmtJml(pemakaian)} ${satuan}/bulan, jadi yang ditandai adalah kuota terkecil dengan ikatan terpendek (${idPalingPas.durasi} bulan) — paling kecil risikonya kalau bulan sepi datang.`}{' '}
-          Label ini saran, bukan pilihan. Tidak ada paket yang terpilih sampai kamu menekannya sendiri.
-        </p>
+        <>
+          <p className="mt-3 text-isi text-ink-2 leading-relaxed px-1">
+            Label &ldquo;Paling pas&rdquo; hanya saran; tidak ada paket terpilih sampai kamu menekannya.
+          </p>
+          <Penjelasan label="Kenapa paling pas?" className="px-1">
+            {idPalingPas.muat
+              ? `Kuotanya masih di bawah pemakaianmu ${angkaJumlah(pemakaian)} ${satuan}/bulan dan harganya paling murah di antara paket yang muat.`
+              : `Semua paket kuotanya di atas pemakaianmu ${angkaJumlah(pemakaian)} ${satuan}/bulan, jadi yang ditandai adalah kuota terkecil dengan ikatan terpendek (${idPalingPas.durasi} bulan), paling kecil risikonya kalau bulan sepi datang.`}
+          </Penjelasan>
+        </>
       )}
 
       {/* Catatan tetap di bawah */}
@@ -439,9 +436,12 @@ export default function PilihPaket() {
       </p>
 
       <p className="mt-3 text-isi text-ink-3 leading-relaxed px-1">
-        Harga beli sekali sekarang {rupiah(penawaran.hargaSatuan)}/{satuan}. Angka hemat di atas dihitung dari
-        selisih itu dikalikan total yang wajib kamu ambil, jadi hanya berlaku kalau kuotanya benar-benar terpakai.
+        Angka hemat hanya berlaku kalau kuotanya benar-benar terpakai.
       </p>
+      <Penjelasan label="Cara dihitung" className="px-1">
+        Selisih harga beli sekali sekarang ({rupiah(penawaran.hargaSatuan)}/{satuan}) dengan harga paket, dikalikan
+        total yang wajib kamu ambil.
+      </Penjelasan>
     </div>
   )
 }

@@ -5,7 +5,7 @@ import { BarisData, Kartu, Lencana, Pemisah, TombolTautan } from '@/components/u
 import { BilahAksi, KepalaHalaman } from '@/components/ui/navigasi'
 import { KeadaanKosong } from '@/components/ui/umpanBalik'
 import { IkonKontrak, IkonPanahBawah, IkonToko } from '@/icons'
-import { angka, rupiah, tanggalPanjang } from '@/lib/format'
+import { angkaJumlah, rupiah, tanggalPanjang } from '@/lib/format'
 import { BANTUAN } from '@/lib/label'
 import type { Penawaran } from '@/lib/types'
 import { distributorById, paketById, penawaranById } from '@/data/dummy'
@@ -23,13 +23,6 @@ import { useAplikasi } from '@/store/aplikasi'
  * mengisi ketentuannya, yang tampil adalah pengakuan bahwa ketentuannya memang
  * belum ada - bukan kalimat penenang buatan sendiri.
  */
-
-/* Desimal mengikuti angkanya, bukan besarannya. Aturan lama menulis pemakaian
-   23,4 sebagai "23" tapi selisihnya sebagai "6,6" — pembaca melihat 30 - 23
-   menghasilkan 6,6 dan menyangka layarnya salah hitung. */
-function fmtJml(n: number): string {
-  return angka(n, Number.isInteger(n) ? 0 : 1)
-}
 
 function pemakaianDalamSatuanJual(pemakaianHarian: number, penawaran: Penawaran): number {
   const isi = penawaran.kemasanJual?.isi ?? 1
@@ -87,7 +80,7 @@ export default function RincianPaket() {
           <KeadaanKosong
             ikon={<IkonToko size={26} />}
             judul="Paket kontrak ini tidak ada lagi"
-            pesan="Distributor mungkin sudah menurunkan paketnya, atau tautannya salah salin. Lihat lagi paket yang masih tersedia untuk barang ini."
+            pesan="Mungkin sudah diturunkan distributornya. Lihat paket yang masih tersedia."
             aksi={
               <TombolTautan ke={penawaran ? `/penawaran/${id}/kontrak` : '/belanja'}>
                 {penawaran ? 'Lihat paket yang tersedia' : 'Cari barang di Distributor'}
@@ -114,10 +107,10 @@ export default function RincianPaket() {
     pemakaian <= 0
       ? null
       : kuota <= pemakaian * 0.85
-        ? { label: 'Aman', nada: 'aman' as const, teks: `Kuota ${fmtJml(kuota)} ${satuan} jauh di bawah pemakaianmu ${fmtJml(pemakaian)} ${satuan} per bulan. Kuota segini biasanya habis sendiri.` }
+        ? { label: 'Aman', nada: 'aman' as const, teks: `Kuota ${angkaJumlah(kuota)} ${satuan} jauh di bawah pemakaianmu ${angkaJumlah(pemakaian)} ${satuan} per bulan. Kuota segini biasanya habis sendiri.` }
         : kuota <= pemakaian * 1.02
-          ? { label: 'Pas', nada: 'merek' as const, teks: `Kuota ${fmtJml(kuota)} ${satuan} hampir sama dengan pemakaianmu ${fmtJml(pemakaian)} ${satuan} per bulan. Bulan sepi bisa membuatnya kurang sedikit.` }
-          : { label: 'Di atas pemakaian', nada: 'menipis' as const, teks: `Kuota ${fmtJml(kuota)} ${satuan} lebih besar dari pemakaianmu ${fmtJml(pemakaian)} ${satuan} per bulan. Selisih ${fmtJml(kuota - pemakaian)} ${satuan} tiap bulan tetap wajib kamu ambil.` }
+          ? { label: 'Pas', nada: 'merek' as const, teks: `Kuota ${angkaJumlah(kuota)} ${satuan} hampir sama dengan pemakaianmu ${angkaJumlah(pemakaian)} ${satuan} per bulan. Bulan sepi bisa membuatnya kurang sedikit.` }
+          : { label: 'Di atas pemakaian', nada: 'menipis' as const, teks: `Kuota ${angkaJumlah(kuota)} ${satuan} lebih besar dari pemakaianmu ${angkaJumlah(pemakaian)} ${satuan} per bulan. Selisih ${angkaJumlah(kuota - pemakaian)} ${satuan} tiap bulan tetap wajib kamu ambil.` }
 
   return (
     <div className="pb-6">
@@ -138,7 +131,7 @@ export default function RincianPaket() {
               {rupiah(totalKomitmen)}
             </p>
             <p className="mt-2.5 text-kartu font-semibold text-brand-soft-ink">
-              {fmtJml(kuota)} {satuan} &times; {rupiah(paket.hargaSatuan)} &times; {paket.durasiBulan} bulan
+              {angkaJumlah(kuota)} {satuan} &times; {rupiah(paket.hargaSatuan)} &times; {paket.durasiBulan} bulan
             </p>
 
             <Pemisah className="my-3.5" />
@@ -147,8 +140,8 @@ export default function RincianPaket() {
               Kewajiban tiap bulan: {rupiah(kewajibanBulanan)}
             </p>
             <p className="mt-1 text-isi text-brand-soft-ink leading-relaxed">
-              Yang wajib kamu ambil selama kontrak {fmtJml(totalWajib)} {satuan}. Angka ini belum termasuk ongkos
-              kirim, dan {BANTUAN.bayarLuar.toLowerCase()}
+              Wajib diambil {angkaJumlah(totalWajib)} {satuan}, belum termasuk ongkos kirim; bayar langsung ke
+              distributor.
             </p>
           </div>
 
@@ -171,18 +164,16 @@ export default function RincianPaket() {
                 <p className="mt-2 text-isi text-ink-2 leading-relaxed">{banding.teks}</p>
                 <p className="mt-1.5 text-kecil text-ink-3 leading-relaxed">
                   {dariKamu
-                    ? 'Angka pemakaian di atas adalah perkiraan yang kamu isi sendiri di layar sebelumnya, bukan hitungan dari data kasir.'
-                    : 'Angka pemakaian di atas dihitung dari data kasir tiga bulan terakhir.'}
+                    ? 'Angka pemakaian ini isianmu sendiri, bukan hitungan dari data kasir.'
+                    : 'Angka pemakaian ini dihitung dari data kasir tiga bulan terakhir.'}
                 </p>
               </>
             ) : (
               <p className="mt-2 text-isi text-ink-2 leading-relaxed">
-                Kami belum punya angka pemakaian untuk barang ini, jadi kuota {fmtJml(kuota)} {satuan} per bulan
-                belum ada pembandingnya.{' '}
                 <Link to={`/penawaran/${id}/kontrak`} className="font-bold text-brand hover:underline">
                   Isi perkiraan pemakaianmu
                 </Link>{' '}
-                dulu supaya perbandingannya muncul di sini.
+                dulu supaya kuota {angkaJumlah(kuota)} {satuan} per bulan bisa dibandingkan.
               </p>
             )}
           </Kartu>
@@ -195,8 +186,7 @@ export default function RincianPaket() {
               <>
                 <p>{BANTUAN.ketentuanKosong}</p>
                 <p className="mt-2 text-ink-3">
-                  Kalau ini penting buat kamu, tanyakan langsung ke {distributor.nama} sebelum mengajukan kontrak.
-                  Kami tidak menuliskan aturan yang tidak mereka cantumkan.
+                  Kalau ini penting, tanyakan langsung ke {distributor.nama} sebelum mengajukan kontrak.
                 </p>
               </>
             )}
@@ -227,8 +217,8 @@ export default function RincianPaket() {
               <BarisData label="Durasi" nilai={`${paket.durasiBulan} bulan`} />
               <BarisData label="Mulai" nilai={tanggalPanjang(mulai)} />
               <BarisData label="Berakhir" nilai={tanggalPanjang(selesai)} />
-              <BarisData label="Minimal ambil per bulan" nilai={`${fmtJml(kuota)} ${satuan}`} />
-              <BarisData label="Total wajib diambil" nilai={`${fmtJml(totalWajib)} ${satuan}`} tebal />
+              <BarisData label="Minimal ambil per bulan" nilai={`${angkaJumlah(kuota)} ${satuan}`} />
+              <BarisData label="Total wajib diambil" nilai={`${angkaJumlah(totalWajib)} ${satuan}`} tebal />
               <BarisData label="Harga kontrak" nilai={`${rupiah(paket.hargaSatuan)}/${satuan}`} />
               <BarisData label="Harga beli sekali" nilai={`${rupiah(penawaran.hargaSatuan)}/${satuan}`} />
               <BarisData

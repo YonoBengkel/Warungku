@@ -25,7 +25,7 @@ import {
   IkonSilang,
   IkonToko,
 } from '@/icons'
-import { angka, cx, persen, waktuLalu } from '@/lib/format'
+import { angka, bintang, cx, persen, waktuLalu } from '@/lib/format'
 import { isiKemasan, kalimatIsiKemasan } from '@/lib/satuan'
 import { JUDUL, LABEL_JENIS_USAHA } from '@/lib/label'
 import type { Barang, Distributor, PaketKontrak, Penawaran } from '@/lib/types'
@@ -52,12 +52,6 @@ type TabBelanja = 'barang' | 'distributor'
 
 /** Satu saringan yang sedang berlaku; `kunci` sama dengan nama parameter URL-nya. */
 type Saringan = { kunci: 'kota' | 'stok' | 'kontrak'; label: string }
-
-/* Nilai bintang selalu satu desimal. `angka(4, 1)` menghasilkan "4", dan "4"
-   berdampingan dengan "4,8" terbaca seperti dua skala yang berbeda. */
-function nilaiBintang(n: number): string {
-  return n.toFixed(1).replace('.', ',')
-}
 
 function rentangDurasi(penawaranId: string, paketTersedia: PaketKontrak[]): string | null {
   const paket = paketUntukPenawaran(penawaranId, paketTersedia)
@@ -209,7 +203,7 @@ function KartuDistributor({ distributor, jumlahPenawaran }: { distributor: Distr
           ) : (
             <span className="inline-flex items-center gap-1.5 text-isi font-semibold text-ink">
               <IkonBintangIsi size={14} className="text-menipis" />
-              {nilaiBintang(distributor.rating)}
+              {bintang(distributor.rating)}
               <HanyaPembacaLayar> dari 5 bintang</HanyaPembacaLayar>
               <span className="font-normal text-ink-3">
                 &middot; {distributor.jumlahUlasan} ulasan dari {distributor.jumlahUmkmPengulas} UMKM
@@ -268,7 +262,7 @@ function KartuRekomendasi({
       ? `Harga termurah: ${rekomendasi.termurah.join(', ')}`
       : belumDiulas
         ? 'Dinilai setara rata-rata distributor lain sampai ada ulasan'
-        : `Terbaik di ${LABEL_ASPEK[terkuat]}: ${nilaiBintang(d.subRating[terkuat])}\u00a0dari\u00a05`
+        : `Terbaik di ${LABEL_ASPEK[terkuat]}: ${bintang(d.subRating[terkuat])}\u00a0dari\u00a05`
 
   return (
     <Link
@@ -293,7 +287,7 @@ function KartuRekomendasi({
           ) : (
             <span className="inline-flex items-center gap-1.5 text-isi font-semibold text-ink">
               <IkonBintangIsi size={14} className="text-menipis" />
-              {nilaiBintang(d.rating ?? 0)}
+              {bintang(d.rating ?? 0)}
               <HanyaPembacaLayar> dari 5 bintang</HanyaPembacaLayar>
               <span className="font-normal text-ink-3">&middot; {d.jumlahUlasan} ulasan</span>
             </span>

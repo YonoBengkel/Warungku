@@ -175,7 +175,7 @@ export function KepalaHalaman({
   bawah?: ReactNode
 }) {
   return (
-    <header className="sticky top-0 z-30 bg-bg/95 backdrop-blur-sm border-b border-line -mx-4 px-4 sm:-mx-6 sm:px-6 pt-aman">
+    <header className="sticky top-[var(--kepala-global,0px)] z-30 bg-bg/95 backdrop-blur-sm border-b border-line -mx-4 px-4 sm:-mx-6 sm:px-6">
       <div className="flex items-center gap-2 min-h-14 py-2">
         {kembaliKe && (
           <Link
@@ -215,9 +215,13 @@ export function BilahAksi({ children, ringkasan }: { children: ReactNode; ringka
     // Ditempel tepat di ATAS bilah navigasi bawah, bukan di dasar layar.
     // Kalau dipatok bottom-0, navigasi yang fixed menutupinya selama halaman
     // belum digulir mentok, dan tombol utamanya benar-benar tidak bisa ditekan.
-    <div className="sticky bottom-[var(--nav-h)] lg:bottom-0 -mx-4 sm:-mx-6 px-4 sm:px-6 py-3 bg-surface/97 backdrop-blur-sm border-t border-line pb-aman lg:pb-0 z-30">
-      {ringkasan && <div className="mb-2.5">{ringkasan}</div>}
-      {children}
+    <div className="sticky bottom-[var(--nav-h)] lg:bottom-0 -mx-4 sm:-mx-6 px-4 sm:px-6 py-3 bg-surface/97 backdrop-blur-sm border-t border-line pb-aman lg:pb-3 z-30">
+      {/* Di desktop tombolnya berkumpul di kanan selebar ±450px, ringkasan di
+          kiri. Tombol selebar 1.000px terbaca seperti spanduk, bukan tombol. */}
+      <div className="lg:flex lg:items-center lg:justify-end lg:gap-6">
+        {ringkasan && <div className="mb-2.5 lg:mb-0 lg:mr-auto">{ringkasan}</div>}
+        <div className="lg:w-full lg:max-w-md">{children}</div>
+      </div>
     </div>
   )
 }

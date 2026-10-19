@@ -60,6 +60,15 @@ const WARNA: Record<KategoriNotifikasi, string> = {
   sistem: 'bg-netral-soft text-netral-ink',
 }
 
+/* Merah hanya untuk yang genting. Dulu semua pemberitahuan stok merah,
+   termasuk yang baru menipis, sehingga merahnya kehilangan arti. */
+function warnaIkon(n: TipeNotifikasi): string {
+  if (n.kategori === 'stok') {
+    return n.tingkat === 'genting' ? 'bg-kritis-soft text-kritis-ink' : 'bg-menipis-soft text-menipis-ink'
+  }
+  return WARNA[n.kategori]
+}
+
 const KEPALA = ['Hari Ini', 'Kemarin', 'Minggu Ini', 'Lebih Lama'] as const
 type Kepala = (typeof KEPALA)[number]
 
@@ -339,7 +348,7 @@ function BarisNotifikasi({
 
   const isi = (
     <div className="flex items-start gap-3 min-h-[72px]">
-      <span className={cx('shrink-0 size-10 rounded-md grid place-items-center', WARNA[notif.kategori])}>
+      <span className={cx('shrink-0 size-10 rounded-md grid place-items-center', warnaIkon(notif))}>
         {IKON[notif.kategori]}
       </span>
 

@@ -179,9 +179,12 @@ export default function StokDetail() {
                   0 {satuanTampil(barang).nama} (catatan kurang {jumlahTampil(barang, kurangCatatan)})
                 </p>
                 <p className="mt-1 text-isi leading-relaxed opacity-90">
-                  Kasir mencatat pemakaian lebih banyak daripada stok yang pernah masuk. Hitung barangnya di rak,
-                  lalu tulis jumlahnya lewat Koreksi Stok — riwayat penjualannya tidak ikut berubah.
+                  Catatannya minus. Hitung barang di rak, lalu koreksi stok.
                 </p>
+                <Penjelasan label="Kenapa?">
+                  Kasir mencatat pemakaian lebih banyak daripada stok yang pernah masuk. Koreksi Stok hanya
+                  membetulkan sisanya; riwayat penjualannya tidak ikut berubah.
+                </Penjelasan>
                 <TombolTautan
                   ke={`/stok/${barang.id}/koreksi`}
                   ragam="garis"
@@ -267,7 +270,7 @@ export default function StokDetail() {
                 <span className="block text-isi mt-0.5 opacity-90 leading-relaxed">
                   {pesananDikirim ? `${pesananDikirim.nomor} · ` : ''}
                   {dikirim.tiba ? `perkiraan tiba ${waktuNanti(dikirim.tiba)}` : 'jadwal tiba belum dipastikan'}.
-                  Jumlah ini sengaja tidak dijumlahkan dengan sisa, karena kiriman masih bisa berubah.
+                  Belum ditambahkan ke sisa karena kiriman bisa berubah.
                 </span>
               </span>
               <IkonPanahKanan size={18} className="shrink-0 mt-0.5" />
