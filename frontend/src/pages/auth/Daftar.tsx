@@ -61,7 +61,7 @@ export default function Daftar() {
           lanjut()
         }}
       >
-        <p className="text-[0.875rem] text-ink-3 leading-relaxed">
+        <p className="text-isi text-ink-3 leading-relaxed">
           Dua isian dulu. Sisanya bisa dilanjutkan setelah ini.
         </p>
 
@@ -89,13 +89,13 @@ export default function Daftar() {
           />
         </div>
 
-        <div className="mt-5 rounded-md bg-brand-soft text-brand-soft-ink p-3.5 text-[0.8125rem] leading-relaxed">
+        <div className="mt-5 rounded-md bg-brand-soft text-brand-soft-ink p-3.5 text-isi leading-relaxed">
           Begitu tombol di bawah ditekan, akunmu langsung tercipta. Kalau pendaftaran terputus di tengah jalan,
           isian yang sudah masuk tidak hilang &mdash; tinggal masuk lagi pakai nomor ini dan lanjut dari langkah
           terakhir.
         </div>
 
-        <p className="mt-5 text-center text-[0.875rem] text-ink-2">
+        <p className="mt-5 text-center text-isi text-ink-2">
           Sudah punya akun?{' '}
           <Link
             to="/masuk"
@@ -173,8 +173,8 @@ function LayarAuth({
               />
             </div>
             <div className="mt-2 flex items-baseline justify-between gap-3">
-              <h1 className="text-[1.25rem] font-extrabold text-ink tracking-tight">{judul}</h1>
-              <span className="text-[0.8125rem] font-semibold text-ink-3 shrink-0">Langkah {langkah} dari 5</span>
+              <h1 className="text-judul font-extrabold text-ink tracking-tight">{judul}</h1>
+              <span className="text-isi font-semibold text-ink-3 shrink-0">Langkah {langkah} dari 5</span>
             </div>
           </div>
           {children}
@@ -187,7 +187,7 @@ function LayarAuth({
 /* Warna bingkai tidak ditulis di sini: `kelasBingkai` memilih abu-abu atau
    merah, supaya keduanya tidak terpasang bersamaan. */
 const KELAS_SANDI =
-  'w-full h-12 pl-3.5 pr-14 rounded-md bg-surface text-ink text-[0.9375rem] ' +
+  'w-full h-12 pl-3.5 pr-14 rounded-md bg-surface text-ink text-kartu ' +
   'border placeholder:text-ink-3/70 ' +
   'transition-[border-color,box-shadow] duration-150 ' +
   'focus:outline-none focus:ring-4'
@@ -213,7 +213,7 @@ function KolomSandi({
 
   return (
     <div className="w-full">
-      <label htmlFor={id} className="block text-[0.8125rem] font-semibold text-ink-2 mb-1.5">
+      <label htmlFor={id} className="block text-isi font-semibold text-ink-2 mb-1.5">
         {label}
         <span className="text-kritis ml-0.5" aria-hidden="true">
           *
@@ -242,11 +242,11 @@ function KolomSandi({
         </button>
       </div>
       {galat ? (
-        <p id={`${id}-galat`} className="mt-1.5 text-[0.8125rem] text-kritis font-medium leading-snug">
+        <p id={`${id}-galat`} className="mt-1.5 text-isi text-kritis font-medium leading-snug">
           {galat}
         </p>
       ) : bantuan ? (
-        <p id={`${id}-bantuan`} className="mt-1.5 text-[0.8125rem] text-ink-3 leading-snug">
+        <p id={`${id}-bantuan`} className="mt-1.5 text-isi text-ink-3 leading-snug">
           {bantuan}
         </p>
       ) : null}

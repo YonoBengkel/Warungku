@@ -175,11 +175,11 @@ export default function KontrakDetail() {
         <div className="min-w-0 grow">
           <Link
             to={`/distributor/${kontrak.distributorId}`}
-            className="text-[1.0625rem] font-bold text-ink leading-tight hover:text-brand transition-colors"
+            className="text-subjudul font-bold text-ink leading-tight hover:text-brand transition-colors"
           >
             {distributor?.nama}
           </Link>
-          <p className="text-[0.8125rem] text-ink-3 truncate">{distributor?.kota}</p>
+          <p className="text-isi text-ink-3 truncate">{distributor?.kota}</p>
         </div>
         <Lencana nada={NADA_STATUS[kontrak.status]} besar>
           {LABEL_KONTRAK[kontrak.status]}
@@ -215,10 +215,10 @@ export default function KontrakDetail() {
       )}
 
       <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <p className="text-[0.8125rem] text-ink-3 max-w-[70ch]">{BANTUAN.satuKontrakSatuBarang}</p>
+        <p className="text-isi text-ink-3 max-w-[70ch]">{BANTUAN.satuKontrakSatuBarang}</p>
         <Link
           to={`/mitra/${kontrak.distributorId}`}
-          className="text-[0.8125rem] font-bold text-brand hover:underline shrink-0"
+          className="text-isi font-bold text-brand hover:underline shrink-0"
         >
           Lihat semua kerja sama
         </Link>
@@ -246,7 +246,7 @@ export default function KontrakDetail() {
               <KuotaBulanIni kontrak={kontrak} />
 
               {!berjalan ? (
-                <p className="mt-4 border-t border-line pt-3.5 text-[0.875rem] text-ink-2 leading-relaxed">
+                <p className="mt-4 border-t border-line pt-3.5 text-isi text-ink-2 leading-relaxed">
                   {menunggu
                     ? 'Kuota mulai dihitung setelah distributor menyetujui kontrak ini.'
                     : 'Kontrak ini sudah tidak berjalan, jadi tidak ada kuota yang perlu dikejar.'}
@@ -256,7 +256,7 @@ export default function KontrakDetail() {
                   <p className="text-[1rem] font-bold text-ink">
                     Kurang {angka(kurang)} {kontrak.satuan} &middot; sisa {sisaHari} hari di bulan ini
                   </p>
-                  {konversi && <p className="mt-0.5 text-[0.8125rem] text-ink-2">{konversi}</p>}
+                  {konversi && <p className="mt-0.5 text-isi text-ink-2">{konversi}</p>}
                   <div className="mt-3">
                     {terkunci ? (
                       <TombolTerkunci label={`Pesan ${angka(kurang)} ${kontrak.satuan}`} penuh />
@@ -268,7 +268,7 @@ export default function KontrakDetail() {
                   </div>
                 </div>
               ) : (
-                <p className="mt-4 border-t border-line pt-3.5 flex items-center gap-2 text-[0.9375rem] font-semibold text-aman-ink">
+                <p className="mt-4 border-t border-line pt-3.5 flex items-center gap-2 text-kartu font-semibold text-aman-ink">
                   <IkonCentangLingkaran size={18} />
                   Kuota bulan ini sudah terpenuhi.
                 </p>
@@ -279,7 +279,7 @@ export default function KontrakDetail() {
           <div className="space-y-4">
             <section aria-labelledby="judul-isi">
               <Kartu>
-                <h2 id="judul-isi" className="text-[0.9375rem] font-bold text-ink mb-3">
+                <h2 id="judul-isi" className="text-kartu font-bold text-ink mb-3">
                   Isi kesepakatan
                 </h2>
                 <div className="space-y-1">
@@ -294,16 +294,16 @@ export default function KontrakDetail() {
                 <Pemisah className="my-3" />
                 <div className="flex items-end justify-between gap-3">
                   <div>
-                    <p className="text-[0.75rem] font-semibold uppercase tracking-wide text-ink-3">
+                    <p className="text-kecil font-semibold uppercase tracking-wide text-ink-3">
                       Total wajib selama kontrak
                     </p>
-                    <p className="mt-1 text-[1.625rem] font-extrabold text-ink leading-none">
-                      {angka(totalWajib)} <span className="text-[0.8125rem] font-semibold text-ink-3">{kontrak.satuan}</span>
+                    <p className="mt-1 text-angka font-extrabold text-ink leading-none">
+                      {angka(totalWajib)} <span className="text-isi font-semibold text-ink-3">{kontrak.satuan}</span>
                     </p>
                   </div>
-                  <p className="text-[0.9375rem] font-bold text-ink tabular text-right">{rupiah(nilaiTotal)}</p>
+                  <p className="text-kartu font-bold text-ink tabular text-right">{rupiah(nilaiTotal)}</p>
                 </div>
-                <p className="mt-1 text-[0.75rem] text-ink-3 tabular">
+                <p className="mt-1 text-kecil text-ink-3 tabular">
                   {angka(kontrak.kuotaMinPerBulan)} {kontrak.satuan} &times; {kontrak.durasiBulan} bulan
                 </p>
               </Kartu>
@@ -330,7 +330,7 @@ export default function KontrakDetail() {
                       <IkonPetir size={18} />
                     </span>
                     <div className="min-w-0 grow">
-                      <p className="text-[0.9375rem] font-bold text-ink leading-snug">
+                      <p className="text-kartu font-bold text-ink leading-snug">
                         Pesanan rutin:{' '}
                         {kontrak.pesananRutinAktif ? (
                           <>
@@ -341,7 +341,7 @@ export default function KontrakDetail() {
                           'belum diatur'
                         )}
                       </p>
-                      <p className="mt-0.5 text-[0.8125rem] text-ink-3 leading-snug">
+                      <p className="mt-0.5 text-isi text-ink-3 leading-snug">
                         Sistem cuma menyiapkan draf. Tidak ada pesanan yang terkirim tanpa kamu setujui.
                       </p>
                     </div>
@@ -376,7 +376,7 @@ export default function KontrakDetail() {
                   <Tombol ragam="garis" penuh onClick={() => setDialogHenti(true)}>
                     Ajukan Penghentian
                   </Tombol>
-                  <p className="mt-1.5 text-center text-[0.8125rem] text-ink-3 leading-snug">
+                  <p className="mt-1.5 text-center text-isi text-ink-3 leading-snug">
                     Perlu persetujuan distributor.
                   </p>
                 </div>
@@ -391,7 +391,7 @@ export default function KontrakDetail() {
           <h2 id="judul-riwayat" className="sr-only">
             Riwayat pemenuhan bulanan
           </h2>
-          <p className="text-[0.8125rem] text-ink-3 mb-3 max-w-[70ch]">{BANTUAN.kuotaBertambah}</p>
+          <p className="text-isi text-ink-3 mb-3 max-w-[70ch]">{BANTUAN.kuotaBertambah}</p>
           {/* Tiap bulan adalah kartu setara, jadi di layar lebar ia berjajar
               ketimbang menumpuk jadi satu kolom kurus di kiri. */}
           <div className="space-y-3 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-3 lg:space-y-0 lg:items-start">
@@ -403,7 +403,7 @@ export default function KontrakDetail() {
               berjalan
             />
             {kontrak.riwayat.length === 0 ? (
-              <p className="text-[0.875rem] text-ink-3 bg-sunken rounded-md px-3.5 py-3 leading-relaxed max-w-[70ch]">
+              <p className="text-isi text-ink-3 bg-sunken rounded-md px-3.5 py-3 leading-relaxed max-w-[70ch]">
                 Belum ada bulan yang selesai. Kontrak ini baru mulai {tanggalPendek(kontrak.mulai)}, jadi riwayatnya
                 terisi setelah bulan pertama lewat.
               </p>
@@ -436,7 +436,7 @@ export default function KontrakDetail() {
           </h2>
           <Kartu>
             <div className="flex items-start justify-between gap-3 mb-3">
-              <h3 className="text-[0.9375rem] font-bold text-ink">Salinan ringkasan kesepakatan</h3>
+              <h3 className="text-kartu font-bold text-ink">Salinan ringkasan kesepakatan</h3>
               <Tombol ragam="garis" ukuran="kecil" ikonKiri={<IkonSalin size={15} />} onClick={salinRingkasan}>
                 Salin
               </Tombol>
@@ -450,14 +450,14 @@ export default function KontrakDetail() {
               <BarisIsi label="Total wajib selama kontrak" nilai={`${angka(totalWajib)} ${kontrak.satuan}`} />
               <BarisIsi label="Berlaku" nilai={`${tanggalPanjang(kontrak.mulai)} – ${tanggalPanjang(kontrak.berakhir)}`} />
             </div>
-            <p className="mt-3 text-[0.8125rem] text-ink-2 leading-relaxed bg-sunken rounded-md px-3 py-2.5">
+            <p className="mt-3 text-isi text-ink-2 leading-relaxed bg-sunken rounded-md px-3 py-2.5">
               <strong className="font-bold">Kalau kuota tidak terpenuhi:</strong> {ketentuan}
             </p>
           </Kartu>
 
           <Kartu>
-            <h3 className="text-[0.9375rem] font-bold text-ink mb-1">Jejak waktu dan versi teks</h3>
-            <p className="text-[0.8125rem] text-ink-3 mb-3 max-w-[70ch]">
+            <h3 className="text-kartu font-bold text-ink mb-1">Jejak waktu dan versi teks</h3>
+            <p className="text-isi text-ink-3 mb-3 max-w-[70ch]">
               Inilah kekuatan bukti kesepakatan ini: siapa menyetujui, kapan, dan versi teks yang mana.
             </p>
             <ol className="space-y-3">
@@ -525,12 +525,12 @@ export default function KontrakDetail() {
         }
       >
         <div className="pb-4 space-y-4">
-          <p className="text-[0.875rem] text-ink-2 leading-relaxed">
+          <p className="text-isi text-ink-2 leading-relaxed">
             Kontrak ini berjalan sampai {tanggalPanjang(kontrak.berakhir)} dan tidak bisa dihentikan sepihak. Selama
             menunggu jawaban, kewajiban {angka(kontrak.kuotaMinPerBulan)} {kontrak.satuan} per bulan masih berlaku.
           </p>
           <div>
-            <p className="text-[0.875rem] font-semibold text-ink-2 mb-2.5">Kenapa ingin berhenti?</p>
+            <p className="text-isi font-semibold text-ink-2 mb-2.5">Kenapa ingin berhenti?</p>
             <BarisChip className="flex-wrap">
               {ALASAN_BERHENTI.map((a) => (
                 <Chip key={a} aktif={alasanHenti === a} onClick={() => setAlasanHenti(alasanHenti === a ? null : a)}>
@@ -559,8 +559,8 @@ export default function KontrakDetail() {
 function BarisIsi({ label, nilai }: { label: string; nilai: string }) {
   return (
     <div className="flex items-baseline justify-between gap-4 py-1.5">
-      <span className="text-[0.8125rem] text-ink-3">{label}</span>
-      <span className="text-[0.875rem] font-semibold text-ink text-right">{nilai}</span>
+      <span className="text-isi text-ink-3">{label}</span>
+      <span className="text-isi font-semibold text-ink text-right">{nilai}</span>
     </div>
   )
 }
@@ -583,8 +583,8 @@ function BarisBulan({
     <Kartu padat>
       <div className="flex items-start justify-between gap-3 mb-2">
         <div className="min-w-0">
-          <p className="text-[0.9375rem] font-bold text-ink">{namaPeriode(periode)}</p>
-          <p className="text-[0.8125rem] text-ink-3 tabular">
+          <p className="text-kartu font-bold text-ink">{namaPeriode(periode)}</p>
+          <p className="text-isi text-ink-3 tabular">
             {angka(diterima)} dari {angka(kuota)} {satuan} diterima
           </p>
         </div>
@@ -616,11 +616,11 @@ function JejakDokumen({
         {akanDatang ? <IkonJam size={16} /> : <IkonInfo size={16} />}
       </span>
       <div className="min-w-0">
-        <p className="text-[0.875rem] font-bold text-ink leading-snug">{judul}</p>
-        <p className="text-[0.75rem] text-ink-3">
+        <p className="text-isi font-bold text-ink leading-snug">{judul}</p>
+        <p className="text-kecil text-ink-3">
           {tanggalPanjang(waktu)}, {jam(waktu)}
         </p>
-        <p className="mt-0.5 text-[0.8125rem] text-ink-2 leading-relaxed">{detail}</p>
+        <p className="mt-0.5 text-isi text-ink-2 leading-relaxed">{detail}</p>
       </div>
     </li>
   )

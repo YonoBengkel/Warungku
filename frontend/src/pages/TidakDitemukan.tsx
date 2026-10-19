@@ -46,7 +46,7 @@ export default function TidakDitemukan() {
         <h2 id="judul-jalan-keluar" className="sr-only">
           Jalan keluar lain
         </h2>
-        <p className="text-center text-[0.875rem] text-ink-3">
+        <p className="text-center text-isi text-ink-3">
           Mau langsung ke{' '}
           <Link to="/stok" className="font-semibold text-brand hover:underline">
             Stok

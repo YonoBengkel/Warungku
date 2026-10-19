@@ -38,7 +38,7 @@ export class BatasGalat extends Component<Props, State> {
     return (
       <div className="py-14 px-6 text-center flex flex-col items-center">
         <h1 className="text-[1.125rem] font-extrabold text-ink">Halaman ini belum bisa ditampilkan</h1>
-        <p className="mt-2 text-[0.9375rem] text-ink-2 leading-relaxed max-w-[40ch]">
+        <p className="mt-2 text-kartu text-ink-2 leading-relaxed max-w-[40ch]">
           Data stok dan pesanan kamu tetap aman. Coba buka halaman ini lagi, atau kembali ke Beranda dulu.
         </p>
         <div className="mt-5 flex flex-col sm:flex-row gap-2.5">

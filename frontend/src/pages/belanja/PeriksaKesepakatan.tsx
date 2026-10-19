@@ -44,8 +44,8 @@ function BarisKuitansi({ label, nilai, bantuan, utama }: { label: string; nilai:
   return (
     <div className="flex items-baseline justify-between gap-4 py-3">
       <div className="min-w-0">
-        <p className="text-[0.8125rem] text-ink-3">{label}</p>
-        {bantuan && <p className="text-[0.75rem] text-ink-3 mt-0.5 leading-snug">{bantuan}</p>}
+        <p className="text-isi text-ink-3">{label}</p>
+        {bantuan && <p className="text-kecil text-ink-3 mt-0.5 leading-snug">{bantuan}</p>}
       </div>
       <p
         className={
@@ -205,10 +205,10 @@ export default function PeriksaKesepakatan() {
                 <IkonJam size={20} />
               </span>
               <div className="min-w-0">
-                <h2 className="text-[1.0625rem] font-extrabold text-ink leading-snug">
+                <h2 className="text-subjudul font-extrabold text-ink leading-snug">
                   {LABEL_KONTRAK['menunggu-persetujuan']}
                 </h2>
-                <p className="mt-1 text-[0.875rem] text-ink-2 leading-relaxed">
+                <p className="mt-1 text-isi text-ink-2 leading-relaxed">
                   Pengajuan kamu sudah sampai ke {distributor.nama}. Kontrak belum berjalan dan belum ada kewajiban
                   apa pun sampai mereka menyetujuinya.
                 </p>
@@ -217,7 +217,7 @@ export default function PeriksaKesepakatan() {
 
             <Pemisah className="my-4" />
 
-            <dl className="space-y-2.5 text-[0.875rem]">
+            <dl className="space-y-2.5 text-isi">
               <div className="flex justify-between gap-4">
                 <dt className="text-ink-3">Diajukan</dt>
                 <dd className="text-right font-semibold text-ink">
@@ -236,7 +236,7 @@ export default function PeriksaKesepakatan() {
               </div>
             </dl>
 
-            <p className="mt-3 text-[0.75rem] text-ink-3 leading-relaxed">
+            <p className="mt-3 text-kecil text-ink-3 leading-relaxed">
               Waktu, akun, dan isi ringkasan di atas tersimpan sebagai bukti pengajuan. Kamu bisa menyalinnya untuk
               disimpan sendiri.
             </p>
@@ -261,7 +261,7 @@ export default function PeriksaKesepakatan() {
             Lihat daftar kontrak
           </TombolTautan>
 
-          <p className="text-center text-[0.8125rem] text-ink-3">
+          <p className="text-center text-isi text-ink-3">
             <Link to="/belanja" className="font-semibold text-brand hover:underline">
               Kembali belanja
             </Link>
@@ -294,7 +294,7 @@ export default function PeriksaKesepakatan() {
       <div className="mt-4 max-w-2xl mx-auto space-y-4">
         {/* Ringkasan gaya kuitansi */}
         <Kartu>
-          <h2 className="text-[0.9375rem] font-bold text-ink">Isi kesepakatan</h2>
+          <h2 className="text-kartu font-bold text-ink">Isi kesepakatan</h2>
           <div className="mt-1 divide-y divide-line">
             <BarisKuitansi label="Barang" nilai={penawaran.nama} bantuan={BANTUAN.satuKontrakSatuBarang} />
             <BarisKuitansi label="Distributor" nilai={distributor.nama} bantuan={distributor.kota} />
@@ -317,7 +317,7 @@ export default function PeriksaKesepakatan() {
               utama
             />
           </div>
-          <p className="mt-2 text-[0.75rem] text-ink-3 leading-relaxed">
+          <p className="mt-2 text-kecil text-ink-3 leading-relaxed">
             Angka di atas belum termasuk ongkos kirim. {BANTUAN.bayarLuarPanjang}
           </p>
         </Kartu>
@@ -328,10 +328,10 @@ export default function PeriksaKesepakatan() {
             <div className="flex items-start gap-3">
               <IkonPeringatan size={20} className="shrink-0 text-menipis-ink mt-px" />
               <div className="min-w-0 grow">
-                <h2 className="text-[0.9375rem] font-extrabold text-menipis-ink leading-snug">
+                <h2 className="text-kartu font-extrabold text-menipis-ink leading-snug">
                   Kamu sudah punya kontrak untuk {penawaran.nama}
                 </h2>
-                <p className="mt-1 text-[0.8125rem] text-menipis-ink leading-relaxed">
+                <p className="mt-1 text-isi text-menipis-ink leading-relaxed">
                   Ini tidak dilarang. Banyak usaha sengaja memakai dua pemasok untuk barang yang sama. Yang perlu
                   kamu pastikan cuma satu: kewajiban keduanya berjalan bersamaan.
                 </p>
@@ -345,15 +345,15 @@ export default function PeriksaKesepakatan() {
                   <li key={k.id} className="bg-surface border border-line rounded-md px-3.5 py-2.5">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="text-[0.875rem] font-bold text-ink truncate">{d?.nama}</p>
-                        <p className="text-[0.75rem] text-ink-3">
+                        <p className="text-isi font-bold text-ink truncate">{d?.nama}</p>
+                        <p className="text-kecil text-ink-3">
                           Minimal {fmtJml(k.kuotaMinPerBulan)} {k.satuan}/bulan &middot; berakhir{' '}
                           {tanggalPendek(k.berakhir)}
                         </p>
                       </div>
                       <Link
                         to={`/kontrak/${k.id}`}
-                        className="shrink-0 text-[0.8125rem] font-bold text-brand hover:underline"
+                        className="shrink-0 text-isi font-bold text-brand hover:underline"
                       >
                         Lihat
                       </Link>
@@ -363,7 +363,7 @@ export default function PeriksaKesepakatan() {
               })}
             </ul>
 
-            <p className="mt-3 text-[0.875rem] font-semibold text-menipis-ink leading-relaxed">
+            <p className="mt-3 text-isi font-semibold text-menipis-ink leading-relaxed">
               Sekarang {fmtJml(kuotaSekarang)} {satuan}/bulan, kalau kontrak ini jalan jadi{' '}
               {fmtJml(kuotaGabungan)} {satuan}/bulan.{' '}
               {pemakaian > 0
@@ -374,8 +374,8 @@ export default function PeriksaKesepakatan() {
             <div className="mt-3 space-y-2.5 bg-surface rounded-md p-3.5">
               <div>
                 <div className="flex items-baseline justify-between gap-3 mb-1.5">
-                  <span className="text-[0.8125rem] text-ink-2 font-medium">Kewajiban kalau kontrak ini jalan</span>
-                  <span className="text-[0.8125rem] font-bold text-ink tabular">
+                  <span className="text-isi text-ink-2 font-medium">Kewajiban kalau kontrak ini jalan</span>
+                  <span className="text-isi font-bold text-ink tabular">
                     {fmtJml(kuotaGabungan)} {satuan}/bulan
                   </span>
                 </div>
@@ -389,8 +389,8 @@ export default function PeriksaKesepakatan() {
               </div>
               <div>
                 <div className="flex items-baseline justify-between gap-3 mb-1.5">
-                  <span className="text-[0.8125rem] text-ink-2 font-medium">Pemakaianmu per bulan</span>
-                  <span className="text-[0.8125rem] font-bold text-ink tabular">
+                  <span className="text-isi text-ink-2 font-medium">Pemakaianmu per bulan</span>
+                  <span className="text-isi font-bold text-ink tabular">
                     {pemakaian > 0 ? `${fmtJml(pemakaian)} ${satuan}/bulan` : 'belum terhitung'}
                   </span>
                 </div>
@@ -408,8 +408,8 @@ export default function PeriksaKesepakatan() {
 
         {/* Tiga (atau empat) kotak centang terpisah */}
         <Kartu>
-          <h2 className="text-[0.9375rem] font-bold text-ink">Yang kamu setujui</h2>
-          <p className="mt-1 text-[0.8125rem] text-ink-3 leading-relaxed">
+          <h2 className="text-kartu font-bold text-ink">Yang kamu setujui</h2>
+          <p className="mt-1 text-isi text-ink-3 leading-relaxed">
             Centang satu per satu. Tiap baris adalah kewajiban yang berbeda, jadi tidak kami gabung jadi satu.
           </p>
 
@@ -448,7 +448,7 @@ export default function PeriksaKesepakatan() {
 
           {/* Penghitung saja. Alasan tombol masih mati ditulis sekali, di dekat
               tombolnya, bukan dua kali di layar yang sama. */}
-          <p className="mt-3 text-[0.8125rem] text-ink-2 font-medium leading-snug" aria-live="polite">
+          <p className="mt-3 text-isi text-ink-2 font-medium leading-snug" aria-live="polite">
             {semuaTercentang
               ? `Semua ${wajibDicentang} kewajiban sudah kamu centang.`
               : `Sudah kamu centang ${sudahDicentang} dari ${wajibDicentang} kewajiban.`}
@@ -460,13 +460,13 @@ export default function PeriksaKesepakatan() {
             <Tombol ragam="sunyi" ukuran="kecil" ikonKiri={<IkonSalin size={15} />} onClick={salinRingkasan}>
               Salin ringkasan ini
             </Tombol>
-            <p className="text-[0.75rem] text-ink-3 leading-relaxed">
+            <p className="text-kecil text-ink-3 leading-relaxed">
               Waktu, akun, dan isi ringkasan tersimpan otomatis sebagai bukti pengajuan.
             </p>
           </div>
         </Kartu>
 
-        <p className="text-[0.8125rem] text-ink-3 leading-relaxed px-1">
+        <p className="text-isi text-ink-3 leading-relaxed px-1">
           Mengajukan belum berarti terikat. Kontrak baru berjalan setelah {distributor.nama} menyetujui, dan
           sebelum itu kamu masih bisa membatalkan pengajuannya.
         </p>
@@ -483,7 +483,7 @@ export default function PeriksaKesepakatan() {
       <BilahAksi
         ringkasan={
           <div className="flex items-baseline justify-between gap-3">
-            <span className="text-[0.8125rem] text-ink-3">
+            <span className="text-isi text-ink-3">
               Total komitmen {paket.durasiBulan} bulan &middot; {fmtJml(totalWajib)} {satuan}
             </span>
             <span className="text-[1.125rem] font-extrabold text-ink tabular">{rupiah(totalKomitmen)}</span>
@@ -504,7 +504,7 @@ export default function PeriksaKesepakatan() {
               Ajukan Kontrak
             </Tombol>
             {!semuaTercentang && (
-              <p className="mt-2 text-center text-[0.75rem] text-ink-3">
+              <p className="mt-2 text-center text-kecil text-ink-3">
                 Masih ada {wajibDicentang - sudahDicentang} kotak persetujuan di atas yang belum kamu centang.
               </p>
             )}

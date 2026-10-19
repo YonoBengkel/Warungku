@@ -222,7 +222,7 @@ export default function DataUsaha() {
             />
           </div>
 
-          <p className="mt-4 flex items-start gap-2 text-[0.8125rem] text-ink-3 leading-relaxed">
+          <p className="mt-4 flex items-start gap-2 text-isi text-ink-3 leading-relaxed">
             <IkonInfo size={16} className="shrink-0 mt-px" />
             Foto KTP tidak kami minta. Pemeriksaan memakai NIB dan alamat usaha saja.
           </p>
@@ -231,8 +231,8 @@ export default function DataUsaha() {
         {/* Alat uji tampilan. Diberi bingkai putus-putus dan label eksplisit
             supaya tidak pernah terbaca sebagai pengaturan akun sungguhan. */}
         <div className="rounded-lg border border-dashed border-line-strong bg-surface-2 p-4">
-          <h2 className="text-[0.9375rem] font-bold text-ink">Alat uji tampilan verifikasi</h2>
-          <p className="mt-1 text-[0.8125rem] text-ink-3 leading-relaxed">
+          <h2 className="text-kartu font-bold text-ink">Alat uji tampilan verifikasi</h2>
+          <p className="mt-1 text-isi text-ink-3 leading-relaxed">
             Hanya untuk pengembang. Tombol ini memindahkan keadaan verifikasi supaya ketiga tampilannya bisa dilihat
             tanpa menunggu pemeriksa. Tidak ada apa pun yang terkirim.
           </p>
@@ -250,7 +250,7 @@ export default function DataUsaha() {
                 aria-pressed={profil.verifikasi === o.nilai}
                 onClick={() => ujiKeadaan(o.nilai)}
                 className={cx(
-                  'h-11 px-3.5 rounded-md text-[0.8125rem] font-semibold border transition-colors',
+                  'h-11 px-3.5 rounded-md text-isi font-semibold border transition-colors',
                   profil.verifikasi === o.nilai
                     ? 'bg-ink text-ink-inverse border-ink'
                     : 'bg-surface text-ink-2 border-line-strong hover:text-ink',
@@ -267,16 +267,16 @@ export default function DataUsaha() {
         ringkasan={
           <div className="max-w-2xl mx-auto">
             {sudahDicoba && adaGalat ? (
-              <p className="text-[0.8125rem] font-semibold text-kritis">
+              <p className="text-isi font-semibold text-kritis">
                 Masih ada isian yang perlu dibetulkan di atas.
               </p>
             ) : !bolehKirim ? (
-              <p className="text-[0.8125rem] text-ink-3">
+              <p className="text-isi text-ink-3">
                 Belum ada isian yang kamu ubah. Betulkan dulu salah satunya kalau ada yang tidak cocok dengan
                 dokumen usahamu.
               </p>
             ) : (
-              <p className="text-[0.8125rem] text-ink-3">
+              <p className="text-isi text-ink-3">
                 Pemeriksaan biasanya selesai dalam 1 hari kerja. Kabarnya lewat WhatsApp ke nomor di profilmu.
               </p>
             )}
@@ -318,7 +318,7 @@ function KolomLegalitas({
       )}
       <Kolom {...rest} galat={galat} />
       {disorot && (
-        <ul className="mt-2 space-y-1 text-[0.8125rem] text-kritis-ink leading-snug list-disc pl-4">
+        <ul className="mt-2 space-y-1 text-isi text-kritis-ink leading-snug list-disc pl-4">
           {ditolak?.map((a) => <li key={a}>{a}</li>)}
         </ul>
       )}

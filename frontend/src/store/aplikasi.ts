@@ -1867,10 +1867,13 @@ export function useKontrakMasuk(): KontrakPelanggan[] {
 }
 
 /** Angka merah pada lonceng distributor: pesanan yang menunggu dijawab. */
+/** Sumbernya sama dengan usePesananMasuk: data server bila ada, supaya spanduk dan lonceng cocok dengan rekap. */
 export function useJumlahPerluKonfirmasi(): number {
   return useAplikasi(
     (s) =>
-      gabungPesananMasuk(s.pesanan, s.pesananUmkmLain).filter((p) => p.status === 'menunggu-konfirmasi').length,
+      (s.pesananMasukServer ?? gabungPesananMasuk(s.pesanan, s.pesananUmkmLain)).filter(
+        (p) => p.status === 'menunggu-konfirmasi',
+      ).length,
   )
 }
 

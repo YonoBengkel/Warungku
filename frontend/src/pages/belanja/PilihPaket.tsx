@@ -214,7 +214,7 @@ export default function PilihPaket() {
       {bisaDihitung ? (
         <div className="mt-4 rounded-md bg-brand-soft text-brand-soft-ink px-3.5 py-3 flex items-start gap-2.5">
           <IkonInfo size={18} className="shrink-0 mt-px" />
-          <p className="text-[0.875rem] leading-relaxed">
+          <p className="text-isi leading-relaxed">
             Pemakaianmu sekitar{' '}
             <strong>
               {fmtJml(pemakaian)} {satuan}/bulan
@@ -225,8 +225,8 @@ export default function PilihPaket() {
         </div>
       ) : (
         <Kartu className="mt-4">
-          <h2 className="text-[0.9375rem] font-bold text-ink">Kira-kira berapa kamu pakai per bulan?</h2>
-          <p className="mt-1 text-[0.8125rem] text-ink-3 leading-relaxed">
+          <h2 className="text-kartu font-bold text-ink">Kira-kira berapa kamu pakai per bulan?</h2>
+          <p className="mt-1 text-isi text-ink-3 leading-relaxed">
             {barang
               ? 'Data pemakaian dari kasir belum cukup untuk barang ini, jadi angkanya kamu yang tentukan.'
               : 'Barang ini belum ada di daftar stok kamu, jadi kami belum punya riwayat pemakaiannya.'}{' '}
@@ -250,7 +250,7 @@ export default function PilihPaket() {
               </Lencana>
             </div>
           ) : (
-            <p className="mt-2.5 text-[0.8125rem] text-ink-3 leading-relaxed">
+            <p className="mt-2.5 text-isi text-ink-3 leading-relaxed">
               Sebagai patokan, paket di bawah minta antara {fmtJml(Math.min(...paket.map((p) => p.kuotaMinPerBulan)))}{' '}
               dan {fmtJml(Math.max(...paket.map((p) => p.kuotaMinPerBulan)))} {satuan} tiap bulan. Selama kolom ini
               masih nol, kami tidak menilai satu pun paket cocok atau tidak.
@@ -294,11 +294,11 @@ export default function PilihPaket() {
                 <dl className="mt-3 divide-y divide-line">
                   {barisTabel.map((b) => (
                     <div key={b.label} className="py-2">
-                      <dt className="text-[0.75rem] text-ink-3 leading-snug">{b.label}</dt>
+                      <dt className="text-kecil text-ink-3 leading-snug">{b.label}</dt>
                       <dd
                         className={cx(
                           'mt-0.5 text-ink',
-                          b.tebal ? 'text-[1rem] font-extrabold' : 'text-[0.9375rem] font-semibold',
+                          b.tebal ? 'text-[1rem] font-extrabold' : 'text-kartu font-semibold',
                         )}
                       >
                         {b.isi(p)}
@@ -308,7 +308,7 @@ export default function PilihPaket() {
                 </dl>
 
                 {v && (
-                  <p className={cx('mt-3 rounded-sm px-2.5 py-2 text-[0.8125rem] font-semibold leading-snug', KELAS_VONIS[v.nada])}>
+                  <p className={cx('mt-3 rounded-sm px-2.5 py-2 text-isi font-semibold leading-snug', KELAS_VONIS[v.nada])}>
                     {v.teks}
                   </p>
                 )}
@@ -331,7 +331,7 @@ export default function PilihPaket() {
           </caption>
           <thead>
             <tr className="border-b border-line">
-              <th scope="col" className="p-3.5 text-[0.8125rem] font-semibold text-ink-3 w-[17rem]">
+              <th scope="col" className="p-3.5 text-isi font-semibold text-ink-3 w-[17rem]">
                 Rincian paket
               </th>
               {paket.map((p) => {
@@ -345,7 +345,7 @@ export default function PilihPaket() {
                     <span className="block text-[1rem] font-extrabold text-ink">{p.kode}</span>
                     {/* text-ink-2, bukan ink-3: di kolom bertanda "paling pas"
                         latarnya bg-brand-soft dan ink-3 jatuh di bawah 4,5:1. */}
-                    <span className="block text-[0.75rem] font-normal text-ink-2 mt-0.5">
+                    <span className="block text-kecil font-normal text-ink-2 mt-0.5">
                       {p.durasiBulan} bulan
                     </span>
                     {pas && (
@@ -361,7 +361,7 @@ export default function PilihPaket() {
           <tbody>
             {barisTabel.map((b) => (
               <tr key={b.label} className="border-b border-line">
-                <th scope="row" className="p-3.5 text-[0.8125rem] font-medium text-ink-2 align-top">
+                <th scope="row" className="p-3.5 text-isi font-medium text-ink-2 align-top">
                   {b.label}
                 </th>
                 {paket.map((p) => (
@@ -369,7 +369,7 @@ export default function PilihPaket() {
                     key={p.id}
                     className={cx(
                       'p-3.5 align-top text-ink tabular',
-                      b.tebal ? 'text-[1rem] font-extrabold' : 'text-[0.9375rem] font-semibold',
+                      b.tebal ? 'text-[1rem] font-extrabold' : 'text-kartu font-semibold',
                       idPalingPas?.id === p.id && 'bg-brand-soft',
                     )}
                   >
@@ -380,7 +380,7 @@ export default function PilihPaket() {
             ))}
 
             <tr className="border-b border-line">
-              <th scope="row" className="p-3.5 text-[0.8125rem] font-medium text-ink-2 align-top">
+              <th scope="row" className="p-3.5 text-isi font-medium text-ink-2 align-top">
                 Cocok tidak buat kamu
               </th>
               {paket.map((p) => {
@@ -390,14 +390,14 @@ export default function PilihPaket() {
                     {v ? (
                       <span
                         className={cx(
-                          'inline-block rounded-sm px-2.5 py-2 text-[0.8125rem] font-semibold leading-snug',
+                          'inline-block rounded-sm px-2.5 py-2 text-isi font-semibold leading-snug',
                           KELAS_VONIS[v.nada],
                         )}
                       >
                         {v.teks}
                       </span>
                     ) : (
-                      <span className="text-[0.8125rem] text-ink-3">
+                      <span className="text-isi text-ink-3">
                         Isi dulu perkiraan pemakaianmu di atas supaya bisa dibandingkan.
                       </span>
                     )}
@@ -407,7 +407,7 @@ export default function PilihPaket() {
             </tr>
 
             <tr>
-              <th scope="row" className="p-3.5 text-[0.8125rem] font-medium text-ink-2 align-top">
+              <th scope="row" className="p-3.5 text-isi font-medium text-ink-2 align-top">
                 Langkah berikutnya
               </th>
               {paket.map((p) => (
@@ -424,7 +424,7 @@ export default function PilihPaket() {
 
       {/* Alasan satu baris untuk label "Paling pas buat kamu" */}
       {idPalingPas && (
-        <p className="mt-3 text-[0.8125rem] text-ink-2 leading-relaxed px-1">
+        <p className="mt-3 text-isi text-ink-2 leading-relaxed px-1">
           <strong className="text-ink">Kenapa dilabeli paling pas:</strong>{' '}
           {idPalingPas.muat
             ? `kuotanya masih di bawah pemakaianmu ${fmtJml(pemakaian)} ${satuan}/bulan dan harganya paling murah di antara paket yang muat.`
@@ -434,11 +434,11 @@ export default function PilihPaket() {
       )}
 
       {/* Catatan tetap di bawah */}
-      <p className="mt-4 rounded-md bg-sunken px-3.5 py-3 text-[0.875rem] text-ink-2 leading-relaxed">
+      <p className="mt-4 rounded-md bg-sunken px-3.5 py-3 text-isi text-ink-2 leading-relaxed">
         Kalau bulan ramai dan bulan sepi kamu beda jauh, ambil durasi lebih pendek.
       </p>
 
-      <p className="mt-3 text-[0.8125rem] text-ink-3 leading-relaxed px-1">
+      <p className="mt-3 text-isi text-ink-3 leading-relaxed px-1">
         Harga beli sekali sekarang {rupiah(penawaran.hargaSatuan)}/{satuan}. Angka hemat di atas dihitung dari
         selisih itu dikalikan total yang wajib kamu ambil, jadi hanya berlaku kalau kuotanya benar-benar terpakai.
       </p>

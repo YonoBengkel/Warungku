@@ -95,21 +95,21 @@ export function KartuPromo({
         </span>
       </div>
 
-      <p className="text-[1.0625rem] font-extrabold leading-snug line-clamp-2">{promo.judul}</p>
+      <p className="text-subjudul font-extrabold leading-snug line-clamp-2">{promo.judul}</p>
 
-      <p className="flex items-center gap-1.5 text-[0.875rem] font-semibold min-w-0">
+      <p className="flex items-center gap-1.5 text-isi font-semibold min-w-0">
         <IkonToko size={15} className="shrink-0" />
         <span className="truncate">{namaToko}</span>
       </p>
 
       <div className="mt-auto flex flex-wrap items-center gap-2">
         {promo.potonganPersen != null && (
-          <span className="inline-flex items-center rounded-sm bg-surface text-ink px-2 py-[3px] text-[0.75rem] font-bold">
+          <span className="inline-flex items-center rounded-sm bg-surface text-ink px-2 py-[3px] text-kecil font-bold">
             Potongan {persen(promo.potonganPersen)}
           </span>
         )}
         {promo.berakhir && sisaHari != null && (
-          <span className="inline-flex items-center gap-1 text-[0.75rem] font-semibold">
+          <span className="inline-flex items-center gap-1 text-kecil font-semibold">
             <IkonJam size={13} className="shrink-0" />
             Sampai {tanggalRingkas(promo.berakhir)} · {hariLagi(sisaHari)}
           </span>
@@ -208,12 +208,12 @@ export function HargaBeli({
     <span className={cx('relative inline-flex flex-wrap items-baseline gap-x-1.5', className)}>
       <span className={cx('tabular', besar ? 'text-[1.5rem] font-extrabold text-ink' : 'font-bold text-ink')}>
         {rupiah(rincian.harga)}
-        <span className={cx('font-semibold text-ink-3', besar ? 'text-[0.875rem]' : 'text-[0.8125rem]')}>
+        <span className={cx('font-semibold text-ink-3', besar ? 'text-isi' : 'text-isi')}>
           /{satuan}
         </span>
       </span>
       {dicoret && (
-        <span className="text-[0.8125rem] text-ink-3 tabular">
+        <span className="text-isi text-ink-3 tabular">
           <span className="sr-only">Harga normal </span>
           <s>{rupiah(rincian.hargaNormal)}</s>
         </span>

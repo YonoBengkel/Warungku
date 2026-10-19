@@ -74,10 +74,10 @@ export async function minta<T>(jalur: string, opsi: RequestInit & { token?: stri
       },
     })
   } catch {
-    throw new ServerTakTerjangkau(`Server Turnify Flow di ${ALAMAT} tidak bisa dihubungi.`)
+    throw new ServerTakTerjangkau(`Turnify Flow di ${ALAMAT} tidak bisa dihubungi.`)
   }
   if (!jawab.ok) {
-    let pesan = `Server menjawab ${jawab.status}.`
+    let pesan = `Permintaan belum berhasil (kode ${jawab.status}). Coba lagi sebentar lagi.`
     try {
       const isi = await jawab.json()
       if (typeof isi?.detail === 'string') pesan = isi.detail

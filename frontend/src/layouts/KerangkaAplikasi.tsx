@@ -99,7 +99,7 @@ export default function KerangkaAplikasi() {
         <div className="px-5 py-5">
           <Link to="/beranda" className="flex items-center gap-2.5">
             <TandaMerek ukuran={36} />
-            <span className="font-extrabold text-ink text-[1.0625rem] tracking-tight">Turnify Flow</span>
+            <span className="font-extrabold text-ink text-subjudul tracking-tight">Turnify Flow</span>
           </Link>
         </div>
 
@@ -109,7 +109,7 @@ export default function KerangkaAplikasi() {
               key={ke}
               to={ke}
               className={cx(
-                'flex items-center gap-3 h-12 px-3 rounded-md font-semibold text-[0.9375rem] transition-colors',
+                'flex items-center gap-3 h-12 px-3 rounded-md font-semibold text-kartu transition-colors',
                 aktif === ke ? 'bg-brand-soft text-brand-soft-ink' : 'text-ink-2 hover:bg-sunken hover:text-ink',
               )}
             >
@@ -129,8 +129,8 @@ export default function KerangkaAplikasi() {
           >
             <Avatar nama={profil.namaUsaha} warna={profil.warna} ukuran={36} />
             <span className="min-w-0">
-              <span className="block text-[0.875rem] font-bold text-ink truncate">{profil.namaUsaha}</span>
-              <span className="block text-[0.75rem] text-ink-3 truncate">Lihat akun</span>
+              <span className="block text-isi font-bold text-ink truncate">{profil.namaUsaha}</span>
+              <span className="block text-kecil text-ink-3 truncate">Lihat akun</span>
             </span>
           </Link>
         </div>
@@ -145,7 +145,7 @@ export default function KerangkaAplikasi() {
                 "Turnify Flow" tidak muncul sama sekali kalau tidak di sini. */}
             <Link to="/beranda" className="lg:hidden flex items-center gap-2 mr-auto min-w-0 min-h-11 pr-2">
               <TandaMerek ukuran={32} />
-              <span className="font-extrabold text-ink text-[0.9375rem] truncate">Turnify Flow</span>
+              <span className="font-extrabold text-ink text-kartu truncate">Turnify Flow</span>
             </Link>
             <span className="hidden lg:block mr-auto" />
 

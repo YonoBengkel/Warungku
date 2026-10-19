@@ -165,7 +165,7 @@ export default function PengaturanPengingat() {
                           keterangan={p.isi}
                         />
                         {!hidup && (
-                          <p className="mt-1 sm:ml-14 text-[0.8125rem] text-menipis-ink bg-menipis-soft rounded-sm px-3 py-2 leading-relaxed">
+                          <p className="mt-1 sm:ml-14 text-isi text-menipis-ink bg-menipis-soft rounded-sm px-3 py-2 leading-relaxed">
                             {p.matikan}
                           </p>
                         )}
@@ -191,15 +191,15 @@ export default function PengaturanPengingat() {
                   <IkonJam size={18} />
                 </span>
                 <div className="min-w-0">
-                  <p className="text-[0.9375rem] font-semibold text-ink leading-snug">
+                  <p className="text-kartu font-semibold text-ink leading-snug">
                     Saran belanja datang sekali sehari, pukul {JAM_SARAN} WIB
                   </p>
-                  <p className="mt-1 text-[0.8125rem] text-ink-2 leading-relaxed">
+                  <p className="mt-1 text-isi text-ink-2 leading-relaxed">
                     Jamnya dipatok, tidak bisa diubah. Satu jam tetap membuat kamu tahu kapan harus mengeceknya,
                     sementara barangnya sendiri dikumpulkan jadi satu kiriman &mdash; bukan satu pesan per barang.
                   </p>
                   {!aktif['saran-belanja'] && (
-                    <p className="mt-2 text-[0.8125rem] text-menipis-ink bg-menipis-soft rounded-sm px-3 py-2 leading-relaxed">
+                    <p className="mt-2 text-isi text-menipis-ink bg-menipis-soft rounded-sm px-3 py-2 leading-relaxed">
                       Pengingat saran belanja sedang kamu matikan, jadi kiriman pukul {JAM_SARAN} ini tidak berjalan.
                       Daftarnya tetap disusun dan bisa dibuka sendiri dari Beranda.
                     </p>
@@ -209,7 +209,7 @@ export default function PengaturanPengingat() {
 
               <Pemisah className="my-4" />
 
-              <p className="flex items-start gap-2 text-[0.8125rem] text-ink-2 leading-relaxed">
+              <p className="flex items-start gap-2 text-isi text-ink-2 leading-relaxed">
                 <IkonPeringatan size={16} className="shrink-0 mt-0.5 text-ink-3" />
                 Peringatan stok yang sisanya tinggal untuk sehari tidak menunggu jam ini. Yang itu dikirim seketika,
                 karena menundanya sampai besok pagi sudah terlambat.
@@ -260,10 +260,10 @@ export default function PengaturanPengingat() {
                 <IkonLonceng size={18} />
               </span>
               <div className="min-w-0">
-                <h2 className="text-[0.9375rem] font-bold text-ink leading-tight">
+                <h2 className="text-kartu font-bold text-ink leading-tight">
                   Kami sudah menahan diri lebih dulu
                 </h2>
-                <p className="mt-0.5 text-[0.8125rem] text-ink-3 leading-snug">
+                <p className="mt-0.5 text-isi text-ink-3 leading-snug">
                   Tiga aturan ini berjalan otomatis, tanpa perlu kamu atur.
                 </p>
               </div>
@@ -271,29 +271,29 @@ export default function PengaturanPengingat() {
 
             <ol className="mt-3.5 space-y-3.5">
               <li className="flex items-start gap-3">
-                <span className="shrink-0 size-6 rounded-full bg-sunken text-ink-2 text-[0.8125rem] font-bold grid place-items-center tabular">
+                <span className="shrink-0 size-6 rounded-full bg-sunken text-ink-2 text-isi font-bold grid place-items-center tabular">
                   1
                 </span>
-                <p className="text-[0.875rem] text-ink-2 leading-relaxed">
+                <p className="text-isi text-ink-2 leading-relaxed">
                   <strong className="text-ink">Satu barang cuma punya satu pemberitahuan aktif.</strong> Kalau
                   keadaannya memburuk, isi pemberitahuan yang lama diperbarui dari "sisa 2 hari" jadi "sisa 1 hari" —
                   tidak lahir baris baru yang menumpuk.
                 </p>
               </li>
               <li className="flex items-start gap-3">
-                <span className="shrink-0 size-6 rounded-full bg-sunken text-ink-2 text-[0.8125rem] font-bold grid place-items-center tabular">
+                <span className="shrink-0 size-6 rounded-full bg-sunken text-ink-2 text-isi font-bold grid place-items-center tabular">
                   2
                 </span>
-                <p className="text-[0.875rem] text-ink-2 leading-relaxed">
+                <p className="text-isi text-ink-2 leading-relaxed">
                   <strong className="text-ink">Barang yang sudah kamu pesan langsung dibisukan.</strong> Ia berhenti
                   mengingatkan sampai pesanannya selesai atau dibatalkan, karena kamu sudah mengerjakan bagianmu.
                 </p>
               </li>
               <li className="flex items-start gap-3">
-                <span className="shrink-0 size-6 rounded-full bg-sunken text-ink-2 text-[0.8125rem] font-bold grid place-items-center tabular">
+                <span className="shrink-0 size-6 rounded-full bg-sunken text-ink-2 text-isi font-bold grid place-items-center tabular">
                   3
                 </span>
-                <p className="text-[0.875rem] text-ink-2 leading-relaxed">
+                <p className="text-isi text-ink-2 leading-relaxed">
                   <strong className="text-ink">Semua barang yang perlu dibeli digabung jadi satu kiriman.</strong>{' '}
                   Sepuluh barang menipis tetap jadi satu pemberitahuan pukul {JAM_SARAN}, dan di dalamnya ada tombol
                   "Ingatkan nanti" kalau hari ini kamu memang belum sempat belanja.
@@ -303,7 +303,7 @@ export default function PengaturanPengingat() {
 
             <Pemisah className="my-4" />
 
-            <p className="text-[0.8125rem] text-ink-3 leading-relaxed">
+            <p className="text-isi text-ink-3 leading-relaxed">
               Angka merah di lonceng hanya menghitung yang benar-benar butuh tindakan darimu. Kabar yang sekadar
               memberi tahu tidak ikut dihitung supaya angkanya tetap punya arti.
             </p>
@@ -314,7 +314,7 @@ export default function PengaturanPengingat() {
       <BilahAksi
         ringkasan={
           berubah ? (
-            <p className="text-[0.8125rem] text-ink-3 text-center leading-snug">
+            <p className="text-isi text-ink-3 text-center leading-snug">
               {jumlahMati === 0
                 ? 'Semua jenis pengingat tetap hidup'
                 : `${jumlahMati} dari ${PENGINGAT.length} jenis pengingat akan dimatikan`}

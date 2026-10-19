@@ -171,7 +171,7 @@ export default function KelolaKategori() {
               >
                 <div className="min-w-0 grow">
                   <p className="text-[1rem] font-semibold text-ink leading-snug">{k.nama}</p>
-                  <p className="mt-0.5 text-[0.8125rem] text-ink-3">
+                  <p className="mt-0.5 text-isi text-ink-3">
                     {k.jumlah === 0 ? (
                       <>Belum ada barang &mdash; kategori ini tersimpan setelah dipakai satu barang</>
                     ) : (
@@ -292,7 +292,7 @@ export default function KelolaKategori() {
       >
         <div className="pb-4">
           {kategoriLain.length === 0 ? (
-            <p className="text-[0.9375rem] text-ink-2 leading-relaxed">
+            <p className="text-kartu text-ink-2 leading-relaxed">
               Ini satu-satunya kategori yang kamu punya, jadi belum ada tujuan untuk menggabungkannya.
               Buat dulu kategori lain, lalu gabungkan yang ini ke sana.
             </p>
@@ -314,7 +314,7 @@ export default function KelolaKategori() {
                   </option>
                 ))}
               </Pilihan>
-              <p className="mt-3 text-[0.8125rem] text-ink-3 leading-relaxed">
+              <p className="mt-3 text-isi text-ink-3 leading-relaxed">
                 {jumlahTarget === 0
                   ? `Kategori ${target} belum berisi barang, jadi tidak ada yang dipindahkan. Namanya saja yang hilang dari daftar penyaring.`
                   : `${angka(jumlahTarget)} barang akan berpindah label ke ${tujuan || 'kategori tujuan'}.`}
@@ -341,7 +341,7 @@ export default function KelolaKategori() {
           </div>
         }
       >
-        <div className="pb-4 text-[0.9375rem] text-ink-2 leading-relaxed space-y-3">
+        <div className="pb-4 text-kartu text-ink-2 leading-relaxed space-y-3">
           <p>
             Kategori yang masih dipakai tidak bisa dihapus. Kalau labelnya hilang, {angka(jumlahTarget)}{' '}
             barang itu tidak akan muncul lagi di penyaring mana pun, padahal barangnya tetap ada di rak
@@ -372,7 +372,7 @@ export default function KelolaKategori() {
           </div>
         }
       >
-        <p className="pb-4 text-[0.9375rem] text-ink-2 leading-relaxed">
+        <p className="pb-4 text-kartu text-ink-2 leading-relaxed">
           Kategori ini belum dipakai barang mana pun, jadi menghapusnya tidak mengubah stok apa pun.
           Kamu bisa membuatnya lagi kapan saja.
         </p>

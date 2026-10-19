@@ -227,10 +227,10 @@ export default function TerimaBarang() {
       </section>
 
       <section aria-labelledby="judul-barang" className="mt-4">
-        <h2 id="judul-barang" className="text-[0.9375rem] font-bold text-ink mb-1">
+        <h2 id="judul-barang" className="text-kartu font-bold text-ink mb-1">
           {pesanan.baris.length} barang dalam kiriman ini
         </h2>
-        <p className="text-[0.8125rem] text-ink-3 mb-3">
+        <p className="text-isi text-ink-3 mb-3">
           Jumlah di bawah dianggap benar. Buka tautan kecil hanya kalau ada yang tidak cocok.
         </p>
 
@@ -244,7 +244,7 @@ export default function TerimaBarang() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 grow">
                     <p className="text-[1rem] font-semibold text-ink leading-snug">{b.nama}</p>
-                    <p className="mt-0.5 text-[0.8125rem] text-ink-3 tabular">
+                    <p className="mt-0.5 text-isi text-ink-3 tabular">
                       {rupiah(b.hargaSatuan)} per {b.satuan}
                       {bar && b.isiPerSatuan > 1 && isiKemasan(bar, b.satuan, b.isiPerSatuan) && (
                         <> &middot; {isiKemasan(bar, b.satuan, b.isiPerSatuan)}</>
@@ -255,9 +255,9 @@ export default function TerimaBarang() {
                     <p className={cx('text-[1.5rem] font-bold leading-none', jumlahBerubah ? 'text-ink-3 line-through' : 'text-ink')}>
                       {angka(b.jumlah)}
                     </p>
-                    <p className="text-[0.75rem] text-ink-3 mt-0.5">{b.satuan} dipesan</p>
+                    <p className="text-kecil text-ink-3 mt-0.5">{b.satuan} dipesan</p>
                     {jumlahBerubah && (
-                      <p className="mt-1 text-[0.9375rem] font-bold text-menipis-ink tabular">
+                      <p className="mt-1 text-kartu font-bold text-menipis-ink tabular">
                         diakui {angka(k.jumlah)} {b.satuan}
                       </p>
                     )}
@@ -268,7 +268,7 @@ export default function TerimaBarang() {
                   <button
                     type="button"
                     onClick={() => ubahKoreksi(b.penawaranId, b.jumlah, { dibuka: true })}
-                    className="mt-2 min-h-11 text-[0.8125rem] font-semibold text-brand hover:underline text-left"
+                    className="mt-2 min-h-11 text-isi font-semibold text-brand hover:underline text-left"
                   >
                     Jumlahnya beda / barang rusak
                   </button>
@@ -276,7 +276,7 @@ export default function TerimaBarang() {
                   <div className="mt-3 border-t border-line pt-3 space-y-3">
                     <div className="flex flex-wrap items-end justify-between gap-3">
                       <div>
-                        <p className="text-[0.8125rem] font-semibold text-ink-2 mb-1.5">Jumlah yang benar-benar diterima</p>
+                        <p className="text-isi font-semibold text-ink-2 mb-1.5">Jumlah yang benar-benar diterima</p>
                         <PengaturJumlah
                           nilai={k.jumlah}
                           ubah={(n) => ubahKoreksi(b.penawaranId, b.jumlah, { jumlah: n })}
@@ -298,14 +298,14 @@ export default function TerimaBarang() {
                             foto: 0,
                           })
                         }
-                        className="min-h-11 text-[0.8125rem] font-semibold text-ink-3 hover:text-ink"
+                        className="min-h-11 text-isi font-semibold text-ink-3 hover:text-ink"
                       >
                         Batal, jumlahnya sudah benar
                       </button>
                     </div>
 
                     <div>
-                      <p className="text-[0.8125rem] font-semibold text-ink-2 mb-2">Apa yang terjadi?</p>
+                      <p className="text-isi font-semibold text-ink-2 mb-2">Apa yang terjadi?</p>
                       <BarisChip className="flex-wrap">
                         {(Object.keys(LABEL_SELISIH) as AlasanSelisih[]).map((a) => (
                           <Chip
@@ -327,7 +327,7 @@ export default function TerimaBarang() {
                     />
 
                     <div className="flex flex-wrap items-center gap-3">
-                      <label className="inline-flex items-center justify-center gap-2 h-11 px-4 rounded-md bg-sunken text-ink-2 text-[0.875rem] font-semibold cursor-pointer hover:brightness-95">
+                      <label className="inline-flex items-center justify-center gap-2 h-11 px-4 rounded-md bg-sunken text-ink-2 text-isi font-semibold cursor-pointer hover:brightness-95">
                         <IkonUnggah size={16} />
                         Ambil Foto
                         <input
@@ -366,10 +366,10 @@ export default function TerimaBarang() {
       <BilahAksi
         ringkasan={
           <div>
-            <p className="text-[0.8125rem] font-semibold text-ink-2">Stok yang akan ditambahkan:</p>
+            <p className="text-isi font-semibold text-ink-2">Stok yang akan ditambahkan:</p>
             <ul className="mt-1 space-y-0.5">
               {ringkasanStok().map((t) => (
-                <li key={t} className="text-[0.8125rem] text-ink leading-snug">
+                <li key={t} className="text-isi text-ink leading-snug">
                   {t}
                 </li>
               ))}
@@ -377,7 +377,7 @@ export default function TerimaBarang() {
             {adaKoreksi && (
               <>
                 <Pemisah className="my-2" />
-                <p className="text-[0.8125rem] text-menipis-ink leading-snug">
+                <p className="text-isi text-menipis-ink leading-snug">
                   Pesanan tetap ditutup sebagai Selesai (ada catatan). Selisihnya diteruskan ke distributor sebagai
                   catatan, penyelesaiannya lewat telepon.
                 </p>
@@ -395,7 +395,7 @@ export default function TerimaBarang() {
             tampilkanRacun('Belum ada yang dicatat. Stok gudang tidak berubah.', 'info')
             navigate(`/pesanan/${ps.id}`)
           }}
-          className="w-full min-h-11 mt-1 text-[0.875rem] font-semibold text-ink-3 hover:text-ink"
+          className="w-full min-h-11 mt-1 text-isi font-semibold text-ink-3 hover:text-ink"
         >
           Nanti saja, barangnya belum saya hitung
         </button>

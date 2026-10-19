@@ -166,7 +166,7 @@ export function PitaDataKasir() {
   }
 
   return (
-    <p className="text-[0.8125rem] text-ink-3 flex items-center gap-1.5 h-8">
+    <p className="text-isi text-ink-3 flex items-center gap-1.5 h-8">
       <IkonCentangLingkaran size={14} className="text-aman shrink-0" />
       Data kasir masuk {terakhir ? waktuLalu(terakhir) : 'baru saja'}
     </p>
@@ -190,7 +190,7 @@ function PitaDasar({
   return (
     <div
       className={cx(
-        'flex items-center gap-2 px-3 min-h-8 py-1.5 rounded-sm text-[0.8125rem] leading-snug',
+        'flex items-center gap-2 px-3 min-h-8 py-1.5 rounded-sm text-isi leading-snug',
         gaya,
       )}
     >
@@ -226,7 +226,7 @@ export function BannerAkun() {
       <button
         type="button"
         onClick={() => setCiut(false)}
-        className={cx('w-full text-left px-3 py-2 rounded-md border text-[0.8125rem] font-semibold', gaya)}
+        className={cx('w-full text-left px-3 py-2 rounded-md border text-isi font-semibold', gaya)}
       >
         {perluDiperbaiki ? 'Data usaha perlu diperbaiki' : 'Akun sedang diperiksa'} &middot; lihat detail
       </button>
@@ -238,17 +238,17 @@ export function BannerAkun() {
       <div className="flex items-start gap-2.5">
         <IkonPeringatan size={18} className="shrink-0 mt-px" />
         <div className="min-w-0 grow">
-          <p className="text-[0.875rem] font-bold">
+          <p className="text-isi font-bold">
             {perluDiperbaiki ? 'Data usaha perlu diperbaiki' : 'Akun sedang diperiksa'}
           </p>
           {perluDiperbaiki ? (
-            <ul className="mt-1.5 text-[0.8125rem] space-y-1 list-disc pl-4 opacity-90">
+            <ul className="mt-1.5 text-isi space-y-1 list-disc pl-4 opacity-90">
               {profil.alasanPerbaikan.map((a) => (
                 <li key={a}>{a}</li>
               ))}
             </ul>
           ) : (
-            <p className="mt-1 text-[0.8125rem] opacity-90 leading-relaxed">
+            <p className="mt-1 text-isi opacity-90 leading-relaxed">
               Kami kabari lewat WhatsApp begitu selesai. Sementara ini kamu tetap bisa memakai semua fitur kecuali
               mengajukan kontrak dan membuat pesanan.
             </p>
@@ -260,7 +260,7 @@ export function BannerAkun() {
             <button
               type="button"
               onClick={() => setCiut(true)}
-              className="text-[0.8125rem] font-semibold underline underline-offset-2"
+              className="text-isi font-semibold underline underline-offset-2"
             >
               Ciutkan
             </button>
@@ -309,7 +309,7 @@ export function TombolTerkunci({ label, penuh }: { label: string; penuh?: boolea
           </div>
         }
       >
-        <p className="pb-4 text-[0.9375rem] text-ink-2 leading-relaxed">
+        <p className="pb-4 text-kartu text-ink-2 leading-relaxed">
           Kontrak dan pesanan mengikat kamu dengan distributor, jadi keduanya baru terbuka setelah data usahamu
           diperiksa. Selama menunggu, kamu tetap bisa melihat stok, menjelajah katalog, dan membandingkan harga.
         </p>
@@ -340,6 +340,7 @@ export function KartuTindakan({
   onAksi,
   lencana,
   keKartu,
+  utama,
 }: {
   nada?: NadaLencana
   ikon?: ReactNode
@@ -350,15 +351,13 @@ export function KartuTindakan({
   onAksi?: () => void
   lencana?: ReactNode
   keKartu?: string
+  /** Hanya kartu pertama di satu layar yang tombolnya ungu penuh; sisanya bergaris. */
+  utama?: boolean
 }) {
-  const garis = {
-    netral: 'border-line',
-    merek: 'border-brand/40',
-    aman: 'border-aman/40',
-    menipis: 'border-menipis/50',
-    kritis: 'border-kritis/50',
-    info: 'border-info/40',
-  }[nada]
+  /* Bingkai netral: nada sudah dibawa ikon dan judulnya. Bingkai merah di
+     setiap kartu membuat Beranda terbaca seperti alarm terus-menerus. */
+  const garis = 'border-line'
+  const ragam = utama ? 'utama' : 'garis'
 
   return (
     <div
@@ -387,7 +386,7 @@ export function KartuTindakan({
         )}
         <div className="min-w-0 grow">
           <div className="flex items-start gap-2 flex-wrap">
-            <h3 className="text-[0.9375rem] font-bold text-ink leading-snug">
+            <h3 className="text-kartu font-bold text-ink leading-snug">
               {keKartu ? (
                 <Link to={keKartu} className="after:absolute after:inset-0 after:rounded-lg hover:text-brand">
                   {judul}
@@ -398,16 +397,16 @@ export function KartuTindakan({
             </h3>
             {lencana}
           </div>
-          <div className="mt-1 text-[0.8125rem] text-ink-2 leading-relaxed">{detail}</div>
+          <div className="mt-1 text-isi text-ink-2 leading-relaxed">{detail}</div>
         </div>
       </div>
       <div className="relative z-10 mt-auto pt-3">
         {aksiKe ? (
-          <TombolTautan ke={aksiKe} penuh ukuran="sedang">
+          <TombolTautan ke={aksiKe} penuh="hp" ragam={ragam} ukuran="sedang">
             {aksiLabel}
           </TombolTautan>
         ) : (
-          <Tombol penuh onClick={onAksi}>
+          <Tombol penuh="hp" ragam={ragam} onClick={onAksi}>
             {aksiLabel}
           </Tombol>
         )}
@@ -443,8 +442,8 @@ export function KuotaBulanIni({ kontrak, ringkas }: { kontrak: Kontrak; ringkas?
     <div>
       <div className="flex items-baseline justify-between gap-3 mb-2">
         <div className="min-w-0">
-          <p className="text-[0.875rem] font-bold text-ink">{JUDUL.kuotaBulanIni}</p>
-          <p className="text-[0.75rem] text-ink-3">{BANTUAN.kuota}</p>
+          <p className="text-isi font-bold text-ink">{JUDUL.kuotaBulanIni}</p>
+          <p className="text-kecil text-ink-3">{BANTUAN.kuota}</p>
         </div>
         <Lencana nada={NADA_KUOTA[status]} besar>
           {LABEL_KUOTA[status]}
@@ -464,7 +463,7 @@ export function KuotaBulanIni({ kontrak, ringkas }: { kontrak: Kontrak; ringkas?
         )}
       </div>
 
-      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[0.8125rem]">
+      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-isi">
         <span className="inline-flex items-center gap-1.5 text-ink-2">
           <span className="size-2.5 rounded-full bg-brand" aria-hidden="true" />
           Sudah diterima{' '}
@@ -491,7 +490,7 @@ export function KuotaBulanIni({ kontrak, ringkas }: { kontrak: Kontrak; ringkas?
           Kontrak) menyampaikannya sendiri dengan ikon dan kalimat yang lebih
           tegas. Menulisnya di dua tempat membuat kalimatnya muncul dua kali. */}
       {!ringkas && kurang > 0 && (
-        <p className="mt-2 text-[0.8125rem] text-ink-2">
+        <p className="mt-2 text-isi text-ink-2">
           Kurang{' '}
           <strong className="text-ink tabular">
             {angka(kurang)} {kontrak.satuan}
@@ -499,7 +498,7 @@ export function KuotaBulanIni({ kontrak, ringkas }: { kontrak: Kontrak; ringkas?
           &middot; sisa {sisaHari} hari
         </p>
       )}
-      {!ringkas && <p className="mt-1 text-[0.75rem] text-ink-3">{BANTUAN.kuotaBertambah}</p>}
+      {!ringkas && <p className="mt-1 text-kecil text-ink-3">{BANTUAN.kuotaBertambah}</p>}
     </div>
   )
 }
@@ -523,8 +522,8 @@ export function KartuPerkiraan({ barang, perkiraan }: { barang: Barang; perkiraa
   if (layanan === 'mati') {
     return (
       <Kartu padat>
-        <p className="text-[0.9375rem] font-bold text-ink">{barang.nama}</p>
-        <p className="mt-1 text-[0.8125rem] text-ink-3 leading-relaxed">
+        <p className="text-kartu font-bold text-ink">{barang.nama}</p>
+        <p className="mt-1 text-isi text-ink-3 leading-relaxed">
           Perkiraan belum bisa ditampilkan sekarang. Sisa stok dan pengingat batas aman tetap berjalan seperti biasa.
         </p>
         <Tombol ragam="garis" ukuran="kecil" className="mt-2.5">
@@ -541,13 +540,13 @@ export function KartuPerkiraan({ barang, perkiraan }: { barang: Barang; perkiraa
     return (
       <Kartu padat>
         <div className="flex items-start justify-between gap-2">
-          <p className="text-[0.9375rem] font-bold text-ink">{barang.nama}</p>
+          <p className="text-kartu font-bold text-ink">{barang.nama}</p>
           <Lencana nada="netral">Hitungan sederhana</Lencana>
         </div>
-        <p className="mt-1.5 text-[1.0625rem] font-extrabold text-ink">
+        <p className="mt-1.5 text-subjudul font-extrabold text-ink">
           Stok {barang.nama.split(' ')[0].toLowerCase()} cukup untuk &plusmn;{cukup ?? '?'} hari
         </p>
-        <p className="mt-1 text-[0.75rem] text-ink-3">
+        <p className="mt-1 text-kecil text-ink-3">
           Bukan perkiraan pintar &mdash; dihitung dari rata-rata 7 hari terakhir.
         </p>
       </Kartu>
@@ -559,10 +558,10 @@ export function KartuPerkiraan({ barang, perkiraan }: { barang: Barang; perkiraa
     return (
       <Kartu padat>
         <div className="flex items-start justify-between gap-2">
-          <p className="text-[0.9375rem] font-bold text-ink leading-snug">{barang.nama}</p>
+          <p className="text-kartu font-bold text-ink leading-snug">{barang.nama}</p>
           <Lencana nada={NADA_KEMATANGAN['belum-bisa']}>{LABEL_KEMATANGAN['belum-bisa']}</Lencana>
         </div>
-        <p className="mt-1.5 text-[0.8125rem] text-ink-2">
+        <p className="mt-1.5 text-isi text-ink-2">
           sisa {jumlahTampil(barang, barang.stok)}
           {barang.pemakaianHarian > 0 && (
             <> &middot; rata-rata pakai {jumlahTampil(barang, barang.pemakaianHarian)}/hari</>
@@ -570,7 +569,7 @@ export function KartuPerkiraan({ barang, perkiraan }: { barang: Barang; perkiraa
         </p>
         <div className="mt-2.5">
           <BilahProgres nilai={terkumpul} maks={14} nada="netral" tinggi={6} />
-          <p className="mt-1.5 text-[0.75rem] text-ink-3">
+          <p className="mt-1.5 text-kecil text-ink-3">
             Data terkumpul {terkumpul} dari 14 hari &mdash; perkiraan mulai muncul {14 - terkumpul} hari lagi.
           </p>
         </div>
@@ -584,7 +583,7 @@ export function KartuPerkiraan({ barang, perkiraan }: { barang: Barang; perkiraa
   return (
     <Kartu padat>
       <div className="flex items-start justify-between gap-2">
-        <p className="text-[0.9375rem] font-bold text-ink leading-snug">{barang.nama}</p>
+        <p className="text-kartu font-bold text-ink leading-snug">{barang.nama}</p>
         <Lencana nada={NADA_KEMATANGAN[perkiraan.kematangan]}>{LABEL_KEMATANGAN[perkiraan.kematangan]}</Lencana>
       </div>
       <Link
@@ -593,12 +592,12 @@ export function KartuPerkiraan({ barang, perkiraan }: { barang: Barang; perkiraa
       >
         Stok cukup untuk &plusmn;{perkiraan.hariCukup} hari
       </Link>
-      <p className="mt-1 text-[0.8125rem] text-ink-3">
+      <p className="mt-1 text-isi text-ink-3">
         Perkiraan pakai 3 hari ke depan: {angkaTampil(barang, perkiraan.pakaiTigaHariMin ?? 0)}&ndash;
         {angkaTampil(barang, perkiraan.pakaiTigaHariMaks ?? 0)} {satuanTampil(barang).nama}
       </p>
       {perkiraan.dibuatPada && (
-        <p className="mt-1 text-[0.75rem] text-ink-3">
+        <p className="mt-1 text-kecil text-ink-3">
           Perkiraan dibuat {waktuLalu(perkiraan.dibuatPada)}.
         </p>
       )}
@@ -635,7 +634,7 @@ export function BarisStok({ barang, sedangDikirim }: { barang: Barang; sedangDik
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 grow">
           <p className="text-[1rem] font-semibold text-ink leading-snug line-clamp-2">{barang.nama}</p>
-          <p className="mt-0.5 text-[0.75rem] text-ink-3">
+          <p className="mt-0.5 text-kecil text-ink-3">
             {barang.deskripsi ? `${barang.deskripsi} · ${barang.kategori}` : barang.kategori}
           </p>
         </div>
@@ -648,7 +647,7 @@ export function BarisStok({ barang, sedangDikirim }: { barang: Barang; sedangDik
           >
             {angkaTampil(barang, barang.stok)}
           </p>
-          <p className="text-[0.75rem] text-ink-3 mt-0.5">{satuanTampil(barang).nama}</p>
+          <p className="text-kecil text-ink-3 mt-0.5">{satuanTampil(barang).nama}</p>
         </div>
       </div>
 
@@ -658,14 +657,14 @@ export function BarisStok({ barang, sedangDikirim }: { barang: Barang; sedangDik
 
       <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5">
         <ChipStok status={status} />
-        <span className="text-[0.8125rem] text-ink-2">
+        <span className="text-isi text-ink-2">
           sisa {jumlahTampil(barang, barang.stok)}
           {cukup != null && barang.pemakaianHarian > 0 && <> &middot; cukup &plusmn;{cukup} hari</>}
         </span>
       </div>
 
       {(kemasan || barang.kedaluwarsa || !barang.terhubungKasir || kontrak || (sedangDikirim?.jumlah ?? 0) > 0) && (
-        <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[0.75rem] text-ink-3">
+        <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-kecil text-ink-3">
           {kemasan && <span>= {kemasan}</span>}
           {barang.kedaluwarsa && barang.ingatkanKedaluwarsa && <ChipKedaluwarsa tanggal={barang.kedaluwarsa} />}
           {!barang.terhubungKasir && !barang.dicatatManual && (
@@ -705,14 +704,14 @@ export function KartuPesanan({ pesanan }: { pesanan: Pesanan }) {
         <Avatar nama={distributor?.nama ?? '?'} warna={distributor?.warna} ukuran={40} />
         <div className="min-w-0 grow">
           <div className="flex items-start justify-between gap-2">
-            <p className="text-[0.9375rem] font-bold text-ink truncate">{distributor?.nama}</p>
+            <p className="text-kartu font-bold text-ink truncate">{distributor?.nama}</p>
             <ChipPesanan status={pesanan.status} />
           </div>
-          <p className="mt-0.5 text-[0.8125rem] text-ink-2 truncate">
+          <p className="mt-0.5 text-isi text-ink-2 truncate">
             {utama ? `${utama.nama} ${angka(utama.jumlah)} ${utama.satuan}` : 'Pesanan kosong'}
             {lain > 0 && ` + ${lain} barang lain`}
           </p>
-          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[0.75rem] text-ink-3">
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-kecil text-ink-3">
             <span className="tabular">{rupiah(total)}</span>
             {pesanan.status === 'dikirim' && pesanan.pengiriman ? (
               <span className="text-brand font-semibold">Sudah sampai, tinggal kamu hitung</span>
@@ -745,8 +744,8 @@ export function KartuPesanan({ pesanan }: { pesanan: Pesanan }) {
 export function BarisBukti({ label, nilai }: { label: string; nilai: string }) {
   return (
     <div className="flex items-baseline justify-between gap-4">
-      <dt className="text-[0.8125rem] text-ink-3 shrink-0">{label}</dt>
-      <dd className="text-[0.875rem] font-semibold text-ink text-right min-w-0 break-words">{nilai}</dd>
+      <dt className="text-isi text-ink-3 shrink-0">{label}</dt>
+      <dd className="text-isi font-semibold text-ink text-right min-w-0 break-words">{nilai}</dd>
     </div>
   )
 }
@@ -761,11 +760,11 @@ export function KartuBuktiPengiriman({ bukti, keterangan }: { bukti: BuktiPengir
   return (
     <section aria-labelledby={idJudul}>
       <Kartu>
-        <h2 id={idJudul} className="text-[0.9375rem] font-bold text-ink mb-3">
+        <h2 id={idJudul} className="text-kartu font-bold text-ink mb-3">
           Bukti Pengiriman
         </h2>
         {keterangan && (
-          <p className="-mt-1.5 mb-3 text-[0.8125rem] text-ink-2 leading-relaxed max-w-[60ch]">{keterangan}</p>
+          <p className="-mt-1.5 mb-3 text-isi text-ink-2 leading-relaxed max-w-[60ch]">{keterangan}</p>
         )}
         <dl className="space-y-1.5">
           <BarisBukti label="Jasa kirim" nilai={bukti.kurir} />
@@ -775,7 +774,7 @@ export function KartuBuktiPengiriman({ bukti, keterangan }: { bukti: BuktiPengir
           <BarisBukti label="Waktu sampai" nilai={`${tanggalPendek(bukti.waktuSampai)}, ${jam(bukti.waktuSampai)}`} />
         </dl>
 
-        <p className="mt-3 text-[0.8125rem] text-ink-2 leading-relaxed max-w-[60ch]">{bukti.catatan}</p>
+        <p className="mt-3 text-isi text-ink-2 leading-relaxed max-w-[60ch]">{bukti.catatan}</p>
 
         {/* Bingkai berlabel, bukan gambar. Foto palsu akan membuat layar ini
             terlihat lebih jadi daripada keadaannya. */}
@@ -783,11 +782,11 @@ export function KartuBuktiPengiriman({ bukti, keterangan }: { bukti: BuktiPengir
           {bukti.foto.map((k) => (
             <div key={k} className="border-2 border-dashed border-line-strong rounded-md p-3 text-center">
               <IkonKotak size={20} className="mx-auto text-ink-3" />
-              <p className="mt-1.5 text-[0.75rem] text-ink-2 leading-snug">{k}</p>
+              <p className="mt-1.5 text-kecil text-ink-2 leading-snug">{k}</p>
             </div>
           ))}
         </div>
-        <p className="mt-2 text-[0.75rem] text-ink-3 leading-relaxed">
+        <p className="mt-2 text-kecil text-ink-3 leading-relaxed">
           Berkas fotonya belum ikut disimpan di purwarupa ini, yang tercatat baru keterangannya.
         </p>
       </Kartu>

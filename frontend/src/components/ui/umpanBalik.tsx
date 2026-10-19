@@ -1,7 +1,39 @@
 import type { ReactNode } from 'react'
 import { cx, angka, persen } from '@/lib/format'
-import { IkonPeringatan, IkonInfo, IkonCentangLingkaran, IkonSilang } from '@/icons'
+import { IkonPeringatan, IkonInfo, IkonCentangLingkaran, IkonSilang, IkonPanahKanan } from '@/icons'
 import { Tombol, type NadaLencana } from './dasar'
+
+/* ================================================================== */
+/* Penjelasan yang bisa dilipat                                       */
+/* ================================================================== */
+
+/**
+ * Rincian yang perlu ada tapi tidak perlu dibaca setiap kali: cara membaca
+ * grafik, alasan sebuah saran, data yang dipakai model. Kalimat ringkasnya
+ * tetap di layar; rinciannya dibuka sendiri oleh yang ingin tahu.
+ *
+ * Memakai <details> bawaan peramban, jadi papan ketik dan pembaca layar
+ * langsung bisa memakainya tanpa skrip.
+ */
+export function Penjelasan({
+  label = 'Selengkapnya',
+  children,
+  className,
+}: {
+  label?: string
+  children: ReactNode
+  className?: string
+}) {
+  return (
+    <details className={cx('group', className)}>
+      <summary className="inline-flex items-center gap-1 min-h-11 cursor-pointer list-none select-none text-isi font-semibold text-brand hover:underline underline-offset-2 [&::-webkit-details-marker]:hidden">
+        {label}
+        <IkonPanahKanan size={14} aria-hidden="true" className="rotate-90 transition-transform group-open:-rotate-90" />
+      </summary>
+      <div className="pb-1 text-isi text-ink-2 leading-relaxed">{children}</div>
+    </details>
+  )
+}
 
 /* ================================================================== */
 /* Peringatan / kotak informasi                                       */
@@ -57,9 +89,9 @@ export function Peringatan({
         {g.ikon}
       </span>
       <div className="min-w-0 grow">
-        {judul && <p className="text-[0.875rem] font-bold leading-snug">{judul}</p>}
+        {judul && <p className="text-isi font-bold leading-snug">{judul}</p>}
         {children && (
-          <div className={cx('text-[0.8125rem] leading-relaxed opacity-90', judul && 'mt-1')}>
+          <div className={cx('text-isi leading-relaxed opacity-90', judul && 'mt-1')}>
             {children}
           </div>
         )}
@@ -120,7 +152,7 @@ export function KeadaanKosong({
         </div>
       )}
       <Judul className="text-[1rem] font-bold text-ink">{judul}</Judul>
-      <p className="mt-1.5 text-[0.875rem] text-ink-3 leading-relaxed max-w-[36ch]">{pesan}</p>
+      <p className="mt-1.5 text-isi text-ink-3 leading-relaxed max-w-[36ch]">{pesan}</p>
       {(aksi || aksiKedua) && (
         <div className="mt-5 flex flex-col sm:flex-row items-center gap-2.5">
           {aksi}
@@ -163,9 +195,9 @@ export function BilahProgres({
     <div>
       {(label || tampilkanAngka) && (
         <div className="flex items-baseline justify-between gap-2 mb-1.5">
-          {label && <span className="text-[0.8125rem] text-ink-2 font-medium">{label}</span>}
+          {label && <span className="text-isi text-ink-2 font-medium">{label}</span>}
           {tampilkanAngka && (
-            <span className="text-[0.8125rem] font-bold text-ink tabular">
+            <span className="text-isi font-bold text-ink tabular">
               {angka(nilai)} / {angka(maks)}
             </span>
           )}
@@ -284,12 +316,12 @@ export function Toast({
         warna,
       )}
     >
-      <span className="text-[0.875rem] font-semibold grow leading-snug">{pesan}</span>
+      <span className="text-isi font-semibold grow leading-snug">{pesan}</span>
       {aksiLabel && aksi && (
         <button
           type="button"
           onClick={aksi}
-          className="min-h-11 px-1 text-[0.8125rem] font-bold underline underline-offset-2 shrink-0 opacity-90 hover:opacity-100"
+          className="min-h-11 px-1 text-isi font-bold underline underline-offset-2 shrink-0 opacity-90 hover:opacity-100"
         >
           {aksiLabel}
         </button>
@@ -322,8 +354,8 @@ export function GalatLayanan({
 }) {
   return (
     <div className="rounded-md border border-dashed border-line-strong bg-surface-2 p-5 text-center">
-      <p className="text-[0.9375rem] font-bold text-ink">{judul}</p>
-      <p className="mt-1.5 text-[0.8125rem] text-ink-3 leading-relaxed max-w-[42ch] mx-auto">{pesan}</p>
+      <p className="text-kartu font-bold text-ink">{judul}</p>
+      <p className="mt-1.5 text-isi text-ink-3 leading-relaxed max-w-[42ch] mx-auto">{pesan}</p>
       {coba && (
         <Tombol ragam="garis" ukuran="kecil" className="mt-3.5" onClick={coba}>
           Coba lagi sekarang

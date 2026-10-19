@@ -40,13 +40,13 @@ function Akordeon({ judul, children, terbukaAwal }: { judul: string; children: R
   return (
     <details open={terbukaAwal} className="group bg-surface border border-line rounded-lg shadow-e1">
       <summary className="flex items-center gap-3 px-4 min-h-[3.25rem] py-3 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
-        <span className="grow text-[0.9375rem] font-bold text-ink leading-snug">{judul}</span>
+        <span className="grow text-kartu font-bold text-ink leading-snug">{judul}</span>
         <IkonPanahBawah
           size={18}
           className="shrink-0 text-ink-3 transition-transform duration-200 group-open:rotate-180"
         />
       </summary>
-      <div className="px-4 pb-4 text-[0.875rem] text-ink-2 leading-relaxed">{children}</div>
+      <div className="px-4 pb-4 text-isi text-ink-2 leading-relaxed">{children}</div>
     </details>
   )
 }
@@ -131,22 +131,22 @@ export default function RincianPaket() {
         <div className="lg:col-span-7 space-y-4">
           {/* 1. Total komitmen: satu-satunya angka besar di layar ini */}
           <div className="rounded-lg border border-brand/40 bg-brand-soft p-5">
-            <h2 className="text-[0.875rem] font-bold text-brand-soft-ink uppercase tracking-wide">
+            <h2 className="text-isi font-bold text-brand-soft-ink uppercase tracking-wide">
               Total Komitmen Kamu
             </h2>
             <p className="mt-1.5 text-[2rem] sm:text-[2.25rem] font-extrabold text-brand-soft-ink leading-none tracking-tight">
               {rupiah(totalKomitmen)}
             </p>
-            <p className="mt-2.5 text-[0.9375rem] font-semibold text-brand-soft-ink">
+            <p className="mt-2.5 text-kartu font-semibold text-brand-soft-ink">
               {fmtJml(kuota)} {satuan} &times; {rupiah(paket.hargaSatuan)} &times; {paket.durasiBulan} bulan
             </p>
 
             <Pemisah className="my-3.5" />
 
-            <p className="text-[0.9375rem] font-bold text-brand-soft-ink">
+            <p className="text-kartu font-bold text-brand-soft-ink">
               Kewajiban tiap bulan: {rupiah(kewajibanBulanan)}
             </p>
-            <p className="mt-1 text-[0.8125rem] text-brand-soft-ink leading-relaxed">
+            <p className="mt-1 text-isi text-brand-soft-ink leading-relaxed">
               Yang wajib kamu ambil selama kontrak {fmtJml(totalWajib)} {satuan}. Angka ini belum termasuk ongkos
               kirim, dan {BANTUAN.bayarLuar.toLowerCase()}
             </p>
@@ -155,7 +155,7 @@ export default function RincianPaket() {
           {/* 2. Dibanding pemakaian kamu */}
           <Kartu>
             <div className="flex items-start justify-between gap-3">
-              <h2 className="text-[0.9375rem] font-bold text-ink">Dibanding pemakaian kamu</h2>
+              <h2 className="text-kartu font-bold text-ink">Dibanding pemakaian kamu</h2>
               {banding ? (
                 <Lencana nada={banding.nada} besar>
                   {banding.label}
@@ -168,15 +168,15 @@ export default function RincianPaket() {
             </div>
             {banding ? (
               <>
-                <p className="mt-2 text-[0.875rem] text-ink-2 leading-relaxed">{banding.teks}</p>
-                <p className="mt-1.5 text-[0.75rem] text-ink-3 leading-relaxed">
+                <p className="mt-2 text-isi text-ink-2 leading-relaxed">{banding.teks}</p>
+                <p className="mt-1.5 text-kecil text-ink-3 leading-relaxed">
                   {dariKamu
                     ? 'Angka pemakaian di atas adalah perkiraan yang kamu isi sendiri di layar sebelumnya, bukan hitungan dari data kasir.'
                     : 'Angka pemakaian di atas dihitung dari data kasir tiga bulan terakhir.'}
                 </p>
               </>
             ) : (
-              <p className="mt-2 text-[0.875rem] text-ink-2 leading-relaxed">
+              <p className="mt-2 text-isi text-ink-2 leading-relaxed">
                 Kami belum punya angka pemakaian untuk barang ini, jadi kuota {fmtJml(kuota)} {satuan} per bulan
                 belum ada pembandingnya.{' '}
                 <Link to={`/penawaran/${id}/kontrak`} className="font-bold text-brand hover:underline">
@@ -220,7 +220,7 @@ export default function RincianPaket() {
         {/* Ringkasan pendamping */}
         <div className="lg:col-span-5">
           <Kartu>
-            <h2 className="text-[0.9375rem] font-bold text-ink mb-1">Isi paket {paket.kode}</h2>
+            <h2 className="text-kartu font-bold text-ink mb-1">Isi paket {paket.kode}</h2>
             <dl>
               <BarisData label="Barang" nilai={penawaran.nama} />
               <BarisData label="Distributor" nilai={distributor.nama} />
@@ -238,7 +238,7 @@ export default function RincianPaket() {
                 tebal
               />
             </dl>
-            <p className="mt-2.5 text-[0.75rem] text-ink-3 leading-relaxed">
+            <p className="mt-2.5 text-kecil text-ink-3 leading-relaxed">
               Hemat itu baru nyata kalau seluruh kuota benar-benar kamu ambil. Kalau tidak, yang tersisa justru
               kewajiban.
             </p>
@@ -247,7 +247,7 @@ export default function RincianPaket() {
 
             <Link
               to={`/penawaran/${id}/kontrak${pemakaian > 0 ? `?pakai=${pemakaian}` : ''}`}
-              className="inline-flex items-center gap-1.5 text-[0.8125rem] font-bold text-brand hover:underline"
+              className="inline-flex items-center gap-1.5 text-isi font-bold text-brand hover:underline"
             >
               <IkonKontrak size={15} />
               Bandingkan lagi dengan paket lain
@@ -259,7 +259,7 @@ export default function RincianPaket() {
       <BilahAksi
         ringkasan={
           <div className="flex items-baseline justify-between gap-3">
-            <span className="text-[0.8125rem] text-ink-3">Total komitmen {paket.durasiBulan} bulan</span>
+            <span className="text-isi text-ink-3">Total komitmen {paket.durasiBulan} bulan</span>
             <span className="text-[1.125rem] font-extrabold text-ink tabular">{rupiah(totalKomitmen)}</span>
           </div>
         }

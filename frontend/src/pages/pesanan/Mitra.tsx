@@ -132,8 +132,8 @@ export default function Mitra() {
             <div className="flex items-start gap-3">
               <Avatar nama={distributor.nama} warna={distributor.warna} ukuran={48} />
               <div className="min-w-0 grow">
-                <p className="text-[1.0625rem] font-bold text-ink leading-tight">{distributor.nama}</p>
-                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[0.8125rem] text-ink-3">
+                <p className="text-subjudul font-bold text-ink leading-tight">{distributor.nama}</p>
+                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-isi text-ink-3">
                   {distributor.baru ? (
                     <Lencana nada="info">Pemasok baru</Lencana>
                   ) : (
@@ -156,7 +156,7 @@ export default function Mitra() {
               </div>
               <Link
                 to={`/distributor/${distributor.id}`}
-                className="shrink-0 inline-flex items-center gap-1 text-[0.8125rem] font-bold text-brand hover:underline"
+                className="shrink-0 inline-flex items-center gap-1 text-isi font-bold text-brand hover:underline"
               >
                 Profil <IkonPanahKanan size={15} />
               </Link>
@@ -170,56 +170,56 @@ export default function Mitra() {
                 bawah angka menerangkan angka itu sendiri, bukan angka tetangganya. */}
             <dl className="grid grid-cols-2 gap-x-4 gap-y-3.5">
               <div className="min-w-0">
-                <dt className="flex items-center gap-1.5 text-[0.75rem] font-semibold uppercase tracking-wide text-ink-3">
+                <dt className="flex items-center gap-1.5 text-kecil font-semibold uppercase tracking-wide text-ink-3">
                   <IkonKontrak size={14} />
                   Kewajiban bulanan
                 </dt>
-                <dd className="mt-1 text-[1.0625rem] font-extrabold text-ink leading-snug break-words">
+                <dd className="mt-1 text-subjudul font-extrabold text-ink leading-snug break-words">
                   {kewajibanTeks || 'Belum ada'}
                 </dd>
-                <p className="mt-0.5 text-[0.75rem] text-ink-3 leading-snug">
+                <p className="mt-0.5 text-kecil text-ink-3 leading-snug">
                   Gabungan dari {kontrakAktif.length} kontrak
                 </p>
               </div>
               <div className="min-w-0">
-                <dt className="text-[0.75rem] font-semibold uppercase tracking-wide text-ink-3">
+                <dt className="text-kecil font-semibold uppercase tracking-wide text-ink-3">
                   Sisa kuota bulan ini
                 </dt>
                 <dd
                   className={cx(
-                    'mt-1 text-[1.0625rem] font-extrabold leading-snug break-words',
+                    'mt-1 text-subjudul font-extrabold leading-snug break-words',
                     adaSisa ? 'text-menipis-ink' : 'text-aman-ink',
                   )}
                 >
                   {adaSisa ? sisaTeks : 'Terpenuhi'}
                 </dd>
-                <p className="mt-0.5 text-[0.75rem] text-ink-3 leading-snug">
+                <p className="mt-0.5 text-kecil text-ink-3 leading-snug">
                   {adaSisa ? 'Dihitung per satuan, tidak dicampur' : 'Semua kuota sudah terpenuhi'}
                 </p>
               </div>
               <div className="min-w-0">
-                <dt className="text-[0.75rem] font-semibold uppercase tracking-wide text-ink-3">
+                <dt className="text-kecil font-semibold uppercase tracking-wide text-ink-3">
                   Nilai kontrak bulanan
                 </dt>
-                <dd className="mt-1 text-[1.0625rem] font-extrabold text-ink leading-snug break-words">
+                <dd className="mt-1 text-subjudul font-extrabold text-ink leading-snug break-words">
                   {rupiah(nilaiBulanan)}
                 </dd>
-                <p className="mt-0.5 text-[0.75rem] text-ink-3 leading-snug">
+                <p className="mt-0.5 text-kecil text-ink-3 leading-snug">
                   Kalau kuota minimum diambil penuh
                 </p>
               </div>
               <div className="min-w-0">
-                <dt className="text-[0.75rem] font-semibold uppercase tracking-wide text-ink-3">Pesanan selesai</dt>
-                <dd className="mt-1 text-[1.0625rem] font-extrabold text-ink leading-snug">
+                <dt className="text-kecil font-semibold uppercase tracking-wide text-ink-3">Pesanan selesai</dt>
+                <dd className="mt-1 text-subjudul font-extrabold text-ink leading-snug">
                   {angka(selesai)} pesanan
                 </dd>
-                <p className="mt-0.5 text-[0.75rem] text-ink-3 leading-snug">
+                <p className="mt-0.5 text-kecil text-ink-3 leading-snug">
                   Dari {riwayatPesanan.length} pesanan ke pemasok ini
                 </p>
               </div>
             </dl>
 
-            <p className="mt-3 text-[0.8125rem] text-ink-2 leading-relaxed bg-sunken rounded-md px-3 py-2.5">
+            <p className="mt-3 text-isi text-ink-2 leading-relaxed bg-sunken rounded-md px-3 py-2.5">
               {BANTUAN.satuKontrakSatuBarang} Angka di atas hanya penjumlahan supaya mudah dibaca &mdash; kontraknya
               sendiri tetap terpisah, dengan kuota dan tanggal berakhir masing-masing.
             </p>
@@ -234,11 +234,11 @@ export default function Mitra() {
                   </Tombol>
                 )}
                 {adaSisa && (
-                  <p className="mt-1.5 text-[0.8125rem] font-semibold text-ink-2">
+                  <p className="mt-1.5 text-isi font-semibold text-ink-2">
                     Sisa kuota yang akan dimasukkan: {sisaTeks}
                   </p>
                 )}
-                <p className="mt-1.5 text-[0.75rem] text-ink-3 leading-snug">
+                <p className="mt-1.5 text-kecil text-ink-3 leading-snug">
                   Mengisi satu keranjang untuk {distributor.nama} dengan sisa kuota tiap kontrak. Jumlahnya masih bisa
                   kamu ubah sebelum dikirim.
                 </p>
@@ -257,8 +257,8 @@ export default function Mitra() {
             />
             {kontrakAktif.length === 0 ? (
               <Kartu padat>
-                <p className="text-[0.875rem] text-ink-3 leading-relaxed max-w-[70ch]">
-                  Belum ada kontrak berjalan dengan {distributor.nama}. Kamu tetap bisa membeli lepas dari penawarannya.{' '}
+                <p className="text-isi text-ink-3 leading-relaxed max-w-[70ch]">
+                  Belum ada kontrak berjalan dengan {distributor.nama}. Kamu tetap bisa beli sekali dari penawarannya.{' '}
                   <Link to={`/distributor/${distributor.id}`} className="font-semibold text-brand hover:underline">
                     Lihat penawaran
                   </Link>
@@ -277,8 +277,8 @@ export default function Mitra() {
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="text-[1.0625rem] font-bold text-ink leading-snug">{k.namaBarang}</p>
-                          <p className="mt-0.5 text-[0.8125rem] text-ink-3">
+                          <p className="text-subjudul font-bold text-ink leading-snug">{k.namaBarang}</p>
+                          <p className="mt-0.5 text-isi text-ink-3">
                             {k.durasiBulan} bulan &middot; sampai {tanggalPendek(k.berakhir)} &middot;{' '}
                             {rupiah(k.hargaSatuan)}/{k.satuan}
                           </p>
@@ -290,7 +290,7 @@ export default function Mitra() {
                       <div className="mt-3">
                         <KuotaBulanIni kontrak={k} ringkas />
                       </div>
-                      <p className="mt-2 text-[0.8125rem] text-ink-2">
+                      <p className="mt-2 text-isi text-ink-2">
                         {sisa > 0 ? (
                           <>
                             Kurang{' '}
@@ -315,13 +315,13 @@ export default function Mitra() {
               judul={`Pesanan ke ${distributor.nama}`}
               keterangan={
                 riwayatPesanan.length > 0
-                  ? `${riwayatPesanan.length} pesanan, termasuk yang beli lepas tanpa kontrak`
+                  ? `${riwayatPesanan.length} pesanan, termasuk beli sekali tanpa kontrak`
                   : undefined
               }
             />
             {riwayatPesanan.length === 0 ? (
               <Kartu padat>
-                <p className="text-[0.875rem] text-ink-3 leading-relaxed max-w-[70ch]">
+                <p className="text-isi text-ink-3 leading-relaxed max-w-[70ch]">
                   Belum ada pesanan ke {distributor.nama}. Begitu ada, riwayatnya muncul di sini lengkap dengan
                   statusnya.
                 </p>

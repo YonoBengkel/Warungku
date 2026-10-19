@@ -174,7 +174,7 @@ export default function PetaSebaranBarang() {
               <JudulBagian id="judul-barang" judul="Tentang barang ini" />
               <BarisData label="Harga satuan" nilai={`${rupiah(penawaran.hargaSatuan)} / ${penawaran.satuan}`} />
               <BarisData label="Stok dipesan" nilai={jumlahSatuan(dipesan.jumlah, penawaran.satuan)} tebal />
-              <p className="mt-1.5 text-[0.75rem] text-ink-3 leading-relaxed">
+              <p className="mt-1.5 text-kecil text-ink-3 leading-relaxed">
                 {dipesan.pesanan > 0
                   ? `Dari ${dipesan.pesanan} pesanan yang belum sampai: menunggu, disiapkan, dan dikirim.`
                   : 'Belum ada pesanan berjalan yang memuat barang ini.'}
@@ -223,10 +223,10 @@ export default function PetaSebaranBarang() {
           >
             <div className="flex items-start justify-between gap-3 mb-3">
               <div className="min-w-0">
-                <h2 id="judul-panel" className="text-[0.9375rem] font-bold text-ink leading-tight">
+                <h2 id="judul-panel" className="text-kartu font-bold text-ink leading-tight">
                   Rincian toko
                 </h2>
-                <p className="text-[0.8125rem] text-ink-3 mt-0.5 leading-snug">
+                <p className="text-isi text-ink-3 mt-0.5 leading-snug">
                   {umkm
                     ? penawaran
                       ? 'Pesanan toko ini untuk barang di atas.'
@@ -245,7 +245,7 @@ export default function PetaSebaranBarang() {
               {umkm && terpilih ? (
                 <>
                   <h3 className="text-[1rem] font-extrabold text-ink leading-snug">{umkm.nama}</h3>
-                  <p className="mt-0.5 text-[0.8125rem] text-ink-2">
+                  <p className="mt-0.5 text-isi text-ink-2">
                     {LABEL_JENIS_USAHA[umkm.jenisUsaha].judul} &middot; {umkm.kota}
                   </p>
 
@@ -255,8 +255,8 @@ export default function PetaSebaranBarang() {
                         <IkonLokasi size={16} />
                       </span>
                       <div className="min-w-0">
-                        <dt className="text-[0.75rem] text-ink-3">Alamat</dt>
-                        <dd className="text-[0.875rem] text-ink leading-snug">{umkm.alamat}</dd>
+                        <dt className="text-kecil text-ink-3">Alamat</dt>
+                        <dd className="text-isi text-ink leading-snug">{umkm.alamat}</dd>
                       </div>
                     </div>
                     <div className="flex items-start gap-2">
@@ -264,13 +264,13 @@ export default function PetaSebaranBarang() {
                         <IkonTelepon size={16} />
                       </span>
                       <div className="min-w-0">
-                        <dt className="text-[0.75rem] text-ink-3">Nomor HP</dt>
-                        <dd className="text-[0.875rem] text-ink leading-snug">{nomorHp(umkm.nomorHp)}</dd>
+                        <dt className="text-kecil text-ink-3">Nomor HP</dt>
+                        <dd className="text-isi text-ink leading-snug">{nomorHp(umkm.nomorHp)}</dd>
                       </div>
                     </div>
                   </dl>
 
-                  <h4 className="mt-4 text-[0.8125rem] font-bold text-ink-2 uppercase tracking-wide">
+                  <h4 className="mt-4 text-isi font-bold text-ink-2 uppercase tracking-wide">
                     {angka(pesananTerpilih.length)} pesanan
                   </h4>
                   <ul className="mt-2 space-y-2">
@@ -283,7 +283,7 @@ export default function PetaSebaranBarang() {
                             className="block rounded-md border border-line p-3 transition-colors hover:border-line-strong hover:bg-surface-2"
                           >
                             <div className="flex items-start justify-between gap-2">
-                              <span className="font-bold text-ink text-[0.875rem] leading-snug">{p.nomor}</span>
+                              <span className="font-bold text-ink text-isi leading-snug">{p.nomor}</span>
                               <span className="shrink-0 text-ink-3" aria-hidden="true">
                                 <IkonPanahKanan size={16} />
                               </span>
@@ -291,12 +291,12 @@ export default function PetaSebaranBarang() {
                             <div className="mt-1.5">
                               <LencanaStatus status={p.status} />
                             </div>
-                            <p className="mt-1.5 text-[0.875rem] text-ink-2">
+                            <p className="mt-1.5 text-isi text-ink-2">
                               {baris
                                 ? jumlahSatuan(baris.jumlah, baris.satuan)
                                 : `${p.baris.length} jenis barang`}
                             </p>
-                            <p className="text-[0.75rem] text-ink-3">Masuk {waktuLalu(p.dibuatPada)}</p>
+                            <p className="text-kecil text-ink-3">Masuk {waktuLalu(p.dibuatPada)}</p>
                           </Link>
                         </li>
                       )
@@ -305,7 +305,7 @@ export default function PetaSebaranBarang() {
                 </>
               ) : (
                 <>
-                  <p className="text-[0.875rem] text-ink-2 leading-relaxed">
+                  <p className="text-isi text-ink-2 leading-relaxed">
                     Angka di dalam titik adalah jumlah pesanan toko itu. Tekan titiknya untuk membuka rincian, atau
                     pilih namanya di bawah kalau titiknya berdempetan.
                   </p>
@@ -317,8 +317,8 @@ export default function PetaSebaranBarang() {
                           onClick={() => setDipilih(t.umkmId)}
                           className="w-full min-h-11 flex items-center justify-between gap-3 rounded-md border border-line px-3 py-2 text-left transition-colors hover:border-line-strong hover:bg-surface-2"
                         >
-                          <span className="min-w-0 text-[0.875rem] font-semibold text-ink truncate">{nama}</span>
-                          <span className="shrink-0 text-[0.75rem] text-ink-3 tabular">
+                          <span className="min-w-0 text-isi font-semibold text-ink truncate">{nama}</span>
+                          <span className="shrink-0 text-kecil text-ink-3 tabular">
                             {angka(t.jumlahPesanan)} pesanan
                           </span>
                         </button>

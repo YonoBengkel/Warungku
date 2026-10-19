@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { HanyaPembacaLayar, Lencana, Tombol, type NadaLencana } from '@/components/ui/dasar'
+import { HanyaPembacaLayar, Lencana, Tombol } from '@/components/ui/dasar'
 import { AreaTeks } from '@/components/ui/formulir'
 import { Lembar } from '@/components/ui/lembar'
 import { BarisChip, Chip, TabSegmen } from '@/components/ui/navigasi'
@@ -18,7 +18,6 @@ import { angka, cx, rupiah, waktuLalu } from '@/lib/format'
 import {
   ALASAN_TOLAK,
   LABEL_PESANAN_MASUK,
-  NADA_PESANAN_MASUK,
   TAHAP_PESANAN_MASUK,
 } from '@/lib/label'
 import { umkmById } from '@/data/dummy'
@@ -65,15 +64,6 @@ const IKON_TAHAP: Record<StatusPesananMasuk, typeof IkonJam> = {
   dikirim: IkonKirim,
   selesai: IkonCentangLingkaran,
   ditolak: IkonSilang,
-}
-
-const CHIP_NADA: Record<NadaLencana, string> = {
-  netral: 'bg-netral-soft text-netral-ink',
-  merek: 'bg-brand-soft text-brand-soft-ink',
-  aman: 'bg-aman-soft text-aman-ink',
-  menipis: 'bg-menipis-soft text-menipis-ink',
-  kritis: 'bg-kritis-soft text-kritis-ink',
-  info: 'bg-info-soft text-info-ink',
 }
 
 const SEMUA_TAHAP: StatusPesananMasuk[] = [...TAHAP_PESANAN_MASUK, 'ditolak']
@@ -146,13 +136,13 @@ export function LembarTolak({ pesanan, tutup }: { pesanan: PesananMasuk; tutup: 
       }
     >
       <div className="pb-4 space-y-4">
-        <p className="text-[0.875rem] text-ink-2 leading-relaxed">
+        <p className="text-isi text-ink-2 leading-relaxed">
           Alasannya ikut terkirim ke pemilik usaha, jadi tulis yang benar-benar terjadi. Tanpa
           alasan, mereka cuma melihat pesanannya hilang.
         </p>
 
         <div>
-          <p className="text-[0.875rem] font-semibold text-ink-2 mb-2.5">Alasan siap pakai</p>
+          <p className="text-isi font-semibold text-ink-2 mb-2.5">Alasan siap pakai</p>
           <BarisChip className="flex-wrap">
             {ALASAN_TOLAK.map((a) => (
               <Chip
@@ -208,64 +198,34 @@ export default function PesananMasukDaftar() {
     setParams(baru, { replace: true })
   }
 
-  const daftar = perStatus[tahap]
+  /* Pesanan yang menunggu dijawab diurutkan dari yang paling lama: yang
+     terlama paling mendesak, dan urutan terbaru dulu menenggelamkannya. */
+  const daftar =
+    tahap === 'menunggu-konfirmasi'
+      ? [...perStatus[tahap]].sort((a, b) => new Date(a.dibuatPada).getTime() - new Date(b.dibuatPada).getTime())
+      : perStatus[tahap]
   const IkonKosong = IKON_TAHAP[tahap]
 
   return (
     <div className="pb-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-[1.25rem] font-extrabold text-ink tracking-tight">Pesanan</h1>
-          <p className="mt-1 text-[0.8125rem] text-ink-3 leading-snug max-w-[70ch]">
+          <h1 className="text-judul font-extrabold text-ink tracking-tight">Pesanan</h1>
+          <p className="mt-1 text-isi text-ink-3 leading-snug max-w-[70ch]">
             Semua pesanan yang masuk ke tokomu, dikelompokkan menurut tahapnya.
-            {dariServer ? ' Dibaca dari server.' : ' Saat ini memakai data contoh.'}
+            {dariServer ? '' : ' Saat ini memakai data contoh.'}
           </p>
         </div>
         {dariServer && <TombolPutusDistributor />}
       </div>
       {!dariServer && (
-        <p className="mt-3 text-[0.8125rem] text-ink-2">
-          Mau memakai pesanan sungguhan dari server?{' '}
+        <p className="mt-3 text-isi text-ink-2">
+          Mau memakai pesanan sungguhan?{' '}
           <Link to="/masuk/distributor" className="inline-flex items-center min-h-11 font-bold text-brand hover:underline">
             Masuk sebagai distributor
           </Link>
         </p>
       )}
-
-      {/* Ringkasan jumlah. Di 360px barisnya digeser di dalam wadahnya sendiri,
-          badan halaman tidak ikut bergeser. */}
-      <section aria-labelledby="judul-ringkasan" className="mt-4">
-        <h2 id="judul-ringkasan" className="sr-only">
-          Ringkasan jumlah pesanan per tahap
-        </h2>
-        <div className="flex gap-2.5 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 py-0.5">
-          {SEMUA_TAHAP.map((status) => {
-            const Ikon = IKON_TAHAP[status]
-            return (
-              <div
-                key={status}
-                className="flex-1 min-w-[9.5rem] bg-surface border border-line rounded-lg p-3 shadow-e1"
-              >
-                <span
-                  className={cx(
-                    'size-7 rounded-md grid place-items-center',
-                    CHIP_NADA[NADA_PESANAN_MASUK[status]],
-                  )}
-                  aria-hidden="true"
-                >
-                  <Ikon size={15} />
-                </span>
-                <p className="mt-2 text-[1.375rem] font-extrabold text-ink leading-none tracking-tight">
-                  {perStatus[status].length}
-                </p>
-                <p className="mt-1 text-[0.75rem] font-semibold text-ink-2 leading-snug">
-                  {LABEL_PESANAN_MASUK[status]}
-                </p>
-              </div>
-            )
-          })}
-        </div>
-      </section>
 
       <TabSegmen<StatusPesananMasuk>
         className="mt-4"
@@ -347,6 +307,14 @@ const KOSONG: Record<StatusPesananMasuk, { judul: string; pesan: string }> = {
 /* Satu baris pesanan                                                  */
 /* ------------------------------------------------------------------ */
 
+/** "Menunggu 3 jam", bukan "Masuk 3 jam lalu": yang dijawab distributor adalah lamanya menunggu. */
+function lamaMenunggu(dibuatPada: string): string {
+  const w = waktuLalu(dibuatPada)
+  if (w === 'baru saja') return 'Baru masuk'
+  if (w === 'kemarin') return 'Menunggu sejak kemarin'
+  return `Menunggu ${w.replace(/ lalu$/, '')}`
+}
+
 function BarisPesanan({
   pesanan,
   terima,
@@ -379,7 +347,7 @@ function BarisPesanan({
     >
       <div className="flex items-start justify-between gap-2.5">
         <div className="min-w-0">
-          <h3 className="text-[0.9375rem] font-bold text-ink leading-snug">
+          <h3 className="text-kartu font-bold text-ink leading-snug">
             <Link
               to={`/distributor-portal/pesanan/${pesanan.id}`}
               className="after:absolute after:inset-0 after:rounded-lg hover:underline"
@@ -388,29 +356,28 @@ function BarisPesanan({
               <HanyaPembacaLayar> — buka rincian pesanan</HanyaPembacaLayar>
             </Link>
           </h3>
-          <p className="mt-0.5 text-[0.8125rem] text-ink-2 leading-snug">
+          <p className="mt-0.5 text-isi text-ink-2 leading-snug">
             {umkm?.nama ?? 'Pemilik usaha'}
             {umkm && <span className="text-ink-3"> &middot; {umkm.kota}</span>}
           </p>
         </div>
-        <Lencana nada={NADA_PESANAN_MASUK[pesanan.status]}>
-          {LABEL_PESANAN_MASUK[pesanan.status]}
-        </Lencana>
+        {perluDijawab && <Lencana nada="menipis">{lamaMenunggu(pesanan.dibuatPada)}</Lencana>}
       </div>
 
-      <p className="mt-2 text-[0.8125rem] text-ink-3 leading-snug">
+      <p className="mt-2 text-isi text-ink-3 leading-snug">
         {pesanan.baris.length} jenis barang &middot; {ringkasanBarang(pesanan)}
       </p>
 
       <div className="mt-2 flex items-baseline justify-between gap-3">
-        <span className="text-[0.75rem] text-ink-3">Masuk {waktuLalu(pesanan.dibuatPada)}</span>
+        {/* Lama menunggu sudah di lencana kartu yang perlu dijawab. */}
+        <span className="text-kecil text-ink-3">{perluDijawab ? '' : `Masuk ${waktuLalu(pesanan.dibuatPada)}`}</span>
         <span className="text-[1rem] font-bold text-ink">{rupiah(totalPesananMasuk(pesanan))}</span>
       </div>
 
       {/* Pengganti tampilan "Selesai" di menu Lacak yang sudah dihapus: penilaian
           pemesan dan ada-tidaknya bukti antar terbaca tanpa membuka rinciannya. */}
       {pesanan.status === 'selesai' && (
-        <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[0.8125rem]">
+        <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-isi">
           {pesanan.ulasan ? (
             <span className="inline-flex items-center gap-1 font-semibold text-ink">
               <IkonBintangIsi size={13} className="text-menipis" />
@@ -432,7 +399,7 @@ function BarisPesanan({
           {/* Ukuran "sedang" (44px penuh), bukan "kecil": ini aksi utama kartu
               dan tingginya harus benar-benar terlihat, bukan cuma dilebarkan
               diam-diam oleh pseudo-element. */}
-          <Tombol penuh ikonKiri={<IkonCentang size={16} />} onClick={terima}>
+          <Tombol ragam="sekunder" penuh ikonKiri={<IkonCentang size={16} />} onClick={terima}>
             Terima
           </Tombol>
           <Tombol ragam="garis" penuh ikonKiri={<IkonSilang size={16} />} onClick={tolak}>

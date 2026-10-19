@@ -275,14 +275,14 @@ export default function PesananDaftar() {
   return (
     <div className="pb-6">
       <div className="flex items-baseline justify-between gap-3">
-        <h1 className="text-[1.25rem] font-extrabold text-ink tracking-tight">Pesanan</h1>
-        <Link to="/belanja" className="text-[0.8125rem] font-bold text-brand hover:underline shrink-0">
+        <h1 className="text-judul font-extrabold text-ink tracking-tight">Pesanan</h1>
+        <Link to="/belanja" className="text-isi font-bold text-brand hover:underline shrink-0">
           Cari barang di Distributor
         </Link>
       </div>
       {/* Baris prosa ditahan sekitar 70 karakter: di layar lebar kalimat yang
           membentang penuh justru lebih sulit dikejar matanya. */}
-      <p className="mt-1 text-[0.8125rem] text-ink-3 leading-snug max-w-[70ch]">
+      <p className="mt-1 text-isi text-ink-3 leading-snug max-w-[70ch]">
         Semua pesanan dan kontrak bulananmu, dari yang masih berjalan sampai yang sudah selesai.
       </p>
 
@@ -349,7 +349,7 @@ export default function PesananDaftar() {
                       bersebelahan. Kalau chipnya sudah memilih satu kelompok,
                       judulnya cuma mengulang bunyi chip yang sedang menyala. */}
                   {saringPesanan === 'semua' && (
-                    <h3 className="text-[0.9375rem] font-bold text-ink mb-2">
+                    <h3 className="text-kartu font-bold text-ink mb-2">
                       {k.judul} ({angka(k.daftar.length)})
                     </h3>
                   )}
@@ -378,7 +378,7 @@ export default function PesananDaftar() {
           ) : (
             <>
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="text-[0.9375rem] font-bold text-ink">
+                <p className="text-kartu font-bold text-ink">
                   {angka(kontrakTerlihat.length)} {KATA_KONTRAK[saringKontrak]}
                 </p>
                 <BarisChip className="sm:justify-end">
@@ -390,7 +390,7 @@ export default function PesananDaftar() {
                   </Chip>
                 </BarisChip>
               </div>
-              <p className="mt-1 text-[0.8125rem] text-ink-3 max-w-[70ch]">{BANTUAN.satuKontrakSatuBarang}</p>
+              <p className="mt-1 text-isi text-ink-3 max-w-[70ch]">{BANTUAN.satuKontrakSatuBarang}</p>
 
               <div className="mt-4 space-y-6">
                 {grup.map((g) => {
@@ -399,7 +399,7 @@ export default function PesananDaftar() {
                     <div key={g.id}>
                       <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
                         <div className="min-w-0">
-                          <h3 className="text-[0.9375rem] font-bold text-ink leading-snug">
+                          <h3 className="text-kartu font-bold text-ink leading-snug">
                             {g.judul} &mdash; {angka(g.daftar.length)} {KATA_KONTRAK[saringKontrak]}
                           </h3>
                           {/* Kewajiban bulanan hanya dihitung dari kontrak yang
@@ -407,7 +407,7 @@ export default function PesananDaftar() {
                               selesai bikin angkanya menagih sesuatu yang sudah
                               tidak ditagih siapa-siapa. */}
                           {g.berjalan.length > 0 && (
-                            <p className="mt-0.5 text-[0.8125rem] text-ink-2">
+                            <p className="mt-0.5 text-isi text-ink-2">
                               Kewajiban kontrak: <strong className="text-ink">{kewajibanBulanan(g.berjalan)}</strong>
                               /bulan
                               {g.berjalan.length > 1 && ` dari ${g.berjalan.length} kontrak berjalan`}
@@ -569,8 +569,8 @@ function KartuKontrak({ kontrak, tampilkanDistributor }: { kontrak: Kontrak; tam
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[1.0625rem] font-bold text-ink leading-snug">{kontrak.namaBarang}</p>
-          <p className="mt-0.5 text-[0.8125rem] text-ink-3 leading-snug">
+          <p className="text-subjudul font-bold text-ink leading-snug">{kontrak.namaBarang}</p>
+          <p className="mt-0.5 text-isi text-ink-3 leading-snug">
             {tampilkanDistributor && (
               <span className="inline-flex items-center gap-1 align-middle">
                 <IkonToko size={13} />
@@ -591,7 +591,7 @@ function KartuKontrak({ kontrak, tampilkanDistributor }: { kontrak: Kontrak; tam
           kontrak yang sudah selesai ajakan itu keliru, jadi barnya diganti
           satu baris ringkas yang menyatakan kapan kontraknya berakhir. */}
       {berakhir ? (
-        <p className="mt-3 inline-flex items-center gap-1.5 text-[0.8125rem] text-ink-2">
+        <p className="mt-3 inline-flex items-center gap-1.5 text-isi text-ink-2">
           <IkonKontrak size={15} className="shrink-0 text-ink-3" />
           {kontrak.status === 'dihentikan' ? 'Kontrak dihentikan' : 'Kontrak selesai'}{' '}
           {tanggalPendek(kontrak.berakhir)}
@@ -602,7 +602,7 @@ function KartuKontrak({ kontrak, tampilkanDistributor }: { kontrak: Kontrak; tam
             <KuotaBulanIni kontrak={kontrak} ringkas />
           </div>
 
-          <p className="mt-2 text-[0.8125rem] text-ink-2">
+          <p className="mt-2 text-isi text-ink-2">
             {sisa > 0 ? (
               <>
                 Kurang{' '}

@@ -1,12 +1,12 @@
-import { useMemo, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import type { Barang, Pergerakan } from '@/lib/types'
 import { ChipKedaluwarsa, ChipStok, KartuPerkiraan } from '@/components/domain'
 import { KartuStruk } from '@/components/domain/KartuStruk'
 import { Kartu, Lencana, Tombol, TombolTautan } from '@/components/ui/dasar'
 import { PengaturJumlah } from '@/components/ui/formulir'
 import { KepalaHalaman, TabSegmen } from '@/components/ui/navigasi'
-import { KeadaanKosong } from '@/components/ui/umpanBalik'
+import { KeadaanKosong, Penjelasan } from '@/components/ui/umpanBalik'
 import { GrafikTren } from '@/components/grafik/GrafikTren'
 import {
   IkonGrafik,
@@ -109,6 +109,14 @@ export default function StokDetail() {
   const perkiraan = mesin.perkiraan
   const tren = mesin.tren
   const penawaran = penawaranUntukBarang(barang.id)
+  const adaSaranMesin = mesin.status === 'siap' && mesin.saran.length > 0
+  const kePesan = adaSaranMesin
+    ? '?pesan=1'
+    : penawaran.length > 0
+      ? `/penawaran/${penawaran[0].id}`
+      : `/belanja?cari=${encodeURIComponent(barang.nama)}`
+  const aksiUtama: 'koreksi' | 'pesan' | null =
+    barang.stok < 0 ? 'koreksi' : status === 'habis' || status === 'menipis' ? 'pesan' : null
   const kurangCatatan = barang.stok < 0 ? Math.abs(barang.stok) : 0
   const stokTampil = Math.max(0, barang.stok)
   const pesananDikirim = dikirim.pesananId ? pesanan.find((p) => p.id === dikirim.pesananId) : undefined
@@ -130,7 +138,7 @@ export default function StokDetail() {
           <Link
             to={`/stok/${barang.id}/ubah`}
             aria-label="Ubah data barang"
-            className="size-10 grid place-items-center rounded-md text-ink-2 hover:bg-sunken hover:text-ink"
+            className="size-11 grid place-items-center rounded-md text-ink-2 hover:bg-sunken hover:text-ink"
           >
             <IkonPena size={20} />
           </Link>
@@ -144,7 +152,7 @@ export default function StokDetail() {
           <Kartu>
             <div className="flex items-end justify-between gap-4">
               <div className="min-w-0">
-                <p className="text-[0.75rem] font-semibold uppercase tracking-wide text-ink-3">Sisa tercatat</p>
+                <p className="text-kecil font-semibold uppercase tracking-wide text-ink-3">Sisa tercatat</p>
                 <p
                   className={cx(
                     'mt-1 text-[2.25rem] font-extrabold leading-none tracking-tight',
@@ -154,7 +162,7 @@ export default function StokDetail() {
                   {angkaTampil(barang, stokTampil)}
                   <span className="ml-1.5 text-[1rem] font-semibold text-ink-3">{satuanTampil(barang).nama}</span>
                 </p>
-                {kemasan && <p className="mt-1.5 text-[0.8125rem] text-ink-2">= {kemasan}</p>}
+                {kemasan && <p className="mt-1.5 text-isi text-ink-2">= {kemasan}</p>}
               </div>
               <ChipStok status={status} besar />
             </div>
@@ -167,10 +175,10 @@ export default function StokDetail() {
             {kurangCatatan > 0 ? (
               /* Angka minus berarti catatannya yang salah, bukan gudangnya. */
               <div className="mt-3 rounded-md bg-kritis-soft text-kritis-ink p-3.5">
-                <p className="text-[0.875rem] font-bold">
+                <p className="text-isi font-bold">
                   0 {satuanTampil(barang).nama} (catatan kurang {jumlahTampil(barang, kurangCatatan)})
                 </p>
-                <p className="mt-1 text-[0.8125rem] leading-relaxed opacity-90">
+                <p className="mt-1 text-isi leading-relaxed opacity-90">
                   Kasir mencatat pemakaian lebih banyak daripada stok yang pernah masuk. Hitung barangnya di rak,
                   lalu tulis jumlahnya lewat Koreksi Stok — riwayat penjualannya tidak ikut berubah.
                 </p>
@@ -185,7 +193,7 @@ export default function StokDetail() {
                 </TombolTautan>
               </div>
             ) : (
-              <p className="mt-3 text-[0.9375rem] text-ink-2 leading-relaxed">
+              <p className="mt-3 text-kartu text-ink-2 leading-relaxed">
                 {barang.pemakaianHarian <= 0 ? (
                   barang.dicatatManual ? (
                     'Barang ini kamu catat manual, jadi pemakaian hariannya tidak kami hitung sendiri.'
@@ -239,7 +247,7 @@ export default function StokDetail() {
             </div>
 
             {barang.catatan && (
-              <p className="mt-3 text-[0.8125rem] text-ink-2 leading-relaxed border-l-2 border-line-strong pl-3">
+              <p className="mt-3 text-isi text-ink-2 leading-relaxed border-l-2 border-line-strong pl-3">
                 {barang.catatan}
               </p>
             )}
@@ -253,10 +261,10 @@ export default function StokDetail() {
             >
               <IkonPasokan size={18} className="shrink-0 mt-0.5" />
               <span className="min-w-0 grow">
-                <span className="block text-[0.9375rem] font-bold">
+                <span className="block text-kartu font-bold">
                   Sedang dikirim {jumlahTampil(barang, dikirim.jumlah)}
                 </span>
-                <span className="block text-[0.8125rem] mt-0.5 opacity-90 leading-relaxed">
+                <span className="block text-isi mt-0.5 opacity-90 leading-relaxed">
                   {pesananDikirim ? `${pesananDikirim.nomor} · ` : ''}
                   {dikirim.tiba ? `perkiraan tiba ${waktuNanti(dikirim.tiba)}` : 'jadwal tiba belum dipastikan'}.
                   Jumlah ini sengaja tidak dijumlahkan dengan sisa, karena kiriman masih bisa berubah.
@@ -273,10 +281,10 @@ export default function StokDetail() {
           >
             <span className="min-w-0 grow">
               <span className="flex flex-wrap items-center gap-2">
-                <span className="text-[0.9375rem] font-bold text-ink">Batas aman</span>
+                <span className="text-kartu font-bold text-ink">Batas aman</span>
                 <Lencana nada={lencanaBatas.nada}>{lencanaBatas.teks}</Lencana>
               </span>
-              <span className="block mt-1 text-[0.8125rem] text-ink-3 leading-snug">{BANTUAN.batasAman}</span>
+              <span className="block mt-1 text-isi text-ink-3 leading-snug">{BANTUAN.batasAman}</span>
             </span>
             <span className="shrink-0 text-right">
               <span className="block text-[1.125rem] font-bold text-ink tabular">
@@ -286,31 +294,29 @@ export default function StokDetail() {
             <IkonPanahKanan size={18} className="shrink-0 text-ink-3" />
           </Link>
 
-          {/* ---- Tombol aksi ---- */}
+          {/* ---- Tombol aksi ----
+              Satu tombol utama menurut keadaan barang: stok minus berarti
+              angkanya salah (koreksi dulu); habis atau menipis berarti pesan.
+              "Pesan" membuka saran Mesin 2 di halaman ini bila ada, dengan
+              jumlah saran sudah terisi. Data barang diubah lewat ikon pena di kepala. */}
           <div className="grid grid-cols-2 gap-2.5">
-            <TombolTautan ke={`/stok/${barang.id}/koreksi`} penuh ikonKiri={<IkonPena size={16} />}>
-              Koreksi Stok
-            </TombolTautan>
             <TombolTautan
-              ke={
-                penawaran.length > 0
-                  ? `/penawaran/${penawaran[0].id}`
-                  : `/belanja?cari=${encodeURIComponent(barang.nama)}`
-              }
-              ragam="garis"
+              ke={kePesan}
+              ragam={aksiUtama === 'pesan' ? 'utama' : 'garis'}
               penuh
+              className={cx(aksiUtama === 'pesan' && 'col-span-2')}
               ikonKiri={<IkonKeranjang size={16} />}
             >
-              Pesan
+              {aksiUtama === 'pesan' ? 'Pesan Sekarang' : 'Pesan'}
             </TombolTautan>
             <TombolTautan
-              ke={`/stok/${barang.id}/ubah`}
-              ragam="sunyi"
+              ke={`/stok/${barang.id}/koreksi`}
+              ragam={aksiUtama === 'koreksi' ? 'utama' : 'garis'}
               penuh
-              className="col-span-2"
-              ikonKiri={<IkonKotak size={16} />}
+              className={cx(aksiUtama === 'pesan' && 'col-span-2', aksiUtama === 'koreksi' && 'order-first')}
+              ikonKiri={<IkonPena size={16} />}
             >
-              Ubah Barang
+              Koreksi Stok
             </TombolTautan>
           </div>
         </div>
@@ -330,8 +336,8 @@ export default function StokDetail() {
             <div role="tabpanel" aria-label="Ringkasan barang" className="mt-4 space-y-4">
               {mesin.status === 'memuat' ? (
                 <Kartu padat aria-busy="true">
-                  <p className="text-[0.9375rem] font-bold text-ink">{barang.nama}</p>
-                  <p className="mt-1 text-[0.8125rem] text-ink-3">Mengambil perkiraan dari server&hellip;</p>
+                  <p className="text-kartu font-bold text-ink">{barang.nama}</p>
+                  <p className="mt-1 text-isi text-ink-3">Memuat perkiraan&hellip;</p>
                 </Kartu>
               ) : (
                 <KartuPerkiraan barang={barang} perkiraan={perkiraan} />
@@ -341,15 +347,15 @@ export default function StokDetail() {
                 <Kartu>
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div className="min-w-0">
-                      <h2 className="text-[0.9375rem] font-bold text-ink leading-tight">Tren pemakaian</h2>
-                      <p className="text-[0.8125rem] text-ink-3 mt-0.5 leading-snug">
+                      <h2 className="text-kartu font-bold text-ink leading-tight">Tren pemakaian</h2>
+                      <p className="text-isi text-ink-3 mt-0.5 leading-snug">
                         14 hari terakhir dan 7 hari ke depan
                         {mesin.model && <> &middot; perkiraan {mesin.model}, pita p10&ndash;p90</>}
                       </p>
                     </div>
                     <Link
                       to={`/stok/${barang.id}/rapor`}
-                      className="shrink-0 inline-flex items-center gap-1 text-[0.8125rem] font-bold text-brand hover:underline"
+                      className="shrink-0 inline-flex items-center gap-1 text-isi font-bold text-brand hover:underline"
                     >
                       <IkonGrafik size={15} />
                       Rapor perkiraan
@@ -360,12 +366,12 @@ export default function StokDetail() {
                     satuan={satuanTampil(barang).nama}
                   />
                   {/* Nama garis pembatas sama dengan yang tertulis di grafik. */}
-                  <p className="mt-2 text-[0.75rem] text-ink-3 leading-relaxed">
+                  <Penjelasan label="Cara membaca grafik" className="mt-1">
                     {tren.some((t) => t.aktual != null && t.prediksi != null) &&
                       `Sebelum garis “${mesin.status === 'contoh' ? 'hari ini' : 'data terakhir'}”, garis merah adalah perkiraan yang dibuat 14 hari sebelumnya tanpa melihat pemakaian sesudahnya; bandingkan dengan garis pemakaian tercatat. `}
                     Sesudah garis &ldquo;{mesin.status === 'contoh' ? 'hari ini' : 'data terakhir'}&rdquo;, bayangan merah
                     adalah rentang perkiraan: sekitar 8 dari 10 hari jatuh di dalamnya.
-                  </p>
+                  </Penjelasan>
                 </Kartu>
               )}
 
@@ -434,9 +440,24 @@ function KartuSaranMesin({
 }) {
   const pesan = useAplikasi((s) => s.pesanDariServer)
   const navigate = useNavigate()
+  const [param, setParam] = useSearchParams()
   const [dibuka, setDibuka] = useState<number | null>(null)
   const [jumlah, setJumlah] = useState(jumlahAwal)
   const [mengirim, setMengirim] = useState(false)
+  const wadahRef = useRef<HTMLElement>(null)
+
+  /* Tombol "Pesan" di kolom kiri menambahkan ?pesan=1: saran teratas langsung
+     dibuka dengan jumlah saran, lalu kartunya digulir ke layar (di HP letaknya
+     jauh di bawah). Parameternya dibuang lagi supaya kembali tidak membukanya ulang. */
+  useEffect(() => {
+    if (param.get('pesan') !== '1' || saran.length === 0) return
+    setJumlah(jumlahAwal)
+    setDibuka(saran[0].penawaranId)
+    wadahRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    const p = new URLSearchParams(param)
+    p.delete('pesan')
+    setParam(p, { replace: true })
+  }, [param, setParam, saran, jumlahAwal])
 
   function kirim(penawaranId: number) {
     setMengirim(true)
@@ -450,9 +471,9 @@ function KartuSaranMesin({
   if (saran.length === 0) {
     return (
       <Kartu padat>
-        <h2 className="text-[0.9375rem] font-bold text-ink leading-tight">Saran distributor</h2>
+        <h2 className="text-kartu font-bold text-ink leading-tight">Saran distributor</h2>
         <KeteranganMetode className="mt-2" mesin="Mesin 2" metode={METODE_MESIN2.metode} masukan={METODE_MESIN2.masukan} />
-        <p className="mt-1 text-[0.8125rem] text-ink-3 leading-relaxed">
+        <p className="mt-1 text-isi text-ink-3 leading-relaxed">
           Belum ada saran untuk barang ini. Saran muncul saat barang mendekati batas aman dan perlu dipesan.
         </p>
       </Kartu>
@@ -460,29 +481,36 @@ function KartuSaranMesin({
   }
   const lama = saran.some((s) => s.kedaluwarsa)
   return (
+    <section ref={wadahRef} aria-label="Saran distributor" className="scroll-mt-20">
     <Kartu>
-      <h2 className="text-[0.9375rem] font-bold text-ink leading-tight">Saran distributor</h2>
-        <KeteranganMetode className="mt-2" mesin="Mesin 2" metode={METODE_MESIN2.metode} masukan={METODE_MESIN2.masukan} />
-      <p className="text-[0.8125rem] text-ink-3 mt-0.5 leading-snug">
-        Dihitung {waktuLalu(saran[0].dijalankanPada)}
-        {lama && ' · sudah lewat masa berlaku, akan diperbarui penjadwal'}
-      </p>
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 className="text-kartu font-bold text-ink leading-tight">Saran distributor</h2>
+        <p className="shrink-0 text-kecil text-ink-3">
+          Dihitung {waktuLalu(saran[0].dijalankanPada)}
+          {lama && ' · akan diperbarui'}
+        </p>
+      </div>
+      <KeteranganMetode className="mt-2" mesin="Mesin 2" metode={METODE_MESIN2.metode} masukan={METODE_MESIN2.masukan} />
       <ul className="mt-3 space-y-3">
         {saran.map((s, i) => {
           const seg = SEGMEN_SARAN[s.segmen ?? ''] ?? { label: s.segmen ?? '–', nada: 'info' as const }
           return (
             <li key={`${s.distributorId}-${s.penawaranId}`} className={cx(i > 0 && 'pt-3 border-t border-line')}>
               <div className="flex items-start justify-between gap-2">
-                <p className="text-[0.9375rem] font-bold text-ink leading-snug min-w-0">
+                <p className="text-kartu font-bold text-ink leading-snug min-w-0">
                   {i === 0 && <span className="sr-only">Saran utama: </span>}
                   {s.namaDistributor}
                 </p>
                 <Lencana nada={seg.nada}>{seg.label}</Lencana>
               </div>
-              <p className="mt-0.5 text-[0.8125rem] text-ink-2">
-                Skor {s.skor.toFixed(2).replace('.', ',')} &middot; peluang pesanan berhasil {persen(s.peluangSukses * 100)}
+              <p className="mt-0.5 text-isi text-ink-2">
+                Peluang pesanan lancar <strong className="text-ink tabular">{persen(s.peluangSukses * 100)}</strong>
               </p>
-              {s.alasan && <p className="mt-1 text-[0.8125rem] text-ink-3 leading-relaxed">{s.alasan}</p>}
+              {s.alasan && (
+                <Penjelasan label="Kenapa disarankan?">
+                  {s.alasan} Skor gabungan {s.skor.toFixed(2).replace('.', ',')}.
+                </Penjelasan>
+              )}
               {dibuka === s.penawaranId ? (
                 <div className="mt-2.5 p-3 rounded-md bg-sunken space-y-2.5">
                   <PengaturJumlah
@@ -520,6 +548,7 @@ function KartuSaranMesin({
         })}
       </ul>
     </Kartu>
+    </section>
   )
 }
 
@@ -577,17 +606,17 @@ function BarisRiwayat({
   const isi = (
     <>
       <div className="flex items-start justify-between gap-3">
-        <p className="text-[0.9375rem] font-semibold text-ink leading-snug">{judul}</p>
+        <p className="text-kartu font-semibold text-ink leading-snug">{judul}</p>
         <p
           className={cx(
-            'shrink-0 text-[0.9375rem] font-bold tabular',
+            'shrink-0 text-kartu font-bold tabular',
             masuk ? 'text-aman-ink' : 'text-ink',
           )}
         >
           {besaran}
         </p>
       </div>
-      <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.75rem] text-ink-3">
+      <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-kecil text-ink-3">
         <span>
           {tanggalRingkas(gerak.waktu)} &middot; {jam(gerak.waktu)}
         </span>
@@ -608,7 +637,7 @@ function BarisRiwayat({
         className="block bg-surface border border-line rounded-md p-3.5 hover:border-line-strong hover:shadow-e2 transition-[border-color,box-shadow]"
       >
         {isi}
-        <p className="mt-1.5 text-[0.75rem] font-semibold text-brand">Lihat pesanannya</p>
+        <p className="mt-1.5 text-kecil font-semibold text-brand">Lihat pesanannya</p>
       </Link>
     )
   }
@@ -622,11 +651,11 @@ function BarisRiwayat({
               pemakaian sehari penuh sementara struk yang tersimpan cuma yang
               terakhir. Tanpa itu, pemilik usaha yang menelusuri selisih stok
               membaca struk berisi barang lain sebagai penyebab angkanya. */}
-          <summary className="inline-flex items-center min-h-11 text-[0.8125rem] font-semibold text-brand cursor-pointer select-none">
+          <summary className="inline-flex items-center min-h-11 text-isi font-semibold text-brand cursor-pointer select-none">
             Lihat struk terakhir hari itu
           </summary>
           <div className="mt-1">
-            <p className="mb-1.5 text-[0.75rem] text-ink-3 leading-relaxed">
+            <p className="mb-1.5 text-kecil text-ink-3 leading-relaxed">
               Baris ini merangkum penjualan sehari penuh. Struk di bawah cuma contoh struk terakhir hari itu,
               bukan satu-satunya penyebab angkanya.
             </p>

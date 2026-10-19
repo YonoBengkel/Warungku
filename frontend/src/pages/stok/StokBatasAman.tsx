@@ -130,7 +130,7 @@ export default function StokBatasAman() {
         <Kartu>
           <div className="flex items-end justify-between gap-4">
             <div className="min-w-0">
-              <p className="text-[0.8125rem] text-ink-3">Batas aman sekarang</p>
+              <p className="text-isi text-ink-3">Batas aman sekarang</p>
               <p className="mt-0.5 text-[1.75rem] font-extrabold text-ink leading-none">
                 {barang.batasAman > 0 ? jumlahTampil(barang, barang.batasAman) : 'Belum diisi'}
               </p>
@@ -139,9 +139,9 @@ export default function StokBatasAman() {
               {lencanaSumber.teks}
             </Lencana>
           </div>
-          <p className="mt-2.5 text-[0.875rem] text-ink-2 leading-relaxed">{BANTUAN.batasAman}</p>
+          <p className="mt-2.5 text-isi text-ink-2 leading-relaxed">{BANTUAN.batasAman}</p>
           <Pemisah className="my-3" />
-          <p className="text-[0.8125rem] text-ink-3 leading-relaxed">
+          <p className="text-isi text-ink-3 leading-relaxed">
             Sisa tercatat sekarang {jumlahTampil(barang, Math.max(0, barang.stok))}.
           </p>
         </Kartu>
@@ -173,7 +173,7 @@ export default function StokBatasAman() {
               <IkonPetir size={18} />
             </span>
             <div className="min-w-0">
-              <h2 className="text-[0.9375rem] font-bold text-ink leading-tight">Saran kami</h2>
+              <h2 className="text-kartu font-bold text-ink leading-tight">Saran kami</h2>
               <p className="mt-1 text-[1rem] text-ink-2 leading-relaxed">{kalimatSaran}</p>
             </div>
           </div>
@@ -199,8 +199,8 @@ export default function StokBatasAman() {
         {/* ---- Atur sendiri ---- */}
         {aturSendiri && (
           <Kartu className="anim-muncul">
-            <h2 className="text-[0.9375rem] font-bold text-ink leading-tight">Atur sendiri</h2>
-            <p className="mt-1 text-[0.8125rem] text-ink-3 leading-relaxed">
+            <h2 className="text-kartu font-bold text-ink leading-tight">Atur sendiri</h2>
+            <p className="mt-1 text-isi text-ink-3 leading-relaxed">
               Kalau kamu tahu ada hari ramai yang tidak terbaca dari data, angka kamu yang dipakai.
             </p>
 
@@ -216,7 +216,7 @@ export default function StokBatasAman() {
                 label="Batas aman"
               />
               {nilaiGalat && (
-                <p className="mt-2 text-[0.8125rem] text-kritis font-medium leading-snug">{nilaiGalat}</p>
+                <p className="mt-2 text-isi text-kritis font-medium leading-snug">{nilaiGalat}</p>
               )}
             </div>
 
@@ -235,7 +235,7 @@ export default function StokBatasAman() {
             </div>
 
             {barang.pemakaianHarian > 0 && nilai > 0 && (
-              <p className="mt-3 text-[0.875rem] text-ink-2 leading-relaxed">
+              <p className="mt-3 text-isi text-ink-2 leading-relaxed">
                 Dengan angka ini, kami mengingatkan kamu saat sisa tinggal{' '}
                 <strong className="text-ink">
                   {angka(nilai, desimalTampil(barang))} {satuanTampil(barang).nama}

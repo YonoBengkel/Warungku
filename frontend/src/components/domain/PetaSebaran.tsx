@@ -306,13 +306,13 @@ export function PetaSebaran({
         })}
       </svg>
 
-      <p className="mt-2 text-[0.75rem] text-ink-3 leading-snug">
+      <p className="mt-2 text-kecil text-ink-3 leading-snug">
         Ini gambaran sebaran, bukan peta sesungguhnya. Letaknya diperkirakan dari koordinat toko dan
         titik yang terlalu rapat sedikit dirapikan supaya tidak saling menutup. Angka di dalam titik
         adalah jumlah pesanan toko itu.
       </p>
       {posisi.length === 0 && (
-        <p className="mt-1 text-[0.8125rem] text-ink-2">Belum ada titik yang perlu ditampilkan.</p>
+        <p className="mt-1 text-isi text-ink-2">Belum ada titik yang perlu ditampilkan.</p>
       )}
     </div>
   )
@@ -382,7 +382,7 @@ export function KartuHitungTitik({ titik }: { titik: TitikPeta[] }) {
           <li key={w} className="min-w-0">
             <div className="h-full bg-surface border border-line rounded-lg shadow-e1 p-2.5 sm:p-3.5 flex flex-col items-center text-center">
               <TandaTitik warna={w} jumlah={hitung[w].pesanan} />
-              <p className="mt-1.5 text-[0.75rem] sm:text-[0.8125rem] font-bold text-ink leading-tight">
+              <p className="mt-1.5 text-kecil sm:text-isi font-bold text-ink leading-tight">
                 {LABEL_TITIK[w]}
               </p>
               <p className="mt-0.5 text-[0.6875rem] text-ink-2 leading-snug">
@@ -396,7 +396,7 @@ export function KartuHitungTitik({ titik }: { titik: TitikPeta[] }) {
 
       {/* Tanpa kalimat ini, jumlah toko ketiga kartu terbaca lebih banyak
           daripada jumlah titik di peta, dan itu terlihat seperti salah hitung. */}
-      <p className="mt-2 text-[0.75rem] text-ink-3 leading-snug">
+      <p className="mt-2 text-kecil text-ink-3 leading-snug">
         Satu toko bisa muncul di lebih dari satu kartu kalau pesanannya berbeda kondisi. Di peta ia
         tetap satu titik saja, berwarna kondisi yang paling mendesak.
       </p>

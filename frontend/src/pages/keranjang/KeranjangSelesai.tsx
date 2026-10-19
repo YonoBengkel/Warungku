@@ -100,12 +100,12 @@ export default function KeranjangSelesai() {
           {gagal === 0 ? <IkonCentangLingkaran size={20} /> : <IkonPeringatan size={20} />}
         </span>
         <div className="min-w-0">
-          <h2 className="text-[1.0625rem] font-bold text-ink leading-snug">
+          <h2 className="text-subjudul font-bold text-ink leading-snug">
             {gagal === 0
               ? `${terkirim} pesanan terkirim ke distributor`
               : `${terkirim} dari ${hasil.pesanan.length} pesanan terkirim`}
           </h2>
-          <p className="mt-1 text-[0.8125rem] text-ink-2 leading-relaxed">
+          <p className="mt-1 text-isi text-ink-2 leading-relaxed">
             {gagal === 0
               ? 'Distributor akan mengonfirmasi satu per satu. Kamu bisa memantau setiap pesanan di tab Pesanan.'
               : `${gagal} pesanan masih menunggu di HP kamu. Yang sudah terkirim tidak perlu diulang — kirim ulang hanya baris yang belum berangkat.`}
@@ -117,11 +117,11 @@ export default function KeranjangSelesai() {
 
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[0.75rem] font-semibold uppercase tracking-wide text-ink-3">
+          <p className="text-kecil font-semibold uppercase tracking-wide text-ink-3">
             Kode induk belanja
           </p>
-          <p className="text-[1.0625rem] font-bold text-ink tabular">{hasil.kodeBelanja}</p>
-          <p className="mt-0.5 text-[0.8125rem] text-ink-3 leading-snug">
+          <p className="text-subjudul font-bold text-ink tabular">{hasil.kodeBelanja}</p>
+          <p className="mt-0.5 text-isi text-ink-3 leading-snug">
             Satu belanja, beberapa pesanan. Sebut kode ini kalau kamu menghubungi distributor.
           </p>
         </div>
@@ -162,8 +162,8 @@ export default function KeranjangSelesai() {
                     <div className="flex items-start gap-3 min-h-[72px]">
                       <Avatar nama={distributor?.nama ?? '?'} warna={distributor?.warna} ukuran={40} />
                       <div className="min-w-0 grow">
-                        <h3 className="text-[0.9375rem] font-bold text-ink truncate">{distributor?.nama}</h3>
-                        <p className="text-[0.8125rem] text-ink-2 tabular">{p.nomor}</p>
+                        <h3 className="text-kartu font-bold text-ink truncate">{distributor?.nama}</h3>
+                        <p className="text-isi text-ink-2 tabular">{p.nomor}</p>
                         <div className="mt-1.5">
                           {p.berhasil ? (
                             <Lencana nada="aman" ikon={<IkonCentangLingkaran size={13} />}>
@@ -176,7 +176,7 @@ export default function KeranjangSelesai() {
                           )}
                         </div>
                         {!p.berhasil && (
-                          <p className="mt-1.5 text-[0.8125rem] text-ink-3 leading-snug">
+                          <p className="mt-1.5 text-isi text-ink-3 leading-snug">
                             Pesanan ini masih tersimpan lengkap. Tekan kirim ulang kalau kamu sudah siap.
                           </p>
                         )}
@@ -204,7 +204,7 @@ export default function KeranjangSelesai() {
             </div>
           </section>
 
-          <p className="text-[0.8125rem] text-ink-3 leading-relaxed px-1 max-w-[68ch]">
+          <p className="text-isi text-ink-3 leading-relaxed px-1 max-w-[68ch]">
             {BANTUAN.bayarLuarPanjang}
           </p>
         </div>

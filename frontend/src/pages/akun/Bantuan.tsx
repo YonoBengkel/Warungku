@@ -290,7 +290,7 @@ export default function Bantuan() {
                         aria-controls={`panel-${f.id}`}
                         className="w-full text-left flex items-start gap-3 px-4 py-4 min-h-[56px] hover:bg-sunken transition-colors"
                       >
-                        <span className="grow text-[0.9375rem] font-semibold text-ink leading-snug">{f.tanya}</span>
+                        <span className="grow text-kartu font-semibold text-ink leading-snug">{f.tanya}</span>
                         <IkonPanahBawah
                           size={18}
                           className={cx(
@@ -303,7 +303,7 @@ export default function Bantuan() {
                     <div
                       id={`panel-${f.id}`}
                       hidden={!buka}
-                      className="px-4 pb-4 text-[0.875rem] text-ink-2 leading-relaxed"
+                      className="px-4 pb-4 text-isi text-ink-2 leading-relaxed"
                     >
                       {f.jawab}
                     </div>
@@ -312,7 +312,7 @@ export default function Bantuan() {
               })}
             </div>
 
-            <p className="mt-3 text-[0.8125rem] text-ink-3 leading-relaxed">
+            <p className="mt-3 text-isi text-ink-3 leading-relaxed">
               Tidak ketemu jawabannya? Hubungi bantuan lewat tombol di bawah. Sebutkan nomor pesanan atau nama
               barangnya supaya kami bisa langsung melihat kasusnya.
             </p>
@@ -324,17 +324,17 @@ export default function Bantuan() {
           <section aria-label="Tentang aplikasi ini">
             <JudulBagian judul="Tentang aplikasi ini" className="mb-3" />
             <Kartu>
-              <p className="text-[0.875rem] text-ink-2 leading-relaxed">
+              <p className="text-isi text-ink-2 leading-relaxed">
                 Aplikasi ini mengurus satu hal: memastikan bahan dan barang daganganmu tidak pernah habis mendadak,
                 dan belanja ke distributor tidak jadi tebak-tebakan.
               </p>
 
               <Pemisah className="my-3.5" />
 
-              <h3 className="text-[0.8125rem] font-bold text-ink uppercase tracking-wide">Yang dilakukan</h3>
+              <h3 className="text-isi font-bold text-ink uppercase tracking-wide">Yang dilakukan</h3>
               <ul className="mt-2 space-y-2">
                 {DILAKUKAN.map((t) => (
-                  <li key={t} className="flex items-start gap-2 text-[0.875rem] text-ink-2 leading-relaxed">
+                  <li key={t} className="flex items-start gap-2 text-isi text-ink-2 leading-relaxed">
                     <IkonCentang size={16} className="shrink-0 mt-0.5 text-aman" />
                     {t}
                   </li>
@@ -343,10 +343,10 @@ export default function Bantuan() {
 
               <Pemisah className="my-3.5" />
 
-              <h3 className="text-[0.8125rem] font-bold text-ink uppercase tracking-wide">Yang TIDAK dilakukan</h3>
+              <h3 className="text-isi font-bold text-ink uppercase tracking-wide">Yang TIDAK dilakukan</h3>
               <ul className="mt-2 space-y-2">
                 {TIDAK_DILAKUKAN.map((t) => (
-                  <li key={t} className="flex items-start gap-2 text-[0.875rem] text-ink-3 leading-relaxed">
+                  <li key={t} className="flex items-start gap-2 text-isi text-ink-3 leading-relaxed">
                     <IkonSilang size={16} className="shrink-0 mt-0.5" />
                     {t}
                   </li>
@@ -370,8 +370,8 @@ export default function Bantuan() {
               className="w-full text-left flex items-center justify-between gap-3 min-h-11 rounded-sm px-1 -mx-1 hover:bg-sunken transition-colors"
             >
               <span className="min-w-0">
-                <span className="block text-[0.9375rem] font-semibold text-ink">Ketentuan layanan</span>
-                <span className="block text-[0.8125rem] text-ink-3 leading-snug">
+                <span className="block text-kartu font-semibold text-ink">Ketentuan layanan</span>
+                <span className="block text-isi text-ink-3 leading-snug">
                   Apa yang kami janjikan, dan apa yang jadi tanggung jawabmu
                 </span>
               </span>
@@ -381,8 +381,8 @@ export default function Bantuan() {
             <Pemisah className="my-3" />
 
             <div className="flex items-baseline gap-2">
-              <p className="text-[0.8125rem] font-semibold text-ink-2">Versi aplikasi</p>
-              <p className="text-[0.8125rem] text-ink-3 tabular">{VERSI}</p>
+              <p className="text-isi font-semibold text-ink-2">Versi aplikasi</p>
+              <p className="text-isi text-ink-3 tabular">{VERSI}</p>
             </div>
           </Kartu>
 
@@ -410,7 +410,7 @@ export default function Bantuan() {
               <IkonTelepon size={18} />
             </span>
             <div className="min-w-0 grow">
-              <p className="text-[0.75rem] text-ink-3">WhatsApp bantuan</p>
+              <p className="text-kecil text-ink-3">WhatsApp bantuan</p>
               <p className="text-[1rem] font-bold text-ink tabular">{formatHp(NOMOR_BANTUAN)}</p>
             </div>
             <Tombol ragam="garis" ukuran="kecil" ikonKiri={<IkonSalin size={15} />} onClick={salinNomor}>
@@ -418,16 +418,16 @@ export default function Bantuan() {
             </Tombol>
           </div>
 
-          <p className="mt-3.5 text-[0.875rem] text-ink-2 leading-relaxed">
+          <p className="mt-3.5 text-isi text-ink-2 leading-relaxed">
             Supaya cepat ketemu, sebutkan tiga hal ini di pesan pertamamu:
           </p>
-          <ol className="mt-2 space-y-1.5 list-decimal pl-5 text-[0.875rem] text-ink-2 leading-relaxed">
+          <ol className="mt-2 space-y-1.5 list-decimal pl-5 text-isi text-ink-2 leading-relaxed">
             <li>Nama usahamu seperti yang tertulis di profil.</li>
             <li>Nomor pesanan atau nama barang yang bermasalah.</li>
             <li>Apa yang kamu harapkan terjadi, dan apa yang kamu lihat di layar.</li>
           </ol>
 
-          <p className="mt-3.5 text-[0.8125rem] text-ink-3 leading-relaxed">
+          <p className="mt-3.5 text-isi text-ink-3 leading-relaxed">
             Untuk urusan barang yang kurang, pecah, atau telat sampai, hubungi distributornya lebih dulu lewat
             halaman pesanan. Mereka yang memegang barangnya, jadi jawabannya jauh lebih cepat.
           </p>
@@ -450,8 +450,8 @@ export default function Bantuan() {
         <div className="pb-4 space-y-3.5">
           {KETENTUAN.map((k) => (
             <div key={k.judul}>
-              <h3 className="text-[0.9375rem] font-bold text-ink leading-snug">{k.judul}</h3>
-              <p className="mt-1 text-[0.875rem] text-ink-2 leading-relaxed">{k.isi}</p>
+              <h3 className="text-kartu font-bold text-ink leading-snug">{k.judul}</h3>
+              <p className="mt-1 text-isi text-ink-2 leading-relaxed">{k.isi}</p>
             </div>
           ))}
 

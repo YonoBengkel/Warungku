@@ -142,17 +142,17 @@ export default function StokRapor() {
         <KepalaHalaman judul="Rapor Perkiraan" keterangan={barang.nama} kembaliKe={`/stok/${barang.id}`} />
         <div className="mt-4 max-w-xl mx-auto">
           <Kartu>
-            <h2 className="text-[1.0625rem] font-extrabold text-ink leading-snug">
+            <h2 className="text-subjudul font-extrabold text-ink leading-snug">
               Belum ada perkiraan yang bisa dinilai
             </h2>
             {barang.dicatatManual ? (
-              <p className="mt-2 text-[0.875rem] text-ink-2 leading-relaxed">
+              <p className="mt-2 text-isi text-ink-2 leading-relaxed">
                 {barang.nama} kamu tandai sebagai barang yang dicatat manual, jadi kami memang tidak
                 menyusun perkiraan untuknya. Pengingat batas aman tetap berjalan seperti biasa.
               </p>
             ) : (
               <>
-                <p className="mt-2 text-[0.875rem] text-ink-2 leading-relaxed">
+                <p className="mt-2 text-isi text-ink-2 leading-relaxed">
                   Rapor ini membandingkan perkiraan kami dengan kenyataan. Untuk {barang.nama}, kami
                   belum pernah mengeluarkan perkiraan, jadi belum ada yang bisa dinilai.
                 </p>
@@ -168,12 +168,12 @@ export default function StokRapor() {
                       tinggi={6}
                       label={`Data terkumpul ${angka(barang.hariDataTerkumpul)} dari 14 hari`}
                     />
-                    <p className="mt-1.5 text-[0.75rem] text-ink-3">
+                    <p className="mt-1.5 text-kecil text-ink-3">
                       Perkiraan mulai muncul {angka(14 - barang.hariDataTerkumpul)} hari lagi.
                     </p>
                   </div>
                 ) : (
-                  <p className="mt-4 text-[0.8125rem] text-ink-3 leading-relaxed">
+                  <p className="mt-4 text-isi text-ink-3 leading-relaxed">
                     Riwayat pemakaiannya belum terbentuk, jadi belum ada perkiraan lama yang bisa
                     diadu dengan kenyataan. Rapor ini terisi sendiri setelah beberapa hari penjualan
                     tercatat.
@@ -222,11 +222,11 @@ export default function StokRapor() {
             {/* Angka besar di kalimat ini harus cocok dengan angka pembaginya.
                 Yang dinilai adalah hari tanpa kehabisan stok, bukan 14 hari
                 penuh, jadi kalimatnya menyebut jumlah yang benar-benar dinilai. */}
-            <p className="text-[1.0625rem] font-extrabold text-ink leading-snug">
+            <p className="text-subjudul font-extrabold text-ink leading-snug">
               Dari {angka(rapor.dinilai)} hari yang bisa dinilai, perkiraan kami meleset kurang dari{' '}
               {jumlahSatuan(rapor.toleransi, rapor.unit)} di {angka(rapor.tepat)} hari.
             </p>
-            <p className="mt-2 text-[0.8125rem] text-ink-3 leading-relaxed">
+            <p className="mt-2 text-isi text-ink-3 leading-relaxed">
               {rapor.habis === 0
                 ? `Semua ${angka(rapor.baris.length)} hari terakhir ikut dinilai karena stoknya tidak pernah habis.`
                 : `${angka(rapor.habis)} hari lain dari ${angka(rapor.baris.length)} hari terakhir tidak ikut dinilai karena stoknya habis — penjualan hari itu tidak menggambarkan permintaan yang sebenarnya.`}
@@ -236,7 +236,7 @@ export default function StokRapor() {
           {/* 7 baris terakhir. Di bawah 1024px daftar ini berupa kartu, bukan
               tabel, supaya badan halaman tidak pernah bergeser ke samping. */}
           <section aria-labelledby="judul-tujuh-hari">
-            <h2 id="judul-tujuh-hari" className="mb-3 text-[0.9375rem] font-bold text-ink">
+            <h2 id="judul-tujuh-hari" className="mb-3 text-kartu font-bold text-ink">
               Tujuh hari terakhir
             </h2>
 
@@ -247,12 +247,12 @@ export default function StokRapor() {
                 return (
                   <li key={r.tanggal} className="bg-surface border border-line rounded-lg p-4">
                     <div className="flex items-center justify-between gap-3">
-                      <p className="text-[0.9375rem] font-semibold text-ink">
+                      <p className="text-kartu font-semibold text-ink">
                         {namaHariSingkat(r.tanggal)}, {tanggalRingkas(r.tanggal)}
                       </p>
                       <PenandaKetepatan habis={r.habis} tepat={tepat} />
                     </div>
-                    <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-[0.8125rem]">
+                    <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-isi">
                       <span className="text-ink-2">
                         Perkiraan{' '}
                         <strong className="text-ink tabular">
@@ -279,16 +279,16 @@ export default function StokRapor() {
                 </caption>
                 <thead>
                   <tr className="border-b border-line">
-                    <th scope="col" className="px-4 py-3 text-[0.8125rem] font-bold text-ink-2">
+                    <th scope="col" className="px-4 py-3 text-isi font-bold text-ink-2">
                       Tanggal
                     </th>
-                    <th scope="col" className="px-4 py-3 text-[0.8125rem] font-bold text-ink-2 text-right">
+                    <th scope="col" className="px-4 py-3 text-isi font-bold text-ink-2 text-right">
                       Perkiraan
                     </th>
-                    <th scope="col" className="px-4 py-3 text-[0.8125rem] font-bold text-ink-2 text-right">
+                    <th scope="col" className="px-4 py-3 text-isi font-bold text-ink-2 text-right">
                       Kenyataan
                     </th>
-                    <th scope="col" className="px-4 py-3 text-[0.8125rem] font-bold text-ink-2 text-right">
+                    <th scope="col" className="px-4 py-3 text-isi font-bold text-ink-2 text-right">
                       Hasil
                     </th>
                   </tr>
@@ -302,18 +302,18 @@ export default function StokRapor() {
                         key={r.tanggal}
                         className={cx('border-b border-line last:border-0', r.habis && 'bg-surface-2')}
                       >
-                        <td className="px-4 py-3 text-[0.875rem] font-semibold text-ink align-top">
+                        <td className="px-4 py-3 text-isi font-semibold text-ink align-top">
                           {namaHariSingkat(r.tanggal)}, {tanggalRingkas(r.tanggal)}
                           {r.habis && (
-                            <span className="block mt-1 text-[0.8125rem] font-normal text-ink-2 leading-snug">
+                            <span className="block mt-1 text-isi font-normal text-ink-2 leading-snug">
                               Stok habis &mdash; penjualan hari ini tidak dihitung
                             </span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-[0.875rem] text-ink-2 text-right tabular align-top">
+                        <td className="px-4 py-3 text-isi text-ink-2 text-right tabular align-top">
                           {jumlahSatuan(tampil(r.perkiraan), rapor.unit)}
                         </td>
-                        <td className="px-4 py-3 text-[0.875rem] font-bold text-ink text-right tabular align-top">
+                        <td className="px-4 py-3 text-isi font-bold text-ink text-right tabular align-top">
                           {jumlahSatuan(tampil(r.kenyataan), rapor.unit)}
                         </td>
                         <td className="px-4 py-3 text-right align-top">
@@ -330,10 +330,10 @@ export default function StokRapor() {
 
         <div className="lg:col-span-5 space-y-4 mt-4 lg:mt-0">
           <Kartu>
-            <h2 className="text-[0.9375rem] font-bold text-ink">
+            <h2 className="text-kartu font-bold text-ink">
               Pemakaian tujuh hari terakhir ({rapor.unit})
             </h2>
-            <p className="mt-0.5 mb-2 text-[0.8125rem] text-ink-3 leading-snug">
+            <p className="mt-0.5 mb-2 text-isi text-ink-3 leading-snug">
               {hariHabis.length === 0
                 ? 'Tidak ada hari kehabisan stok dalam tujuh hari ini.'
                 : `Hari saat stok habis: ${hariHabis
@@ -388,7 +388,7 @@ function PenandaKetepatan({ habis, tepat }: { habis: boolean; tepat: boolean }) 
 
 function KeteranganHabis() {
   return (
-    <p className="mt-2 text-[0.8125rem] text-ink-2 leading-snug border-t border-line pt-2">
+    <p className="mt-2 text-isi text-ink-2 leading-snug border-t border-line pt-2">
       Stok habis &mdash; penjualan hari ini tidak dihitung
     </p>
   )

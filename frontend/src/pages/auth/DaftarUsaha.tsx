@@ -185,7 +185,7 @@ export default function DaftarUsaha() {
               {mencariLokasi ? 'Sedang mencari lokasi' : 'Ambil lokasi saat ini'}
             </Tombol>
             {kota && (
-              <p className="mt-2 text-[0.8125rem] text-ink-3">
+              <p className="mt-2 text-isi text-ink-3">
                 Kota terbaca: <span className="font-semibold text-ink-2">{kota}</span>
               </p>
             )}
@@ -218,7 +218,7 @@ export default function DaftarUsaha() {
           <h2 id="judul-jualan" className="text-[1rem] font-bold text-ink">
             Apa yang kamu jual?
           </h2>
-          <p className="mt-1 text-[0.8125rem] text-ink-3 leading-relaxed">
+          <p className="mt-1 text-isi text-ink-3 leading-relaxed">
             Jawaban ini cuma menentukan bentuk awal formulir Tambah Barang. Bisa diganti kapan saja dari Akun.
           </p>
 
@@ -245,7 +245,7 @@ export default function DaftarUsaha() {
           </div>
 
           {galat.cara && (
-            <p id="galat-jualan" className="mt-2 text-[0.8125rem] text-kritis font-medium leading-snug">
+            <p id="galat-jualan" className="mt-2 text-isi text-kritis font-medium leading-snug">
               {galat.cara}
             </p>
           )}
@@ -306,7 +306,7 @@ function LayarAuth({
         <div className="bg-surface border border-line rounded-lg shadow-e1 p-5 sm:p-6 anim-muncul">
           <Link
             to={kembaliKe}
-            className="inline-flex items-center gap-1.5 h-11 -ml-1.5 pr-2.5 pl-1.5 rounded-md text-[0.8125rem] font-semibold text-ink-2 hover:text-ink hover:bg-sunken transition-colors"
+            className="inline-flex items-center gap-1.5 h-11 -ml-1.5 pr-2.5 pl-1.5 rounded-md text-isi font-semibold text-ink-2 hover:text-ink hover:bg-sunken transition-colors"
           >
             <IkonKembali size={18} />
             Kembali
@@ -327,8 +327,8 @@ function LayarAuth({
               />
             </div>
             <div className="mt-2 flex items-baseline justify-between gap-3">
-              <h1 className="text-[1.25rem] font-extrabold text-ink tracking-tight">{judul}</h1>
-              <span className="text-[0.8125rem] font-semibold text-ink-3 shrink-0">Langkah {langkah} dari 5</span>
+              <h1 className="text-judul font-extrabold text-ink tracking-tight">{judul}</h1>
+              <span className="text-isi font-semibold text-ink-3 shrink-0">Langkah {langkah} dari 5</span>
             </div>
           </div>
 

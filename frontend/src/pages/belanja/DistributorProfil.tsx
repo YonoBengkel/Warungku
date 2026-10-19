@@ -68,11 +68,11 @@ function BarisPenawaran({ penawaran }: { penawaran: Penawaran }) {
       className="flex items-center gap-3 bg-surface border border-line rounded-md px-3.5 py-3 min-h-[72px] transition-[border-color] hover:border-line-strong active:bg-surface-2"
     >
       <div className="min-w-0 grow">
-        <p className="text-[0.9375rem] font-semibold text-ink leading-snug">{penawaran.nama}</p>
+        <p className="text-kartu font-semibold text-ink leading-snug">{penawaran.nama}</p>
         {/* Harga beli sekali dari sumber yang sama dengan keranjang: kalau
             promo memotongnya, angka di sini sudah angka setelah potongan. */}
-        <p className="mt-0.5 text-[0.8125rem] text-ink-2 flex flex-wrap items-baseline gap-x-1.5">
-          <HargaBeli rincian={rincianHarga(penawaran.id, null)} satuan={penawaran.satuan} className="text-[0.8125rem]" />
+        <p className="mt-0.5 text-isi text-ink-2 flex flex-wrap items-baseline gap-x-1.5">
+          <HargaBeli rincian={rincianHarga(penawaran.id, null)} satuan={penawaran.satuan} className="text-isi" />
           <span className="text-ink-3">
             &middot; stok {angka(penawaran.stokTersedia)} {penawaran.satuan}
           </span>
@@ -145,11 +145,11 @@ export default function DistributorProfil() {
           {/* Identitas. Nama dan kota tidak diulang di sini: keduanya sudah
               menempel permanen di kepala halaman yang lengket di atas layar. */}
           <Kartu>
-            <h2 className="text-[0.9375rem] font-bold text-ink mb-2.5">Tentang distributor ini</h2>
+            <h2 className="text-kartu font-bold text-ink mb-2.5">Tentang distributor ini</h2>
             <div className="flex items-start gap-3.5">
               <Avatar nama={distributor.nama} warna={distributor.warna} ukuran={56} />
               <div className="min-w-0 grow">
-                <p className="text-[0.875rem] text-ink-2 leading-relaxed">{distributor.deskripsi}</p>
+                <p className="text-isi text-ink-2 leading-relaxed">{distributor.deskripsi}</p>
                 <div className="mt-2.5 flex flex-wrap gap-1.5">
                   <Lencana nada="netral" ikon={<IkonLokasi size={13} />}>
                     Berkantor di {distributor.kota}
@@ -186,18 +186,18 @@ export default function DistributorProfil() {
 
           {/* Kepala rating: konteks, bukan satu angka */}
           <Kartu>
-            <h2 className="text-[0.9375rem] font-bold text-ink mb-2.5">Penilaian dari UMKM lain</h2>
+            <h2 className="text-kartu font-bold text-ink mb-2.5">Penilaian dari UMKM lain</h2>
 
             {belumDinilai ? (
               <>
                 <Lencana nada="netral" besar>
                   Distributor Baru &middot; belum ada ulasan &middot; bergabung {distributor.sejak}
                 </Lencana>
-                <p className="mt-2.5 text-[0.875rem] text-ink-2 leading-relaxed">
+                <p className="mt-2.5 text-isi text-ink-2 leading-relaxed">
                   Kami tidak menampilkan nilai bintang sebelum ada ulasan pertama, karena angka nol akan terbaca
                   sebagai penilaian buruk padahal mereka memang belum pernah dinilai.
                 </p>
-                <p className="mt-2 text-[0.875rem] text-ink-2 leading-relaxed">
+                <p className="mt-2 text-isi text-ink-2 leading-relaxed">
                   Sudah {angka(distributor.jumlahPesananSelesai)} pesanan selesai lewat aplikasi. Kalau kamu ingin
                   mencoba, mulai dari jumlah kecil dulu sebelum mengikat kontrak panjang.
                 </p>
@@ -205,12 +205,12 @@ export default function DistributorProfil() {
             ) : (
               <>
                 <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                  <span className="inline-flex items-baseline gap-1.5 text-[1.625rem] font-extrabold text-ink leading-none tracking-tight">
+                  <span className="inline-flex items-baseline gap-1.5 text-angka font-extrabold text-ink leading-none tracking-tight">
                     <IkonBintangIsi size={22} className="text-menipis self-center" />
                     {satuDesimal(distributor.rating ?? 0)}
                     <HanyaPembacaLayar> dari 5 bintang</HanyaPembacaLayar>
                   </span>
-                  <span className="text-[0.875rem] text-ink-2">
+                  <span className="text-isi text-ink-2">
                     {distributor.jumlahUlasan} ulasan dari {distributor.jumlahUmkmPengulas} UMKM &middot;{' '}
                     {angka(distributor.jumlahPesananSelesai)} pesanan selesai
                   </span>
@@ -222,8 +222,8 @@ export default function DistributorProfil() {
                     return (
                       <div key={kunci}>
                         <div className="flex items-baseline justify-between gap-3 mb-1.5">
-                          <span className="text-[0.8125rem] text-ink-2 font-medium">{label}</span>
-                          <span className="text-[0.8125rem] font-bold text-ink tabular">
+                          <span className="text-isi text-ink-2 font-medium">{label}</span>
+                          <span className="text-isi font-bold text-ink tabular">
                             {satuDesimal(nilai)} <span className="font-normal text-ink-3">dari 5</span>
                           </span>
                         </div>
@@ -237,7 +237,7 @@ export default function DistributorProfil() {
 
                 <Link
                   to={`/distributor/${distributor.id}/ulasan`}
-                  className="inline-flex items-center gap-1.5 text-[0.875rem] font-bold text-brand hover:underline"
+                  className="inline-flex items-center gap-1.5 text-isi font-bold text-brand hover:underline"
                 >
                   Baca ulasan dari UMKM lain
                   <IkonPanahKanan size={16} />
@@ -256,7 +256,7 @@ export default function DistributorProfil() {
               <div className="mt-2.5">
                 <Link
                   to={`/pesanan/${belumDiulas.id}`}
-                  className="inline-flex items-center gap-1 text-[0.8125rem] font-bold underline underline-offset-2"
+                  className="inline-flex items-center gap-1 text-isi font-bold underline underline-offset-2"
                 >
                   Buka pesanan {belumDiulas.nomor}
                   <IkonPanahKanan size={15} />
@@ -264,38 +264,38 @@ export default function DistributorProfil() {
               </div>
             </Peringatan>
           ) : (
-            <p className="text-[0.875rem] text-ink-3 leading-relaxed px-1">
+            <p className="text-isi text-ink-3 leading-relaxed px-1">
               Kamu bisa menulis ulasan setelah pesanan kamu selesai.
             </p>
           )}
 
           {/* Fakta pengiriman */}
           <Kartu>
-            <h2 className="text-[0.9375rem] font-bold text-ink mb-2.5">Pengiriman &amp; keanggotaan</h2>
+            <h2 className="text-kartu font-bold text-ink mb-2.5">Pengiriman &amp; keanggotaan</h2>
             <dl className="space-y-3">
               <div>
-                <dt className="text-[0.8125rem] text-ink-3 flex items-center gap-1.5">
+                <dt className="text-isi text-ink-3 flex items-center gap-1.5">
                   <IkonKirim size={14} /> Area kirim
                 </dt>
-                <dd className="mt-1 text-[0.875rem] font-semibold text-ink leading-relaxed">
+                <dd className="mt-1 text-isi font-semibold text-ink leading-relaxed">
                   {distributor.areaKirim.join(' · ')}
                 </dd>
               </div>
               <div>
-                <dt className="text-[0.8125rem] text-ink-3">Minimum kirim</dt>
-                <dd className="mt-1 text-[0.875rem] font-semibold text-ink leading-relaxed">
+                <dt className="text-isi text-ink-3">Minimum kirim</dt>
+                <dd className="mt-1 text-isi font-semibold text-ink leading-relaxed">
                   {satuanJual.length > 0
                     ? `Minimal 1 ${satuanJual.join(' / ')} per barang, mengikuti kemasan jual distributor`
                     : 'Belum ada barang yang dijual, jadi minimum kirim belum berlaku'}
                 </dd>
               </div>
               <div>
-                <dt className="text-[0.8125rem] text-ink-3">Bergabung sejak</dt>
-                <dd className="mt-1 text-[0.875rem] font-semibold text-ink">{distributor.sejak}</dd>
+                <dt className="text-isi text-ink-3">Bergabung sejak</dt>
+                <dd className="mt-1 text-isi font-semibold text-ink">{distributor.sejak}</dd>
               </div>
               <div>
-                <dt className="text-[0.8125rem] text-ink-3">Kategori barang</dt>
-                <dd className="mt-1 text-[0.875rem] font-semibold text-ink">{distributor.kategori.join(', ')}</dd>
+                <dt className="text-isi text-ink-3">Kategori barang</dt>
+                <dd className="mt-1 text-isi font-semibold text-ink">{distributor.kategori.join(', ')}</dd>
               </div>
             </dl>
           </Kartu>
@@ -317,8 +317,8 @@ export default function DistributorProfil() {
                     className="flex items-center gap-3 bg-surface border border-line rounded-md px-3.5 py-3 min-h-[72px] hover:border-line-strong"
                   >
                     <div className="min-w-0 grow">
-                      <p className="text-[0.9375rem] font-semibold text-ink">{k.namaBarang}</p>
-                      <p className="mt-0.5 text-[0.8125rem] text-ink-3">
+                      <p className="text-kartu font-semibold text-ink">{k.namaBarang}</p>
+                      <p className="mt-0.5 text-isi text-ink-3">
                         Minimal {angka(k.kuotaMinPerBulan)} {k.satuan}/bulan &middot; berakhir{' '}
                         {tanggalPendek(k.berakhir)}
                       </p>
@@ -359,7 +359,7 @@ export default function DistributorProfil() {
           </section>
 
           {pesananSelesai.length > 0 && (
-            <p className="text-[0.8125rem] text-ink-3 px-1">
+            <p className="text-isi text-ink-3 px-1">
               Kamu sudah {pesananSelesai.length} kali menyelesaikan pesanan dari distributor ini. Terakhir{' '}
               {waktuLalu(pesananSelesai[0].dibuatPada)}.
             </p>

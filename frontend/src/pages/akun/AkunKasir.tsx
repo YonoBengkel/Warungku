@@ -84,7 +84,7 @@ export default function AkunKasir() {
         <h1 className="mt-5 text-[1.375rem] font-extrabold text-ink leading-tight tracking-tight">
           Apakah kamu sudah memiliki data transaksi sebelumnya?
         </h1>
-        <p className="mt-1.5 text-[0.9375rem] text-ink-2 leading-relaxed">
+        <p className="mt-1.5 text-kartu text-ink-2 leading-relaxed">
           Turnify Flow berdiri terpisah dari aplikasi kasirmu — kami mengurus stok gudang, kasir mengurus penjualan.
           Karena itu catatan penjualan yang sudah kamu punya perlu disambungkan ke sini. Kalau tidak, perkiraan
           kebutuhan mulai dari nol dan baru bisa diandalkan setelah dua minggu berjalan.
@@ -99,11 +99,11 @@ export default function AkunKasir() {
         <div className="mt-7 text-center">
           <Link
             to="/mulai/batas-aman"
-            className="inline-flex items-center justify-center min-h-11 px-3 text-[0.9375rem] font-semibold text-ink-3 underline underline-offset-4 hover:text-ink"
+            className="inline-flex items-center justify-center min-h-11 px-3 text-kartu font-semibold text-ink-3 underline underline-offset-4 hover:text-ink"
           >
             Lewati untuk saat ini
           </Link>
-          <p className="mt-1.5 text-[0.75rem] text-ink-3">
+          <p className="mt-1.5 text-kecil text-ink-3">
             Kamu bisa menyambungkannya kapan saja lewat Akun &rsaquo; Data dari Kasir.
           </p>
         </div>
@@ -178,7 +178,7 @@ function TabSambungan({ jumlahPerluDibereskan }: { jumlahPerluDibereskan: number
             </span>
             <div className="min-w-0">
               <h2 className="text-[1rem] font-bold text-ink">Kamu mencatat pemakaian harian sendiri</h2>
-              <p className="mt-1 text-[0.875rem] text-ink-2 leading-relaxed">
+              <p className="mt-1 text-isi text-ink-2 leading-relaxed">
                 Setiap sore kamu mengisi berapa banyak tiap bahan yang terpakai hari itu, lalu stok berkurang
                 sesuai angka tersebut. Perkiraan kebutuhan tetap jalan selama catatannya rutin.
               </p>
@@ -226,7 +226,7 @@ function TombolGantiSumber({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex items-center justify-center min-h-11 px-3 text-[0.875rem] font-semibold text-ink-3 underline underline-offset-4 hover:text-ink"
+      className="inline-flex items-center justify-center min-h-11 px-3 text-isi font-semibold text-ink-3 underline underline-offset-4 hover:text-ink"
     >
       Ganti sumber data penjualan
     </button>
@@ -375,7 +375,7 @@ function DaftarKonektor() {
         />
       </ul>
 
-      <p className="pt-3 text-[0.75rem] text-ink-3 leading-relaxed">
+      <p className="pt-3 text-kecil text-ink-3 leading-relaxed">
         Apa pun yang kamu pilih sekarang bisa diganti nanti lewat Akun &rsaquo; Data dari Kasir. Tidak ada kolom
         harga jual di mana pun — itu tetap tinggal di aplikasi kasirmu.
       </p>
@@ -392,7 +392,7 @@ function DaftarKonektor() {
           </Tombol>
         }
       >
-        <div className="pb-4 space-y-3 text-[0.875rem] text-ink-2 leading-relaxed">
+        <div className="pb-4 space-y-3 text-isi text-ink-2 leading-relaxed">
           <p>
             Yang kami baca cuma tiga kolom: <strong className="text-ink">tanggal</strong>,{' '}
             <strong className="text-ink">nama barang atau menu</strong>, dan{' '}
@@ -440,7 +440,7 @@ function BarisKonektor({
       <span
         aria-hidden="true"
         className={cx(
-          'shrink-0 size-11 rounded-md grid place-items-center text-[0.8125rem] font-extrabold',
+          'shrink-0 size-11 rounded-md grid place-items-center text-isi font-extrabold',
           logo,
         )}
       >
@@ -448,10 +448,10 @@ function BarisKonektor({
       </span>
       <div className="min-w-0 grow basis-[11rem]">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="text-[0.9375rem] font-bold text-ink leading-snug">{nama}</span>
+          <span className="text-kartu font-bold text-ink leading-snug">{nama}</span>
           {status}
         </div>
-        <p className="mt-0.5 text-[0.8125rem] text-ink-2 leading-relaxed">{keterangan}</p>
+        <p className="mt-0.5 text-isi text-ink-2 leading-relaxed">{keterangan}</p>
       </div>
       <div className="w-full sm:w-auto sm:shrink-0">{aksi}</div>
     </li>
@@ -506,7 +506,7 @@ function KeadaanTersambung({ jumlahPerluDibereskan }: { jumlahPerluDibereskan: n
             </h2>
             <Lencana nada={basi ? 'menipis' : 'aman'}>{basi ? 'Data belum baru' : 'Berjalan'}</Lencana>
           </div>
-          <p className="mt-1 text-[0.875rem] text-ink-2 leading-relaxed">
+          <p className="mt-1 text-isi text-ink-2 leading-relaxed">
             {basi ? (
               <>
                 Belum ada data baru sejak {terakhir ? waktuLalu(terakhir) : 'lama'}. Angka stok mungkin sudah tidak
@@ -523,23 +523,23 @@ function KeadaanTersambung({ jumlahPerluDibereskan }: { jumlahPerluDibereskan: n
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <p className="text-[0.75rem] font-semibold uppercase tracking-wide text-ink-3">Data terakhir masuk</p>
-          <p className="mt-1 text-[0.9375rem] font-bold text-ink">
+          <p className="text-kecil font-semibold uppercase tracking-wide text-ink-3">Data terakhir masuk</p>
+          <p className="mt-1 text-kartu font-bold text-ink">
             {sedangAmbil ? 'Sedang diambil…' : terakhir ? waktuLalu(terakhir) : 'Belum pernah'}
           </p>
           {terakhir && !sedangAmbil && (
-            <p className="text-[0.75rem] text-ink-3">
+            <p className="text-kecil text-ink-3">
               {tanggalRingkas(terakhir)} pukul {jam(terakhir)}
             </p>
           )}
         </div>
         <div>
-          <p className="text-[0.75rem] font-semibold uppercase tracking-wide text-ink-3">Masuk hari ini</p>
+          <p className="text-kecil font-semibold uppercase tracking-wide text-ink-3">Masuk hari ini</p>
           <p className="mt-1 flex items-baseline gap-1">
             <span className="text-[1.5rem] font-extrabold text-ink leading-none">
               {angka(kasir.jumlahTransaksiHariIni)}
             </span>
-            <span className="text-[0.8125rem] text-ink-3 font-semibold">penjualan</span>
+            <span className="text-isi text-ink-3 font-semibold">penjualan</span>
           </p>
         </div>
       </div>
@@ -741,7 +741,7 @@ function TabPerluDibereskan({
       </ul>
 
       {menu.length > 0 && (
-        <p className="mt-4 text-[0.8125rem] text-ink-3 leading-relaxed max-w-[70ch]">
+        <p className="mt-4 text-isi text-ink-3 leading-relaxed max-w-[70ch]">
           Penjualan yang sudah lewat tidak ikut dikurangi otomatis. Setelah memasangkan, cocokkan sisa stok lewat
           Koreksi Stok di detail tiap barang.
         </p>
@@ -774,7 +774,7 @@ function TabPerluDibereskan({
               }}
               bantuan="Perkiraan kasar sudah cukup. Kamu bisa membetulkannya kapan saja dari detail barang."
             />
-            <p className="mt-3 text-[0.8125rem] text-ink-3 leading-relaxed">
+            <p className="mt-3 text-isi text-ink-3 leading-relaxed">
               Sisa {jumlahTampil(bahanPorsi, bahanPorsi.stok)} yang tercatat sekarang tidak ikut dihitung
               ulang. Takaran ini berlaku untuk penjualan berikutnya.
             </p>
@@ -812,7 +812,7 @@ function KartuTugas({
           {/* h2, bukan h3: kartu ini bersarang langsung di bawah judul halaman,
               dan h3 membuat tingkat judul melompat. */}
           <h2 className="text-[1rem] font-bold text-ink leading-snug">{judul}</h2>
-          <div className="mt-1 text-[0.875rem] text-ink-2 leading-relaxed">{detail}</div>
+          <div className="mt-1 text-isi text-ink-2 leading-relaxed">{detail}</div>
         </div>
       </div>
       <div className="mt-3 flex flex-col sm:flex-row gap-2.5">
@@ -884,8 +884,8 @@ function TabRiwayat() {
           return (
             <li key={h.tanggal} className="bg-surface border border-line rounded-lg p-4">
               <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                <span className="text-[0.9375rem] font-bold text-ink">{h.tanggal}</span>
-                <span className="text-[0.875rem] text-ink-2">
+                <span className="text-kartu font-bold text-ink">{h.tanggal}</span>
+                <span className="text-isi text-ink-2">
                   {angka(h.masuk)} penjualan masuk dalam {h.catatan.length} kali pencatatan
                 </span>
                 {perluDilihat && (
@@ -896,17 +896,17 @@ function TabRiwayat() {
               </div>
 
               <details className="mt-2">
-                <summary className="inline-flex items-center min-h-11 text-[0.8125rem] font-semibold text-brand cursor-pointer select-none">
+                <summary className="inline-flex items-center min-h-11 text-isi font-semibold text-brand cursor-pointer select-none">
                   Lihat rinciannya
                 </summary>
                 <ul className="mt-1 space-y-2.5 border-l-2 border-line pl-3.5">
                   {h.catatan.map((r) => (
                     <li key={r.id}>
                       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                        <span className="text-[0.8125rem] font-bold text-ink tabular">pukul {jam(r.waktu)}</span>
+                        <span className="text-isi font-bold text-ink tabular">pukul {jam(r.waktu)}</span>
                         <Lencana nada={LABEL_HASIL[r.hasil].nada}>{LABEL_HASIL[r.hasil].teks}</Lencana>
                       </div>
-                      <p className="mt-0.5 text-[0.8125rem] text-ink-2 leading-relaxed">{r.keterangan}</p>
+                      <p className="mt-0.5 text-isi text-ink-2 leading-relaxed">{r.keterangan}</p>
                     </li>
                   ))}
                 </ul>
@@ -933,7 +933,7 @@ function TabRiwayat() {
         </ul>
       </div>
 
-      <p className="mt-4 text-[0.8125rem] text-ink-3 leading-relaxed max-w-[70ch]">
+      <p className="mt-4 text-isi text-ink-3 leading-relaxed max-w-[70ch]">
         Riwayat lebih lama dari 30 hari tidak disimpan. Kalau ada angka stok yang terasa tidak masuk akal, buka{' '}
         <Link to="/stok" className="font-semibold text-brand hover:underline">
           daftar Stok

@@ -34,12 +34,12 @@ export default function MasukDistributor() {
           </span>
           <span className="text-[1.125rem] font-extrabold text-ink tracking-tight">Turnify Flow</span>
         </div>
-        <h1 className="text-[1.25rem] font-extrabold text-ink tracking-tight text-center">Masuk ke Portal Distributor</h1>
-        <p className="mt-1 mb-4 text-[0.875rem] text-ink-3 leading-relaxed text-center">
+        <h1 className="text-judul font-extrabold text-ink tracking-tight text-center">Masuk ke Portal Distributor</h1>
+        <p className="mt-1 mb-4 text-isi text-ink-3 leading-relaxed text-center">
           Kelola pesanan masuk, kontrak, promo, dan lihat segmen pelangganmu.
         </p>
         <KartuSambungDistributor keterangan="Pakai email dan kata sandi akun distributor." />
-        <p className="mt-5 text-center text-[0.875rem] text-ink-2">
+        <p className="mt-5 text-center text-isi text-ink-2">
           Pemilik usaha?{' '}
           <Link
             to="/masuk"

@@ -113,7 +113,7 @@ export default function KasirPanduan() {
           </span>
           <div className="min-w-0">
             <h2 className="text-[1.125rem] font-extrabold text-ink leading-tight">{POS_TUNGGAL.nama}</h2>
-            <p className="text-[0.8125rem] text-ink-3">Tiga langkah, kira-kira dua menit.</p>
+            <p className="text-isi text-ink-3">Tiga langkah, kira-kira dua menit.</p>
           </div>
         </div>
 
@@ -135,12 +135,12 @@ export default function KasirPanduan() {
                         <p className="inline-flex items-center gap-2">
                           {/* text-ink-inverse: di tema gelap bg-brand jadi tosca
                               terang, dan angka putih di atasnya hampir hilang. */}
-                          <span className="size-6 rounded-full bg-brand text-ink-inverse grid place-items-center text-[0.75rem] font-extrabold shrink-0">
+                          <span className="size-6 rounded-full bg-brand text-ink-inverse grid place-items-center text-kecil font-extrabold shrink-0">
                             {l.nomor}
                           </span>
                           <span className="text-[1rem] font-bold text-ink leading-snug">{l.judul}</span>
                         </p>
-                        <p className="mt-1.5 text-[0.875rem] text-ink-2 leading-relaxed">{l.detail}</p>
+                        <p className="mt-1.5 text-isi text-ink-2 leading-relaxed">{l.detail}</p>
                       </div>
                     </div>
                   </Kartu>
@@ -154,7 +154,7 @@ export default function KasirPanduan() {
             <div className="mt-5">
               <Kartu>
                 <h2 className="text-[1rem] font-bold text-ink">Tempel kode sambungan di sini</h2>
-                <p className="mt-1 text-[0.875rem] text-ink-2 leading-relaxed">
+                <p className="mt-1 text-isi text-ink-2 leading-relaxed">
                   Kode ini hanya memberi izin membaca data penjualan. Kami tidak bisa mengubah apa pun di aplikasi
                   kasirmu.
                 </p>
@@ -236,7 +236,7 @@ export default function KasirPanduan() {
 
                 <Pemisah className="my-4" />
 
-                <p className="flex items-start gap-2 text-[0.8125rem] text-ink-3 leading-relaxed">
+                <p className="flex items-start gap-2 text-isi text-ink-3 leading-relaxed">
                   <IkonPeringatan size={16} className="shrink-0 mt-px" />
                   Belum ketemu menu Integrasi? Di sebagian aplikasi kasir namanya &ldquo;Aplikasi Terhubung&rdquo; atau
                   &ldquo;Kunci Akses&rdquo;.
@@ -246,8 +246,8 @@ export default function KasirPanduan() {
 
             {/* Alat uji tampilan hasil */}
             <div className="mt-5 rounded-lg border border-dashed border-line-strong bg-surface-2 p-4">
-              <h2 className="text-[0.9375rem] font-bold text-ink">Alat uji tampilan hasil</h2>
-              <p className="mt-1 text-[0.8125rem] text-ink-3 leading-relaxed">
+              <h2 className="text-kartu font-bold text-ink">Alat uji tampilan hasil</h2>
+              <p className="mt-1 text-isi text-ink-3 leading-relaxed">
                 Hanya untuk pengembang. Tombol ini memaksa hasil uji koneksi supaya kedua tampilannya bisa dilihat tanpa
                 kasir sungguhan.
               </p>
@@ -401,7 +401,7 @@ function TombolUji({
       aria-pressed={aktif}
       onClick={onClick}
       className={cx(
-        'h-11 px-3.5 rounded-md text-[0.8125rem] font-semibold border transition-colors',
+        'h-11 px-3.5 rounded-md text-isi font-semibold border transition-colors',
         aktif ? 'bg-ink text-ink-inverse border-ink' : 'bg-surface text-ink-2 border-line-strong hover:text-ink',
       )}
     >

@@ -8,8 +8,13 @@ import { IkonKembali } from '@/icons'
 /* ================================================================== */
 
 /**
- * Tab di dalam halaman. Di mobile bisa digeser horizontal supaya jumlah tab
- * tidak dibatasi lebar layar.
+ * Tab di dalam halaman: mengganti tampilan, bukan menyaring. Di mobile bisa
+ * digeser horizontal supaya jumlah tab tidak dibatasi lebar layar.
+ *
+ * Bentuknya jalur abu-abu dengan tab terpilih yang terangkat putih, supaya
+ * berbeda dari chip penyaring (ungu muda) dan tidak bersaing dengan tombol
+ * utama (ungu penuh). Dulu tab terpilih hitam pekat dan chip ungu penuh, dan
+ * keduanya sering tampil bertumpuk di satu layar.
  */
 export function TabSegmen<T extends string>({
   tab,
@@ -23,38 +28,37 @@ export function TabSegmen<T extends string>({
   className?: string
 }) {
   return (
-    <div
-      role="tablist"
-      className={cx('flex gap-1 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0', className)}
-    >
-      {tab.map((t) => {
-        const terpilih = t.nilai === aktif
-        return (
-          <button
-            key={t.nilai}
-            role="tab"
-            aria-selected={terpilih}
-            onClick={() => ubah(t.nilai)}
-            className={cx(
-              'shrink-0 h-11 px-3.5 rounded-md text-[0.875rem] font-semibold transition-colors duration-150',
-              'inline-flex items-center gap-1.5',
-              terpilih ? 'bg-ink text-ink-inverse' : 'bg-sunken text-ink-2 hover:text-ink',
-            )}
-          >
-            {t.label}
-            {t.jumlah != null && t.jumlah > 0 && (
-              <span
-                className={cx(
-                  'text-[0.6875rem] font-bold rounded-full px-1.5 py-px tabular',
-                  terpilih ? 'bg-ink-inverse/20' : 'bg-surface text-ink-2',
-                )}
-              >
-                {t.jumlah}
-              </span>
-            )}
-          </button>
-        )
-      })}
+    <div className={cx('flex overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0', className)}>
+      <div role="tablist" className="inline-flex shrink-0 gap-0.5 p-0.5 rounded-lg bg-sunken">
+        {tab.map((t) => {
+          const terpilih = t.nilai === aktif
+          return (
+            <button
+              key={t.nilai}
+              role="tab"
+              aria-selected={terpilih}
+              onClick={() => ubah(t.nilai)}
+              className={cx(
+                'shrink-0 h-11 px-3.5 rounded-md text-isi font-semibold transition-[background-color,color,box-shadow] duration-150',
+                'inline-flex items-center gap-1.5',
+                terpilih ? 'bg-surface text-ink shadow-e1' : 'text-ink-2 hover:text-ink',
+              )}
+            >
+              {t.label}
+              {t.jumlah != null && t.jumlah > 0 && (
+                <span
+                  className={cx(
+                    'text-[0.6875rem] font-bold rounded-full px-1.5 py-px tabular',
+                    terpilih ? 'bg-brand-soft text-brand-soft-ink' : 'bg-surface text-ink-2',
+                  )}
+                >
+                  {t.jumlah}
+                </span>
+              )}
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -78,7 +82,7 @@ export function TabTautan({
             to={t.ke}
             aria-current={terpilih ? 'page' : undefined}
             className={cx(
-              'shrink-0 h-11 px-3.5 rounded-md text-[0.875rem] font-semibold transition-colors duration-150',
+              'shrink-0 h-11 px-3.5 rounded-md text-isi font-semibold transition-colors duration-150',
               'inline-flex items-center gap-1.5',
               terpilih ? 'bg-ink text-ink-inverse' : 'bg-sunken text-ink-2 hover:text-ink',
             )}
@@ -134,10 +138,11 @@ export function Chip({
         // Tanpa jangkar di sini, ia mencari leluhur berposisi terdekat - yaitu
         // kepala halaman yang sticky - lalu lolos dari wadah gulir chip dan
         // melebarkan seluruh halaman.
-        'relative shrink-0 inline-flex items-center gap-1.5 h-11 px-3.5 rounded-full text-[0.8125rem] font-semibold',
+        'relative shrink-0 inline-flex items-center gap-1.5 h-11 px-3.5 rounded-full text-isi font-semibold',
         'border transition-colors duration-150',
+        // Ungu muda, bukan ungu penuh: ungu penuh dicadangkan untuk tombol utama.
         aktif
-          ? 'bg-brand text-ink-inverse border-brand'
+          ? 'bg-brand-soft text-brand-soft-ink border-brand'
           : 'bg-surface text-ink-2 border-line-strong hover:border-brand hover:text-brand',
       )}
     >
@@ -185,10 +190,10 @@ export function KepalaHalaman({
           {/* Nama layar dikunci spesifikasi, jadi ia dibungkus dua baris di layar
               sempit, bukan dipotong. Judul terpotong membuat pengguna tidak
               yakin ia sedang berada di halaman yang benar. */}
-          <h1 className="text-[1.0625rem] font-extrabold text-ink leading-tight line-clamp-2 sm:truncate">
+          <h1 className="text-subjudul font-extrabold text-ink leading-tight line-clamp-2 sm:truncate">
             {judul}
           </h1>
-          {keterangan && <p className="text-[0.75rem] text-ink-3 truncate leading-tight">{keterangan}</p>}
+          {keterangan && <p className="text-kecil text-ink-3 truncate leading-tight">{keterangan}</p>}
         </div>
         {aksi && <div className="shrink-0 flex items-center gap-1">{aksi}</div>}
       </div>

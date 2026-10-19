@@ -86,7 +86,7 @@ export default function Akun() {
           <h2 className="text-[1.125rem] font-extrabold text-ink leading-tight truncate">
             {profil.namaUsaha}
           </h2>
-          <p className="text-[0.8125rem] text-ink-3 truncate">
+          <p className="text-isi text-ink-3 truncate">
             {LABEL_JENIS_USAHA[profil.jenisUsaha].judul} &middot; {profil.kota}
           </p>
           <div className="mt-1.5">
@@ -95,7 +95,7 @@ export default function Akun() {
         </div>
       </div>
 
-      <p className="mt-2.5 text-[0.75rem] text-ink-3">
+      <p className="mt-2.5 text-kecil text-ink-3">
         Bergabung sejak {tanggalPanjang(profil.bergabungSejak)}
       </p>
 
@@ -153,11 +153,11 @@ export default function Akun() {
           <section aria-labelledby="judul-tampilan">
             <h2
               id="judul-tampilan"
-              className="text-[0.75rem] font-bold uppercase tracking-wide text-ink-3 mb-2"
+              className="text-kecil font-bold uppercase tracking-wide text-ink-3 mb-2"
             >
               Tampilan
             </h2>
-            <p className="text-[0.8125rem] text-ink-3 mb-2.5 leading-snug">
+            <p className="text-isi text-ink-3 mb-2.5 leading-snug">
               Berlaku di perangkat ini saja.
             </p>
             <div className="flex gap-2.5">
@@ -216,15 +216,15 @@ export default function Akun() {
               pernah menemukannya. */}
           <section aria-labelledby="judul-alat-uji">
             <div className="rounded-lg border border-dashed border-line-strong bg-surface-2 p-4">
-              <h2 id="judul-alat-uji" className="text-[0.9375rem] font-bold text-ink">
+              <h2 id="judul-alat-uji" className="text-kartu font-bold text-ink">
                 Alat uji purwarupa
               </h2>
-              <p className="mt-1 text-[0.8125rem] text-ink-3 leading-relaxed">
+              <p className="mt-1 text-isi text-ink-3 leading-relaxed">
                 Hanya untuk pengembang. Yang ada di kotak ini tidak mengubah data stok, pesanan, maupun kontrakmu.
               </p>
 
-              <h3 className="mt-4 text-[0.875rem] font-bold text-ink">Tampilan perkiraan</h3>
-              <p className="mt-1 text-[0.8125rem] text-ink-3 leading-relaxed">
+              <h3 className="mt-4 text-isi font-bold text-ink">Tampilan perkiraan</h3>
+              <p className="mt-1 text-isi text-ink-3 leading-relaxed">
                 Tombol ini mengubah tampilan blok perkiraan supaya tiga keadaannya bisa dilihat tanpa menunggu.
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
@@ -241,7 +241,7 @@ export default function Akun() {
                     aria-pressed={layanan === o.nilai}
                     onClick={() => aturLayananPerkiraan(o.nilai)}
                     className={cx(
-                      'h-11 px-3.5 rounded-md text-[0.8125rem] font-semibold border transition-colors',
+                      'h-11 px-3.5 rounded-md text-isi font-semibold border transition-colors',
                       layanan === o.nilai
                         ? 'bg-ink text-ink-inverse border-ink'
                         : 'bg-surface text-ink-2 border-line-strong hover:text-ink',
@@ -256,8 +256,8 @@ export default function Akun() {
                   ulang: kedai kopi (penjual eceran) dan dapur sambal (produsen). */}
               {akunIni && akunLain && (
                 <>
-                  <h3 className="mt-5 text-[0.875rem] font-bold text-ink">Akun simulasi</h3>
-                  <p className="mt-1 text-[0.8125rem] text-ink-3 leading-relaxed">
+                  <h3 className="mt-5 text-isi font-bold text-ink">Akun simulasi</h3>
+                  <p className="mt-1 text-isi text-ink-3 leading-relaxed">
                     Kamu sedang memakai {akunIni.namaUsaha}. Tombol ini membuka {akunLain.namaUsaha} tanpa keluar
                     dan masuk lagi.
                   </p>
@@ -271,7 +271,7 @@ export default function Akun() {
                     Pindah ke {akunLain.namaUsaha}
                   </Tombol>
                   {galatPindah && (
-                    <p role="alert" className="mt-2 text-[0.8125rem] text-kritis leading-relaxed">
+                    <p role="alert" className="mt-2 text-isi text-kritis leading-relaxed">
                       {galatPindah}
                     </p>
                   )}
@@ -281,8 +281,8 @@ export default function Akun() {
               {/* Pintu ke sisi distributor. Sengaja memakai Tombol, bukan tautan
                   biasa: perannya harus ikut berpindah sebelum layarnya dibuka,
                   supaya kerangka yang muncul benar sejak ketukan pertama. */}
-              <h3 className="mt-5 text-[0.875rem] font-bold text-ink">Peran akun</h3>
-              <p className="mt-1 text-[0.8125rem] text-ink-3 leading-relaxed">
+              <h3 className="mt-5 text-isi font-bold text-ink">Peran akun</h3>
+              <p className="mt-1 text-isi text-ink-3 leading-relaxed">
                 Berpindah peran adalah alat uji purwarupa. Di aplikasi yang sungguhan, satu akun hanya punya satu
                 peran: pemilik usaha atau distributor, tidak keduanya.
               </p>
@@ -313,7 +313,7 @@ export default function Akun() {
         </div>
       </div>
 
-      <p className="mt-8 text-center text-[0.75rem] text-ink-3">
+      <p className="mt-8 text-center text-kecil text-ink-3">
         Turnify Flow untuk Pemilik Usaha &middot; versi purwarupa
       </p>
 
@@ -358,7 +358,7 @@ function LencanaVerifikasi() {
 function Kelompok({ judul, children }: { judul: string; children: ReactNode }) {
   return (
     <section aria-label={judul}>
-      <h2 className="text-[0.75rem] font-bold uppercase tracking-wide text-ink-3 mb-2">{judul}</h2>
+      <h2 className="text-kecil font-bold uppercase tracking-wide text-ink-3 mb-2">{judul}</h2>
       <div className="rounded-lg border border-line bg-surface overflow-hidden shadow-e1">{children}</div>
     </section>
   )
@@ -387,9 +387,9 @@ function BarisMenu({
         {ikon}
       </span>
       <span className="min-w-0 grow">
-        <span className="block text-[0.9375rem] font-semibold text-ink leading-snug">{judul}</span>
+        <span className="block text-kartu font-semibold text-ink leading-snug">{judul}</span>
         {keterangan && (
-          <span className="block mt-0.5 text-[0.75rem] text-ink-3 leading-snug">{keterangan}</span>
+          <span className="block mt-0.5 text-kecil text-ink-3 leading-snug">{keterangan}</span>
         )}
         {/* Di layar 360px lencana yang duduk sebaris menyisakan sekitar 100px
             untuk judul, dan "Data dari Kasir" pecah jadi satu kata per baris.
@@ -419,7 +419,7 @@ function TombolPilihan({
       aria-pressed={aktif}
       onClick={onClick}
       className={cx(
-        'flex-1 h-12 rounded-md border-2 inline-flex items-center justify-center gap-2 text-[0.9375rem] font-semibold transition-colors',
+        'flex-1 h-12 rounded-md border-2 inline-flex items-center justify-center gap-2 text-kartu font-semibold transition-colors',
         aktif
           ? 'border-brand bg-brand-soft text-brand-soft-ink'
           : 'border-line bg-surface text-ink-2 hover:border-line-strong hover:text-ink',

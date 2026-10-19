@@ -124,7 +124,7 @@ function KartuPenawaran({
       Ada kontrak {durasi}
     </Lencana>
   ) : (
-    <Lencana nada="netral">Hanya beli sekali</Lencana>
+    <Lencana nada="netral">Beli Sekali</Lencana>
   )
 
   return (
@@ -141,7 +141,7 @@ function KartuPenawaran({
             {penawaran.nama}
           </Link>
         </h3>
-        <p className="text-[0.8125rem] text-ink-3 leading-snug">{labelKemasan(penawaran, barang)}</p>
+        <p className="text-isi text-ink-3 leading-snug">{labelKemasan(penawaran, barang)}</p>
 
         {/* 2. Harga beli sekali. Lewat rincianHarga supaya potongan promo yang
             masuk ke keranjang juga yang tampil di sini — bukan rumus kedua. */}
@@ -150,7 +150,7 @@ function KartuPenawaran({
         </p>
 
         {/* 3. Nama distributor + kota, selalu bisa diketuk sendiri */}
-        <p className="mt-1 text-[0.8125rem] text-ink-2">
+        <p className="mt-1 text-isi text-ink-2">
           <Link
             to={`/distributor/${distributor.id}`}
             className="relative z-10 font-semibold hover:text-brand hover:underline"
@@ -161,7 +161,7 @@ function KartuPenawaran({
         </p>
 
         {/* 4. Stok distributor + kapan diperbarui */}
-        <p className="mt-0.5 text-[0.8125rem] text-ink-3">
+        <p className="mt-0.5 text-isi text-ink-3">
           Stok distributor: {angka(penawaran.stokTersedia)} {penawaran.satuan} &middot; diperbarui{' '}
           {waktuLalu(penawaran.stokDiperbaruiPada)}
         </p>
@@ -199,15 +199,15 @@ function KartuDistributor({ distributor, jumlahPenawaran }: { distributor: Distr
       <Avatar nama={distributor.nama} warna={distributor.warna} ukuran={56} />
       <div className="min-w-0 grow">
         <p className="text-[1rem] font-semibold text-ink leading-snug">{distributor.nama}</p>
-        <p className="text-[0.8125rem] text-ink-3">{distributor.kota}</p>
-        <p className="mt-1.5 text-[0.8125rem] text-ink-2 line-clamp-2 leading-relaxed">{distributor.deskripsi}</p>
+        <p className="text-isi text-ink-3">{distributor.kota}</p>
+        <p className="mt-1.5 text-isi text-ink-2 line-clamp-2 leading-relaxed">{distributor.deskripsi}</p>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           {distributor.baru || distributor.rating == null ? (
             <Lencana nada="netral">
               Distributor Baru &middot; belum ada ulasan &middot; bergabung {distributor.sejak}
             </Lencana>
           ) : (
-            <span className="inline-flex items-center gap-1.5 text-[0.8125rem] font-semibold text-ink">
+            <span className="inline-flex items-center gap-1.5 text-isi font-semibold text-ink">
               <IkonBintangIsi size={14} className="text-menipis" />
               {nilaiBintang(distributor.rating)}
               <HanyaPembacaLayar> dari 5 bintang</HanyaPembacaLayar>
@@ -216,7 +216,7 @@ function KartuDistributor({ distributor, jumlahPenawaran }: { distributor: Distr
               </span>
             </span>
           )}
-          <span className="text-[0.8125rem] text-ink-3">{jumlahPenawaran} barang dijual</span>
+          <span className="text-isi text-ink-3">{jumlahPenawaran} barang dijual</span>
         </div>
       </div>
       <IkonPanahKanan size={18} className="shrink-0 text-ink-3 mt-1" />
@@ -278,20 +278,20 @@ function KartuRekomendasi({
       {/* Nomor urut cukup untuk mata; pembaca layar sudah mendengarnya dari <ol>. */}
       <span
         aria-hidden="true"
-        className="shrink-0 size-7 mt-0.5 rounded-full bg-brand text-ink-inverse grid place-items-center text-[0.8125rem] font-extrabold tabular"
+        className="shrink-0 size-7 mt-0.5 rounded-full bg-brand text-ink-inverse grid place-items-center text-isi font-extrabold tabular"
       >
         {urutan}
       </span>
       <div className="min-w-0 grow">
         <p className="text-[1rem] font-semibold text-ink leading-snug">{d.nama}</p>
-        <p className="text-[0.8125rem] text-ink-3">
+        <p className="text-isi text-ink-3">
           {d.kota} &middot; {rekomendasi.kategoriCocok.join(', ')}
         </p>
         <div className="mt-1.5">
           {belumDiulas ? (
             <Lencana nada="netral">Distributor Baru &middot; belum ada ulasan</Lencana>
           ) : (
-            <span className="inline-flex items-center gap-1.5 text-[0.8125rem] font-semibold text-ink">
+            <span className="inline-flex items-center gap-1.5 text-isi font-semibold text-ink">
               <IkonBintangIsi size={14} className="text-menipis" />
               {nilaiBintang(d.rating ?? 0)}
               <HanyaPembacaLayar> dari 5 bintang</HanyaPembacaLayar>
@@ -299,9 +299,9 @@ function KartuRekomendasi({
             </span>
           )}
         </div>
-        <p className="mt-1.5 text-[0.8125rem] text-ink-2 leading-snug">{alasan}</p>
+        <p className="mt-1.5 text-isi text-ink-2 leading-snug">{alasan}</p>
         {mesin2 && (
-          <p className="mt-0.5 text-[0.8125rem] text-ink-3 leading-snug">
+          <p className="mt-0.5 text-isi text-ink-3 leading-snug">
             Peluang pesanan lancar {persen(mesin2.peluangSuksesRata * 100)}
           </p>
         )}
@@ -513,14 +513,14 @@ export default function Belanja() {
   const panelSaring = (
     <div className="space-y-4">
       <div>
-        <p className="text-[0.8125rem] font-bold text-ink mb-2">Kota</p>
+        <p className="text-isi font-bold text-ink mb-2">Kota</p>
         <div className="flex flex-col gap-1">
           <button
             type="button"
             onClick={() => aturParam({ kota: null })}
             aria-pressed={!kotaSaring}
             className={cx(
-              'text-left h-11 px-3 rounded-md text-[0.875rem] font-semibold transition-colors',
+              'text-left h-11 px-3 rounded-md text-isi font-semibold transition-colors',
               !kotaSaring ? 'bg-brand-soft text-brand-soft-ink' : 'text-ink-2 hover:bg-sunken',
             )}
           >
@@ -533,7 +533,7 @@ export default function Belanja() {
               onClick={() => aturParam({ kota: k })}
               aria-pressed={kotaSaring === k}
               className={cx(
-                'text-left h-11 px-3 rounded-md text-[0.875rem] font-semibold transition-colors',
+                'text-left h-11 px-3 rounded-md text-isi font-semibold transition-colors',
                 kotaSaring === k ? 'bg-brand-soft text-brand-soft-ink' : 'text-ink-2 hover:bg-sunken',
               )}
             >
@@ -545,7 +545,7 @@ export default function Belanja() {
 
       {tab === 'barang' && (
         <div className="border-t border-line pt-4">
-          <p className="text-[0.8125rem] font-bold text-ink mb-2">Saring hasil</p>
+          <p className="text-isi font-bold text-ink mb-2">Saring hasil</p>
           <div className="flex flex-col gap-2">
             <Chip aktif={hanyaAdaStok} onClick={() => aturParam({ stok: hanyaAdaStok ? null : 'ada' })}>
               Stok tersedia
@@ -572,10 +572,10 @@ export default function Belanja() {
 
   return (
     <div className="pb-6">
-      <h1 className="text-[1.25rem] font-extrabold text-ink tracking-tight">{JUDUL.belanja}</h1>
+      <h1 className="text-judul font-extrabold text-ink tracking-tight">{JUDUL.belanja}</h1>
       {/* Halaman ini berjudul sama dengan salah satu sub-tabnya, jadi kalimat
           pembuka harus langsung menerangkan apa yang bisa dikerjakan di sini. */}
-      <p className="mt-0.5 text-[0.8125rem] text-ink-3">
+      <p className="mt-0.5 text-isi text-ink-3">
         Tempat kamu mencari barang dan memilih distributor untuk dipesan. Harga dan stok di bawah berasal
         dari distributor, bukan dari gudang kamu.
       </p>
@@ -605,7 +605,7 @@ export default function Belanja() {
           aria-haspopup="dialog"
           aria-label={adaSaringAktif ? `Filter, ${saringAktif.length} sedang dipakai` : 'Filter'}
           className={cx(
-            'relative shrink-0 inline-flex items-center gap-2 h-12 px-4 rounded-md border text-[0.9375rem] font-semibold transition-colors',
+            'relative shrink-0 inline-flex items-center gap-2 h-12 px-4 rounded-md border text-kartu font-semibold transition-colors',
             adaSaringAktif
               ? 'border-brand bg-brand-soft text-brand-soft-ink'
               : 'border-line-strong bg-surface text-ink-2 hover:border-brand hover:text-brand',
@@ -648,7 +648,7 @@ export default function Belanja() {
               type="button"
               onClick={() => aturParam({ [s.kunci]: null })}
               aria-label={`Lepas saringan ${s.label}`}
-              className="inline-flex items-center gap-1.5 h-11 pl-3.5 pr-3 rounded-full bg-brand-soft text-brand-soft-ink text-[0.8125rem] font-semibold hover:brightness-97"
+              className="inline-flex items-center gap-1.5 h-11 pl-3.5 pr-3 rounded-full bg-brand-soft text-brand-soft-ink text-isi font-semibold hover:brightness-97"
             >
               {s.label}
               <IkonSilang size={14} className="shrink-0" />
@@ -658,7 +658,7 @@ export default function Belanja() {
             <button
               type="button"
               onClick={() => aturParam({ kota: null, stok: null, kontrak: null })}
-              className="inline-flex items-center h-11 px-2 text-[0.8125rem] font-semibold text-brand hover:underline"
+              className="inline-flex items-center h-11 px-2 text-isi font-semibold text-brand hover:underline"
             >
               Hapus semua
             </button>
@@ -672,7 +672,7 @@ export default function Belanja() {
             {/* Jumlah hasil hanya ditulis kalau memang ada hasilnya. Saat nol,
                 kalimat ini persis mengulang judul keadaan kosong di bawahnya. */}
             {cari && hasil.jumlah > 0 && (
-              <p className="text-[0.875rem] text-ink-2 mb-3">
+              <p className="text-isi text-ink-2 mb-3">
                 <strong className="text-ink">{hasil.jumlah} penawaran</strong> cocok dengan &ldquo;{cari}&rdquo;
                 {kotaSaring && ` di ${kotaSaring}`}.
               </p>
@@ -817,13 +817,13 @@ export default function Belanja() {
                   </ol>
                 ) : (
                   <Kartu padat>
-                    <p className="text-[0.875rem] text-ink-2 leading-relaxed">
+                    <p className="text-isi text-ink-2 leading-relaxed">
                       Belum ada distributor yang mengirim ke {wilayahProfil} dan menjual barang untuk {jenisProfil}.
                       Semua distributor tetap bisa kamu lihat di daftar di bawah.
                     </p>
                   </Kartu>
                 )}
-                <p className="mt-2.5 text-[0.8125rem] text-ink-3">
+                <p className="mt-2.5 text-isi text-ink-3">
                   Jenis usaha atau kotamu berubah?{' '}
                   <Link to="/akun/profil" className="font-semibold text-brand hover:underline">
                     Perbarui di Profil Usaha

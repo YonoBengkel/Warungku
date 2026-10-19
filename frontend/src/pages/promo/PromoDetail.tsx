@@ -64,7 +64,7 @@ function Sorotan({ promo, jumlahBarang, sisaHari }: { promo: Promo; jumlahBarang
   return (
     <div className="rounded-md bg-surface text-ink px-4 py-3 text-center lg:min-w-[11rem]">
       <p className="text-[1.5rem] font-extrabold leading-tight tracking-tight">{besar}</p>
-      <p className="mt-0.5 text-[0.8125rem] text-ink-2 leading-snug">{kecil}</p>
+      <p className="mt-0.5 text-isi text-ink-2 leading-snug">{kecil}</p>
     </div>
   )
 }
@@ -83,7 +83,7 @@ function StokTeks({ p, tegas }: { p: Penawaran; tegas?: boolean }) {
   }
   const hampirHabis = tegas && p.stokTersedia < STOK_HAMPIR_HABIS
   return (
-    <span className={cx('text-[0.8125rem]', tegas ? 'font-semibold text-ink' : 'text-ink-3')}>
+    <span className={cx('text-isi', tegas ? 'font-semibold text-ink' : 'text-ink-3')}>
       Sisa {jumlahSatuan(p.stokTersedia, p.satuan)}
       {hampirHabis && (
         <Lencana nada="menipis" className="ml-2 align-middle">
@@ -100,8 +100,8 @@ function KartuEtalase({ p, rincian, warna }: { p: Penawaran; rincian: RincianHar
     <KartuTautan ke={`/penawaran/${p.id}`} className="h-full">
       <div className="flex h-full flex-col">
         <Avatar nama={p.nama} warna={warna} ukuran={56} />
-        <p className="mt-3 text-[0.9375rem] font-bold text-ink leading-snug">{p.nama}</p>
-        <p className="mt-0.5 text-[0.8125rem] text-ink-3 leading-snug line-clamp-2">{p.keterangan}</p>
+        <p className="mt-3 text-kartu font-bold text-ink leading-snug">{p.nama}</p>
+        <p className="mt-0.5 text-isi text-ink-3 leading-snug line-clamp-2">{p.keterangan}</p>
         <div className="mt-auto pt-3">
           {/* Angka yang sama persis dengan halaman penawaran dan keranjang. */}
           <HargaBeli rincian={rincian} satuan={p.satuan} />
@@ -120,8 +120,8 @@ function KartuBaris({ p, rincian, stokTegas }: { p: Penawaran; rincian: RincianH
     <KartuTautan ke={`/penawaran/${p.id}`} className="h-full">
       <div className="flex items-start gap-3">
         <div className="min-w-0 grow">
-          <p className="text-[0.9375rem] font-bold text-ink leading-snug">{p.nama}</p>
-          <p className="mt-0.5 text-[0.8125rem] text-ink-3 leading-snug">{p.keterangan}</p>
+          <p className="text-kartu font-bold text-ink leading-snug">{p.nama}</p>
+          <p className="mt-0.5 text-isi text-ink-3 leading-snug">{p.keterangan}</p>
           <div className="mt-1.5">
             <StokTeks p={p} tegas={stokTegas} />
           </div>
@@ -189,31 +189,31 @@ export default function PromoDetail() {
             <span className={cx('shrink-0 size-10 rounded-md grid place-items-center', template.aksen)}>
               <template.Ikon size={20} />
             </span>
-            <span className={cx('inline-flex items-center rounded-sm px-2.5 py-1 text-[0.8125rem] font-bold', template.aksen)}>
+            <span className={cx('inline-flex items-center rounded-sm px-2.5 py-1 text-isi font-bold', template.aksen)}>
               {LABEL_PROMO[promo.jenis]}
             </span>
           </div>
 
-          <p className="mt-3 flex items-center gap-1.5 text-[1.0625rem] font-extrabold min-w-0">
+          <p className="mt-3 flex items-center gap-1.5 text-subjudul font-extrabold min-w-0">
             <IkonToko size={18} className="shrink-0" />
             <span className="truncate">{namaToko}</span>
           </p>
 
-          <p className="mt-1.5 text-[0.875rem] leading-relaxed max-w-[70ch]">{promo.keterangan}</p>
+          <p className="mt-1.5 text-isi leading-relaxed max-w-[70ch]">{promo.keterangan}</p>
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {promo.potonganPersen != null && (
-              <span className="inline-flex items-center rounded-sm bg-surface text-ink px-2.5 py-1 text-[0.8125rem] font-bold">
+              <span className="inline-flex items-center rounded-sm bg-surface text-ink px-2.5 py-1 text-isi font-bold">
                 Potongan {persen(promo.potonganPersen)}
               </span>
             )}
             {promo.berakhir && sisaHari != null ? (
-              <span className="inline-flex items-center gap-1.5 text-[0.8125rem] font-semibold">
+              <span className="inline-flex items-center gap-1.5 text-isi font-semibold">
                 <IkonJam size={14} className="shrink-0" />
                 Sampai {tanggalPanjang(promo.berakhir)} · {hariLagi(sisaHari)}
               </span>
             ) : (
-              <span className="text-[0.8125rem] font-semibold">Tidak ada tanggal berakhir.</span>
+              <span className="text-isi font-semibold">Tidak ada tanggal berakhir.</span>
             )}
           </div>
         </div>
@@ -248,19 +248,19 @@ export default function PromoDetail() {
               {promo.tingkat.map((t, i) => (
                 <li key={t.nama}>
                   <Kartu padat className="h-full">
-                    <p className="text-[0.75rem] font-semibold uppercase tracking-wide text-ink-3">Tingkat {i + 1}</p>
-                    <p className="mt-0.5 text-[1.0625rem] font-extrabold text-ink">{t.nama}</p>
-                    <p className="mt-1.5 text-[0.8125rem] text-ink-2 leading-snug">
+                    <p className="text-kecil font-semibold uppercase tracking-wide text-ink-3">Tingkat {i + 1}</p>
+                    <p className="mt-0.5 text-subjudul font-extrabold text-ink">{t.nama}</p>
+                    <p className="mt-1.5 text-isi text-ink-2 leading-snug">
                       <span className="text-ink-3">Syarat:</span> {t.syarat}
                     </p>
-                    <p className="mt-1 text-[0.875rem] font-semibold text-ink leading-snug">{t.manfaat}</p>
+                    <p className="mt-1 text-isi font-semibold text-ink leading-snug">{t.manfaat}</p>
                   </Kartu>
                 </li>
               ))}
             </ol>
           ) : (
             <Kartu padat>
-              <p className="text-[0.875rem] text-ink-2 leading-relaxed">
+              <p className="text-isi text-ink-2 leading-relaxed">
                 {namaToko} belum menuliskan tingkat keanggotaannya. Tanyakan langsung saat mendaftar.
               </p>
             </Kartu>
@@ -281,7 +281,7 @@ export default function PromoDetail() {
 
         {urutan.length === 0 ? (
           <Kartu padat>
-            <p className="text-[0.875rem] text-ink-3">Barang yang ikut promo ini belum dicantumkan distributor.</p>
+            <p className="text-isi text-ink-3">Barang yang ikut promo ini belum dicantumkan distributor.</p>
           </Kartu>
         ) : promo.jenis === 'produk-baru' ? (
           <div className="grid gap-3 grid-cols-1 min-[420px]:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 [&>*]:min-w-0">
@@ -306,7 +306,7 @@ export default function PromoDetail() {
       <div className="mt-6">
         <Link
           to={`/distributor/${promo.distributorId}`}
-          className="inline-flex items-center gap-1.5 min-h-11 text-[0.875rem] font-bold text-brand hover:underline"
+          className="inline-flex items-center gap-1.5 min-h-11 text-isi font-bold text-brand hover:underline"
         >
           Lihat semua barang dari {namaToko}
           <IkonPanahKanan size={16} className="shrink-0" />

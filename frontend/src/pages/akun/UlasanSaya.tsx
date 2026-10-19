@@ -101,11 +101,11 @@ export default function UlasanSaya() {
                               </Lencana>
                             )}
                           </div>
-                          <p className="mt-0.5 text-[0.8125rem] text-ink-2 truncate">
+                          <p className="mt-0.5 text-isi text-ink-2 truncate">
                             {utama ? `${utama.nama} ${angka(utama.jumlah)} ${utama.satuan}` : 'Pesanan kosong'}
                             {lain > 0 && ` + ${lain} barang lain`}
                           </p>
-                          <p className="mt-0.5 text-[0.75rem] text-ink-3">
+                          <p className="mt-0.5 text-kecil text-ink-3">
                             {p.nomor} &middot; selesai {waktuLalu(selesaiPada)}
                           </p>
                           <div className="mt-2.5">
@@ -158,20 +158,20 @@ export default function UlasanSaya() {
                         <div className="min-w-0">
                           <Link
                             to={`/distributor/${u.distributorId}`}
-                            className="text-[0.9375rem] font-bold text-ink hover:text-brand transition-colors truncate block"
+                            className="text-kartu font-bold text-ink hover:text-brand transition-colors truncate block"
                           >
                             {d?.nama ?? 'Distributor'}
                           </Link>
-                          <p className="mt-0.5 text-[0.75rem] text-ink-3">
+                          <p className="mt-0.5 text-kecil text-ink-3">
                             {u.pesananId} &middot; {tanggalPendek(u.waktu)}
                           </p>
                         </div>
                         <Bintang nilai={u.rating} />
                       </div>
 
-                      <p className="mt-2.5 text-[0.875rem] text-ink-2 leading-relaxed">{u.isi}</p>
+                      <p className="mt-2.5 text-isi text-ink-2 leading-relaxed">{u.isi}</p>
 
-                      <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[0.75rem] text-ink-3">
+                      <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-kecil text-ink-3">
                         <span>Tepat waktu {u.aspek.ketepatanWaktu}/5</span>
                         <span>Jumlah sesuai {u.aspek.jumlahSesuai}/5</span>
                         <span>Kondisi barang {u.aspek.kondisiBarang}/5</span>
@@ -179,7 +179,7 @@ export default function UlasanSaya() {
 
                       <Pemisah className="my-2.5" />
 
-                      <p className="flex items-start gap-2 text-[0.75rem] text-ink-3 leading-snug">
+                      <p className="flex items-start gap-2 text-kecil text-ink-3 leading-snug">
                         <IkonKunci size={14} className="shrink-0 mt-0.5" />
                         <span>
                           Label sistem: <span className="text-ink-2">{u.labelSistem}</span>
@@ -196,8 +196,8 @@ export default function UlasanSaya() {
         {/* Aturan penilaian, ditaruh sekali dan berlaku untuk kedua bagian */}
         <div className="lg:col-span-5 mt-6 lg:mt-0 space-y-4">
           <Kartu>
-            <h2 className="text-[0.9375rem] font-bold text-ink leading-tight">Aturan menulis ulasan</h2>
-            <ul className="mt-3 space-y-3 text-[0.875rem] text-ink-2 leading-relaxed">
+            <h2 className="text-kartu font-bold text-ink leading-tight">Aturan menulis ulasan</h2>
+            <ul className="mt-3 space-y-3 text-isi text-ink-2 leading-relaxed">
               <li>
                 <strong className="text-ink">Hanya setelah pesanan selesai.</strong> Ulasan tidak bisa ditulis untuk
                 pesanan yang masih berjalan atau yang dibatalkan, supaya penilaian selalu berdasarkan barang yang

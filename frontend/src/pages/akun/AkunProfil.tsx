@@ -116,7 +116,7 @@ export default function AkunProfil() {
 
           {/* Kartu identitas: yang paling sering dilihat orang lain */}
           <section aria-labelledby="judul-identitas">
-            <h2 id="judul-identitas" className="text-[0.9375rem] font-bold text-ink mb-3">
+            <h2 id="judul-identitas" className="text-kartu font-bold text-ink mb-3">
               Identitas Usaha
             </h2>
             <Kartu>
@@ -124,13 +124,13 @@ export default function AkunProfil() {
                 <span
                   aria-hidden="true"
                   style={{ background: warna }}
-                  className="size-20 rounded-lg grid place-items-center text-white font-extrabold text-[1.625rem] shrink-0 tracking-tight"
+                  className="size-20 rounded-lg grid place-items-center text-white font-extrabold text-angka shrink-0 tracking-tight"
                 >
                   {inisial(namaUsaha || profil.namaUsaha)}
                 </span>
                 <div className="min-w-0">
-                  <p className="text-[0.8125rem] font-semibold text-ink-2">Warna papan nama</p>
-                  <p className="text-[0.75rem] text-ink-3 leading-snug mt-0.5">
+                  <p className="text-isi font-semibold text-ink-2">Warna papan nama</p>
+                  <p className="text-kecil text-ink-3 leading-snug mt-0.5">
                     Dipakai sebagai penanda usahamu di daftar distributor.
                   </p>
                   <div className="mt-2 flex flex-wrap gap-2">
@@ -193,7 +193,7 @@ export default function AkunProfil() {
                   />
                   <p
                     className={cx(
-                      'mt-1 text-right text-[0.75rem] tabular',
+                      'mt-1 text-right text-kecil tabular',
                       bio.length > MAKS_BIO ? 'text-kritis font-semibold' : 'text-ink-3',
                     )}
                   >
@@ -206,7 +206,7 @@ export default function AkunProfil() {
 
           {/* Kontak */}
           <section aria-labelledby="judul-kontak">
-            <h2 id="judul-kontak" className="text-[0.9375rem] font-bold text-ink mb-3">
+            <h2 id="judul-kontak" className="text-kartu font-bold text-ink mb-3">
               Alamat & Kontak
             </h2>
             <Kartu>
@@ -251,11 +251,11 @@ export default function AkunProfil() {
             konsekuensinya ditulis di sebelah sakelarnya, bukan di halaman bantuan. */}
         <div className="lg:col-span-5 mt-6 lg:mt-0">
           <section aria-labelledby="judul-dilihat">
-            <h2 id="judul-dilihat" className="text-[0.9375rem] font-bold text-ink mb-3">
+            <h2 id="judul-dilihat" className="text-kartu font-bold text-ink mb-3">
               Yang Dilihat Distributor
             </h2>
             <Kartu>
-              <p className="text-[0.8125rem] text-ink-2 leading-relaxed">
+              <p className="text-isi text-ink-2 leading-relaxed">
                 Nama usaha, jenis usaha, kota, bio, dan lencana verifikasi <strong>selalu terlihat</strong> oleh
                 semua distributor. Dua hal di bawah ini kamu yang menentukan.
               </p>
@@ -296,7 +296,7 @@ export default function AkunProfil() {
               </TombolTautan>
             </Kartu>
 
-            <p className="mt-3 text-[0.75rem] text-ink-3 leading-relaxed">
+            <p className="mt-3 text-kecil text-ink-3 leading-relaxed">
               Bergabung sejak {tanggalPanjang(profil.bergabungSejak)}. Data usaha dan legalitas diatur terpisah di{' '}
               <Link to="/akun/data-usaha" className="font-semibold text-brand hover:underline">
                 Data Usaha &amp; Legalitas
@@ -311,11 +311,11 @@ export default function AkunProfil() {
         <BilahAksi
           ringkasan={
             sudahDicoba && Object.keys(galat).length > 0 ? (
-              <p className="text-[0.8125rem] font-semibold text-kritis">
+              <p className="text-isi font-semibold text-kritis">
                 Masih ada isian yang perlu dibetulkan di atas.
               </p>
             ) : (
-              <p className="text-[0.8125rem] text-ink-3">Perubahan belum tersimpan.</p>
+              <p className="text-isi text-ink-3">Perubahan belum tersimpan.</p>
             )
           }
         >
@@ -444,7 +444,7 @@ function GarisWaktu({ langkahAktif, gagal }: { langkahAktif: 1 | 2 | 3; gagal: b
                   <IkonJam size={12} />
                 ) : null}
               </span>
-              <span className="text-[0.75rem] font-semibold whitespace-nowrap">{l.label}</span>
+              <span className="text-kecil font-semibold whitespace-nowrap">{l.label}</span>
             </span>
             {i < langkah.length - 1 && (
               <span className="h-px w-4 sm:w-6 bg-current opacity-30 shrink-0" aria-hidden="true" />
@@ -484,7 +484,7 @@ function SakelarPrivasi({
   return (
     <div className="py-3">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-[0.9375rem] font-semibold text-ink">{label}</p>
+        <p className="text-kartu font-semibold text-ink">{label}</p>
         <Lencana nada={aktif ? 'info' : 'netral'}>{aktif ? 'Terbuka' : 'Tertutup'}</Lencana>
       </div>
       <div role="group" aria-label={`Siapa yang boleh melihat ${label.toLowerCase()}`} className="mt-2 flex gap-2">
@@ -495,7 +495,7 @@ function SakelarPrivasi({
             aria-pressed={aktif === p.nilai}
             onClick={() => aktif !== p.nilai && ubah(p.nilai)}
             className={cx(
-              'flex-1 min-h-11 px-3 py-2 rounded-md border-2 text-[0.8125rem] font-semibold leading-snug text-left',
+              'flex-1 min-h-11 px-3 py-2 rounded-md border-2 text-isi font-semibold leading-snug text-left',
               'transition-[border-color,background-color] duration-150',
               aktif === p.nilai
                 ? 'border-brand bg-brand-soft text-brand-soft-ink'
@@ -511,7 +511,7 @@ function SakelarPrivasi({
           </button>
         ))}
       </div>
-      <p className="mt-2 text-[0.8125rem] text-ink-3 leading-relaxed">
+      <p className="mt-2 text-isi text-ink-3 leading-relaxed">
         {aktif ? keteranganAktif : keteranganMati}
       </p>
     </div>

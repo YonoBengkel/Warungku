@@ -98,10 +98,10 @@ export default function Dashboard() {
   return (
     <div className="pb-6">
       {/* 1. Sambutan: nama toko ditulis apa adanya, bukan huruf kapital semua */}
-      <h1 className="text-[1.25rem] font-extrabold text-ink tracking-tight leading-snug">
+      <h1 className="text-judul font-extrabold text-ink tracking-tight leading-snug">
         Selamat datang, {distributorAktif.nama}
       </h1>
-      <p className="mt-1 text-[0.8125rem] text-ink-3">{tanggalLengkapHari(new Date())}</p>
+      <p className="mt-1 text-isi text-ink-3">{tanggalLengkapHari(new Date())}</p>
 
       {/* 2. Satu tindakan, di tempat yang paling dulu dibaca */}
       <section aria-labelledby="judul-tindakan" className="mt-4">
@@ -110,6 +110,7 @@ export default function Dashboard() {
         </h2>
         {perluKonfirmasi > 0 ? (
           <KartuTindakan
+            utama
             nada="menipis"
             ikon={<IkonJam size={19} />}
             judul={`${perluKonfirmasi} pesanan menunggu kamu jawab`}
@@ -126,10 +127,10 @@ export default function Dashboard() {
               <IkonCentangLingkaran size={19} />
             </span>
             <div className="min-w-0">
-              <h3 className="text-[0.9375rem] font-bold text-ink leading-snug">
+              <h3 className="text-kartu font-bold text-ink leading-snug">
                 Tidak ada pesanan yang menunggu
               </h3>
-              <p className="mt-1 text-[0.8125rem] text-ink-2 leading-relaxed max-w-[60ch]">
+              <p className="mt-1 text-isi text-ink-2 leading-relaxed max-w-[60ch]">
                 Semua pesanan yang masuk sudah kamu jawab. Pesanan baru muncul di sini begitu ada
                 yang memesan.
               </p>
@@ -172,7 +173,7 @@ export default function Dashboard() {
                 <p className="mt-2.5 text-[1.5rem] font-extrabold text-ink leading-none tracking-tight">
                   {jumlahPerTahap[status]}
                 </p>
-                <p className="mt-1 text-[0.8125rem] font-semibold text-ink-2 leading-snug">
+                <p className="mt-1 text-isi font-semibold text-ink-2 leading-snug">
                   {LABEL_PESANAN_MASUK[status]}
                 </p>
               </Link>
@@ -208,7 +209,7 @@ export default function Dashboard() {
                 >
                   {jumlahPerWarna[warna]}
                 </span>
-                <p className="mt-2 text-[0.8125rem] font-semibold text-ink leading-snug">
+                <p className="mt-2 text-isi font-semibold text-ink leading-snug">
                   {LABEL_TITIK[warna]}
                 </p>
               </div>
@@ -225,7 +226,7 @@ export default function Dashboard() {
           aksi={
             <Link
               to="/distributor-portal/pesanan"
-              className="inline-flex items-center gap-1 min-h-11 text-[0.8125rem] font-bold text-brand hover:underline"
+              className="inline-flex items-center gap-1 min-h-11 text-isi font-bold text-brand hover:underline"
             >
               Lihat semua
               <IkonPanahKanan size={15} />
@@ -248,8 +249,8 @@ export default function Dashboard() {
               >
                 <div className="flex items-start justify-between gap-2.5">
                   <div className="min-w-0">
-                    <p className="text-[0.9375rem] font-bold text-ink leading-snug">{p.nomor}</p>
-                    <p className="mt-0.5 text-[0.8125rem] text-ink-2 leading-snug">
+                    <p className="text-kartu font-bold text-ink leading-snug">{p.nomor}</p>
+                    <p className="mt-0.5 text-isi text-ink-2 leading-snug">
                       {umkm?.nama ?? 'Pemilik usaha'}
                     </p>
                   </div>
@@ -257,7 +258,7 @@ export default function Dashboard() {
                     {LABEL_PESANAN_MASUK[p.status]}
                   </Lencana>
                 </div>
-                <p className="mt-2 text-[0.8125rem] text-ink-3 leading-snug">
+                <p className="mt-2 text-isi text-ink-3 leading-snug">
                   {jumlahBaris} jenis barang &middot; masuk {waktuLalu(p.dibuatPada)}
                 </p>
               </Link>

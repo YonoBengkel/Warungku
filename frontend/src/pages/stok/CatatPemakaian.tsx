@@ -171,23 +171,23 @@ export default function CatatPemakaian() {
               <li key={t.id} className="flex items-baseline justify-between gap-3 px-3.5 py-2.5">
                 <Link
                   to={`/stok/${t.id}`}
-                  className="text-[0.9375rem] font-semibold text-ink hover:text-brand transition-colors min-w-0 truncate"
+                  className="text-kartu font-semibold text-ink hover:text-brand transition-colors min-w-0 truncate"
                 >
                   {t.nama}
                 </Link>
-                <span className="text-[0.8125rem] text-ink-2 shrink-0 tabular">
+                <span className="text-isi text-ink-2 shrink-0 tabular">
                   terpakai {t.terpakai} &middot; sisa <strong className="text-ink">{t.sisa}</strong>
                 </span>
               </li>
             ))}
             {tersimpan.length > 6 && (
-              <li className="px-3.5 py-2.5 text-[0.8125rem] text-ink-3">
+              <li className="px-3.5 py-2.5 text-isi text-ink-3">
                 dan {angka(tersimpan.length - 6)} barang lain ikut berkurang.
               </li>
             )}
           </ul>
 
-          <p className="mt-3 text-[0.875rem] text-ink-2 leading-relaxed">
+          <p className="mt-3 text-isi text-ink-2 leading-relaxed">
             Angka hari ini juga dipakai untuk menyusun perkiraan kebutuhan minggu depan.
           </p>
 
@@ -236,7 +236,7 @@ export default function CatatPemakaian() {
         Sembunyikan barang yang belum diisi
       </Tombol>
       {dilewati.length > 0 && (
-        <span className="inline-flex items-center gap-1.5 text-[0.8125rem] text-ink-3">
+        <span className="inline-flex items-center gap-1.5 text-isi text-ink-3">
           {angka(dilewati.length)} barang disembunyikan
           <Tombol ragam="sunyi" onClick={() => setDilewati([])}>
             Tampilkan lagi
@@ -272,7 +272,7 @@ export default function CatatPemakaian() {
         {/* Rail kiri di desktop: penyaring kategori + aturan main + kendali daftar */}
         <div className="lg:col-span-4 space-y-4">
           <nav aria-label="Saring menurut kategori" className="hidden lg:block">
-            <h2 className="mb-2 text-[0.9375rem] font-bold text-ink">Kategori</h2>
+            <h2 className="mb-2 text-kartu font-bold text-ink">Kategori</h2>
             <ul className="space-y-1">
               {[
                 { nilai: 'semua', label: 'Semua barang', jumlah: barang.length },
@@ -289,14 +289,14 @@ export default function CatatPemakaian() {
                     onClick={() => setKategori(k.nilai)}
                     className={cx(
                       'w-full min-h-11 px-3 rounded-md flex items-center justify-between gap-2',
-                      'text-[0.875rem] font-semibold transition-colors',
+                      'text-isi font-semibold transition-colors',
                       kategori === k.nilai
                         ? 'bg-brand-soft text-brand-soft-ink'
                         : 'text-ink-2 hover:bg-sunken hover:text-ink',
                     )}
                   >
                     <span className="min-w-0 truncate">{k.label}</span>
-                    <span className="shrink-0 text-[0.8125rem] tabular">{angka(k.jumlah)}</span>
+                    <span className="shrink-0 text-isi tabular">{angka(k.jumlah)}</span>
                   </button>
                 </li>
               ))}
@@ -349,10 +349,10 @@ export default function CatatPemakaian() {
               <li className="flex items-center gap-3 px-3.5 py-2 bg-surface-2">
                 {/* ink-3 pada 12px kapital tidak lolos rasio kontras di atas
                     surface-2, jadi kepala kolom naik ke ink-2. */}
-                <span className="min-w-0 grow text-[0.75rem] font-semibold uppercase tracking-wide text-ink-2">
+                <span className="min-w-0 grow text-kecil font-semibold uppercase tracking-wide text-ink-2">
                   Barang
                 </span>
-                <span className="w-[8.5rem] shrink-0 text-[0.75rem] font-semibold uppercase tracking-wide text-ink-2">
+                <span className="w-[8.5rem] shrink-0 text-kecil font-semibold uppercase tracking-wide text-ink-2">
                   Terpakai hari ini
                 </span>
               </li>
@@ -380,7 +380,7 @@ export default function CatatPemakaian() {
                             barisnya naik satu tingkat ke ink-2. */}
                         <p
                           className={cx(
-                            'mt-0.5 text-[0.8125rem]',
+                            'mt-0.5 text-isi',
                             aktif ? 'text-ink-2' : 'text-ink-3',
                           )}
                         >
@@ -391,7 +391,7 @@ export default function CatatPemakaian() {
                         {b.stok === 0 && (
                           <Link
                             to={`/stok/${b.id}/koreksi`}
-                            className="mt-1 inline-flex items-center min-h-11 text-[0.8125rem] font-semibold text-brand hover:underline underline-offset-2"
+                            className="mt-1 inline-flex items-center min-h-11 text-isi font-semibold text-brand hover:underline underline-offset-2"
                           >
                             Sisa tercatat 0 &mdash; betulkan lewat Koreksi Stok
                           </Link>
@@ -420,7 +420,7 @@ export default function CatatPemakaian() {
 
       <BilahAksi
         ringkasan={
-          <p className={cx('text-[0.8125rem]', adaGalat ? 'text-kritis-ink' : 'text-ink-2')}>
+          <p className={cx('text-isi', adaGalat ? 'text-kritis-ink' : 'text-ink-2')}>
             {adaGalat
               ? 'Ada angka yang perlu dibetulkan dulu sebelum bisa disimpan.'
               : terisi.length === 0

@@ -317,7 +317,7 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
     <div className="mt-4 max-w-2xl mx-auto space-y-4 pb-8">
       {/* ---------------- Identitas barang ---------------- */}
       <Kartu>
-        <h2 className="text-[0.9375rem] font-bold text-ink mb-3">Nama dan kategori</h2>
+        <h2 className="text-kartu font-bold text-ink mb-3">Nama dan kategori</h2>
 
         <Kolom
           label="Nama barang"
@@ -343,16 +343,16 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
         {kembar && (
           <div className="mt-2.5 flex items-start gap-3 rounded-md border border-menipis/40 bg-menipis-soft text-menipis-ink p-3">
             <div className="min-w-0 grow">
-              <p className="text-[0.875rem] font-bold leading-snug">
+              <p className="text-isi font-bold leading-snug">
                 Sudah ada &lsquo;{kembar.nama}&rsquo;. Maksud kamu ini?
               </p>
-              <p className="mt-0.5 text-[0.8125rem] opacity-90">
+              <p className="mt-0.5 text-isi opacity-90">
                 Sisa {jumlahTampil(kembar, Math.max(0, kembar.stok))} &middot; {kembar.kategori}
               </p>
             </div>
             <Link
               to={`/stok/${kembar.id}`}
-              className="shrink-0 inline-flex items-center gap-1 h-9 px-3 rounded-sm bg-surface text-[0.8125rem] font-bold text-ink hover:bg-sunken"
+              className="shrink-0 inline-flex items-center gap-1 h-9 px-3 rounded-sm bg-surface text-isi font-bold text-ink hover:bg-sunken"
             >
               Pakai yang sudah ada
               <IkonPanahKanan size={15} />
@@ -361,7 +361,7 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
         )}
 
         <div className="mt-4">
-          <label htmlFor="sebutan" className="block text-[0.8125rem] font-semibold text-ink-2 mb-1.5">
+          <label htmlFor="sebutan" className="block text-isi font-semibold text-ink-2 mb-1.5">
             Nama lain / sebutan di warung{' '}
             <span className="text-ink-3 font-normal">(boleh dikosongkan)</span>
           </label>
@@ -378,7 +378,7 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
               }}
               placeholder="Contoh: gula aren"
               className={cx(
-                'w-full h-12 px-3.5 rounded-md bg-surface text-ink text-[0.9375rem]',
+                'w-full h-12 px-3.5 rounded-md bg-surface text-ink text-kartu',
                 'border border-line-strong placeholder:text-ink-3/70',
                 'focus:border-brand focus:outline-none focus:ring-4 focus:ring-[var(--c-brand-ring)]',
               )}
@@ -387,7 +387,7 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
               Tambah
             </Tombol>
           </div>
-          <p className="mt-1.5 text-[0.8125rem] text-ink-3 leading-snug">
+          <p className="mt-1.5 text-isi text-ink-3 leading-snug">
             Sebutan ini ikut dicari. Kalau kamu biasa mengetik &ldquo;skm&rdquo; atau &ldquo;telor&rdquo;,
             tulis di sini supaya barangnya ketemu.
           </p>
@@ -395,7 +395,7 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
             <ul className="mt-2 flex flex-wrap gap-2">
               {namaLain.map((n) => (
                 <li key={n}>
-                  <span className="inline-flex items-center gap-1 h-9 pl-3 pr-1 rounded-full bg-sunken text-[0.8125rem] font-semibold text-ink-2">
+                  <span className="inline-flex items-center gap-1 h-9 pl-3 pr-1 rounded-full bg-sunken text-isi font-semibold text-ink-2">
                     {n}
                     <button
                       type="button"
@@ -454,8 +454,8 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
 
       {/* ---------------- Satuan & kemasan ---------------- */}
       <Kartu>
-        <h2 className="text-[0.9375rem] font-bold text-ink">Satuan</h2>
-        <p className="mt-1 text-[0.8125rem] text-ink-3 leading-relaxed">
+        <h2 className="text-kartu font-bold text-ink">Satuan</h2>
+        <p className="mt-1 text-isi text-ink-3 leading-relaxed">
           Stok disimpan dalam satuan pakai, satuan terkecil yang dikurangi kasir per porsi. Yang kamu baca di
           daftar Stok adalah satuan tampil di bawah.
         </p>
@@ -487,7 +487,7 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
             {kemasan.map((k, i) => (
               <div key={i} className="rounded-md border border-line bg-surface-2 p-3">
                 <div className="flex flex-wrap items-end gap-2">
-                  <span className="h-12 grid place-items-center text-[0.9375rem] font-bold text-ink-2 shrink-0">
+                  <span className="h-12 grid place-items-center text-kartu font-bold text-ink-2 shrink-0">
                     1
                   </span>
                   <Kolom
@@ -502,7 +502,7 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
                     }
                     placeholder="dus"
                   />
-                  <span className="h-12 grid place-items-center text-[0.875rem] text-ink-2 shrink-0">isi</span>
+                  <span className="h-12 grid place-items-center text-isi text-ink-2 shrink-0">isi</span>
                   <Kolom
                     label="Isi"
                     wajib
@@ -526,7 +526,7 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
                   </TombolIkon>
                 </div>
                 {Number(k.isi) > 0 && k.nama.trim() && (
-                  <p className="mt-2 text-[0.8125rem] text-ink-2">
+                  <p className="mt-2 text-isi text-ink-2">
                     1 {k.nama.trim()} = {angka(Number(k.isi))} {satuan}
                   </p>
                 )}
@@ -534,7 +534,7 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
             ))}
 
             {galat.kemasan && (
-              <p className="text-[0.8125rem] text-kritis font-medium leading-snug">{galat.kemasan}</p>
+              <p className="text-isi text-kritis font-medium leading-snug">{galat.kemasan}</p>
             )}
 
             <Tombol
@@ -571,7 +571,7 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
 
       {/* ---------------- Angka ---------------- */}
       <Kartu>
-        <h2 className="text-[0.9375rem] font-bold text-ink mb-3">Stok dan batas aman</h2>
+        <h2 className="text-kartu font-bold text-ink mb-3">Stok dan batas aman</h2>
 
         {barang ? (
           /* Angka stok sengaja tidak bisa diedit di sini: setiap perubahan stok
@@ -580,11 +580,11 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
             {/* Latar surface-2 menaikkan ambang keterbacaan: ink-3 di atasnya
                 jatuh di bawah 4,5:1, jadi teks di dalam panel ini pakai ink-2. */}
             <div className="min-w-0 grow">
-              <p className="text-[0.8125rem] text-ink-2">Stok tercatat</p>
+              <p className="text-isi text-ink-2">Stok tercatat</p>
               <p className="mt-0.5 text-[1.125rem] font-bold text-ink">
                 {jumlahTampil(barang, Math.max(0, barang.stok))}
               </p>
-              <p className="mt-1 text-[0.8125rem] text-ink-2 leading-snug">
+              <p className="mt-1 text-isi text-ink-2 leading-snug">
                 Angka stok diubah lewat Koreksi Stok supaya perubahannya tercatat di riwayat.
               </p>
             </div>
@@ -648,7 +648,7 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
             <button
               type="button"
               onClick={() => setBatasAman(teksAngka(keTampil(sumberSatuan, saranBatas)))}
-              className="mt-2 inline-flex items-center min-h-11 text-[0.8125rem] font-bold text-brand hover:underline"
+              className="mt-2 inline-flex items-center min-h-11 text-isi font-bold text-brand hover:underline"
             >
               Pakai saran {jumlahTampil(sumberSatuan, saranBatas)}
             </button>
@@ -663,7 +663,7 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
 
       {/* ---------------- Sakelar ---------------- */}
       <Kartu>
-        <h2 className="text-[0.9375rem] font-bold text-ink mb-1">Pengingat</h2>
+        <h2 className="text-kartu font-bold text-ink mb-1">Pengingat</h2>
 
         <Sakelar
           aktif={ingatkanKedaluwarsa}

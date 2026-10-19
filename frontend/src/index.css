@@ -210,6 +210,27 @@
     'Helvetica Neue', Arial, sans-serif;
 }
 
+/* Skala teks (kurasi Rombak#4): enam peran menggantikan 20 ukuran text-[Nrem].
+   Badan 14px, bukan 13px: acuan majoo memakai dasar 16px dan label 14px, dan
+   13px abu-abu membuat keterangan sulit dibaca. Hanya ukuran dan jarak baris;
+   tebal huruf tetap ditulis di kelasnya supaya tidak ada teks yang diam-diam
+   menebal. Kelas leading-* yang ditulis eksplisit tetap menang. */
+@theme {
+  --text-judul: 1.375rem;
+  --text-judul--line-height: 1.25;
+  --text-judul--letter-spacing: -0.01em;
+  --text-subjudul: 1.0625rem;
+  --text-subjudul--line-height: 1.35;
+  --text-kartu: 0.9375rem;
+  --text-kartu--line-height: 1.4;
+  --text-isi: 0.875rem;
+  --text-isi--line-height: 1.55;
+  --text-kecil: 0.75rem;
+  --text-kecil--line-height: 1.45;
+  --text-angka: 1.625rem;
+  --text-angka--line-height: 1;
+}
+
 /* ============================================================
    Dasar
    ============================================================ */

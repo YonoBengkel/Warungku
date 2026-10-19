@@ -88,7 +88,7 @@ export default function Produksi() {
   // sempat menampilkan "halaman ini bukan untukmu" selama itu.
   if (!sesi && memulihkan) {
     return (
-      <p className="pt-6 text-[0.875rem] text-ink-3" role="status">
+      <p className="pt-6 text-isi text-ink-3" role="status">
         Memuat data produksi…
       </p>
     )
@@ -97,7 +97,7 @@ export default function Produksi() {
   if (!sesi || jenis !== 'produksi-makanan') {
     return (
       <div className="pb-8">
-        <h1 className="text-[1.25rem] font-extrabold text-ink tracking-tight">{NAV.produksi}</h1>
+        <h1 className="text-judul font-extrabold text-ink tracking-tight">{NAV.produksi}</h1>
         <KeadaanKosong
           ikon={<IkonPanci size={26} />}
           judul="Halaman ini untuk usaha yang memproduksi barang"
@@ -113,12 +113,12 @@ export default function Produksi() {
   return (
     <div className="pb-8">
       <div className="flex items-baseline justify-between gap-3 flex-wrap">
-        <h1 className="text-[1.25rem] font-extrabold text-ink tracking-tight">{NAV.produksi}</h1>
+        <h1 className="text-judul font-extrabold text-ink tracking-tight">{NAV.produksi}</h1>
         {data && (
-          <p className="text-[0.8125rem] text-ink-3">Data sampai {tanggalPanjang(data.ringkasan.tanggalAcuan)}</p>
+          <p className="text-isi text-ink-3">Data sampai {tanggalPanjang(data.ringkasan.tanggalAcuan)}</p>
         )}
       </div>
-      <p className="mt-1 text-[0.875rem] text-ink-2 leading-relaxed max-w-[62ch]">
+      <p className="mt-1 text-isi text-ink-2 leading-relaxed max-w-[62ch]">
         Bahan baku dari gudang dimasak menjadi barang jadi, lalu dikirim ke toko dan ritel yang memesan. Setiap sesi
         masak memotong bahan baku sesuai resep.
       </p>
@@ -143,7 +143,7 @@ export default function Produksi() {
           </div>
         </Peringatan>
       ) : !data ? (
-        <p className="mt-6 text-[0.875rem] text-ink-3" role="status">
+        <p className="mt-6 text-isi text-ink-3" role="status">
           Memuat data produksi…
         </p>
       ) : tab === 'produksi' ? (
@@ -175,27 +175,27 @@ function TabProduksi({
           <KartuProduk key={p.id} produk={p} sesudahSimpan={sesudahSimpan} />
         ))}
       </div>
-      <p className="text-[0.75rem] text-ink-3 leading-relaxed max-w-[62ch]">
+      <p className="text-kecil text-ink-3 leading-relaxed max-w-[62ch]">
         Perkiraan pesanan 7 hari: rata-rata pesanan pada hari yang sama dalam 4 pekan terakhir, karena toko dan ritel
         memesan dengan jadwal mingguan. Kebutuhan bahan baku diramal Mesin 1 di halaman Prediksi.
       </p>
 
       <Kartu>
-        <h2 className="text-[0.9375rem] font-bold text-ink">Riwayat masak 3 pekan terakhir</h2>
+        <h2 className="text-kartu font-bold text-ink">Riwayat masak 3 pekan terakhir</h2>
         {riwayat.length === 0 ? (
-          <p className="mt-2 text-[0.875rem] text-ink-3">Belum ada sesi masak dalam 3 pekan terakhir.</p>
+          <p className="mt-2 text-isi text-ink-3">Belum ada sesi masak dalam 3 pekan terakhir.</p>
         ) : (
           <ul className="mt-2 divide-y divide-line">
             {riwayat.map((r) => (
               <li key={r.id} className="py-2.5 flex items-center justify-between gap-3">
                 <span className="min-w-0">
-                  <span className="block text-[0.875rem] font-semibold text-ink truncate">{r.namaProduk}</span>
-                  <span className="block text-[0.75rem] text-ink-3">
+                  <span className="block text-isi font-semibold text-ink truncate">{r.namaProduk}</span>
+                  <span className="block text-kecil text-ink-3">
                     {tanggalLengkapHari(r.waktu)}
                     {r.oleh ? ` · ${r.oleh}` : ''}
                   </span>
                 </span>
-                <span className="shrink-0 text-[0.875rem] font-bold text-ink tabular">{angka(r.jumlah)} toples</span>
+                <span className="shrink-0 text-isi font-bold text-ink tabular">{angka(r.jumlah)} toples</span>
               </li>
             ))}
           </ul>
@@ -245,7 +245,7 @@ function KartuProduk({ produk: p, sesudahSimpan }: { produk: ProdukJadi; sesudah
         <Avatar nama={p.nama} ukuran={56} />
         <div className="min-w-0 grow">
           <h2 className="text-[1rem] font-bold text-ink leading-snug">{p.nama}</h2>
-          <p className="text-[0.8125rem] text-ink-3">
+          <p className="text-isi text-ink-3">
             {p.isiBersih ? `${p.isiBersih} per ${p.satuan} · ` : ''}
             {rupiah(p.hargaJual)}/{p.satuan} ke pembeli
           </p>
@@ -254,16 +254,16 @@ function KartuProduk({ produk: p, sesudahSimpan }: { produk: ProdukJadi; sesudah
 
       <div className="mt-3 flex items-end justify-between gap-3 flex-wrap">
         <div>
-          <p className="text-[0.75rem] font-semibold uppercase tracking-wide text-ink-3">Stok barang jadi</p>
+          <p className="text-kecil font-semibold uppercase tracking-wide text-ink-3">Stok barang jadi</p>
           <p className="mt-1 text-[1.75rem] font-extrabold leading-none tracking-tight text-ink">
             {angka(p.stok)}
-            <span className="ml-1.5 text-[0.9375rem] font-semibold text-ink-3">{p.satuan}</span>
+            <span className="ml-1.5 text-kartu font-semibold text-ink-3">{p.satuan}</span>
           </p>
         </div>
         <ChipStok status={statusJadi(p)} />
       </div>
 
-      <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-[0.8125rem]">
+      <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-isi">
         <div>
           <dt className="text-ink-3">Perkiraan pesanan 7 hari</dt>
           <dd className="font-bold text-ink tabular">
@@ -291,7 +291,11 @@ function KartuProduk({ produk: p, sesudahSimpan }: { produk: ProdukJadi; sesudah
       </dl>
 
       {kurangBahan && pembatas && (
-        <Peringatan nada="menipis" className="mt-3" judul={`Bahan cukup untuk ${angka(p.bisaDibuat)} ${p.satuan} saja`}>
+        <Peringatan nada="menipis" className="mt-3" judul={
+            p.bisaDibuat > 0
+              ? `Bahan cukup untuk ${angka(p.bisaDibuat)} ${p.satuan} saja`
+              : `Bahan belum cukup untuk satu ${p.satuan} pun`
+          }>
           {pembatas.nama} paling cepat habis. Pesan dulu supaya saran masak bisa terpenuhi.
           <div className="mt-2">
             <Link
@@ -305,10 +309,10 @@ function KartuProduk({ produk: p, sesudahSimpan }: { produk: ProdukJadi; sesudah
       )}
 
       <details className="mt-3 group">
-        <summary className="cursor-pointer min-h-11 flex items-center text-[0.875rem] font-semibold text-brand">
+        <summary className="cursor-pointer min-h-11 flex items-center text-isi font-semibold text-brand">
           Resep per {p.satuan} ({p.resep.length} bahan)
         </summary>
-        <ul className="mt-1 divide-y divide-line text-[0.8125rem]">
+        <ul className="mt-1 divide-y divide-line text-isi">
           {p.resep.map((b) => (
             <li key={b.barangId} className="py-2 flex items-center justify-between gap-3">
               <span className="min-w-0 truncate text-ink-2">{b.nama}</span>
@@ -320,7 +324,7 @@ function KartuProduk({ produk: p, sesudahSimpan }: { produk: ProdukJadi; sesudah
 
       {buka ? (
         <div className="mt-3 rounded-md border border-line p-3 bg-surface-2">
-          <h3 className="text-[0.875rem] font-bold text-ink">Catat sesi masak</h3>
+          <h3 className="text-isi font-bold text-ink">Catat sesi masak</h3>
           <div className="mt-2">
             <PengaturJumlah
               nilai={jumlah}
@@ -333,8 +337,8 @@ function KartuProduk({ produk: p, sesudahSimpan }: { produk: ProdukJadi; sesudah
               label={`Jumlah ${p.satuan} yang dimasak`}
             />
           </div>
-          <p className="mt-3 text-[0.75rem] font-semibold uppercase tracking-wide text-ink-3">Bahan yang terpakai</p>
-          <ul className="mt-1 text-[0.8125rem] divide-y divide-line">
+          <p className="mt-3 text-kecil font-semibold uppercase tracking-wide text-ink-3">Bahan yang terpakai</p>
+          <ul className="mt-1 text-isi divide-y divide-line">
             {p.resep.map((b) => {
               const pakai = b.takaran * jumlah
               const cukup = b.stok >= pakai
@@ -350,7 +354,7 @@ function KartuProduk({ produk: p, sesudahSimpan }: { produk: ProdukJadi; sesudah
             })}
           </ul>
           {galat && (
-            <p className="mt-2 text-[0.8125rem] text-kritis-ink" role="alert">
+            <p className="mt-2 text-isi text-kritis-ink" role="alert">
               {galat}
             </p>
           )}
@@ -369,7 +373,7 @@ function KartuProduk({ produk: p, sesudahSimpan }: { produk: ProdukJadi; sesudah
             Catat produksi
           </Tombol>
           {p.bisaDibuat < 1 && (
-            <p className="mt-1.5 text-[0.8125rem] text-ink-3">Bahan belum cukup untuk satu {p.satuan} pun.</p>
+            <p className="mt-1.5 text-isi text-ink-3">Bahan belum cukup untuk satu {p.satuan} pun.</p>
           )}
         </div>
       )}
@@ -402,9 +406,9 @@ function TabKiriman({
   return (
     <div role="tabpanel" aria-label="Kiriman ke pembeli" className="mt-4 space-y-4">
       <Kartu>
-        <h2 className="text-[0.9375rem] font-bold text-ink">Nilai kiriman per bulan</h2>
+        <h2 className="text-kartu font-bold text-ink">Nilai kiriman per bulan</h2>
         {awal && terakhir && (
-          <p className="mt-0.5 text-[0.8125rem] text-ink-3 leading-snug">
+          <p className="mt-0.5 text-isi text-ink-3 leading-snug">
             Dari {rupiah(awal.total)} ({bulanRingkas(`${awal.bulan}-01`)}) menjadi {rupiah(terakhir.total)} (
             {bulanRingkas(`${terakhir.bulan}-01`)}). Bulan terakhir baru berjalan sebagian.
           </p>
@@ -417,7 +421,7 @@ function TabKiriman({
       <FormKiriman ringkasan={ringkasan} sesudahSimpan={sesudahSimpan} />
 
       <section aria-labelledby="judul-pembeli">
-        <h2 id="judul-pembeli" className="text-[0.9375rem] font-bold text-ink">
+        <h2 id="judul-pembeli" className="text-kartu font-bold text-ink">
           Pembeli langganan
         </h2>
         <ul className="mt-2 grid gap-3 sm:grid-cols-2 [&>*]:min-w-0">
@@ -427,15 +431,15 @@ function TabKiriman({
                 <div className="flex items-start gap-3">
                   <Avatar nama={b.nama} ukuran={40} />
                   <div className="min-w-0">
-                    <h3 className="text-[0.9375rem] font-bold text-ink leading-snug">{b.nama}</h3>
-                    <p className="text-[0.75rem] text-ink-3">
+                    <h3 className="text-kartu font-bold text-ink leading-snug">{b.nama}</h3>
+                    <p className="text-kecil text-ink-3">
                       {LABEL_PEMBELI[b.jenis] ?? b.jenis}
                       {b.kota ? ` · ${b.kota}` : ''}
                     </p>
                   </div>
                 </div>
-                {b.ketentuan && <p className="mt-2 text-[0.8125rem] text-ink-2 leading-snug">{b.ketentuan}</p>}
-                <p className="mt-2 text-[0.8125rem] text-ink">
+                {b.ketentuan && <p className="mt-2 text-isi text-ink-2 leading-snug">{b.ketentuan}</p>}
+                <p className="mt-2 text-isi text-ink">
                   <span className="font-bold tabular">{b.kiriman28Hari} kiriman</span> senilai{' '}
                   <span className="font-bold tabular">{rupiah(b.nilai28Hari)}</span> dalam 28 hari
                 </p>
@@ -446,23 +450,23 @@ function TabKiriman({
       </section>
 
       <Kartu>
-        <h2 className="text-[0.9375rem] font-bold text-ink">Kiriman 3 pekan terakhir</h2>
+        <h2 className="text-kartu font-bold text-ink">Kiriman 3 pekan terakhir</h2>
         {kiriman.length === 0 ? (
-          <p className="mt-2 text-[0.875rem] text-ink-3">Belum ada kiriman dalam 3 pekan terakhir.</p>
+          <p className="mt-2 text-isi text-ink-3">Belum ada kiriman dalam 3 pekan terakhir.</p>
         ) : (
           <ul className="mt-2 divide-y divide-line">
             {kiriman.map((k) => (
               <li key={k.id} className="py-2.5">
                 <div className="flex items-start justify-between gap-3">
                   <span className="min-w-0">
-                    <span className="block text-[0.875rem] font-semibold text-ink truncate">{k.namaPembeli}</span>
-                    <span className="block text-[0.75rem] text-ink-3">
+                    <span className="block text-isi font-semibold text-ink truncate">{k.namaPembeli}</span>
+                    <span className="block text-kecil text-ink-3">
                       {k.nomor} · {tanggalLengkapHari(k.waktu)}
                     </span>
                   </span>
-                  <span className="shrink-0 text-[0.875rem] font-bold text-ink tabular">{rupiah(k.total)}</span>
+                  <span className="shrink-0 text-isi font-bold text-ink tabular">{rupiah(k.total)}</span>
                 </div>
-                <p className="mt-0.5 text-[0.8125rem] text-ink-2">
+                <p className="mt-0.5 text-isi text-ink-2">
                   {k.baris.map((b) => `${angka(b.jumlah)} ${b.nama}`).join(', ')}
                 </p>
               </li>
@@ -505,18 +509,18 @@ function FormKiriman({ ringkasan, sesudahSimpan }: { ringkasan: RingkasanProduks
 
   return (
     <Kartu>
-      <h2 className="text-[0.9375rem] font-bold text-ink inline-flex items-center gap-2">
+      <h2 className="text-kartu font-bold text-ink inline-flex items-center gap-2">
         <IkonKirim size={18} />
         Catat kiriman
       </h2>
-      <label className="mt-3 block text-[0.8125rem] font-semibold text-ink-2" htmlFor="pilih-pembeli">
+      <label className="mt-3 block text-isi font-semibold text-ink-2" htmlFor="pilih-pembeli">
         Pembeli
       </label>
       <select
         id="pilih-pembeli"
         value={pembeliId}
         onChange={(e) => setPembeliId(Number(e.target.value))}
-        className="mt-1 w-full h-11 rounded-md border border-line-strong bg-surface px-3 text-[0.9375rem] text-ink"
+        className="mt-1 w-full h-11 rounded-md border border-line-strong bg-surface px-3 text-kartu text-ink"
       >
         {ringkasan.pembeli.map((b) => (
           <option key={b.id} value={b.id}>
@@ -527,7 +531,7 @@ function FormKiriman({ ringkasan, sesudahSimpan }: { ringkasan: RingkasanProduks
       <div className="mt-3 grid gap-3 sm:grid-cols-2 [&>*]:min-w-0">
         {ringkasan.produk.map((p) => (
           <div key={p.id}>
-            <p className="mb-1.5 flex items-center gap-2 text-[0.875rem] font-semibold text-ink">
+            <p className="mb-1.5 flex items-center gap-2 text-isi font-semibold text-ink">
               <Avatar nama={p.nama} ukuran={28} />
               {p.nama}
             </p>
@@ -540,19 +544,19 @@ function FormKiriman({ ringkasan, sesudahSimpan }: { ringkasan: RingkasanProduks
               satuan={p.satuan}
               label={p.nama}
             />
-            <p className="mt-1 text-[0.75rem] text-ink-3">
+            <p className="mt-1 text-kecil text-ink-3">
               Stok {angka(p.stok)} {p.satuan}
             </p>
           </div>
         ))}
       </div>
       {galat && (
-        <p className="mt-2 text-[0.8125rem] text-kritis-ink" role="alert">
+        <p className="mt-2 text-isi text-kritis-ink" role="alert">
           {galat}
         </p>
       )}
       <div className="mt-3 flex items-center justify-between gap-3 flex-wrap">
-        <p className="text-[0.875rem] text-ink-2">
+        <p className="text-isi text-ink-2">
           Nilai kiriman <strong className="text-ink tabular">{rupiah(total)}</strong>
         </p>
         <Tombol onClick={simpan} memuat={menyimpan} disabled={baris.length === 0 || !pembeliId}>

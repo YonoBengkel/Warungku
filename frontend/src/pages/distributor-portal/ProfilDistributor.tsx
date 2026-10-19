@@ -216,7 +216,7 @@ function FormBarang({
         {/* Isi satu satuan jual inilah kelipatan pemesanan: pemilik usaha hanya
             bisa memesan per satuan jual, dan stok gudangnya bertambah sebanyak isi ini. */}
         <div>
-          <p className="text-[0.8125rem] font-semibold text-ink-2 mb-1.5">
+          <p className="text-isi font-semibold text-ink-2 mb-1.5">
             Isi 1 {satuan.trim() || 'satuan jual'}
             <span className="text-kritis ml-0.5" aria-hidden="true">
               *
@@ -244,7 +244,7 @@ function FormBarang({
             </Pilihan>
           </div>
           {penawaran?.barangIdTerkait && (
-            <p className="mt-1.5 text-[0.8125rem] text-ink-3 leading-snug">
+            <p className="mt-1.5 text-isi text-ink-3 leading-snug">
               Satuan isinya mengikuti catatan stok pembeli yang sudah ada, jadi tidak bisa diganti ke satuan lain.
             </p>
           )}
@@ -308,7 +308,7 @@ function FormLayanan({ distributor, tutup }: { distributor: Distributor; tutup: 
     >
       <div className="pb-4 space-y-5">
         <div>
-          <p className="text-[0.875rem] font-semibold text-ink-2 mb-2.5">Kategori barang</p>
+          <p className="text-isi font-semibold text-ink-2 mb-2.5">Kategori barang</p>
           <BarisChip className="flex-wrap">
             {KATEGORI_BARANG.map((k) => (
               <Chip key={k} aktif={kategori.includes(k)} onClick={() => setKategori((d) => ganti(d, k))}>
@@ -316,10 +316,10 @@ function FormLayanan({ distributor, tutup }: { distributor: Distributor; tutup: 
               </Chip>
             ))}
           </BarisChip>
-          {dicoba && galatKategori && <p className="mt-2 text-[0.8125rem] text-kritis font-medium">{galatKategori}</p>}
+          {dicoba && galatKategori && <p className="mt-2 text-isi text-kritis font-medium">{galatKategori}</p>}
         </div>
         <div>
-          <p className="text-[0.875rem] font-semibold text-ink-2 mb-2.5">Area kirim</p>
+          <p className="text-isi font-semibold text-ink-2 mb-2.5">Area kirim</p>
           <BarisChip className="flex-wrap">
             {WILAYAH_KIRIM.map((w) => (
               <Chip key={w} aktif={area.includes(w)} onClick={() => setArea((d) => ganti(d, w))}>
@@ -327,7 +327,7 @@ function FormLayanan({ distributor, tutup }: { distributor: Distributor; tutup: 
               </Chip>
             ))}
           </BarisChip>
-          {dicoba && galatArea && <p className="mt-2 text-[0.8125rem] text-kritis font-medium">{galatArea}</p>}
+          {dicoba && galatArea && <p className="mt-2 text-isi text-kritis font-medium">{galatArea}</p>}
         </div>
       </div>
     </Lembar>
@@ -477,13 +477,13 @@ export default function ProfilDistributor() {
   return (
     <div className="pb-6">
       {/* 1. Identitas */}
-      <p className="text-[0.75rem] font-bold uppercase tracking-wide text-ink-3">Profil toko</p>
-      <h1 className="mt-0.5 text-[1.25rem] font-extrabold text-ink tracking-tight leading-snug">{distributor.nama}</h1>
+      <p className="text-kecil font-bold uppercase tracking-wide text-ink-3">Profil toko</p>
+      <h1 className="mt-0.5 text-judul font-extrabold text-ink tracking-tight leading-snug">{distributor.nama}</h1>
 
       <div className="mt-3 flex items-start gap-3">
         <Avatar nama={distributor.nama} warna={distributor.warna} ukuran={56} />
         <div className="min-w-0">
-          <p className="text-[0.875rem] text-ink-2 leading-snug">
+          <p className="text-isi text-ink-2 leading-snug">
             {distributor.kota} &middot; bergabung {distributor.sejak}
           </p>
           <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -499,7 +499,7 @@ export default function ProfilDistributor() {
         </div>
       </div>
 
-      <p className="mt-3 text-[0.875rem] text-ink-2 leading-relaxed max-w-[70ch]">{distributor.deskripsi}</p>
+      <p className="mt-3 text-isi text-ink-2 leading-relaxed max-w-[70ch]">{distributor.deskripsi}</p>
 
       <div className="mt-5 lg:grid lg:grid-cols-12 lg:gap-5 lg:items-start space-y-6 lg:space-y-0">
         <div className="lg:col-span-7 space-y-6">
@@ -528,7 +528,7 @@ export default function ProfilDistributor() {
                     <div key={pw.id} className={cx('py-3 first:pt-0 last:pb-0', nonaktif && 'opacity-70')}>
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="text-[0.9375rem] font-bold text-ink leading-snug">
+                          <p className="text-kartu font-bold text-ink leading-snug">
                             {pw.nama}
                             {nonaktif && (
                               <Lencana nada="netral" className="ml-2 align-middle">
@@ -536,16 +536,16 @@ export default function ProfilDistributor() {
                               </Lencana>
                             )}
                           </p>
-                          <p className="mt-0.5 text-[0.8125rem] text-ink-3 leading-snug">
+                          <p className="mt-0.5 text-isi text-ink-3 leading-snug">
                             {[pw.keterangan, kalimatKelipatan(pw)].filter(Boolean).join(' · ')}
                           </p>
                         </div>
-                        <p className="text-[0.9375rem] font-bold text-ink tabular shrink-0">
+                        <p className="text-kartu font-bold text-ink tabular shrink-0">
                           {rupiah(pw.hargaSatuan)}
-                          <span className="block text-right text-[0.75rem] font-normal text-ink-3">per {pw.satuan}</span>
+                          <span className="block text-right text-kecil font-normal text-ink-3">per {pw.satuan}</span>
                         </p>
                       </div>
-                      <p className="mt-1.5 flex items-start gap-1.5 text-[0.8125rem] text-ink-2 leading-snug">
+                      <p className="mt-1.5 flex items-start gap-1.5 text-isi text-ink-2 leading-snug">
                         <IkonKotak size={14} className="shrink-0 mt-0.5 text-ink-3" />
                         <span>
                           Stok {angka(pw.stokTersedia)} {pw.satuan} &middot; diperbarui {tanggalPendek(pw.stokDiperbaruiPada)}
@@ -601,7 +601,7 @@ export default function ProfilDistributor() {
               </div>
 
               {distributor.rating == null ? (
-                <p className="mt-4 text-[0.8125rem] text-ink-2 leading-relaxed">
+                <p className="mt-4 text-isi text-ink-2 leading-relaxed">
                   Belum ada penilaian yang masuk. Angkanya muncul setelah pesanan pertama selesai dan pemiliknya menulis
                   ulasan.
                 </p>
@@ -614,10 +614,10 @@ export default function ProfilDistributor() {
                       return (
                         <div key={kunci}>
                           <div className="flex items-baseline justify-between gap-2">
-                            <span className="text-[0.8125rem] text-ink-2 font-medium">{nama}</span>
+                            <span className="text-isi text-ink-2 font-medium">{nama}</span>
                             {/* Tiga angka yang sejajar vertikal: di sini tabular
                                 memang pada tempatnya. */}
-                            <span className="text-[0.8125rem] font-bold text-ink tabular">{angka(nilai, 1)} dari 5</span>
+                            <span className="text-isi font-bold text-ink tabular">{angka(nilai, 1)} dari 5</span>
                           </div>
                           {/* Bilahnya dekoratif: angkanya sudah tertulis di atas. */}
                           <div className="mt-1.5 h-2 rounded-full bg-sunken overflow-hidden" aria-hidden="true">
@@ -646,7 +646,7 @@ export default function ProfilDistributor() {
               }
             />
             <Kartu>
-              <h3 className="text-[0.8125rem] font-bold text-ink-2">Kategori barang</h3>
+              <h3 className="text-isi font-bold text-ink-2">Kategori barang</h3>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {distributor.kategori.map((k) => (
                   <Lencana key={k} nada="merek" besar>
@@ -655,7 +655,7 @@ export default function ProfilDistributor() {
                 ))}
               </div>
 
-              <h3 className="mt-4 text-[0.8125rem] font-bold text-ink-2">Area kirim</h3>
+              <h3 className="mt-4 text-isi font-bold text-ink-2">Area kirim</h3>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {distributor.areaKirim.map((a) => (
                   <Lencana key={a} nada="netral" besar>
@@ -689,7 +689,7 @@ export default function ProfilDistributor() {
                   />
                 </dl>
               ) : (
-                <p className="text-[0.875rem] text-ink-2 leading-relaxed">
+                <p className="text-isi text-ink-2 leading-relaxed">
                   Belum diisi. Lengkapi alamat gudang, kontak, dan jam operasional supaya pemilik usaha tahu kapan
                   pesanannya bisa diproses.
                 </p>
@@ -706,7 +706,7 @@ export default function ProfilDistributor() {
             />
             <Kartu>
               {ulasanTerbaru.length === 0 ? (
-                <p className="text-[0.875rem] text-ink-2 leading-relaxed">
+                <p className="text-isi text-ink-2 leading-relaxed">
                   Belum ada pemilik usaha yang menulis penilaian. Ulasan bisa ditulis setelah pesanannya ditandai sudah
                   sampai.
                 </p>
@@ -720,7 +720,7 @@ export default function ProfilDistributor() {
                             bintang + angkanya tidak boleh ikut menyempit
                             sampai melebarkan kartu di layar 360px. */}
                         <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
-                          <p className="text-[0.875rem] font-bold text-ink leading-snug min-w-0">
+                          <p className="text-isi font-bold text-ink leading-snug min-w-0">
                             {umkmById(p.umkmId)?.nama ?? 'Pemilik usaha'}
                           </p>
                           <span className="flex items-center gap-1 shrink-0">
@@ -729,15 +729,15 @@ export default function ProfilDistributor() {
                                 i <= u.rating ? <IkonBintangIsi key={i} size={13} /> : <IkonBintang key={i} size={13} />,
                               )}
                             </span>
-                            <span className="text-[0.8125rem] font-bold text-ink">{angka(u.rating, 1)} dari 5</span>
+                            <span className="text-isi font-bold text-ink">{angka(u.rating, 1)} dari 5</span>
                           </span>
                         </div>
                         {u.isi && (
-                          <p className="mt-1 text-[0.8125rem] text-ink-2 leading-relaxed max-w-[60ch]">
+                          <p className="mt-1 text-isi text-ink-2 leading-relaxed max-w-[60ch]">
                             &ldquo;{u.isi}&rdquo;
                           </p>
                         )}
-                        <p className="mt-1 text-[0.75rem] text-ink-3">
+                        <p className="mt-1 text-kecil text-ink-3">
                           {p.nomor} &middot; {tanggalPendek(u.waktu)}
                         </p>
                       </div>
@@ -764,7 +764,7 @@ export default function ProfilDistributor() {
           {/* 8. Jalan pulang ke sisi pemilik usaha */}
           <section aria-labelledby="judul-peran">
             <JudulBagian id="judul-peran" judul="Peran akun" />
-            <p className="-mt-1 text-[0.8125rem] text-ink-3 leading-relaxed max-w-[60ch]">
+            <p className="-mt-1 text-isi text-ink-3 leading-relaxed max-w-[60ch]">
               Berpindah peran adalah alat uji purwarupa. Di aplikasi yang sungguhan, satu akun hanya punya satu peran:
               pemilik usaha atau distributor, tidak keduanya.
             </p>
@@ -802,7 +802,7 @@ function PilihanTema({
       onClick={onClick}
       aria-pressed={aktif}
       className={cx(
-        'inline-flex items-center gap-2 h-11 px-4 rounded-md text-[0.875rem] font-semibold border',
+        'inline-flex items-center gap-2 h-11 px-4 rounded-md text-isi font-semibold border',
         'transition-colors duration-150',
         aktif ? 'bg-ink text-ink-inverse border-ink' : 'bg-surface text-ink-2 border-line-strong hover:text-ink',
       )}

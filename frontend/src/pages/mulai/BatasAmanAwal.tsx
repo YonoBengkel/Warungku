@@ -108,10 +108,10 @@ export default function BatasAmanAwal() {
       {/* Prosa ditahan selebar kolom baca walau layarnya lebar: baris kalimat
           yang melar sampai seribu piksel justru lebih sulit dibaca. */}
       <div className="lg:max-w-[36rem]">
-        <h1 className="text-[1.25rem] font-extrabold text-ink tracking-tight leading-snug">
+        <h1 className="text-judul font-extrabold text-ink tracking-tight leading-snug">
           Kapan kami harus mengingatkan kamu?
         </h1>
-        <p className="mt-1.5 text-[0.875rem] text-ink-2 leading-relaxed">
+        <p className="mt-1.5 text-isi text-ink-2 leading-relaxed">
           Tanpa batas aman, pengingat stok tipis tidak pernah berbunyi &mdash; kamu baru tahu barangnya habis waktu
           pembeli sudah menunggu di depan.
         </p>
@@ -158,14 +158,14 @@ export default function BatasAmanAwal() {
                 Pakai semua saran
               </Tombol>
             )}
-            <p className="mt-2 text-[0.8125rem] text-ink-2 leading-relaxed">
+            <p className="mt-2 text-isi text-ink-2 leading-relaxed">
               {BANTUAN.batasAman} Saran dihitung dari rata-rata pemakaian harian ditambah lama kirim distributor.
             </p>
           </div>
 
           <div className="mt-4 flex items-baseline justify-between gap-3">
-            <h2 className="text-[0.9375rem] font-bold text-ink">{daftar.length} barang</h2>
-            <p className="text-[0.8125rem] text-ink-2 tabular">
+            <h2 className="text-kartu font-bold text-ink">{daftar.length} barang</h2>
+            <p className="text-isi text-ink-2 tabular">
               {jumlahIkutSaran === daftar.length
                 ? 'Semuanya ikut saran'
                 : `${jumlahIkutSaran} ikut saran · ${daftar.length - jumlahIkutSaran} diubah sendiri`}
@@ -189,7 +189,7 @@ export default function BatasAmanAwal() {
           </div>
 
           {jumlahManual > 0 && (
-            <p className="mt-3 lg:max-w-[36rem] text-[0.8125rem] text-ink-2 leading-relaxed">
+            <p className="mt-3 lg:max-w-[36rem] text-isi text-ink-2 leading-relaxed">
               {jumlahManual} barang yang kamu tandai dicatat manual tidak ada di daftar ini, karena barang seperti
               itu memang tidak kami ingatkan.
             </p>
@@ -203,7 +203,7 @@ export default function BatasAmanAwal() {
               <div className="mt-2 text-center">
                 <Link
                   to="/beranda"
-                  className="inline-flex items-center justify-center h-11 px-2 text-[0.875rem] font-semibold text-ink-2 hover:text-ink underline underline-offset-2"
+                  className="inline-flex items-center justify-center h-11 px-2 text-isi font-semibold text-ink-2 hover:text-ink underline underline-offset-2"
                 >
                   Lewati, atur nanti dari tab Stok
                 </Link>
@@ -249,9 +249,9 @@ function BarisBatas({
     >
       <div className="flex items-baseline justify-between gap-3">
         <p className="text-[1rem] font-semibold text-ink leading-snug min-w-0">{barang.nama}</p>
-        <p className="text-[0.75rem] text-ink-2 shrink-0">{barang.kategori}</p>
+        <p className="text-kecil text-ink-2 shrink-0">{barang.kategori}</p>
       </div>
-      <p className="mt-0.5 text-[0.8125rem] text-ink-2">
+      <p className="mt-0.5 text-isi text-ink-2">
         sisa sekarang {jumlahTampil(barang, barang.stok)}
         {barang.pemakaianHarian > 0 && (
           <> &middot; rata-rata pakai {jumlahTampil(barang, barang.pemakaianHarian)}/hari</>
@@ -259,7 +259,7 @@ function BarisBatas({
       </p>
 
       <div className="mt-2.5 flex flex-wrap items-center gap-x-2.5 gap-y-2">
-        <label htmlFor={id} className="text-[0.875rem] text-ink-2">
+        <label htmlFor={id} className="text-isi text-ink-2">
           ingatkan kalau sisa kurang dari
         </label>
         <span className="inline-flex items-center gap-2">
@@ -279,7 +279,7 @@ function BarisBatas({
               galat ? 'border-kritis' : 'border-line-strong',
             )}
           />
-          <span className="text-[0.8125rem] font-semibold text-ink-2">{satuanTampil(barang).nama}</span>
+          <span className="text-isi font-semibold text-ink-2">{satuanTampil(barang).nama}</span>
         </span>
       </div>
 
@@ -287,7 +287,7 @@ function BarisBatas({
           dikosongkan, satu ketukan itulah jalan keluar tercepat; menyembunyikannya
           persis saat dibutuhkan membuat barisnya jadi buntu. */}
       {galat && (
-        <p id={`${id}-galat`} className="mt-1 text-[0.8125rem] text-kritis font-medium leading-snug">
+        <p id={`${id}-galat`} className="mt-1 text-isi text-kritis font-medium leading-snug">
           {galat}
         </p>
       )}
@@ -297,12 +297,12 @@ function BarisBatas({
           <button
             type="button"
             onClick={kembalikanSaran}
-            className="inline-flex items-center h-11 -ml-1 px-1 text-[0.8125rem] font-semibold text-brand hover:underline underline-offset-2"
+            className="inline-flex items-center h-11 -ml-1 px-1 text-isi font-semibold text-brand hover:underline underline-offset-2"
           >
             Pakai saran sistem: {jumlahTampil(barang, barang.batasAmanSaran)}
           </button>
         ) : (
-          <p className="inline-flex items-center gap-1.5 text-[0.75rem] text-ink-2">
+          <p className="inline-flex items-center gap-1.5 text-kecil text-ink-2">
             <IkonCentangLingkaran size={13} className="text-aman" />
             Mengikuti saran sistem
           </p>

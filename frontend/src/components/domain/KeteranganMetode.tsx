@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { IkonGrafik } from '@/icons'
 import { cx } from '@/lib/format'
+import { Penjelasan } from '@/components/ui/umpanBalik'
 
 /**
  * Keterangan metode mesin analitik, di atas halaman atau kartu yang memakai
@@ -22,17 +23,23 @@ export function KeteranganMetode({
   return (
     <div
       className={cx(
-        'flex items-start gap-2.5 rounded-md border border-line bg-brand-soft/60 px-3 py-2.5 text-[0.8125rem]',
+        'flex items-start gap-2.5 rounded-md border border-line bg-brand-soft/60 px-3 py-2.5 text-isi',
         className,
       )}
     >
       <IkonGrafik size={16} className="mt-0.5 shrink-0 text-brand" aria-hidden="true" />
-      <p className="min-w-0 leading-relaxed text-ink-2">
-        <span className="font-bold text-ink">
+      {/* Nama metode selalu terlihat (permintaan dosen); daftar masukannya
+          dilipat supaya kotak ini tidak menjadi paragraf di atas setiap halaman. */}
+      <div className="min-w-0 leading-relaxed text-ink-2">
+        <p className="font-bold text-ink">
           {mesin} · {metode}
-        </span>
-        {masukan && <span className="block text-ink-3">{masukan}</span>}
-      </p>
+        </p>
+        {masukan && (
+          <Penjelasan label="Data yang dipakai" className="-mb-2">
+            {masukan}
+          </Penjelasan>
+        )}
+      </div>
     </div>
   )
 }
@@ -44,26 +51,26 @@ export function metodeMesin1(kode: string | null): { metode: string; masukan: st
     return {
       metode: 'LightGBM',
       masukan:
-        'Masukan: riwayat pemakaian harian (lag 7, 14, 21, 28 hari dan rata-rata 7 & 28 hari), hari dalam pekan, serta kalender libur nasional, pekan gajian, dan Ramadan.',
+        'Riwayat pemakaian harian (lag 7, 14, 21, 28 hari dan rata-rata 7 & 28 hari), hari dalam pekan, serta kalender libur nasional, pekan gajian, dan Ramadan.',
     }
   }
   if (k.startsWith('sarima')) {
     return {
       metode: 'SARIMA(1,0,1)(0,1,1)7',
-      masukan: 'Masukan: riwayat pemakaian harian serta kalender libur nasional, pekan gajian, dan Ramadan.',
+      masukan: 'Riwayat pemakaian harian serta kalender libur nasional, pekan gajian, dan Ramadan.',
     }
   }
-  return { metode: 'ETS (Holt-Winters)', masukan: 'Masukan: riwayat pemakaian harian.' }
+  return { metode: 'ETS (Holt-Winters)', masukan: 'Riwayat pemakaian harian.' }
 }
 
 export const METODE_MESIN2 = {
   metode: 'Thompson Sampling (Beta-Bernoulli) + logika fuzzy Sugeno',
   masukan:
-    'Masukan: riwayat tiap pesanan ke distributor (tepat waktu, jumlah sesuai, kondisi baik) dan rasio harga terhadap penawaran termurah.',
+    'Riwayat tiap pesanan ke distributor (tepat waktu, jumlah sesuai, kondisi baik) dan rasio harga terhadap penawaran termurah.',
 }
 
 export const METODE_MESIN3 = {
   metode: 'Segmentasi dengan K-Prototypes + log transform',
   masukan:
-    'Masukan: recency, frequency, dan monetary (log), lama berlangganan, jenis usaha, dan kategori barang utama tiap pelanggan.',
+    'Recency, frequency, dan monetary (log), lama berlangganan, jenis usaha, dan kategori barang utama tiap pelanggan.',
 }

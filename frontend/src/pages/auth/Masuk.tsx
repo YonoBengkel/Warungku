@@ -82,7 +82,7 @@ export default function Masuk() {
         if (e instanceof ServerTakTerjangkau) {
           // Server belum dinyalakan: tetap bisa mencoba aplikasinya dengan data contoh.
           aturMasuk(true)
-          tampilkanRacun('Server belum menyala, jadi yang tampil adalah data contoh.', 'info')
+          tampilkanRacun('Data usahamu belum bisa dimuat, jadi yang tampil adalah data contoh.', 'info')
           navigate('/beranda')
           return
         }
@@ -109,8 +109,8 @@ export default function Masuk() {
 
   return (
     <LayarAuth>
-      <h1 className="text-[1.25rem] font-extrabold text-ink tracking-tight">Masuk ke Turnify Flow</h1>
-      <p className="mt-1 text-[0.875rem] text-ink-3 leading-relaxed">
+      <h1 className="text-judul font-extrabold text-ink tracking-tight">Masuk ke Turnify Flow</h1>
+      <p className="mt-1 text-isi text-ink-3 leading-relaxed">
         Pakai nomor HP yang kamu daftarkan. Nomor itu juga yang kami hubungi kalau ada kabar soal pesanan.
       </p>
 
@@ -173,7 +173,7 @@ export default function Masuk() {
         <div className="flex justify-end -mt-1">
           <Link
             to="/lupa-sandi"
-            className="inline-flex items-center min-h-11 px-1 text-[0.8125rem] font-bold text-brand hover:underline underline-offset-2"
+            className="inline-flex items-center min-h-11 px-1 text-isi font-bold text-brand hover:underline underline-offset-2"
           >
             Lupa kata sandi
           </Link>
@@ -184,7 +184,7 @@ export default function Masuk() {
         </Tombol>
       </form>
 
-      <p className="mt-5 text-center text-[0.875rem] text-ink-2">
+      <p className="mt-5 text-center text-isi text-ink-2">
         Belum punya akun?{' '}
         <Link
           to="/daftar"
@@ -193,7 +193,7 @@ export default function Masuk() {
           Daftar
         </Link>
       </p>
-      <p className="text-center text-[0.875rem] text-ink-2">
+      <p className="text-center text-isi text-ink-2">
         Kamu distributor?{' '}
         <Link
           to="/masuk/distributor"
@@ -210,7 +210,7 @@ export default function Masuk() {
           <button
             type="button"
             onClick={isiAkunContoh}
-            className="mt-1 inline-flex items-center gap-1.5 min-h-11 text-[0.8125rem] font-bold underline underline-offset-2"
+            className="mt-1 inline-flex items-center gap-1.5 min-h-11 text-isi font-bold underline underline-offset-2"
           >
             <IkonTelepon size={14} />
             Isikan nomor akun contoh
@@ -221,14 +221,14 @@ export default function Masuk() {
           <button
             type="button"
             onClick={() => isiAkunServer(AKUN_KOPI_KITA)}
-            className="mt-1 flex items-center gap-1.5 min-h-11 text-[0.8125rem] font-bold underline underline-offset-2"
+            className="mt-1 flex items-center gap-1.5 min-h-11 text-isi font-bold underline underline-offset-2"
           >
             Isikan akun simulasi: Kopi Kita Jogja
           </button>
           <button
             type="button"
             onClick={() => isiAkunServer(AKUN_BU_RATMI)}
-            className="flex items-center gap-1.5 min-h-11 text-[0.8125rem] font-bold underline underline-offset-2"
+            className="flex items-center gap-1.5 min-h-11 text-isi font-bold underline underline-offset-2"
           >
             Isikan akun simulasi produsen: Dapur Sambal Bu Ratmi
           </button>
@@ -258,7 +258,7 @@ function LayarAuth({ children }: { children: ReactNode }) {
 }
 
 const KELAS_SANDI =
-  'w-full h-12 pl-3.5 pr-14 rounded-md bg-surface text-ink text-[0.9375rem] ' +
+  'w-full h-12 pl-3.5 pr-14 rounded-md bg-surface text-ink text-kartu ' +
   'border border-line-strong placeholder:text-ink-3/70 ' +
   'transition-[border-color,box-shadow] duration-150 ' +
   'focus:border-brand focus:outline-none focus:ring-4 focus:ring-[var(--c-brand-ring)]'
@@ -289,7 +289,7 @@ function KolomSandi({
 
   return (
     <div className="w-full">
-      <label htmlFor={id} className="block text-[0.8125rem] font-semibold text-ink-2 mb-1.5">
+      <label htmlFor={id} className="block text-isi font-semibold text-ink-2 mb-1.5">
         {label}
         <span className="text-kritis ml-0.5" aria-hidden="true">
           *
@@ -318,11 +318,11 @@ function KolomSandi({
         </button>
       </div>
       {galat ? (
-        <p id={`${id}-galat`} className="mt-1.5 text-[0.8125rem] text-kritis font-medium leading-snug">
+        <p id={`${id}-galat`} className="mt-1.5 text-isi text-kritis font-medium leading-snug">
           {galat}
         </p>
       ) : bantuan ? (
-        <p id={`${id}-bantuan`} className="mt-1.5 text-[0.8125rem] text-ink-3 leading-snug">
+        <p id={`${id}-bantuan`} className="mt-1.5 text-isi text-ink-3 leading-snug">
           {bantuan}
         </p>
       ) : null}

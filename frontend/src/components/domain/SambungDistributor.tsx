@@ -29,7 +29,7 @@ export function KartuSambungDistributor({ keterangan, className }: { keterangan:
       .catch((e: unknown) => {
         setGalat(
           e instanceof ServerTakTerjangkau
-            ? 'Server belum menyala. Nyalakan API Turnify Flow (port 8000), lalu coba lagi.'
+            ? 'Turnify Flow belum bisa dihubungi. Pastikan layanannya menyala, lalu coba lagi.'
             : e instanceof GalatApi
               ? e.message
               : 'Gagal menyambung. Coba lagi sebentar lagi.',
@@ -40,7 +40,7 @@ export function KartuSambungDistributor({ keterangan, className }: { keterangan:
 
   return (
     <Kartu className={className}>
-      <JudulBagian judul="Sambungkan ke server" keterangan={keterangan} />
+      <JudulBagian judul="Masuk sebagai distributor" keterangan={keterangan} />
       <form
         noValidate
         className="space-y-3"
@@ -51,6 +51,7 @@ export function KartuSambungDistributor({ keterangan, className }: { keterangan:
       >
         <Kolom
           label="Email distributor"
+          wajib
           type="email"
           autoComplete="username"
           value={email}
@@ -58,6 +59,7 @@ export function KartuSambungDistributor({ keterangan, className }: { keterangan:
         />
         <Kolom
           label="Kata sandi"
+          wajib
           type="password"
           autoComplete="current-password"
           value={sandi}
@@ -66,7 +68,7 @@ export function KartuSambungDistributor({ keterangan, className }: { keterangan:
         />
         <div className="flex flex-wrap gap-2.5">
           <Tombol type="submit" memuat={memuat}>
-            Sambungkan
+            Masuk
           </Tombol>
           <Tombol
             ragam="garis"
@@ -80,19 +82,19 @@ export function KartuSambungDistributor({ keterangan, className }: { keterangan:
           </Tombol>
         </div>
       </form>
-      <p className="mt-3 text-[0.75rem] text-ink-3">
+      <p className="mt-3 text-kecil text-ink-3">
         Akun simulasi {AKUN_SIMULASI.email} adalah Sumber Tani Nusantara di data simulasi.
       </p>
     </Kartu>
   )
 }
 
-/** Tombol kecil untuk melepas sambungan server; portal kembali ke data contoh. */
+/** Tombol kecil untuk keluar dari akun distributor; portal kembali ke data contoh. */
 export function TombolPutusDistributor() {
   const putus = useAplikasi((s) => s.putusDistributor)
   return (
     <Tombol ragam="garis" ukuran="kecil" ikonKiri={<IkonKeluar size={15} />} onClick={putus}>
-      Putuskan dari Server
+      Keluar
     </Tombol>
   )
 }

@@ -7,7 +7,7 @@ import { gambarUntuk } from '@/lib/gambar'
 /* Tombol                                                             */
 /* ================================================================== */
 
-type RagamTombol = 'utama' | 'sekunder' | 'halus' | 'garis' | 'bahaya' | 'sunyi'
+type RagamTombol = 'utama' | 'sekunder' | 'halus' | 'garis' | 'bahaya' | 'bahaya-garis' | 'sunyi' | 'tautan'
 type UkuranTombol = 'kecil' | 'sedang' | 'besar'
 
 const RAGAM: Record<RagamTombol, string> = {
@@ -20,6 +20,11 @@ const RAGAM: Record<RagamTombol, string> = {
   halus: 'bg-sunken text-ink-2 hover:text-ink hover:brightness-95',
   bahaya: 'bg-kritis text-ink-inverse hover:brightness-110 active:brightness-95 shadow-e1',
   sunyi: 'bg-transparent text-ink-2 hover:bg-sunken hover:text-ink',
+  // Pemicu aksi berbahaya di luar dialog konfirmasi: merah hanya di teks dan bingkai.
+  'bahaya-garis': 'bg-surface text-kritis-ink border border-kritis/40 hover:bg-kritis-soft active:bg-kritis-soft',
+  // Aksi tersier yang tampil sebagai tautan teks. Menggantikan Link bergaya
+  // text-brand yang ditulis ulang di banyak halaman.
+  tautan: 'bg-transparent text-brand hover:underline underline-offset-2',
 }
 
 /**
@@ -32,16 +37,36 @@ const RAGAM: Record<RagamTombol, string> = {
  */
 const UKURAN: Record<UkuranTombol, string> = {
   kecil:
-    'h-9 px-3 text-[0.8125rem] gap-1.5 rounded-sm relative ' +
+    'h-9 px-3 text-isi gap-1.5 rounded-sm relative ' +
     'after:absolute after:inset-x-0 after:-top-1 after:-bottom-1 after:content-[""]',
-  sedang: 'h-11 px-4 text-[0.9375rem] gap-2 rounded-md',
+  sedang: 'h-11 px-4 text-kartu gap-2 rounded-md',
   besar: 'h-[3.25rem] px-5 text-base gap-2 rounded-md',
+}
+
+/** Ragam tautan tidak berbantalan; tinggi sentuhnya tetap 44px. */
+const UKURAN_TAUTAN: Record<UkuranTombol, string> = {
+  kecil: 'min-h-11 px-0 text-isi gap-1',
+  sedang: 'min-h-11 px-0 text-isi gap-1.5',
+  besar: 'min-h-11 px-0 text-kartu gap-1.5',
+}
+
+/**
+ * `penuh="hp"`: selebar wadah di HP, selebar isinya mulai 640px. Tombol
+ * selebar 1.000px di desktop terbaca seperti spanduk, bukan tombol.
+ */
+type Penuh = boolean | 'hp'
+
+function kelasUkuran(ragam: RagamTombol, ukuran: UkuranTombol, penuh?: Penuh): string {
+  return cx(
+    ragam === 'tautan' ? UKURAN_TAUTAN[ukuran] : UKURAN[ukuran],
+    penuh === 'hp' ? 'w-full sm:w-auto' : penuh && 'w-full',
+  )
 }
 
 interface PropsTombol extends ButtonHTMLAttributes<HTMLButtonElement> {
   ragam?: RagamTombol
   ukuran?: UkuranTombol
-  penuh?: boolean
+  penuh?: Penuh
   memuat?: boolean
   ikonKiri?: ReactNode
   ikonKanan?: ReactNode
@@ -69,8 +94,7 @@ export function Tombol({
         'transition-[background-color,color,filter,opacity] duration-150',
         'disabled:opacity-45 disabled:pointer-events-none',
         RAGAM[ragam],
-        UKURAN[ukuran],
-        penuh && 'w-full',
+        kelasUkuran(ragam, ukuran, penuh),
         className,
       )}
       {...rest}
@@ -96,7 +120,7 @@ export function TombolTautan({
   ke: string
   ragam?: RagamTombol
   ukuran?: UkuranTombol
-  penuh?: boolean
+  penuh?: Penuh
   ikonKiri?: ReactNode
   ikonKanan?: ReactNode
   children: ReactNode
@@ -109,8 +133,7 @@ export function TombolTautan({
         'inline-flex items-center justify-center font-semibold whitespace-nowrap select-none',
         'transition-[background-color,color,filter] duration-150',
         RAGAM[ragam],
-        UKURAN[ukuran],
-        penuh && 'w-full',
+        kelasUkuran(ragam, ukuran, penuh),
         className,
       )}
     >
@@ -234,10 +257,10 @@ export function JudulBagian({
   return (
     <div className={cx('flex items-start justify-between gap-3 mb-3', className)}>
       <div className="min-w-0">
-        <h2 id={id} className="text-[0.9375rem] font-bold text-ink leading-tight">
+        <h2 id={id} className="text-kartu font-bold text-ink leading-tight">
           {judul}
         </h2>
-        {keterangan && <p className="text-[0.8125rem] text-ink-3 mt-0.5 leading-snug">{keterangan}</p>}
+        {keterangan && <p className="text-isi text-ink-3 mt-0.5 leading-snug">{keterangan}</p>}
       </div>
       {aksi && <div className="shrink-0">{aksi}</div>}
     </div>
@@ -281,7 +304,7 @@ export function Lencana({
     <span
       className={cx(
         'inline-flex items-center gap-1 font-semibold rounded-sm max-w-full',
-        besar ? 'text-[0.8125rem] px-2.5 py-1' : 'text-[0.6875rem] px-2 py-[3px]',
+        besar ? 'text-isi px-2.5 py-1' : 'text-[0.6875rem] px-2 py-[3px]',
         NADA[nada],
         className,
       )}
@@ -413,11 +436,11 @@ export function BarisData({
 }) {
   return (
     <div className="flex items-baseline justify-between gap-4 py-1.5">
-      <span className="text-[0.8125rem] text-ink-3 shrink-0">{label}</span>
+      <span className="text-isi text-ink-3 shrink-0">{label}</span>
       <span
         className={cx(
           'text-right tabular',
-          tebal ? 'text-[0.9375rem] font-bold' : 'text-[0.875rem] font-semibold',
+          tebal ? 'text-kartu font-bold' : 'text-isi font-semibold',
           nada === 'kritis' ? 'text-kritis' : nada === 'aman' ? 'text-aman' : 'text-ink',
         )}
       >
@@ -454,15 +477,15 @@ export function Metrik({
     <div className="min-w-0">
       <div className="flex items-center gap-1.5 text-ink-3">
         {ikon}
-        <span className="text-[0.75rem] font-semibold uppercase tracking-wide truncate">{label}</span>
+        <span className="text-kecil font-semibold uppercase tracking-wide truncate">{label}</span>
       </div>
       {/* Angka besar berdiri sendiri memakai lebar digit proporsional.
           tabular-nums hanya untuk kolom angka yang harus sejajar vertikal. */}
       <div className={cx('mt-1 flex items-baseline gap-1', warnaNilai)}>
-        <span className="text-[1.625rem] font-extrabold leading-none tracking-tight">{nilai}</span>
-        {satuan && <span className="text-[0.8125rem] font-semibold text-ink-3">{satuan}</span>}
+        <span className="text-angka font-extrabold leading-none tracking-tight">{nilai}</span>
+        {satuan && <span className="text-isi font-semibold text-ink-3">{satuan}</span>}
       </div>
-      {bantuan && <div className="mt-1 text-[0.75rem] text-ink-3 leading-snug">{bantuan}</div>}
+      {bantuan && <div className="mt-1 text-kecil text-ink-3 leading-snug">{bantuan}</div>}
     </div>
   )
 }

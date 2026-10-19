@@ -284,7 +284,7 @@ export default function Stok() {
       {/* ---------------- Kepala lengket ---------------- */}
       <div className="sticky top-14 z-20 -mx-4 px-4 sm:-mx-6 sm:px-6 pt-1 pb-3 bg-bg/96 backdrop-blur-sm border-b border-line lg:shrink-0">
         <div className="flex items-center gap-2 flex-wrap mb-3">
-          <h1 className="text-[1.25rem] font-extrabold text-ink tracking-tight mr-auto">Stok</h1>
+          <h1 className="text-judul font-extrabold text-ink tracking-tight mr-auto">Stok</h1>
           <TombolTautan ke="/stok/baru" ukuran="kecil" ikonKiri={<IkonTambah size={15} />}>
             Tambah Barang
           </TombolTautan>
@@ -309,7 +309,7 @@ export default function Stok() {
               onChange={(e) => aturParam({ cari: e.target.value })}
               placeholder="Cari barang, misal: gula aren"
               className={cx(
-                'w-full h-12 pl-11 pr-11 rounded-md bg-surface text-ink text-[0.9375rem]',
+                'w-full h-12 pl-11 pr-11 rounded-md bg-surface text-ink text-kartu',
                 'border border-line-strong placeholder:text-ink-3/70',
                 'focus:border-brand focus:outline-none focus:ring-4 focus:ring-[var(--c-brand-ring)]',
                 '[&::-webkit-search-cancel-button]:appearance-none',
@@ -390,7 +390,7 @@ export default function Stok() {
 
       {/* ---------------- Ringkasan penyaring aktif ---------------- */}
       {(filter !== 'semua' || kategori || cari) && (
-        <div className="mt-3 flex items-center gap-2 flex-wrap text-[0.8125rem] text-ink-2 lg:shrink-0">
+        <div className="mt-3 flex items-center gap-2 flex-wrap text-isi text-ink-2 lg:shrink-0">
           <span>
             Menampilkan <strong className="text-ink tabular">{angka(tersaring.length)}</strong> dari{' '}
             {angka(barang.length)} barang
@@ -539,7 +539,7 @@ export default function Stok() {
                       <td className="py-3.5 px-4 align-middle">
                         <Link
                           to={`/stok/${b.id}`}
-                          className="text-[0.9375rem] font-semibold text-ink hover:text-brand transition-colors"
+                          className="text-kartu font-semibold text-ink hover:text-brand transition-colors"
                         >
                           {b.nama}
                         </Link>
@@ -552,25 +552,25 @@ export default function Stok() {
                           </div>
                         )}
                       </td>
-                      <td className="py-3.5 px-4 align-middle text-[0.875rem] text-ink-2">
+                      <td className="py-3.5 px-4 align-middle text-isi text-ink-2">
                         {b.deskripsi || <span className="text-ink-3">&mdash;</span>}
                       </td>
-                      <td className="py-3.5 px-4 align-middle text-[0.875rem] text-ink-2">{b.kategori}</td>
+                      <td className="py-3.5 px-4 align-middle text-isi text-ink-2">{b.kategori}</td>
                       {/* Angka saja. Satuannya di kolom sebelah, dan berlaku juga
                           untuk kolom batas aman — satu barang, satu satuan. */}
                       <td className="py-3.5 px-4 align-middle text-right">
                         <span
                           className={cx(
-                            'text-[0.9375rem] font-bold tabular',
+                            'text-kartu font-bold tabular',
                             s === 'habis' ? 'text-kritis' : 'text-ink',
                           )}
                         >
                           {angkaTampil(b, Math.max(0, b.stok))}
                         </span>
                       </td>
-                      <td className="py-3.5 px-4 align-middle text-[0.875rem] text-ink-2">{satuanTampil(b).nama}</td>
+                      <td className="py-3.5 px-4 align-middle text-isi text-ink-2">{satuanTampil(b).nama}</td>
                       <td className="py-3.5 px-4 align-middle text-right">
-                        <span className="text-[0.875rem] text-ink-2 tabular">{angkaTampil(b, b.batasAman)}</span>
+                        <span className="text-isi text-ink-2 tabular">{angkaTampil(b, b.batasAman)}</span>
                       </td>
                       <td className="py-3.5 px-4 align-middle">
                         <ChipStok status={s} />
@@ -578,7 +578,7 @@ export default function Stok() {
                       {/* "0 hari" tidak berarti apa-apa buat pemilik warung.
                           Yang ia perlu tahu: sisanya sudah tidak ada, atau
                           angkanya memang belum bisa dihitung. */}
-                      <td className="py-3.5 px-4 align-middle text-right text-[0.875rem] text-ink-2">
+                      <td className="py-3.5 px-4 align-middle text-right text-isi text-ink-2">
                         {b.stok <= 0 ? (
                           <span>Tidak ada sisa</span>
                         ) : cukup == null ? (
@@ -662,7 +662,7 @@ export default function Stok() {
         kaki={
           <Link
             to="/stok/kategori"
-            className="block text-center text-[0.875rem] font-bold text-brand hover:underline"
+            className="block text-center text-isi font-bold text-brand hover:underline"
           >
             Kelola daftar kategori
           </Link>
@@ -676,12 +676,12 @@ export default function Stok() {
               setBukaKategori(false)
             }}
             className={cx(
-              'w-full flex items-center justify-between gap-3 h-12 px-3.5 rounded-md text-left text-[0.9375rem] font-semibold',
+              'w-full flex items-center justify-between gap-3 h-12 px-3.5 rounded-md text-left text-kartu font-semibold',
               !kategori ? 'bg-brand-soft text-brand-soft-ink' : 'text-ink hover:bg-sunken',
             )}
           >
             Semua kategori
-            <span className="text-[0.8125rem] text-ink-3 tabular">{angka(barang.length)}</span>
+            <span className="text-isi text-ink-3 tabular">{angka(barang.length)}</span>
           </button>
           {kategoriBarang.map((k) => {
             const jumlah = barang.filter((b) => b.kategori === k).length
@@ -694,12 +694,12 @@ export default function Stok() {
                   setBukaKategori(false)
                 }}
                 className={cx(
-                  'w-full flex items-center justify-between gap-3 h-12 px-3.5 rounded-md text-left text-[0.9375rem] font-semibold',
+                  'w-full flex items-center justify-between gap-3 h-12 px-3.5 rounded-md text-left text-kartu font-semibold',
                   kategori === k ? 'bg-brand-soft text-brand-soft-ink' : 'text-ink hover:bg-sunken',
                 )}
               >
                 {k}
-                <span className="text-[0.8125rem] text-ink-3 tabular">{angka(jumlah)}</span>
+                <span className="text-isi text-ink-3 tabular">{angka(jumlah)}</span>
               </button>
             )
           })}
@@ -750,7 +750,7 @@ function TombolAngka({
       <span aria-hidden="true" className={cx('block text-[1.5rem] font-bold leading-none', warna)}>
         {angka(nilai)}
       </span>
-      <span aria-hidden="true" className="block text-[0.75rem] font-semibold text-ink-2 mt-1">
+      <span aria-hidden="true" className="block text-kecil font-semibold text-ink-2 mt-1">
         {label}
       </span>
     </button>
@@ -763,7 +763,7 @@ function TombolAngka({
  * peramban, sehingga kepala kolom terlihat melayang tanpa batas.
  */
 const KELAS_KEPALA = 'sticky top-0 z-10 bg-surface-2 shadow-[inset_0_-1px_0_var(--c-border)] px-4 py-2.5'
-const KELAS_TEKS_KEPALA = 'text-[0.75rem] font-bold uppercase tracking-wide text-ink-2'
+const KELAS_TEKS_KEPALA = 'text-kecil font-bold uppercase tracking-wide text-ink-2'
 
 function KepalaKolom({
   kunci,
@@ -790,7 +790,7 @@ function KepalaKolom({
         type="button"
         onClick={() => atur({ urut: aktif ? null : kunci })}
         className={cx(
-          'inline-flex items-center gap-1 text-[0.75rem] font-bold uppercase tracking-wide',
+          'inline-flex items-center gap-1 text-kecil font-bold uppercase tracking-wide',
           aktif ? 'text-brand' : 'text-ink-2 hover:text-ink',
         )}
       >

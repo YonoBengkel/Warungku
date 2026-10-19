@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import type { ReactNode } from 'react'
+import { cloneElement, isValidElement, useEffect, useMemo, useState } from 'react'
+import type { ReactElement, ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import {
   BannerAkun,
@@ -158,13 +158,13 @@ export default function Beranda() {
             nada="kritis"
             ikon={<IkonSilang size={18} />}
             judul={`${b.nama} sudah habis`}
-            lencana={dikirim > 0 ? <Lencana nada="info">Sudah dipesan, sedang dikirim</Lencana> : undefined}
+            lencana={dikirim > 0 ? <Lencana nada="info">Sedang dikirim</Lencana> : undefined}
             detail={
               dikirim > 0
-                ? `Stok tercatat 0. ${jumlahTampil(b, dikirim)} sedang dikirim.`
-                : `Stok tercatat 0. Rata-rata terpakai ${jumlahTampil(b, b.pemakaianHarian)} per hari.`
+                ? `${jumlahTampil(b, dikirim)} dalam perjalanan.`
+                : `Biasanya terpakai ${jumlahTampil(b, b.pemakaianHarian)} per hari.`
             }
-            aksiLabel={dikirim > 0 ? 'Lihat Stok' : isiPesan ? 'Pesan Sekarang' : 'Pilih Distributor'}
+            aksiLabel={dikirim > 0 ? 'Lihat Stok' : isiPesan ? 'Masukkan ke Keranjang' : 'Pilih Distributor'}
             aksiKe={dikirim > 0 ? `/stok/${b.id}` : isiPesan ? undefined : kePesan}
             onAksi={isiPesan && dikirim <= 0 ? () => masukkanSaran(b.nama, isiPesan) : undefined}
             keKartu={dikirim > 0 ? undefined : kePesan}
@@ -307,7 +307,12 @@ export default function Beranda() {
       })
     }
 
-    return hasil.sort((a, b) => a.urutan - b.urutan).slice(0, 5)
+    // Hanya kartu teratas yang tombolnya utama: di desktop dua kartu tampil
+    // berdampingan, dan dua tombol ungu penuh saling berebut perhatian.
+    return hasil
+      .sort((a, b) => a.urutan - b.urutan)
+      .slice(0, 5)
+      .map((x, i) => (i === 0 && isValidElement(x.elemen) ? { ...x, elemen: cloneElement(x.elemen as ReactElement<{ utama?: boolean }>, { utama: true }) } : x))
   }, [barang, kontrak, pesanan, tambahKeKeranjang, tampilkanRacun])
 
   const berjalan = pesanan.filter((p) => PESANAN_BERJALAN.includes(p.status))
@@ -364,7 +369,7 @@ export default function Beranda() {
     },
     {
       kunci: 'kedaluwarsa',
-      label: ['Hampir', 'Kedaluwarsa'],
+      label: ['Segera', 'Kedaluwarsa'],
       ke: '/stok?filter=kedaluwarsa',
       jumlah: hitungTindakan.kedaluwarsa,
       satuan: 'barang',
@@ -373,7 +378,7 @@ export default function Beranda() {
     },
     {
       kunci: 'kontrak',
-      label: ['Kontrak', 'Habis'],
+      label: ['Kontrak', 'Akan Berakhir'],
       ke: '/pesanan?tab=kontrak&status=akan-berakhir',
       jumlah: hitungTindakan.kontrak,
       satuan: 'kontrak',
@@ -448,7 +453,7 @@ export default function Beranda() {
         <h1 className="text-[1.375rem] font-extrabold text-ink tracking-tight leading-tight">
           Selamat datang, {profil.namaUsaha}
         </h1>
-        <p className="mt-0.5 text-[0.875rem] text-ink-3">{tanggalLengkapHari(new Date())}</p>
+        <p className="mt-0.5 text-isi text-ink-3">{tanggalLengkapHari(new Date())}</p>
       </header>
 
       {/* Pita data kasir */}
@@ -513,7 +518,7 @@ export default function Beranda() {
               </span>
               <span
                 aria-hidden="true"
-                className="text-[0.6875rem] sm:text-[0.75rem] font-semibold text-ink-2 text-center leading-tight"
+                className="text-[0.6875rem] sm:text-kecil font-semibold text-ink-2 text-center leading-tight"
               >
                 {p.label[0]}
                 <br />
@@ -537,7 +542,7 @@ export default function Beranda() {
           keterangan={tugas.length > 0 ? `${tugas.length} hal menunggu keputusan kamu.` : undefined}
         />
         {tugas.length === 0 ? (
-          <p className="flex items-center gap-2 text-[0.9375rem] font-semibold text-aman-ink bg-aman-soft rounded-md px-3.5 py-3">
+          <p className="flex items-center gap-2 text-kartu font-semibold text-aman-ink bg-aman-soft rounded-md px-3.5 py-3">
             <IkonCentangLingkaran size={18} />
             Semua aman hari ini.
           </p>
@@ -561,7 +566,7 @@ export default function Beranda() {
           judul="Prediksi Stok"
           keterangan="Perkiraan bisa meleset. Angka di bawah adalah saran, bukan jaminan."
           aksi={
-            <Link to="/prediksi" className="text-[0.8125rem] font-bold text-brand hover:underline">
+            <Link to="/prediksi" className="text-isi font-bold text-brand hover:underline">
               Lihat semua
             </Link>
           }
@@ -575,7 +580,7 @@ export default function Beranda() {
           </div>
         ) : rekomendasi.length === 0 ? (
           <Kartu padat>
-            <p className="text-[0.875rem] text-ink-3">
+            <p className="text-isi text-ink-3">
               Belum ada saran bulan depan. Data pemakaian masih dikumpulkan.
             </p>
           </Kartu>
@@ -608,21 +613,21 @@ export default function Beranda() {
                     to={`/prediksi?barang=${r.barangId}`}
                     className="block grow rounded-md p-1 -m-1 hover:bg-surface-2 transition-colors"
                   >
-                    <p className="text-[0.9375rem] font-bold text-ink leading-snug">
+                    <p className="text-kartu font-bold text-ink leading-snug">
                       {b?.nama ?? 'Barang'}
                     </p>
 
                     {/* Angka saran sengaja jauh lebih besar dari kata-katanya:
                         yang ingin disorot memang angkanya. */}
                     <p className="mt-2 flex flex-wrap items-baseline gap-x-1.5">
-                      <span className={cx('inline-flex items-center gap-1 text-[0.8125rem] font-bold', kelasArah)}>
+                      <span className={cx('inline-flex items-center gap-1 text-isi font-bold', kelasArah)}>
                         <IkonArah size={14} />
                         {LABEL_ARAH_PREDIKSI[r.arah]}
                       </span>
                       <span className="text-[2.5rem] font-extrabold leading-none tracking-tight text-ink">
                         {angka(r.jumlah)}
                       </span>
-                      <span className="text-[0.8125rem] font-semibold text-ink-2">
+                      <span className="text-isi font-semibold text-ink-2">
                         {r.satuanSaran} — bulan depan
                       </span>
                     </p>
@@ -636,11 +641,11 @@ export default function Beranda() {
                         bertentangan dengan bar yang menurun — padahal saran
                         "tambah" muncul justru karena stok di gudang lebih
                         kecil daripada kebutuhan bulan depan. */}
-                    <p className="mt-3 text-[0.75rem] text-ink-3">Pemakaian, bukan sisa stok:</p>
+                    <p className="mt-3 text-kecil text-ink-3">Pemakaian, bukan sisa stok:</p>
                     <div className="mt-1.5 space-y-2">
                       {bar.map((x) => (
                         <div key={x.kunci}>
-                          <div className="flex items-baseline justify-between gap-2 text-[0.75rem]">
+                          <div className="flex items-baseline justify-between gap-2 text-kecil">
                             <span className="text-ink-3">{x.label}</span>
                             <span className="font-semibold text-ink-2 tabular">
                               {b ? jumlahTampil(b, x.nilai) : angka(x.nilai)}
@@ -684,7 +689,7 @@ export default function Beranda() {
           keterangan={berjalan.length === 0 ? undefined : `${berjalan.length} pesanan sedang diproses`}
           aksi={
             berjalan.length > 3 ? (
-              <Link to="/pesanan" className="text-[0.8125rem] font-bold text-brand hover:underline">
+              <Link to="/pesanan" className="text-isi font-bold text-brand hover:underline">
                 Lihat semua
               </Link>
             ) : undefined
@@ -692,7 +697,7 @@ export default function Beranda() {
         />
         {berjalan.length === 0 ? (
           <Kartu padat>
-            <p className="text-[0.875rem] text-ink-3">
+            <p className="text-isi text-ink-3">
               Belum ada pesanan yang sedang berjalan.{' '}
               <Link to="/belanja" className="font-semibold text-brand hover:underline">
                 Cari barang di Distributor
@@ -713,7 +718,7 @@ export default function Beranda() {
       {isiKeranjang > 0 && (
         <Link
           to="/keranjang"
-          className="mt-4 flex items-center gap-2.5 px-3.5 py-3 rounded-md bg-brand-soft text-brand-soft-ink text-[0.875rem] font-semibold hover:brightness-97"
+          className="mt-4 flex items-center gap-2.5 px-3.5 py-3 rounded-md bg-brand-soft text-brand-soft-ink text-isi font-semibold hover:brightness-97"
         >
           <IkonKeranjang size={18} className="shrink-0" />
           <span className="grow">Belanja belum dikirim: {isiKeranjang} barang</span>
@@ -729,7 +734,7 @@ export default function Beranda() {
             judul="Kuota Kontrak Bulan Ini"
             keterangan={`${kontrak.length} kontrak berjalan. Setiap barang punya kontrak sendiri.`}
             aksi={
-              <Link to="/pesanan?tab=kontrak" className="text-[0.8125rem] font-bold text-brand hover:underline">
+              <Link to="/pesanan?tab=kontrak" className="text-isi font-bold text-brand hover:underline">
                 Lihat semua
               </Link>
             }
@@ -740,7 +745,7 @@ export default function Beranda() {
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <Link
                     to={`/kontrak/${k.id}`}
-                    className="text-[0.9375rem] font-bold text-ink hover:text-brand transition-colors truncate"
+                    className="text-kartu font-bold text-ink hover:text-brand transition-colors truncate"
                   >
                     {k.namaBarang}
                   </Link>
@@ -785,7 +790,7 @@ export default function Beranda() {
       >
         {pilihan && penawaranPilihan && (
           <div className="pb-4 space-y-3">
-            <p className="text-[0.875rem] text-ink-2 leading-relaxed">
+            <p className="text-isi text-ink-2 leading-relaxed">
               Model menyarankan {angka(pilihan.jumlah)} {pilihan.satuanSaran} untuk bulan depan. Kamu boleh
               menguranginya kalau kondisi hari ini tidak memungkinkan.
             </p>
@@ -798,7 +803,7 @@ export default function Beranda() {
               saranModel={pilihan.jumlah}
               label="Jumlah"
             />
-            <p className="text-[0.8125rem] text-ink-3 leading-relaxed">
+            <p className="text-isi text-ink-3 leading-relaxed">
               Barang belum dipesan. Ia menunggu di keranjang sampai kamu kirim pesanannya sendiri.
             </p>
           </div>

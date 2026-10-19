@@ -123,15 +123,15 @@ export default function KeranjangRingkasan() {
     <Kartu>
       <div className="flex items-center gap-2 text-ink-3 mb-1">
         <IkonNota size={16} />
-        <h2 className="text-[0.75rem] font-semibold uppercase tracking-wide">Total keseluruhan</h2>
+        <h2 className="text-kecil font-semibold uppercase tracking-wide">Total keseluruhan</h2>
       </div>
-      <p className="text-[1.625rem] font-extrabold text-ink leading-none tabular">{rupiah(totalSemua)}</p>
-      <p className="mt-2 text-[0.8125rem] text-ink-3 leading-relaxed">
+      <p className="text-angka font-extrabold text-ink leading-none tabular">{rupiah(totalSemua)}</p>
+      <p className="mt-2 text-isi text-ink-3 leading-relaxed">
         Ongkos kirim belum termasuk. Tiap distributor menentukan sendiri dan mencatatnya setelah pesanan
         dikonfirmasi.
       </p>
       <Pemisah className="my-3" />
-      <p className="text-[0.875rem] font-semibold text-ink">{BANTUAN.bayarLuar}</p>
+      <p className="text-isi font-semibold text-ink">{BANTUAN.bayarLuar}</p>
     </Kartu>
   )
 
@@ -162,7 +162,7 @@ export default function KeranjangRingkasan() {
 
   const keteranganKunci = (id: string) =>
     sisaDetik > 0 && !terkunci ? (
-      <p id={id} className="text-[0.8125rem] text-ink-3 leading-snug">
+      <p id={id} className="text-isi text-ink-3 leading-snug">
         Tombolnya terbuka {sisaDetik} detik lagi &mdash; sengaja, supaya kamu sempat membaca angkanya dulu.
       </p>
     ) : null
@@ -205,7 +205,7 @@ export default function KeranjangRingkasan() {
                   <Avatar nama={distributor?.nama ?? '?'} warna={distributor?.warna} ukuran={40} />
                   <div className="min-w-0 grow">
                     <h2 className="text-[1rem] font-semibold text-ink truncate">{distributor?.nama}</h2>
-                    <p className="text-[0.8125rem] text-ink-3">
+                    <p className="text-isi text-ink-3">
                       1 pesanan &middot; perkiraan tiba {hariLagi(hariTiba)}
                     </p>
                   </div>
@@ -224,8 +224,8 @@ export default function KeranjangRingkasan() {
                     return (
                       <div key={b.penawaranId} className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <h3 className="text-[0.9375rem] font-semibold text-ink leading-snug">{pw.nama}</h3>
-                          <p className="text-[0.8125rem] text-ink-3 tabular">
+                          <h3 className="text-kartu font-semibold text-ink leading-snug">{pw.nama}</h3>
+                          <p className="text-isi text-ink-3 tabular">
                             {angka(b.jumlah)} {pw.satuan} &times; {rupiah(harga)}
                           </p>
                           {/* Lencananya sengaja tanpa tautan: layar ini cuma
@@ -234,14 +234,14 @@ export default function KeranjangRingkasan() {
                           {rincian.promo && (
                             <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
                               <LencanaPromo promo={rincian.promo} tanpaTautan />
-                              <span className="text-[0.75rem] text-ink-3">
+                              <span className="text-kecil text-ink-3">
                                 harga normal <s className="tabular">{rupiah(rincian.hargaNormal)}</s>
                               </span>
                             </span>
                           )}
                         </div>
                         <div className="shrink-0 text-right">
-                          <p className="text-[0.9375rem] font-semibold text-ink tabular">
+                          <p className="text-kartu font-semibold text-ink tabular">
                             {rupiah(harga * b.jumlah)}
                           </p>
                           {b.kontrakId && (
@@ -271,7 +271,7 @@ export default function KeranjangRingkasan() {
         <aside className="hidden lg:block lg:col-span-5 xl:col-span-4 lg:sticky lg:top-24 space-y-3">
           {kartuTotal}
           <Kartu>
-            <p className="text-[0.8125rem] text-ink-2 leading-snug">
+            <p className="text-isi text-ink-2 leading-snug">
               <strong className="text-ink">{jumlahBarang} barang</strong> akan dikirim sebagai{' '}
               <strong className="text-ink">{jumlahPesanan} pesanan</strong> ke {jumlahDistributor} distributor.
             </p>
@@ -286,7 +286,7 @@ export default function KeranjangRingkasan() {
           <BilahAksi
             ringkasan={
               <div className="space-y-1">
-                <p className="text-[0.8125rem] text-ink-2 leading-snug">
+                <p className="text-isi text-ink-2 leading-snug">
                   <strong className="text-ink">{jumlahBarang} barang</strong> akan dikirim sebagai{' '}
                   <strong className="text-ink">{jumlahPesanan} pesanan</strong> ke {jumlahDistributor} distributor.
                 </p>

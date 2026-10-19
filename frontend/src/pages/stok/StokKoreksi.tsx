@@ -78,7 +78,7 @@ export default function StokKoreksi() {
 
       <div className="mt-4 max-w-2xl mx-auto space-y-4">
         <Kartu padat>
-          <p className="text-[0.8125rem] text-ink-3">Stok tercatat sekarang</p>
+          <p className="text-isi text-ink-3">Stok tercatat sekarang</p>
           <p className="mt-0.5 text-[1.5rem] font-extrabold text-ink leading-none">
             {jumlahTampil(barang, tercatat)}
           </p>
@@ -86,7 +86,7 @@ export default function StokKoreksi() {
 
         <Kartu>
           <h2 className="text-[1rem] font-bold text-ink leading-tight">Sisa sekarang berapa?</h2>
-          <p className="mt-1 text-[0.875rem] text-ink-2 leading-relaxed">
+          <p className="mt-1 text-isi text-ink-2 leading-relaxed">
             Hitung barangnya di rak, lalu tulis jumlahnya. Selisihnya kami catat sendiri.
           </p>
 
@@ -103,13 +103,13 @@ export default function StokKoreksi() {
               satuan={satuanTampil(barang).nama}
               label="Sisa sekarang"
             />
-            {galat && <p className="mt-2 text-[0.8125rem] text-kritis font-medium leading-snug">{galat}</p>}
+            {galat && <p className="mt-2 text-isi text-kritis font-medium leading-snug">{galat}</p>}
           </div>
 
           {/* "Stok jadi 3,4 kg dari 3,4 kg" adalah kalimat kosong, jadi kalimat
               ringkasan baru muncul setelah angkanya benar-benar berubah. */}
           {!sama && (
-            <p className="mt-4 text-[0.9375rem] text-ink-2 leading-relaxed anim-muncul">
+            <p className="mt-4 text-kartu text-ink-2 leading-relaxed anim-muncul">
               Stok jadi <strong className="text-ink">{jumlahTampil(barang, stokBaru)}</strong>,{' '}
               {selisih < 0 ? 'berkurang' : 'bertambah'}{' '}
               <strong className="text-ink">{jumlahTampil(barang, Math.abs(selisih))}</strong> dari catatan.

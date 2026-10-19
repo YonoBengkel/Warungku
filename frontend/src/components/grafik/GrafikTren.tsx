@@ -313,7 +313,7 @@ export function GrafikTren({
         {/* Keterangan angka saat disentuh */}
         {d && (
           <div
-            className="absolute top-0 pointer-events-none bg-ink text-ink-inverse rounded-sm px-2.5 py-1.5 shadow-e2 text-[0.75rem] leading-tight"
+            className="absolute top-0 pointer-events-none bg-ink text-ink-inverse rounded-sm px-2.5 py-1.5 shadow-e2 text-kecil leading-tight"
             style={{
               left: Math.min(Math.max(g.x(sorot!) - 60, 0), Math.max(0, g.w - 130)),
             }}
@@ -335,7 +335,7 @@ export function GrafikTren({
       </div>
 
       {/* Kunci baca: dua warna dan dua gaya garis, ditambah pita rentang */}
-      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[0.75rem] text-ink-3">
+      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-kecil text-ink-3">
         <span className="inline-flex items-center gap-1.5">
           <svg width="18" height="8" aria-hidden="true">
             <line x1="0" y1="4" x2="18" y2="4" stroke="var(--c-seri-1)" strokeWidth="2" strokeLinecap="round" />
@@ -386,7 +386,7 @@ export function GrafikTren({
 
       {tampilTabel && (
         <div className="mt-3 max-h-56 overflow-auto rounded-md border border-line">
-          <table className="w-full text-[0.8125rem]">
+          <table className="w-full text-isi">
             <caption className="sr-only">Angka tren pemakaian per tanggal</caption>
             <thead className="sticky top-0 bg-surface-2">
               <tr className="text-ink-3 text-left">

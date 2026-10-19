@@ -59,10 +59,10 @@ function PitaAlatUji({ kelas }: { kelas?: string }) {
   return (
     <div className={cx('bg-menipis-soft border-line px-3 py-2.5', kelas)}>
       {/* Asal data portal ini: server (dengan akun distributor) atau data contoh. */}
-      <p className="text-[0.75rem] leading-snug text-menipis-ink">
+      <p className="text-kecil leading-snug text-menipis-ink">
         {sesi ? (
           <>
-            Data server &middot; masuk sebagai {sesi.namaPengguna}.{' '}
+            Masuk sebagai {sesi.namaPengguna}.{' '}
             <button type="button" onClick={putus} className="font-bold underline underline-offset-2 min-h-11">
               Keluar
             </button>
@@ -78,12 +78,12 @@ function PitaAlatUji({ kelas }: { kelas?: string }) {
       </p>
       <Link
         to="/beranda"
-        className="flex items-center gap-2 min-h-11 font-bold text-[0.875rem] text-menipis-ink"
+        className="flex items-center gap-2 min-h-11 font-bold text-isi text-menipis-ink"
       >
         <IkonKembali size={18} />
         Kembali ke portal UMKM
       </Link>
-      <p className="text-[0.75rem] leading-snug text-menipis-ink">
+      <p className="text-kecil leading-snug text-menipis-ink">
         Berpindah peran adalah alat uji purwarupa, bukan bagian dari aplikasi yang dipakai pemilik
         usaha.
       </p>
@@ -127,7 +127,7 @@ export default function KerangkaDistributor() {
               <span className="block font-extrabold text-ink text-[1rem] tracking-tight truncate">
                 {distributorAktif.nama}
               </span>
-              <span className="block text-[0.75rem] text-ink-3">Portal Distributor</span>
+              <span className="block text-kecil text-ink-3">Portal Distributor</span>
             </span>
           </Link>
         </div>
@@ -141,7 +141,7 @@ export default function KerangkaDistributor() {
                 to={ke}
                 end={ke === '/distributor-portal'}
                 className={cx(
-                  'flex items-center gap-3 h-12 px-3 rounded-md font-semibold text-[0.9375rem] transition-colors',
+                  'flex items-center gap-3 h-12 px-3 rounded-md font-semibold text-kartu transition-colors',
                   terpilih
                     ? 'bg-brand-soft text-brand-soft-ink'
                     : 'text-ink-2 hover:bg-sunken hover:text-ink',
@@ -166,7 +166,7 @@ export default function KerangkaDistributor() {
               className="lg:hidden flex items-center gap-2 mr-auto min-w-0 min-h-11 pr-2"
             >
               <Avatar nama={distributorAktif.nama} warna={distributorAktif.warna} ukuran={32} />
-              <span className="font-extrabold text-ink text-[0.9375rem] truncate">
+              <span className="font-extrabold text-ink text-kartu truncate">
                 {distributorAktif.nama}
               </span>
             </Link>

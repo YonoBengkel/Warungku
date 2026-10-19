@@ -66,7 +66,7 @@ export default function JenisUsaha() {
             <h2 id="judul-pertanyaan" className="text-[1.25rem] font-extrabold text-ink tracking-tight leading-snug">
               Apa yang kamu jual?
             </h2>
-            <p className="mt-1.5 text-[0.875rem] text-ink-2 leading-relaxed max-w-[52ch]">
+            <p className="mt-1.5 text-isi text-ink-2 leading-relaxed max-w-[52ch]">
               Jawabannya menentukan cara stok berkurang setiap kali ada penjualan. Pilih yang paling mirip dengan
               daganganmu sehari-hari.
             </p>
@@ -86,7 +86,7 @@ export default function JenisUsaha() {
                     keterangan={info.bantuan}
                     anakan={
                       <span className="mt-2.5 block rounded-sm bg-sunken px-3 py-2.5">
-                        <span className="flex items-start gap-2 text-[0.8125rem] text-ink-2 leading-relaxed">
+                        <span className="flex items-start gap-2 text-isi text-ink-2 leading-relaxed">
                           <Ikon size={16} className="shrink-0 mt-0.5 text-ink-3" />
                           <span>{tambahan.contoh}</span>
                         </span>
@@ -105,11 +105,11 @@ export default function JenisUsaha() {
               judul="Yang berubah kalau kamu ganti pilihan"
               keterangan="Hanya satu hal, dan itu bisa dibatalkan kapan saja."
             />
-            <p className="text-[0.875rem] text-ink-2 leading-relaxed">
+            <p className="text-isi text-ink-2 leading-relaxed">
               {CONTOH[pilihan].bentukForm} Itu saja. Jawaban ini tidak mengunci akunmu: daftar stok, perkiraan,
               pesanan, dan kontrak yang sudah berjalan tidak ikut berubah.
             </p>
-            <ul className="mt-3 space-y-2 text-[0.8125rem] text-ink-2 leading-relaxed">
+            <ul className="mt-3 space-y-2 text-isi text-ink-2 leading-relaxed">
               <li className="flex items-start gap-2">
                 <IkonCentangLingkaran size={16} className="shrink-0 mt-0.5 text-aman" />
                 Barang yang sudah terdaftar tetap seperti sekarang.
@@ -138,7 +138,7 @@ export default function JenisUsaha() {
       <BilahAksi
         ringkasan={
           berubah ? (
-            <p className="text-[0.8125rem] text-ink-3 text-center leading-snug">
+            <p className="text-isi text-ink-3 text-center leading-snug">
               Pilihan sekarang: <strong className="text-ink">{LABEL_CARA_HITUNG[caraHitung].judul}</strong> &rarr;{' '}
               <strong className="text-ink">{LABEL_CARA_HITUNG[pilihan].judul}</strong>
             </p>

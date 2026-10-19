@@ -27,7 +27,15 @@ import {
 import { angka, rupiah, waktuLalu } from '@/lib/format'
 import { isiKemasan, jumlahBawaan, jumlahTampil, kalimatIsiKemasan } from '@/lib/satuan'
 import { BANTUAN } from '@/lib/label'
-import { distributorById, hariCukup, paketUntukPenawaran, penawaranById, statusStok } from '@/data/dummy'
+import {
+  distributorById,
+  hariCukup,
+  layakDiperkirakan,
+  paketUntukPenawaran,
+  penawaranById,
+  rekomendasiDari,
+  statusStok,
+} from '@/data/dummy'
 import { useAplikasi, usePenentuHarga } from '@/store/aplikasi'
 
 /**
@@ -107,8 +115,21 @@ export default function PenawaranDetail() {
   const rincianBeliSekali = rincianHarga(penawaran.id, null)
   const promo = rincianBeliSekali.promo
 
+  /* Jumlah awal lembar beli: kekurangan barang terhadap perkiraan bulan depan,
+     dikonversi ke kemasan penawaran ini. Tanpa perkiraan, 1. Dulu selalu 1,
+     jadi pemilik yang datang dari stok habis harus menekan + belasan kali. */
+  /* Bukan hook: komponen ini sudah punya return lebih awal di atas. */
+  const jumlahSaran = (() => {
+    if (!barang || !layakDiperkirakan(barang)) return null
+    const r = rekomendasiDari(barang)
+    if (r.arah !== 'tambah') return null
+    const isiSaran = barang.kemasan[barang.kemasan.length - 1]?.isi ?? 1
+    const isiPenawaran = penawaran.kemasanJual?.isi ?? 1
+    return Math.max(1, Math.ceil((r.jumlah * isiSaran) / isiPenawaran))
+  })()
+
   function bukaLembarBeli() {
-    setJumlah(1)
+    setJumlah(jumlahSaran ?? 1)
     setLembarBeli(true)
   }
 
@@ -122,7 +143,7 @@ export default function PenawaranDetail() {
       kontrakUntukPenawaranIni?.id ?? null,
     )
     setLembarBeli(false)
-    tampilkanRacun(`${jumlah} ${penawaran.satuan} ${penawaran.nama} masuk keranjang.`, 'aman')
+    tampilkanRacun(`${angka(jumlah)} ${penawaran.satuan} ${penawaran.nama} masuk keranjang.`, 'aman')
   }
 
   return (
@@ -141,12 +162,12 @@ export default function PenawaranDetail() {
           {/* Identitas barang. Nama barang tidak diulang di sini: ia sudah ada
               di kepala halaman yang lengket di atas layar. */}
           <Kartu>
-            <h2 className="text-[0.9375rem] font-bold text-ink mb-2.5">Harga dan ketersediaan</h2>
+            <h2 className="text-kartu font-bold text-ink mb-2.5">Harga dan ketersediaan</h2>
             <div className="flex items-start gap-3.5">
               <Avatar nama={penawaran.nama} warna={distributor.warna} ukuran={56} />
               <div className="min-w-0 grow">
-                <p className="text-[0.9375rem] font-semibold text-ink leading-snug">{penawaran.kategori}</p>
-                <p className="mt-0.5 text-[0.8125rem] text-ink-3 leading-relaxed">{penawaran.keterangan}</p>
+                <p className="text-kartu font-semibold text-ink leading-snug">{penawaran.kategori}</p>
+                <p className="mt-0.5 text-isi text-ink-3 leading-relaxed">{penawaran.keterangan}</p>
               </div>
             </div>
 
@@ -156,7 +177,7 @@ export default function PenawaranDetail() {
                 promo memotongnya, harga normal dicoret di sebelahnya — potongan
                 itu memang masuk ke harga yang tercatat di pesanan. */}
             <HargaBeli rincian={rincianBeliSekali} satuan={penawaran.satuan} besar />
-            <p className="mt-1 text-[0.8125rem] text-ink-3">Harga beli sekali, belum termasuk ongkos kirim.</p>
+            <p className="mt-1 text-isi text-ink-3">Harga beli sekali, belum termasuk ongkos kirim.</p>
 
             {/* Asal potongan ditulis tepat di bawah harga: di sinilah pemilik
                 usaha memutuskan membeli. `items-start` menahan lencana selebar
@@ -164,7 +185,7 @@ export default function PenawaranDetail() {
             {promo && (
               <div className="mt-2.5 flex flex-col items-start gap-1.5">
                 <LencanaPromo promo={promo} />
-                <p className="text-[0.8125rem] text-ink-2 leading-relaxed">
+                <p className="text-isi text-ink-2 leading-relaxed">
                   {kontrakUntukPenawaranIni ? KALIMAT_PROMO.kontrakTidakIkut : KALIMAT_PROMO.hanyaBeliSekali}
                 </p>
               </div>
@@ -199,14 +220,14 @@ export default function PenawaranDetail() {
                 jejaknya ikut ditimbang di tempat yang sama, bukan di kartu
                 terpisah yang mudah terlewat. */}
             <Pemisah className="my-3.5" />
-            <p className="text-[0.75rem] font-semibold uppercase tracking-wide text-ink-3">Dijual oleh</p>
+            <p className="text-kecil font-semibold uppercase tracking-wide text-ink-3">Dijual oleh</p>
             <Link
               to={`/distributor/${distributor.id}`}
               className="-mx-2 mt-1 flex items-center gap-3 rounded-md px-2 py-2 min-h-14 hover:bg-sunken"
             >
               <Avatar nama={distributor.nama} warna={distributor.warna} ukuran={40} />
               <div className="min-w-0 grow">
-                <p className="text-[0.9375rem] font-bold text-ink leading-snug">
+                <p className="text-kartu font-bold text-ink leading-snug">
                   {distributor.nama}
                   <span className="font-normal text-ink-3"> &middot; {distributor.kota}</span>
                 </p>
@@ -216,7 +237,7 @@ export default function PenawaranDetail() {
                       Distributor Baru &middot; belum ada ulasan &middot; bergabung {distributor.sejak}
                     </Lencana>
                   ) : (
-                    <span className="inline-flex flex-wrap items-center gap-x-1.5 text-[0.8125rem] text-ink-2">
+                    <span className="inline-flex flex-wrap items-center gap-x-1.5 text-isi text-ink-2">
                       <IkonBintangIsi size={14} className="text-menipis" />
                       <strong className="text-ink">{distributor.rating.toFixed(1).replace('.', ',')}</strong>
                       <HanyaPembacaLayar>dari 5 bintang &middot;</HanyaPembacaLayar>
@@ -225,7 +246,7 @@ export default function PenawaranDetail() {
                     </span>
                   )}
                 </div>
-                <span className="mt-1 inline-flex items-center gap-1 text-[0.8125rem] font-bold text-brand">
+                <span className="mt-1 inline-flex items-center gap-1 text-isi font-bold text-brand">
                   Lihat profil distributor
                   <IkonPanahKanan size={15} />
                 </span>
@@ -239,10 +260,10 @@ export default function PenawaranDetail() {
           {barang ? (
             <Kartu padat>
               <div className="flex items-start justify-between gap-2">
-                <h2 className="text-[0.875rem] font-bold text-ink">Stok kamu untuk barang ini</h2>
+                <h2 className="text-isi font-bold text-ink">Stok kamu untuk barang ini</h2>
                 <ChipStok status={statusStok(barang)} />
               </div>
-              <p className="mt-2 text-[0.875rem] text-ink-2">
+              <p className="mt-2 text-isi text-ink-2">
                 Sisa <strong className="text-ink">{jumlahTampil(barang, barang.stok)}</strong>
                 {barang.pemakaianHarian > 0 && hariCukup(barang) != null && (
                   <> &middot; cukup &plusmn;{hariCukup(barang)} hari</>
@@ -250,7 +271,7 @@ export default function PenawaranDetail() {
               </p>
               <Link
                 to={`/stok/${barang.id}`}
-                className="mt-2 inline-flex items-center gap-1 text-[0.8125rem] font-bold text-brand hover:underline"
+                className="mt-2 inline-flex items-center gap-1 text-isi font-bold text-brand hover:underline"
               >
                 Buka detail stok
                 <IkonPanahKanan size={15} />
@@ -258,8 +279,8 @@ export default function PenawaranDetail() {
             </Kartu>
           ) : (
             <Kartu padat>
-              <h2 className="text-[0.875rem] font-bold text-ink">Belum ada di daftar stok kamu</h2>
-              <p className="mt-1.5 text-[0.8125rem] text-ink-2 leading-relaxed">
+              <h2 className="text-isi font-bold text-ink">Belum ada di daftar stok kamu</h2>
+              <p className="mt-1.5 text-isi text-ink-2 leading-relaxed">
                 Barang ini belum terdaftar di gudangmu, jadi kami belum bisa menghitung pemakaian dan perkiraan
                 kebutuhannya. Stok baru bertambah otomatis setelah pesanan pertama kamu terima.
               </p>
@@ -272,7 +293,7 @@ export default function PenawaranDetail() {
           {/* Kontrak aktif yang sudah ada untuk barang ini */}
           {kontrakBarang.length > 0 && (
             <section aria-label="Kontrak aktif untuk barang ini" className="space-y-2.5">
-              <h2 className="text-[0.875rem] font-bold text-ink px-1">
+              <h2 className="text-isi font-bold text-ink px-1">
                 Kamu sudah punya kontrak untuk barang ini
               </h2>
               {kontrakBarang.map((k) => {
@@ -281,8 +302,8 @@ export default function PenawaranDetail() {
                   <Kartu key={k.id} padat>
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <div className="min-w-0">
-                        <p className="text-[0.9375rem] font-bold text-ink truncate">{d?.nama}</p>
-                        <p className="text-[0.75rem] text-ink-3">
+                        <p className="text-kartu font-bold text-ink truncate">{d?.nama}</p>
+                        <p className="text-kecil text-ink-3">
                           {k.durasiBulan} bulan &middot; {rupiah(k.hargaSatuan)}/{k.satuan}
                         </p>
                       </div>
@@ -293,7 +314,7 @@ export default function PenawaranDetail() {
                     <KuotaBulanIni kontrak={k} ringkas />
                     <Link
                       to={`/kontrak/${k.id}`}
-                      className="mt-2.5 inline-flex items-center gap-1 text-[0.8125rem] font-bold text-brand hover:underline"
+                      className="mt-2.5 inline-flex items-center gap-1 text-isi font-bold text-brand hover:underline"
                     >
                       Lihat kontrak
                       <IkonPanahKanan size={15} />
@@ -301,7 +322,7 @@ export default function PenawaranDetail() {
                   </Kartu>
                 )
               })}
-              <p className="text-[0.75rem] text-ink-3 px-1">{BANTUAN.satuKontrakSatuBarang}</p>
+              <p className="text-kecil text-ink-3 px-1">{BANTUAN.satuKontrakSatuBarang}</p>
             </section>
           )}
 
@@ -317,7 +338,7 @@ export default function PenawaranDetail() {
       {/* Kaki lengket: satu baris pembanding, lalu dua tombol berbeda bobot */}
       <BilahAksi
         ringkasan={
-          <p className="text-[0.875rem] text-ink-2 leading-snug">
+          <p className="text-isi text-ink-2 leading-snug">
             Beli sekali{' '}
             <strong className="text-ink">
               {rupiah(rincianBeliSekali.harga)}/{penawaran.satuan}
@@ -412,7 +433,7 @@ export default function PenawaranDetail() {
       >
         <div className="pb-4 space-y-4">
           <div>
-            <p className="text-[0.875rem] font-semibold text-ink-2 mb-2">Berapa yang kamu ambil?</p>
+            <p className="text-isi font-semibold text-ink-2 mb-2">Berapa yang kamu ambil?</p>
             <PengaturJumlah
               nilai={jumlah}
               ubah={setJumlah}
@@ -420,8 +441,9 @@ export default function PenawaranDetail() {
               maks={Math.max(1, penawaran.stokTersedia)}
               satuan={penawaran.satuan}
               label="Jumlah"
+              saranModel={jumlahSaran ?? undefined}
             />
-            <p className="mt-2 text-[0.8125rem] text-ink-3">
+            <p className="mt-2 text-isi text-ink-3">
               {kelipatan && barang ? (
                 <>
                   = {jumlahBawaan(barang, jumlah * kelipatan.isi)} &middot; kelipatan 1 {kelipatan.nama}
@@ -430,7 +452,7 @@ export default function PenawaranDetail() {
                 <>Pemesanan naik turun per 1 {penawaran.satuan}.</>
               )}
             </p>
-            <p className="mt-1 text-[0.8125rem] text-ink-3">
+            <p className="mt-1 text-isi text-ink-3">
               Stok distributor {angka(penawaran.stokTersedia)} {penawaran.satuan}, diperbarui{' '}
               {waktuLalu(penawaran.stokDiperbaruiPada)}.
             </p>
@@ -442,7 +464,7 @@ export default function PenawaranDetail() {
               nilai={rupiah(subtotal)}
               tebal
             />
-            <p className="mt-1 text-[0.75rem] text-ink-3 leading-relaxed">
+            <p className="mt-1 text-kecil text-ink-3 leading-relaxed">
               Ongkos kirim ditentukan distributor saat pesanan dikonfirmasi. {BANTUAN.bayarLuar}
             </p>
           </div>
@@ -465,7 +487,7 @@ export default function PenawaranDetail() {
           )}
 
           {barang && (
-            <p className="text-[0.8125rem] text-ink-3 leading-relaxed flex items-start gap-2">
+            <p className="text-isi text-ink-3 leading-relaxed flex items-start gap-2">
               <IkonKotak size={15} className="shrink-0 mt-px" />
               Stok gudang kamu sekarang {jumlahTampil(barang, barang.stok)}. Angka ini baru bertambah
               setelah barang kamu terima dan kamu periksa.

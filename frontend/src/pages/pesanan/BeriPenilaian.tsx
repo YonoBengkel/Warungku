@@ -160,8 +160,8 @@ export default function BeriPenilaian() {
       <div className="mt-4 flex items-center gap-3">
         <Avatar nama={distributor?.nama ?? '?'} warna={distributor?.warna} ukuran={48} />
         <div className="min-w-0">
-          <p className="text-[1.0625rem] font-bold text-ink leading-tight">{distributor?.nama}</p>
-          <p className="text-[0.8125rem] text-ink-3">
+          <p className="text-subjudul font-bold text-ink leading-tight">{distributor?.nama}</p>
+          <p className="text-isi text-ink-3">
             {pesanan.baris[0]?.nama}
             {pesanan.baris.length > 1 && ` + ${pesanan.baris.length - 1} barang lain`}
           </p>
@@ -169,18 +169,18 @@ export default function BeriPenilaian() {
       </div>
 
       <section aria-labelledby="judul-aspek" className="mt-5">
-        <h2 id="judul-aspek" className="text-[0.9375rem] font-bold text-ink">
+        <h2 id="judul-aspek" className="text-kartu font-bold text-ink">
           Nilai tiga hal ini
         </h2>
-        <p className="text-[0.8125rem] text-ink-3 mt-0.5 mb-3">
+        <p className="text-isi text-ink-3 mt-0.5 mb-3">
           Dipisah supaya pembaca tahu apa yang bagus dan apa yang perlu diperbaiki.
         </p>
 
         <div className="space-y-3">
           {ASPEK.map((a) => (
             <Kartu key={a.kunci} padat>
-              <p className="text-[0.9375rem] font-semibold text-ink leading-snug">{a.label}</p>
-              <p className="text-[0.8125rem] text-ink-3">{a.bantuan}</p>
+              <p className="text-kartu font-semibold text-ink leading-snug">{a.label}</p>
+              <p className="text-isi text-ink-3">{a.bantuan}</p>
               <div className="mt-2 flex items-center gap-1" role="radiogroup" aria-label={a.label}>
                 {[1, 2, 3, 4, 5].map((n) => {
                   const terisi = n <= nilai[a.kunci]
@@ -207,7 +207,7 @@ export default function BeriPenilaian() {
                 })}
                 <span
                   className={cx(
-                    'ml-2 text-[0.8125rem] font-semibold',
+                    'ml-2 text-isi font-semibold',
                     nilai[a.kunci] === 0 ? 'text-ink-3' : 'text-ink',
                   )}
                 >
@@ -236,7 +236,7 @@ export default function BeriPenilaian() {
       {/* Label sistem sengaja ditampilkan sebelum dikirim: penulis berhak tahu
           persis apa yang ikut terbit bersama ulasannya. */}
       <section aria-labelledby="judul-label" className="mt-5">
-        <h2 id="judul-label" className="text-[0.9375rem] font-bold text-ink mb-2">
+        <h2 id="judul-label" className="text-kartu font-bold text-ink mb-2">
           Yang ikut tampil di ulasanmu
         </h2>
         <Kartu padat>
@@ -245,7 +245,7 @@ export default function BeriPenilaian() {
               {labelSistem}
             </Lencana>
           </div>
-          <p className="mt-2 flex items-start gap-2 text-[0.8125rem] text-ink-3 leading-relaxed">
+          <p className="mt-2 flex items-start gap-2 text-isi text-ink-3 leading-relaxed">
             <IkonKunci size={15} className="shrink-0 mt-0.5" />
             <span>
               Label ini dihitung sistem dari riwayat pesananmu dan tidak bisa diubah siapa pun, termasuk kamu. Nama yang
@@ -268,7 +268,7 @@ export default function BeriPenilaian() {
         <button
           type="button"
           onClick={() => navigate(`/pesanan/${ps.id}`)}
-          className="w-full min-h-11 mt-1 text-[0.875rem] font-semibold text-ink-3 hover:text-ink"
+          className="w-full min-h-11 mt-1 text-isi font-semibold text-ink-3 hover:text-ink"
         >
           Nanti saja
         </button>

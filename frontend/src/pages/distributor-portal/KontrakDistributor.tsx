@@ -53,9 +53,9 @@ function IdentitasToko({ umkmId, kanan }: { umkmId: string; kanan?: ReactNode })
     <div className="flex items-start gap-3">
       <Avatar nama={umkm?.nama ?? '?'} warna={umkm?.warna} ukuran={40} />
       <div className="min-w-0 grow">
-        <p className="text-[0.9375rem] font-bold text-ink leading-snug">{umkm?.nama ?? 'Pemilik usaha'}</p>
+        <p className="text-kartu font-bold text-ink leading-snug">{umkm?.nama ?? 'Pemilik usaha'}</p>
         {umkm && (
-          <p className="text-[0.8125rem] text-ink-3">
+          <p className="text-isi text-ink-3">
             {LABEL_JENIS_USAHA[umkm.jenisUsaha].judul} &middot; {umkm.kota}
           </p>
         )}
@@ -92,7 +92,7 @@ function BarisKuota({ kontrak, label }: { kontrak: KontrakPelanggan; label: Reac
         <div className="h-full bg-brand" style={{ width: `${persenDiterima}%` }} />
         {persenJalan > 0 && <div className="h-full bg-info/55" style={{ width: `${persenJalan}%`, marginLeft: 2 }} />}
       </div>
-      <p className="mt-1.5 text-[0.8125rem] text-ink-2 tabular">
+      <p className="mt-1.5 text-isi text-ink-2 tabular">
         <strong className="text-ink">{angka(diterima)}</strong>
         {jalan > 0 && <> + {angka(jalan)} di jalan</>} dari {angka(kuota)} {kontrak.satuan} bulan ini
       </p>
@@ -152,9 +152,9 @@ function LembarAlasan({
       }
     >
       <div className="pb-4 space-y-4">
-        <p className="text-[0.875rem] text-ink-2 leading-relaxed">{pengantar}</p>
+        <p className="text-isi text-ink-2 leading-relaxed">{pengantar}</p>
         <div>
-          <p className="text-[0.875rem] font-semibold text-ink-2 mb-2.5">Alasan siap pakai</p>
+          <p className="text-isi font-semibold text-ink-2 mb-2.5">Alasan siap pakai</p>
           <BarisChip className="flex-wrap">
             {pilihan.map((a) => (
               <Chip key={a} aktif={alasanTerpilih === a} onClick={() => setAlasanTerpilih(alasanTerpilih === a ? null : a)}>
@@ -262,14 +262,14 @@ function FormPaket({
     >
       <div className="pb-4 space-y-4">
         <div>
-          <p className="text-[0.875rem] font-semibold text-ink-2 mb-2">Lama kontrak</p>
+          <p className="text-isi font-semibold text-ink-2 mb-2">Lama kontrak</p>
           <PengaturJumlah nilai={durasi} ubah={setDurasi} min={1} maks={12} satuan="bulan" label="Lama kontrak" />
           {dicoba && galatDurasi && (
-            <p className="mt-2 text-[0.8125rem] text-kritis font-medium leading-snug">{galatDurasi}</p>
+            <p className="mt-2 text-isi text-kritis font-medium leading-snug">{galatDurasi}</p>
           )}
         </div>
         <div>
-          <p className="text-[0.875rem] font-semibold text-ink-2 mb-2">Minimal ambil tiap bulan</p>
+          <p className="text-isi font-semibold text-ink-2 mb-2">Minimal ambil tiap bulan</p>
           <PengaturJumlah
             nilai={kuota}
             ubah={setKuota}
@@ -306,7 +306,7 @@ function FormPaket({
           onChange={(e) => setKetentuanBerhenti(e.target.value)}
         />
         {paket && (
-          <p className="text-[0.8125rem] text-ink-3 leading-relaxed">
+          <p className="text-isi text-ink-3 leading-relaxed">
             Kontrak yang sudah berjalan dengan paket ini tetap memakai ketentuan lamanya. Perubahan hanya berlaku untuk
             pengajuan berikutnya.
           </p>
@@ -339,7 +339,7 @@ export default function KontrakDistributor() {
   const [paketDihapus, setPaketDihapus] = useState<PaketKontrak | null>(null)
 
   const tabMentah = params.get('tab')
-  const tab: TabKontrak = SEMUA_TAB.find((t) => t === tabMentah) ?? 'pengajuan'
+  const tabDariAlamat = SEMUA_TAB.find((t) => t === tabMentah)
   const tampilan: Tampilan = params.get('lihat') === 'barang' ? 'barang' : 'toko'
 
   function aturParam(kunci: string, nilai: string) {
@@ -357,6 +357,10 @@ export default function KontrakDistributor() {
   )
   const kontrakBerjalan = useMemo(() => semua.filter(berjalan), [semua])
   const mintaBerhenti = useMemo(() => kontrakBerjalan.filter((k) => k.pengajuanBerhenti), [kontrakBerjalan])
+  /* Tanpa tab di alamat, buka yang perlu dijawab dulu; kalau tidak ada,
+     kontrak berjalan. Halaman tidak dibuka di tab kosong. */
+  const tab: TabKontrak =
+    tabDariAlamat ?? (pengajuan.length > 0 ? 'pengajuan' : mintaBerhenti.length > 0 ? 'berhenti' : 'berjalan')
   // Tersambung ke server: penawaran dan paket milik distributor itu sendiri, dari API.
   const katalogServer = useAplikasi((s) => s.katalogDistributorServer)
   const penawaranSaya = (katalogServer?.penawaran ?? katalog).filter(
@@ -389,8 +393,8 @@ export default function KontrakDistributor() {
 
   return (
     <div className="pb-6">
-      <h1 className="text-[1.25rem] font-extrabold text-ink tracking-tight">Kontrak</h1>
-      <p className="mt-1 text-[0.8125rem] text-ink-3 leading-snug max-w-[70ch]">
+      <h1 className="text-judul font-extrabold text-ink tracking-tight">Kontrak</h1>
+      <p className="mt-1 text-isi text-ink-3 leading-snug max-w-[70ch]">
         Pengajuan dari pemilik usaha, kontrak yang sedang berjalan, dan paket yang kamu tawarkan.
       </p>
 
@@ -429,16 +433,16 @@ export default function KontrakDistributor() {
                     <IdentitasToko
                       umkmId={k.umkmId}
                       kanan={
-                        <span className="shrink-0 inline-flex items-center gap-1 text-[0.75rem] text-ink-3">
+                        <span className="shrink-0 inline-flex items-center gap-1 text-kecil text-ink-3">
                           <IkonJam size={13} /> {waktuLalu(k.mulai)}
                         </span>
                       }
                     />
                     <div className="mt-3 rounded-md bg-sunken p-3">
-                      <p className="text-[0.9375rem] font-semibold text-ink leading-snug">{k.namaBarang}</p>
+                      <p className="text-kartu font-semibold text-ink leading-snug">{k.namaBarang}</p>
                       {/* Tiap potongan dikunci satu baris: "Rp" yang terpisah dari
                           angkanya di layar 360px terbaca seperti dua harga. */}
-                      <p className="mt-0.5 text-[0.8125rem] text-ink-2">
+                      <p className="mt-0.5 text-isi text-ink-2">
                         {k.durasiBulan} bulan &middot;{' '}
                         <span className="whitespace-nowrap">
                           minimal {angka(k.kuotaMinPerBulan)} {k.satuan}/bulan
@@ -448,17 +452,17 @@ export default function KontrakDistributor() {
                           {rupiah(k.hargaSatuan)}/{k.satuan}
                         </span>
                       </p>
-                      <p className="mt-1 text-[0.8125rem] text-ink-3 tabular">
+                      <p className="mt-1 text-isi text-ink-3 tabular">
                         Total wajib {angka(totalWajib)} {k.satuan} &middot; {rupiah(totalWajib * k.hargaSatuan)}
                       </p>
                     </div>
-                    <p className="mt-2.5 text-[0.8125rem] text-ink-2">{riwayatToko(k.umkmId)}</p>
+                    <p className="mt-2.5 text-isi text-ink-2">{riwayatToko(k.umkmId)}</p>
                     <div className="mt-3 flex gap-2.5">
-                      <Tombol ragam="garis" penuh onClick={() => setAkanDitolak(k)}>
-                        Tolak
-                      </Tombol>
                       <Tombol penuh onClick={() => setAkanDisetujui(k)}>
                         Setujui
+                      </Tombol>
+                      <Tombol ragam="garis" penuh onClick={() => setAkanDitolak(k)}>
+                        Tolak
                       </Tombol>
                     </div>
                   </Kartu>
@@ -486,7 +490,7 @@ export default function KontrakDistributor() {
           ) : (
             <>
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="text-[0.875rem] text-ink-2">
+                <p className="text-isi text-ink-2">
                   <strong className="text-ink">{kontrakBerjalan.length} kontrak</strong> dengan {perToko.length} toko
                 </p>
                 <BarisChip>
@@ -505,7 +509,7 @@ export default function KontrakDistributor() {
                       <Kartu key={umkmId}>
                         <IdentitasToko
                           umkmId={umkmId}
-                          kanan={<span className="shrink-0 text-[0.75rem] text-ink-3">{daftar.length} kontrak</span>}
+                          kanan={<span className="shrink-0 text-kecil text-ink-3">{daftar.length} kontrak</span>}
                         />
                         <div className="mt-3 space-y-4">
                           {daftar.map((k) => (
@@ -514,8 +518,8 @@ export default function KontrakDistributor() {
                               kontrak={k}
                               label={
                                 <>
-                                  <p className="text-[0.875rem] font-semibold text-ink leading-snug">{k.namaBarang}</p>
-                                  <p className="text-[0.75rem] text-ink-3">
+                                  <p className="text-isi font-semibold text-ink leading-snug">{k.namaBarang}</p>
+                                  <p className="text-kecil text-ink-3">
                                     Berakhir {tanggalPendek(k.berakhir)} ({waktuNanti(k.berakhir)})
                                     {k.pengajuanBerhenti && ' · minta berhenti'}
                                   </p>
@@ -532,8 +536,8 @@ export default function KontrakDistributor() {
                       const totalDiterima = daftar.reduce((a, k) => a + k.periodeBerjalan.diterima, 0)
                       return (
                         <Kartu key={penawaranId}>
-                          <p className="text-[0.9375rem] font-bold text-ink leading-snug">{daftar[0].namaBarang}</p>
-                          <p className="mt-0.5 text-[0.8125rem] text-ink-3 tabular">
+                          <p className="text-kartu font-bold text-ink leading-snug">{daftar[0].namaBarang}</p>
+                          <p className="mt-0.5 text-isi text-ink-3 tabular">
                             {daftar.length} toko &middot; wajib {angka(totalKuota)} {satuan} bulan ini, sudah sampai{' '}
                             {angka(totalDiterima)} {satuan}
                           </p>
@@ -543,7 +547,7 @@ export default function KontrakDistributor() {
                                 key={k.id}
                                 kontrak={k}
                                 label={
-                                  <p className="text-[0.875rem] font-semibold text-ink leading-snug">
+                                  <p className="text-isi font-semibold text-ink leading-snug">
                                     {umkmById(k.umkmId)?.nama ?? 'Pemilik usaha'}
                                   </p>
                                 }
@@ -580,7 +584,7 @@ export default function KontrakDistributor() {
                   <IdentitasToko
                     umkmId={k.umkmId}
                     kanan={
-                      <span className="shrink-0 inline-flex items-center gap-1 text-[0.75rem] text-ink-3">
+                      <span className="shrink-0 inline-flex items-center gap-1 text-kecil text-ink-3">
                         <IkonJam size={13} /> {waktuLalu(k.pengajuanBerhenti!.waktu)}
                       </span>
                     }
@@ -590,23 +594,23 @@ export default function KontrakDistributor() {
                       kontrak={k}
                       label={
                         <>
-                          <p className="text-[0.875rem] font-semibold text-ink leading-snug">{k.namaBarang}</p>
-                          <p className="text-[0.75rem] text-ink-3">
+                          <p className="text-isi font-semibold text-ink leading-snug">{k.namaBarang}</p>
+                          <p className="text-kecil text-ink-3">
                             Masa kontrak sampai {tanggalPendek(k.berakhir)} ({waktuNanti(k.berakhir)})
                           </p>
                         </>
                       }
                     />
                   </div>
-                  <p className="mt-3 rounded-md bg-sunken px-3 py-2.5 text-[0.8125rem] text-ink-2 leading-relaxed">
+                  <p className="mt-3 rounded-md bg-sunken px-3 py-2.5 text-isi text-ink-2 leading-relaxed">
                     Alasan dari pemilik usaha: &ldquo;{k.pengajuanBerhenti!.alasan}&rdquo;
                   </p>
                   <div className="mt-3 flex gap-2.5">
-                    <Tombol ragam="garis" penuh onClick={() => setBerhentiDitolak(k)}>
-                      Tolak
-                    </Tombol>
                     <Tombol penuh onClick={() => setBerhentiDisetujui(k)}>
                       Setujui Berhenti
+                    </Tombol>
+                    <Tombol ragam="garis" penuh onClick={() => setBerhentiDitolak(k)}>
+                      Tolak
                     </Tombol>
                   </div>
                 </Kartu>
@@ -622,7 +626,7 @@ export default function KontrakDistributor() {
           <h2 id="judul-paket" className="sr-only">
             Paket kontrak yang kamu tawarkan
           </h2>
-          <p className="text-[0.8125rem] text-ink-3 leading-relaxed max-w-[70ch]">
+          <p className="text-isi text-ink-3 leading-relaxed max-w-[70ch]">
             Paket inilah yang dipilih pemilik usaha saat mengajukan kontrak. Mengubah paket tidak mengubah kontrak yang
             sudah berjalan.
           </p>
@@ -635,8 +639,8 @@ export default function KontrakDistributor() {
                 <Kartu key={pw.id}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="text-[0.9375rem] font-bold text-ink leading-snug">{pw.nama}</p>
-                      <p className="text-[0.8125rem] text-ink-3">
+                      <p className="text-kartu font-bold text-ink leading-snug">{pw.nama}</p>
+                      <p className="text-isi text-ink-3">
                         Harga beli sekali {rupiah(pw.hargaSatuan)}/{pw.satuan}
                       </p>
                     </div>
@@ -651,7 +655,7 @@ export default function KontrakDistributor() {
                   </div>
 
                   {daftar.length === 0 ? (
-                    <p className="mt-3 text-[0.8125rem] text-ink-2 leading-relaxed">
+                    <p className="mt-3 text-isi text-ink-2 leading-relaxed">
                       Belum ada paket. Tanpa paket, pemilik usaha hanya bisa membeli sekali untuk barang ini.
                     </p>
                   ) : (
@@ -661,10 +665,10 @@ export default function KontrakDistributor() {
                         return (
                           <li key={p.id} className="py-2.5 flex items-start justify-between gap-3">
                             <div className="min-w-0">
-                              <p className="text-[0.875rem] font-semibold text-ink">
+                              <p className="text-isi font-semibold text-ink">
                                 {p.kode} &middot; {p.durasiBulan} bulan
                               </p>
-                              <p className="text-[0.8125rem] text-ink-2 tabular">
+                              <p className="text-isi text-ink-2 tabular">
                                 <span className="whitespace-nowrap">
                                   Min {angka(p.kuotaMinPerBulan)} {pw.satuan}/bulan
                                 </span>{' '}
@@ -672,7 +676,7 @@ export default function KontrakDistributor() {
                                 {p.hematPersen > 0 && ` · hemat ${p.hematPersen}%`}
                               </p>
                               {dipakai > 0 && (
-                                <p className="text-[0.75rem] text-ink-3">Dipakai {dipakai} kontrak berjalan</p>
+                                <p className="text-kecil text-ink-3">Dipakai {dipakai} kontrak berjalan</p>
                               )}
                             </div>
                             <div className="shrink-0 flex items-center">

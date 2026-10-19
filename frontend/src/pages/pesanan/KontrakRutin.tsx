@@ -115,7 +115,7 @@ export default function KontrakRutin() {
                 keterangan="Sistem menyiapkan draf pesanan sesuai jadwal di halaman ini. Kamu tetap yang menekan kirim."
               />
               {kontrak.pesananRutinAktif && kontrak.pesananRutinBerikutnya && (
-                <p className="mt-1 text-[0.8125rem] text-ink-2">
+                <p className="mt-1 text-isi text-ink-2">
                   Jadwal berikutnya <strong className="text-ink">{tanggalPendek(kontrak.pesananRutinBerikutnya)}</strong>.
                 </p>
               )}
@@ -130,7 +130,7 @@ export default function KontrakRutin() {
 
           {/* Barang terkunci: satu kontrak mengikat tepat satu barang. */}
           <section aria-labelledby="judul-barang">
-            <h2 id="judul-barang" className="text-[0.9375rem] font-bold text-ink mb-2">
+            <h2 id="judul-barang" className="text-kartu font-bold text-ink mb-2">
               Barang
             </h2>
             <Kartu padat>
@@ -140,13 +140,13 @@ export default function KontrakRutin() {
                 </span>
                 <div className="min-w-0 grow">
                   <p className="text-[1rem] font-semibold text-ink leading-snug">{kontrak.namaBarang}</p>
-                  <p className="mt-0.5 text-[0.8125rem] text-ink-3">
+                  <p className="mt-0.5 text-isi text-ink-3">
                     {rupiah(kontrak.hargaSatuan)} per {kontrak.satuan} &middot; harga kontrak
                   </p>
                 </div>
                 <Lencana nada="netral">Terkunci</Lencana>
               </div>
-              <p className="mt-2 text-[0.8125rem] text-ink-3 leading-relaxed">
+              <p className="mt-2 text-isi text-ink-3 leading-relaxed">
                 {BANTUAN.satuKontrakSatuBarang} Barangnya tidak bisa diganti di sini. Kalau kamu mau barang lain rutin
                 juga, buat kontrak sendiri untuk barang itu.
               </p>
@@ -154,7 +154,7 @@ export default function KontrakRutin() {
           </section>
 
           <section aria-labelledby="judul-jumlah">
-            <h2 id="judul-jumlah" className="text-[0.9375rem] font-bold text-ink mb-2">
+            <h2 id="judul-jumlah" className="text-kartu font-bold text-ink mb-2">
               Jumlah per pengiriman
             </h2>
             <Kartu padat>
@@ -167,7 +167,7 @@ export default function KontrakRutin() {
                 saranModel={kontrak.kuotaMinPerBulan}
                 label="Jumlah per pengiriman"
               />
-              <p className="mt-3 text-[0.8125rem] text-ink-2 leading-relaxed">
+              <p className="mt-3 text-isi text-ink-2 leading-relaxed">
                 {pilihanJadwal.label.toLowerCase()} {angka(jumlah)} {kontrak.satuan} berarti kira-kira{' '}
                 <strong className="text-ink">
                   {angka(perBulan)} {kontrak.satuan}
@@ -175,7 +175,7 @@ export default function KontrakRutin() {
                 per bulan. Kuota kontrak {angka(kontrak.kuotaMinPerBulan)} {kontrak.satuan} per bulan.
               </p>
               <Pemisah className="my-2.5" />
-              <p className={`text-[0.8125rem] font-semibold ${cukupKuota ? 'text-aman-ink' : 'text-menipis-ink'}`}>
+              <p className={`text-isi font-semibold ${cukupKuota ? 'text-aman-ink' : 'text-menipis-ink'}`}>
                 {cukupKuota
                   ? 'Jadwal ini sudah cukup menutup kuota bulanan.'
                   : 'Jadwal ini belum menutup kuota bulanan. Sisanya perlu kamu pesan manual.'}
@@ -186,7 +186,7 @@ export default function KontrakRutin() {
 
         <div className="space-y-4">
           <section aria-labelledby="judul-jadwal">
-            <h2 id="judul-jadwal" className="text-[0.9375rem] font-bold text-ink mb-2">
+            <h2 id="judul-jadwal" className="text-kartu font-bold text-ink mb-2">
               Jadwal
             </h2>
             <Kartu padat>
@@ -218,7 +218,7 @@ export default function KontrakRutin() {
 
           {/* Perilaku sistem ditulis apa adanya, bukan disembunyikan di bantuan. */}
           <section aria-labelledby="judul-cara-kerja">
-            <h2 id="judul-cara-kerja" className="text-[0.9375rem] font-bold text-ink mb-2">
+            <h2 id="judul-cara-kerja" className="text-kartu font-bold text-ink mb-2">
               Cara kerjanya
             </h2>
             <Kartu padat>
@@ -278,7 +278,7 @@ export default function KontrakRutin() {
 
       <BilahAksi
         ringkasan={
-          <p className="text-[0.8125rem] text-ink-2 leading-snug max-w-[70ch]">
+          <p className="text-isi text-ink-2 leading-snug max-w-[70ch]">
             <IkonPetir size={14} className="inline align-[-2px] mr-1" />
             {pilihanJadwal.label}
             {jadwal === 'tanggal' ? ` (tanggal ${tanggalBulanan})` : ''} &middot; {angka(jumlah)} {kontrak.satuan} per
@@ -298,12 +298,12 @@ export default function KontrakRutin() {
 function LangkahRutin({ nomor, judul, detail }: { nomor: number; judul: string; detail: string }) {
   return (
     <li className="flex items-start gap-3">
-      <span className="shrink-0 size-7 rounded-full grid place-items-center bg-brand-soft text-brand-soft-ink text-[0.8125rem] font-extrabold tabular">
+      <span className="shrink-0 size-7 rounded-full grid place-items-center bg-brand-soft text-brand-soft-ink text-isi font-extrabold tabular">
         {nomor}
       </span>
       <div className="min-w-0">
-        <p className="text-[0.875rem] font-bold text-ink leading-snug">{judul}</p>
-        <p className="mt-0.5 text-[0.8125rem] text-ink-2 leading-relaxed">{detail}</p>
+        <p className="text-isi font-bold text-ink leading-snug">{judul}</p>
+        <p className="mt-0.5 text-isi text-ink-2 leading-relaxed">{detail}</p>
       </div>
     </li>
   )

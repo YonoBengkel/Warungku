@@ -113,7 +113,7 @@ export default function PenggunaUndang() {
               <IkonCentangLingkaran size={28} />
             </span>
             <h2 className="mt-3 text-[1.25rem] font-extrabold text-ink tracking-tight">Undangan siap dikirim</h2>
-            <p className="mt-1.5 text-[0.875rem] text-ink-2 leading-relaxed max-w-[40ch] mx-auto">
+            <p className="mt-1.5 text-isi text-ink-2 leading-relaxed max-w-[40ch] mx-auto">
               Salin tautan di bawah lalu kirim ke {terkirim.nama} lewat WhatsApp. Dia masuk dengan nomor HP-nya
               sendiri, bukan memakai akunmu.
             </p>
@@ -123,7 +123,7 @@ export default function PenggunaUndang() {
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-[1rem] font-semibold text-ink">{terkirim.nama}</p>
-                <p className="mt-0.5 text-[0.8125rem] text-ink-3 tabular">{formatHp(terkirim.hp)}</p>
+                <p className="mt-0.5 text-isi text-ink-3 tabular">{formatHp(terkirim.hp)}</p>
               </div>
               <Lencana nada={terkirim.peran === 'manajer' ? 'info' : 'netral'} besar>
                 {PERAN[terkirim.peran].nama}
@@ -132,8 +132,8 @@ export default function PenggunaUndang() {
 
             <Pemisah className="my-4" />
 
-            <p className="text-[0.8125rem] font-semibold text-ink-2 mb-1.5">Tautan undangan</p>
-            <p className="rounded-md bg-sunken border border-line px-3.5 py-3 text-[0.9375rem] font-semibold text-ink break-all select-all">
+            <p className="text-isi font-semibold text-ink-2 mb-1.5">Tautan undangan</p>
+            <p className="rounded-md bg-sunken border border-line px-3.5 py-3 text-kartu font-semibold text-ink break-all select-all">
               {terkirim.tautan}
             </p>
 
@@ -146,7 +146,7 @@ export default function PenggunaUndang() {
               </Tombol>
             </div>
 
-            <p className="mt-3 text-[0.8125rem] text-ink-3 leading-relaxed">
+            <p className="mt-3 text-isi text-ink-3 leading-relaxed">
               Tautan ini berlaku 7 hari dan hanya bisa dipakai sekali. Kalau kedaluwarsa, buat undangan baru dari
               halaman Pengguna &amp; Hak Akses.
             </p>
@@ -233,28 +233,28 @@ export default function PenggunaUndang() {
                     keterangan={info.ringkas}
                     anakan={
                       <span className="mt-2.5 block">
-                        <span className="block text-[0.75rem] font-bold uppercase tracking-wide text-ink-3">
+                        <span className="block text-kecil font-bold uppercase tracking-wide text-ink-3">
                           Boleh
                         </span>
                         <span className="mt-1 block space-y-1.5">
                           {info.boleh.map((b) => (
                             <span
                               key={b}
-                              className="flex items-start gap-2 text-[0.8125rem] text-ink-2 leading-snug"
+                              className="flex items-start gap-2 text-isi text-ink-2 leading-snug"
                             >
                               <IkonCentang size={15} className="shrink-0 mt-0.5 text-aman" />
                               {b}
                             </span>
                           ))}
                         </span>
-                        <span className="mt-2.5 block text-[0.75rem] font-bold uppercase tracking-wide text-ink-3">
+                        <span className="mt-2.5 block text-kecil font-bold uppercase tracking-wide text-ink-3">
                           Tidak boleh
                         </span>
                         <span className="mt-1 block space-y-1.5">
                           {info.tidakBoleh.map((b) => (
                             <span
                               key={b}
-                              className="flex items-start gap-2 text-[0.8125rem] text-ink-3 leading-snug"
+                              className="flex items-start gap-2 text-isi text-ink-3 leading-snug"
                             >
                               <IkonSilang size={15} className="shrink-0 mt-0.5" />
                               {b}
@@ -276,10 +276,10 @@ export default function PenggunaUndang() {
             <ol className="space-y-3.5">
               {LANGKAH.map((l, i) => (
                 <li key={l.judul} className="flex items-start gap-3">
-                  <span className="shrink-0 size-6 rounded-full bg-sunken text-ink-2 text-[0.8125rem] font-bold grid place-items-center tabular">
+                  <span className="shrink-0 size-6 rounded-full bg-sunken text-ink-2 text-isi font-bold grid place-items-center tabular">
                     {i + 1}
                   </span>
-                  <p className="text-[0.875rem] text-ink-2 leading-relaxed">
+                  <p className="text-isi text-ink-2 leading-relaxed">
                     <strong className="text-ink">{l.judul}</strong> {l.isi}
                   </p>
                 </li>
@@ -299,7 +299,7 @@ export default function PenggunaUndang() {
           apa pun, ia membuat tautan yang kamu kirim sendiri lewat WhatsApp. */}
       <BilahAksi
         ringkasan={
-          <p className="text-[0.8125rem] text-ink-3 text-center leading-snug">
+          <p className="text-isi text-ink-3 text-center leading-snug">
             {nama.trim() ? `${nama.trim()} akan masuk sebagai ${PERAN[peran].nama}` : `Peran: ${PERAN[peran].nama}`}
           </p>
         }

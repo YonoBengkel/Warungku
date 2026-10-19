@@ -150,10 +150,10 @@ export default function Prediksi() {
   return (
     <div className="pb-8">
       <div className="flex items-baseline justify-between gap-3 flex-wrap">
-        <h1 className="text-[1.25rem] font-extrabold text-ink tracking-tight">{JUDUL.prediksi}</h1>
-        <p className="text-[0.8125rem] text-ink-3">Perkiraan untuk bulan depan</p>
+        <h1 className="text-judul font-extrabold text-ink tracking-tight">{JUDUL.prediksi}</h1>
+        <p className="text-isi text-ink-3">Perkiraan untuk bulan depan</p>
       </div>
-      <p className="mt-1 text-[0.875rem] text-ink-2 leading-relaxed max-w-[62ch]">{KALIMAT_MELESET}</p>
+      <p className="mt-1 text-isi text-ink-2 leading-relaxed max-w-[62ch]">{KALIMAT_MELESET}</p>
       <KeteranganMetode
         className="mt-3 max-w-[62ch]"
         mesin="Mesin 1"
@@ -229,10 +229,10 @@ function GrafikKategori({ kategori, daftar }: { kategori: string; daftar: Barang
   return (
     <section aria-labelledby="judul-tren-kategori">
       <Kartu>
-        <h2 id="judul-tren-kategori" className="text-[0.9375rem] font-bold text-ink leading-tight">
+        <h2 id="judul-tren-kategori" className="text-kartu font-bold text-ink leading-tight">
           Nilai pemakaian {kategori}
         </h2>
-        <p className="mt-0.5 text-[0.8125rem] text-ink-3 leading-snug">
+        <p className="mt-0.5 text-isi text-ink-3 leading-snug">
           Setahun terakhir dan perkiraan bulan depan, dalam Rupiah harga beli.
         </p>
         {adaData ? (
@@ -249,7 +249,7 @@ function GrafikKategori({ kategori, daftar }: { kategori: string; daftar: Barang
                 lebarSumbu={LEBAR_SUMBU_RUPIAH}
               />
             </div>
-            <p className="mt-3 text-[0.875rem] text-ink-2 leading-relaxed">
+            <p className="mt-3 text-isi text-ink-2 leading-relaxed">
               Bulan depan diperkirakan <strong className="text-ink tabular">{rupiah(bulanDepan)}</strong>,{' '}
               <TandaArah arah={arah} /> dari bulan ini.
             </p>
@@ -279,10 +279,10 @@ function DaftarBarangKategori({
 }) {
   return (
     <section aria-labelledby="judul-isi-kategori">
-      <h2 id="judul-isi-kategori" className="text-[0.9375rem] font-bold text-ink leading-tight">
+      <h2 id="judul-isi-kategori" className="text-kartu font-bold text-ink leading-tight">
         Barang di {kategori}
       </h2>
-      <p className="mt-0.5 text-[0.8125rem] text-ink-3 leading-snug">
+      <p className="mt-0.5 text-isi text-ink-3 leading-snug">
         {daftar.length} barang. Tekan salah satu untuk melihat grafiknya dan memesan.
       </p>
 
@@ -342,19 +342,19 @@ function KartuBarangPrediksi({ barang, ke }: { barang: Barang; ke: string }) {
           kolom kartu di layar menengah tidak menyisakan ruang untuk
           ketiganya sebaris tanpa memecah nama barang per kata. */}
       <span className="flex items-start justify-between gap-2">
-        <span className="min-w-0 text-[0.9375rem] font-semibold text-ink leading-snug">{barang.nama}</span>
+        <span className="min-w-0 text-kartu font-semibold text-ink leading-snug">{barang.nama}</span>
         <IkonPanahKanan size={18} className="shrink-0 mt-0.5 text-ink-3" />
       </span>
       <span className="mt-auto flex items-end justify-between gap-3">
         {rekomendasi ? (
           <span className="min-w-0">
-            <span className="block text-[0.75rem] text-ink-3">Perkiraan bulan depan</span>
+            <span className="block text-kecil text-ink-3">Perkiraan bulan depan</span>
             <span className="block text-[1.125rem] font-extrabold text-ink leading-tight">
               {jumlahTampil(barang, rekomendasi.perkiraanBulanDepan)}
             </span>
           </span>
         ) : (
-          <span className="min-w-0 text-[0.8125rem] text-ink-3 leading-snug">
+          <span className="min-w-0 text-isi text-ink-3 leading-snug">
             {barang.dicatatManual ? 'Dicatat manual, tidak diperkirakan.' : 'Perkiraannya belum bisa dibuat.'}
           </span>
         )}
@@ -391,10 +391,10 @@ function PerbandinganBarang({
   return (
     <section aria-labelledby="judul-perbandingan">
       <Kartu>
-        <h2 id="judul-perbandingan" className="text-[0.9375rem] font-bold text-ink leading-tight">
+        <h2 id="judul-perbandingan" className="text-kartu font-bold text-ink leading-tight">
           Perkiraan bulan depan per barang
         </h2>
-        <p className="mt-0.5 text-[0.8125rem] text-ink-3 leading-snug">
+        <p className="mt-0.5 text-isi text-ink-3 leading-snug">
           Dalam Rupiah harga beli, supaya barang bersatuan berbeda bisa dibandingkan.
         </p>
         {/* Batang yang banyak tidak muat di layar 360px. Yang digulir wadah
@@ -420,14 +420,14 @@ function PerbandinganBarang({
                 className="flex items-center gap-3 min-h-11 -mx-2 px-2 py-1.5 rounded-md hover:bg-sunken transition-colors"
               >
                 <span className="min-w-0 grow">
-                  <span className="block text-[0.875rem] font-semibold text-ink truncate">{x.barang.nama}</span>
-                  <span className="block text-[0.75rem] text-ink-3">
+                  <span className="block text-isi font-semibold text-ink truncate">{x.barang.nama}</span>
+                  <span className="block text-kecil text-ink-3">
                     <TandaArah arah={x.arah} /> dari bulan ini
                   </span>
                 </span>
                 <span className="shrink-0 text-right">
-                  <span className="block text-[0.875rem] font-bold text-ink tabular">{rupiah(x.nilaiDepan)}</span>
-                  <span className="block text-[0.75rem] text-ink-3 tabular">dari {rupiah(x.nilaiIni)}</span>
+                  <span className="block text-isi font-bold text-ink tabular">{rupiah(x.nilaiDepan)}</span>
+                  <span className="block text-kecil text-ink-3 tabular">dari {rupiah(x.nilaiIni)}</span>
                 </span>
                 <IkonPanahKanan size={18} className="shrink-0 text-ink-3" />
               </Link>
@@ -527,13 +527,13 @@ function DetailBarang({
         {/* ---------------- Grafik barang ini ---------------- */}
         <section aria-labelledby="judul-barang" className="lg:col-span-8 min-w-0">
           <Kartu>
-            <h2 id="judul-barang" className="text-[1.0625rem] font-extrabold text-ink leading-tight">
+            <h2 id="judul-barang" className="text-subjudul font-extrabold text-ink leading-tight">
               {barang.nama}
             </h2>
-            <p className="mt-0.5 text-[0.8125rem] text-ink-3">{barang.kategori}</p>
+            <p className="mt-0.5 text-isi text-ink-3">{barang.kategori}</p>
 
             <div className="mt-3.5">
-              <p className="text-[0.75rem] font-semibold uppercase tracking-wide text-ink-3">Sisa tercatat</p>
+              <p className="text-kecil font-semibold uppercase tracking-wide text-ink-3">Sisa tercatat</p>
               {/* Angka besar yang berdiri sendiri memakai lebar digit proporsional,
                   bukan tabular-nums: tidak ada kolom angka yang perlu disejajarkan. */}
               <p className="mt-1 text-[2rem] font-extrabold leading-none tracking-tight text-ink">
@@ -544,7 +544,7 @@ function DetailBarang({
 
             {tren.length > 0 ? (
               <div className="mt-4 min-w-0">
-                <h3 className="text-[0.875rem] font-bold text-ink leading-tight">
+                <h3 className="text-isi font-bold text-ink leading-tight">
                   Pemakaian setahun terakhir dan perkiraan bulan depan
                 </h3>
                 <div className="mt-2 min-w-0">
@@ -556,14 +556,14 @@ function DetailBarang({
                   />
                 </div>
                 {/* Nama garis pembatas sama dengan yang tertulis di grafik. */}
-                <p className="mt-2 text-[0.75rem] text-ink-3 leading-relaxed">
+                <p className="mt-2 text-kecil text-ink-3 leading-relaxed">
                   Sebelum garis &ldquo;{sumberServer ? 'data terakhir' : 'hari ini'}&rdquo;, garis merah adalah perkiraan
                   tiap bulan yang dibuat sebelum bulan itu dimulai; bandingkan dengan pemakaian tercatat. Sesudahnya, garis
                   merah dan bayangannya adalah perkiraan bulan depan, yang bisa meleset ke atas maupun ke bawah.
                 </p>
               </div>
             ) : (
-              <p className="mt-4 text-[0.875rem] text-ink-3 leading-relaxed">
+              <p className="mt-4 text-isi text-ink-3 leading-relaxed">
                 Riwayat bulanan barang ini belum terkumpul, jadi grafiknya belum bisa digambar.
               </p>
             )}
@@ -573,7 +573,7 @@ function DetailBarang({
         {/* ---------------- Bulan ini dan bulan depan ---------------- */}
         <section aria-labelledby="judul-angka" className="lg:col-span-4 min-w-0 mt-4 lg:mt-0">
           <Kartu>
-            <h2 id="judul-angka" className="text-[0.9375rem] font-bold text-ink leading-tight">
+            <h2 id="judul-angka" className="text-kartu font-bold text-ink leading-tight">
               Bulan ini dan bulan depan
             </h2>
 
@@ -591,13 +591,13 @@ function DetailBarang({
                  dan berhenti di situ, tanpa menampilkan angka karangan. */
               <div className="mt-3">
                 {barang.dicatatManual ? (
-                  <p className="text-[0.875rem] text-ink-2 leading-relaxed">
+                  <p className="text-isi text-ink-2 leading-relaxed">
                     Barang ini kamu catat manual, jadi pemakaiannya tidak kami hitung sendiri dan perkiraannya tidak
                     kami buat. Jumlah belinya kamu yang paling tahu.
                   </p>
                 ) : (
                   <>
-                    <p className="text-[0.875rem] text-ink-2 leading-relaxed">
+                    <p className="text-isi text-ink-2 leading-relaxed">
                       Perkiraan untuk {barang.nama} belum bisa dibuat. Riwayat pemakaiannya baru terkumpul{' '}
                       {barang.hariDataTerkumpul} dari 14 hari yang diperlukan.
                     </p>
@@ -640,7 +640,7 @@ function DetailBarang({
                     pengatur jumlah di bawahnya: menyebut angka saran padahal
                     pengaturnya mulai dari satu (atau sebaliknya) membuat
                     pemilik usaha menekan tombol tanpa tahu berapa yang ikut. */}
-                <p className="text-[0.8125rem] text-ink-2 leading-snug">
+                <p className="text-isi text-ink-2 leading-snug">
                   {rekomendasi.arah === 'kurang' ? (
                     <>
                       Menurut perkiraan, stok {barang.nama} justru sudah berlebih.{' '}
@@ -662,7 +662,7 @@ function DetailBarang({
                     </>
                   )}
                 </p>
-                <p className="text-[0.8125rem] text-ink-3">
+                <p className="text-isi text-ink-3">
                   Perkiraan biaya beli{' '}
                   <strong className="text-ink tabular">
                     {rupiah(jumlah * hargaBerlaku(penawaran.id, rekomendasi.kontrakId ?? null))}

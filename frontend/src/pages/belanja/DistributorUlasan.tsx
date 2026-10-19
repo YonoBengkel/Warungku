@@ -64,24 +64,24 @@ function KartuUlasan({ ulasan }: { ulasan: Ulasan }) {
       <div className="flex items-start gap-3">
         <Avatar nama={ulasan.namaUsaha} ukuran={40} />
         <div className="min-w-0 grow">
-          <h3 className="text-[0.9375rem] font-bold text-ink leading-snug">{ulasan.namaUsaha}</h3>
-          <p className="text-[0.8125rem] text-ink-3">{ulasan.kotaUsaha}</p>
+          <h3 className="text-kartu font-bold text-ink leading-snug">{ulasan.namaUsaha}</h3>
+          <p className="text-isi text-ink-3">{ulasan.kotaUsaha}</p>
         </div>
         <div className="shrink-0 text-right">
           <Bintang nilai={ulasan.rating} />
-          <p className="mt-0.5 text-[0.75rem] text-ink-3" title={tanggalPendek(ulasan.waktu)}>
+          <p className="mt-0.5 text-kecil text-ink-3" title={tanggalPendek(ulasan.waktu)}>
             {waktuLalu(ulasan.waktu)}
           </p>
         </div>
       </div>
 
-      <p className="mt-2.5 text-[0.875rem] text-ink-2 leading-relaxed">{ulasan.isi}</p>
+      <p className="mt-2.5 text-isi text-ink-2 leading-relaxed">{ulasan.isi}</p>
 
       {/* Label sistem sengaja dipisah dari isi ulasan: penulisnya tidak bisa
           mengarangnya, jadi bobot buktinya beda. */}
       <div className="mt-2.5 flex flex-wrap items-center gap-2">
         <Lencana nada="netral">{ulasan.labelSistem}</Lencana>
-        <span className="inline-flex items-center gap-1 text-[0.75rem] text-ink-3">
+        <span className="inline-flex items-center gap-1 text-kecil text-ink-3">
           <IkonInfo size={13} />
           Ditulis sistem dari riwayat pesanan
         </span>
@@ -92,7 +92,7 @@ function KartuUlasan({ ulasan }: { ulasan: Ulasan }) {
       <dl className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-2">
         {ASPEK.map(({ kunci, label }) => (
           <div key={kunci} className="flex items-center justify-between gap-2 sm:block">
-            <dt className="text-[0.75rem] text-ink-3 sm:mb-1">{label}</dt>
+            <dt className="text-kecil text-ink-3 sm:mb-1">{label}</dt>
             <dd>
               <Bintang nilai={ulasan.aspek[kunci]} ukuran={13} />
             </dd>
@@ -203,18 +203,18 @@ export default function DistributorUlasan() {
           {/* Ringkasan sebaran */}
           <div className="lg:col-span-5">
             <Kartu>
-              <h2 className="text-[0.9375rem] font-bold text-ink">Sebaran penilaian</h2>
+              <h2 className="text-kartu font-bold text-ink">Sebaran penilaian</h2>
 
               <div className="mt-3 flex items-center gap-4">
                 <div>
-                  <p className="text-[1.625rem] font-extrabold text-ink leading-none tracking-tight">
+                  <p className="text-angka font-extrabold text-ink leading-none tracking-tight">
                     {angka(rataRata, 1)}
                   </p>
                   <div className="mt-1.5">
                     <Bintang nilai={Math.round(rataRata)} srNilai={rataRata} />
                   </div>
                 </div>
-                <p className="text-[0.8125rem] text-ink-2 leading-relaxed">
+                <p className="text-isi text-ink-2 leading-relaxed">
                   Rata-rata dari {semua.length} ulasan yang bisa ditampilkan
                   {distributor.jumlahUlasan > semua.length && (
                     <>, dari total {distributor.jumlahUlasan} ulasan yang tercatat</>
@@ -235,7 +235,7 @@ export default function DistributorUlasan() {
                       saringBintang === n ? 'bg-brand-soft' : 'hover:bg-sunken',
                     )}
                   >
-                    <span className="shrink-0 w-14 text-[0.8125rem] font-semibold text-ink-2 tabular">
+                    <span className="shrink-0 w-14 text-isi font-semibold text-ink-2 tabular">
                       {n} bintang
                     </span>
                     <span className="grow">
@@ -247,14 +247,14 @@ export default function DistributorUlasan() {
                         label={`${sebaran[n] ?? 0} dari ${semua.length} ulasan memberi ${n} bintang`}
                       />
                     </span>
-                    <span className="shrink-0 w-6 text-right text-[0.8125rem] font-bold text-ink tabular">
+                    <span className="shrink-0 w-6 text-right text-isi font-bold text-ink tabular">
                       {sebaran[n] ?? 0}
                     </span>
                   </button>
                 ))}
               </div>
 
-              <p className="mt-3 text-[0.75rem] text-ink-3 leading-relaxed">
+              <p className="mt-3 text-kecil text-ink-3 leading-relaxed">
                 Ketuk salah satu baris untuk menyaring daftar ulasannya.
               </p>
             </Kartu>
@@ -277,7 +277,7 @@ export default function DistributorUlasan() {
             </BarisChip>
 
             <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
-              <h2 className="text-[0.9375rem] font-bold text-ink">
+              <h2 className="text-kartu font-bold text-ink">
                 {saringBintang > 0
                   ? `Ulasan ${saringBintang} bintang (${terlihat.length})`
                   : `Semua ulasan (${terlihat.length})`}
@@ -307,7 +307,7 @@ export default function DistributorUlasan() {
               </div>
             )}
 
-            <p className="mt-5 text-[0.8125rem] text-ink-3 leading-relaxed px-1">
+            <p className="mt-5 text-isi text-ink-3 leading-relaxed px-1">
               Kamu bisa menulis ulasan setelah pesanan kamu selesai. Penilaian yang sudah terkirim tidak bisa
               dihapus sendiri, supaya rekam jejaknya tetap bisa dipercaya distributor maupun UMKM lain.
             </p>

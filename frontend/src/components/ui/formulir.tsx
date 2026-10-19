@@ -17,7 +17,7 @@ import { IkonKurang, IkonTambah, IkonCentang } from '@/icons'
  */
 
 const KELAS_DASAR =
-  'w-full h-12 px-3.5 rounded-md bg-surface text-ink text-[0.9375rem] ' +
+  'w-full h-12 px-3.5 rounded-md bg-surface text-ink text-base ' +
   'border placeholder:text-ink-3/70 ' +
   'transition-[border-color,box-shadow] duration-150 ' +
   'focus:outline-none focus:ring-4 ' +
@@ -56,7 +56,7 @@ function Bungkus({
   return (
     <div className={cx('w-full', className)}>
       {label && (
-        <label htmlFor={id} className="block text-[0.8125rem] font-semibold text-ink-2 mb-1.5">
+        <label htmlFor={id} className="block text-isi font-semibold text-ink-2 mb-1.5">
           {label}
           {wajib && (
             <span className="text-kritis ml-0.5" aria-hidden="true">
@@ -68,11 +68,11 @@ function Bungkus({
       )}
       {children}
       {galat ? (
-        <p id={`${id}-galat`} className="mt-1.5 text-[0.8125rem] text-kritis font-medium leading-snug">
+        <p id={`${id}-galat`} className="mt-1.5 text-isi text-kritis font-medium leading-snug">
           {galat}
         </p>
       ) : bantuan ? (
-        <p id={`${id}-bantuan`} className="mt-1.5 text-[0.8125rem] text-ink-3 leading-snug">
+        <p id={`${id}-bantuan`} className="mt-1.5 text-isi text-ink-3 leading-snug">
           {bantuan}
         </p>
       ) : null}
@@ -103,7 +103,7 @@ export function Kolom({
     <Bungkus id={id} label={label} wajib={wajib} bantuan={bantuan} galat={galat} className={className}>
       <div className="relative">
         {awalan && (
-          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-3 text-[0.9375rem] pointer-events-none">
+          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-3 text-base pointer-events-none">
             {awalan}
           </span>
         )}
@@ -115,7 +115,7 @@ export function Kolom({
           {...rest}
         />
         {akhiran && (
-          <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-3 text-[0.875rem] font-semibold pointer-events-none">
+          <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-3 text-isi font-semibold pointer-events-none">
             {akhiran}
           </span>
         )}
@@ -279,7 +279,7 @@ export function PengaturJumlah({
           onChange={(e) => ubah(batasi(Number(e.target.value) || 0))}
           className={cx(
             'w-16 text-center bg-transparent text-ink font-bold tabular border-x border-line',
-            ukuran === 'kecil' ? 'text-[0.875rem]' : 'text-[1rem]',
+            ukuran === 'kecil' ? 'text-isi' : 'text-[1rem]',
             '[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none',
             'focus:outline-none focus:bg-brand-soft',
           )}
@@ -298,7 +298,7 @@ export function PengaturJumlah({
           <IkonTambah size={18} />
         </button>
         {satuan && (
-          <span className="px-3 grid place-items-center text-[0.8125rem] font-semibold text-ink-3 bg-surface-2 border-l border-line">
+          <span className="px-3 grid place-items-center text-isi font-semibold text-ink-3 bg-surface-2 border-l border-line">
             {satuan}
           </span>
         )}
@@ -307,7 +307,7 @@ export function PengaturJumlah({
         <button
           type="button"
           onClick={() => ubah(saranModel)}
-          className="mt-1.5 block text-[0.75rem] text-brand font-semibold hover:underline"
+          className="mt-1.5 block text-kecil text-brand font-semibold hover:underline"
         >
           Saran sistem {angka(saranModel, desimal)}
           {satuan ? ` ${satuan}` : ''} &middot; pakai saran
@@ -364,9 +364,9 @@ export function Sakelar({
         />
       </button>
       <span className="min-w-0">
-        <span className="block text-[0.9375rem] font-semibold text-ink leading-snug">{label}</span>
+        <span className="block text-kartu font-semibold text-ink leading-snug">{label}</span>
         {keterangan && (
-          <span className="block text-[0.8125rem] text-ink-3 mt-0.5 leading-snug">{keterangan}</span>
+          <span className="block text-isi text-ink-3 mt-0.5 leading-snug">{keterangan}</span>
         )}
       </span>
     </label>
@@ -404,7 +404,7 @@ export function KotakCentang({
         onChange={(e) => ubah(e.target.checked)}
         className="sr-only"
       />
-      <span className="text-[0.875rem] text-ink-2 leading-relaxed">{children}</span>
+      <span className="text-isi text-ink-2 leading-relaxed">{children}</span>
     </label>
   )
 }
@@ -450,9 +450,9 @@ export function PilihanKartu({
           {terpilih && <span className="size-2.5 rounded-full bg-brand" />}
         </span>
         <span className="min-w-0 grow">
-          <span className="block text-[0.9375rem] font-bold text-ink leading-snug">{judul}</span>
+          <span className="block text-kartu font-bold text-ink leading-snug">{judul}</span>
           {keterangan && (
-            <span className="block text-[0.8125rem] text-ink-3 mt-0.5 leading-snug">{keterangan}</span>
+            <span className="block text-isi text-ink-3 mt-0.5 leading-snug">{keterangan}</span>
           )}
           {anakan}
         </span>

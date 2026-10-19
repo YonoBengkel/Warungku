@@ -134,12 +134,12 @@ export default function KasirPasangkan() {
           <Kartu>
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-[0.75rem] font-semibold uppercase tracking-wide text-ink-3">Menu di kasir</p>
+                <p className="text-kecil font-semibold uppercase tracking-wide text-ink-3">Menu di kasir</p>
                 <h2 className="mt-0.5 text-[1.125rem] font-extrabold text-ink leading-snug">{menu.namaMenu}</h2>
               </div>
               <Lencana nada="menipis">Belum dipasangkan</Lencana>
             </div>
-            <p className="mt-2 text-[0.875rem] text-ink-2 leading-relaxed">
+            <p className="mt-2 text-isi text-ink-2 leading-relaxed">
               Terjual <strong className="text-ink">{angka(menu.jumlahTerjual)} kali</strong> sejak{' '}
               {waktuLalu(menu.sejak)} ({tanggalPendek(menu.sejak)}), tapi belum ada bahan yang berkurang karenanya.
             </p>
@@ -147,10 +147,10 @@ export default function KasirPasangkan() {
 
           {/* Pencarian bahan */}
           <section aria-labelledby="judul-pilih-bahan">
-            <h2 id="judul-pilih-bahan" className="text-[0.9375rem] font-bold text-ink mb-1">
+            <h2 id="judul-pilih-bahan" className="text-kartu font-bold text-ink mb-1">
               Bahan apa yang terpakai untuk menu ini?
             </h2>
-            <p className="text-[0.8125rem] text-ink-3 leading-relaxed mb-3">
+            <p className="text-isi text-ink-3 leading-relaxed mb-3">
               Boleh lebih dari satu. Contohnya kopi susu memakai biji kopi, susu, dan gula aren sekaligus.
             </p>
 
@@ -168,7 +168,7 @@ export default function KasirPasangkan() {
                     Kolom selalu menempelkan "(boleh dikosongkan)" pada label yang
                     tidak wajib, dan kalimat itu tidak masuk akal untuk pencarian. */}
                 <div>
-                  <label htmlFor="cari-bahan" className="block text-[0.8125rem] font-semibold text-ink-2 mb-1.5">
+                  <label htmlFor="cari-bahan" className="block text-isi font-semibold text-ink-2 mb-1.5">
                     Cari bahan di daftar stok
                   </label>
                   <div className="relative">
@@ -184,19 +184,19 @@ export default function KasirPasangkan() {
                       placeholder="Ketik nama bahan, misal: susu"
                       aria-describedby="cari-bahan-bantuan"
                       className={cx(
-                        'w-full h-12 pl-11 pr-3.5 rounded-md bg-surface text-ink text-[0.9375rem]',
+                        'w-full h-12 pl-11 pr-3.5 rounded-md bg-surface text-ink text-kartu',
                         'border border-line-strong placeholder:text-ink-3/70',
                         'focus:border-brand focus:outline-none focus:ring-4 focus:ring-[var(--c-brand-ring)]',
                       )}
                     />
                   </div>
-                  <p id="cari-bahan-bantuan" className="mt-1.5 text-[0.8125rem] text-ink-3 leading-snug">
+                  <p id="cari-bahan-bantuan" className="mt-1.5 text-isi text-ink-3 leading-snug">
                     Sebutan sehari-hari juga dicari. Mengetik &lsquo;skm&rsquo; menemukan susu kental manis.
                   </p>
                 </div>
 
                 {hasilCari.length === 0 ? (
-                  <p className="mt-3 text-[0.875rem] text-ink-3 leading-relaxed">
+                  <p className="mt-3 text-isi text-ink-3 leading-relaxed">
                     Tidak ada bahan bernama &ldquo;{cari}&rdquo; di daftar stokmu.{' '}
                     <Link to="/stok/baru" className="font-semibold text-brand hover:underline">
                       Tambahkan dulu barangnya
@@ -216,8 +216,8 @@ export default function KasirPasangkan() {
                             <IkonKotak size={18} />
                           </span>
                           <span className="min-w-0 grow">
-                            <span className="block text-[0.9375rem] font-semibold text-ink truncate">{b.nama}</span>
-                            <span className="block text-[0.75rem] text-ink-3">
+                            <span className="block text-kartu font-semibold text-ink truncate">{b.nama}</span>
+                            <span className="block text-kecil text-ink-3">
                               {b.kategori} &middot; sisa {jumlahTampil(b, b.stok)}
                             </span>
                           </span>
@@ -238,7 +238,7 @@ export default function KasirPasangkan() {
           {/* Bahan yang sudah dipilih */}
           {dipilih.length > 0 && (
             <section aria-labelledby="judul-dipilih">
-              <h2 id="judul-dipilih" className="text-[0.9375rem] font-bold text-ink mb-3">
+              <h2 id="judul-dipilih" className="text-kartu font-bold text-ink mb-3">
                 Bahan yang dipasangkan ({dipilih.length})
               </h2>
               <ul className="space-y-3">
@@ -259,8 +259,8 @@ export default function KasirPasangkan() {
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
-                            <p className="text-[0.9375rem] font-bold text-ink leading-snug">{b.nama}</p>
-                            <p className="text-[0.75rem] text-ink-3 mt-0.5">
+                            <p className="text-kartu font-bold text-ink leading-snug">{b.nama}</p>
+                            <p className="text-kecil text-ink-3 mt-0.5">
                               Stok disimpan dalam satuan {b.satuan}
                             </p>
                           </div>
@@ -291,7 +291,7 @@ export default function KasirPasangkan() {
                               }
                             />
                             {Number(d.takaran.replace(',', '.')) > 0 && (
-                              <p className="mt-1.5 text-[0.8125rem] text-ink-3">
+                              <p className="mt-1.5 text-isi text-ink-3">
                                 {angka(menu.jumlahTerjual)} penjualan seperti kemarin akan memakai{' '}
                                 <strong className="text-ink-2">
                                   {jumlahSatuan(
@@ -327,7 +327,7 @@ export default function KasirPasangkan() {
           </Peringatan>
 
           <div className="rounded-md bg-sunken p-3.5">
-            <p className="flex items-start gap-2 text-[0.8125rem] text-ink-2 leading-relaxed">
+            <p className="flex items-start gap-2 text-isi text-ink-2 leading-relaxed">
               <IkonInfo size={16} className="shrink-0 mt-px text-ink-3" />
               Menu ini campuran dan bahannya tidak tetap? Pasangkan bahan utamanya saja. Sisa selisihnya bisa kamu
               luruskan lewat Koreksi Stok, dan itu lebih baik daripada tidak berkurang sama sekali.
@@ -336,7 +336,7 @@ export default function KasirPasangkan() {
 
           <Pemisah />
 
-          <p className="text-[0.8125rem] text-ink-3 leading-relaxed">
+          <p className="text-isi text-ink-3 leading-relaxed">
             Salah menu?{' '}
             <Link to="/akun/kasir?tab=beres" className="font-semibold text-brand hover:underline">
               Kembali ke daftar menu yang perlu dibereskan
@@ -349,13 +349,13 @@ export default function KasirPasangkan() {
       <BilahAksi
         ringkasan={
           dipilih.length === 0 ? (
-            <p className="text-[0.8125rem] text-ink-3">Pilih minimal satu bahan dulu.</p>
+            <p className="text-isi text-ink-3">Pilih minimal satu bahan dulu.</p>
           ) : sudahDicoba && belumDiisi.length > 0 ? (
-            <p className="text-[0.8125rem] font-semibold text-kritis">
+            <p className="text-isi font-semibold text-kritis">
               {belumDiisi.length} bahan belum diisi takarannya.
             </p>
           ) : (
-            <p className="text-[0.8125rem] text-ink-3">
+            <p className="text-isi text-ink-3">
               {dipilih.length} bahan akan berkurang setiap {menu.namaMenu} terjual.
             </p>
           )

@@ -129,7 +129,7 @@ export default function DaftarLegalitas() {
           simpan()
         }}
       >
-        <p className="text-[0.875rem] text-ink-3 leading-relaxed">
+        <p className="text-isi text-ink-3 leading-relaxed">
           Data ini yang diperiksa sebelum kamu bisa mengajukan kontrak dan membuat pesanan. Foto KTP tidak kami minta.
         </p>
 
@@ -159,7 +159,7 @@ export default function DaftarLegalitas() {
               <button
                 type="button"
                 onClick={() => setBukaBantuan(true)}
-                className="mt-1 inline-flex items-center gap-1.5 h-11 -ml-1 px-1 text-[0.8125rem] font-bold text-brand hover:underline underline-offset-2"
+                className="mt-1 inline-flex items-center gap-1.5 h-11 -ml-1 px-1 text-isi font-bold text-brand hover:underline underline-offset-2"
               >
                 <IkonBantuan size={16} />
                 Di mana nomor ini?
@@ -182,10 +182,10 @@ export default function DaftarLegalitas() {
                 setGalat({})
               }}
             >
-              <span className="block text-[0.9375rem] font-semibold text-ink leading-snug">
+              <span className="block text-kartu font-semibold text-ink leading-snug">
                 Usaha saya belum punya NIB
               </span>
-              <span className="block mt-0.5 text-[0.8125rem] text-ink-3 leading-snug">
+              <span className="block mt-0.5 text-isi text-ink-3 leading-snug">
                 Gantinya: satu foto tampak depan tempat usaha.
               </span>
             </KotakCentang>
@@ -208,7 +208,7 @@ export default function DaftarLegalitas() {
           <h2 id="judul-lencana" className="text-[1rem] font-bold text-ink">
             Hasilnya nanti berupa lencana
           </h2>
-          <p className="mt-1 text-[0.8125rem] text-ink-3 leading-relaxed">
+          <p className="mt-1 text-isi text-ink-3 leading-relaxed">
             Lencana ini terlihat oleh distributor saat kamu mengajukan kontrak.
           </p>
 
@@ -234,7 +234,7 @@ export default function DaftarLegalitas() {
           </div>
         </section>
 
-        <p className="mt-5 text-[0.8125rem] text-ink-3 leading-relaxed">
+        <p className="mt-5 text-isi text-ink-3 leading-relaxed">
           Selama menunggu pemeriksaan, stok, perkiraan, dan penjelajahan katalog tetap jalan penuh.
         </p>
 
@@ -263,12 +263,12 @@ export default function DaftarLegalitas() {
       >
         <div className="pb-4">
           <GambarLembarNib />
-          <ol className="mt-4 space-y-2 text-[0.875rem] text-ink-2 leading-relaxed list-decimal pl-5">
+          <ol className="mt-4 space-y-2 text-isi text-ink-2 leading-relaxed list-decimal pl-5">
             <li>Buka lembar NIB yang kamu terima dari OSS, bentuknya PDF atau cetakan.</li>
             <li>Cari baris berlabel &ldquo;Nomor Induk Berusaha&rdquo; di bagian atas, tepat di bawah judul.</li>
             <li>Salin 13 angkanya, tanpa spasi dan tanpa titik.</li>
           </ol>
-          <p className="mt-3 text-[0.8125rem] text-ink-3 leading-relaxed">
+          <p className="mt-3 text-isi text-ink-3 leading-relaxed">
             Lembarnya hilang? Nomor yang sama bisa dilihat lagi dengan masuk ke akun OSS kamu. Kalau memang belum
             pernah mendaftar, centang &ldquo;Usaha saya belum punya NIB&rdquo; dan lanjut pakai foto.
           </p>
@@ -314,9 +314,9 @@ function BarisLencana({
     >
       <div className="flex items-center gap-2">
         {lencana}
-        {aktif && <span className="text-[0.75rem] font-semibold text-ink-2">&larr; pilihan kamu sekarang</span>}
+        {aktif && <span className="text-kecil font-semibold text-ink-2">&larr; pilihan kamu sekarang</span>}
       </div>
-      <p className="mt-1.5 text-[0.8125rem] text-ink-2 leading-relaxed">{isi}</p>
+      <p className="mt-1.5 text-isi text-ink-2 leading-relaxed">{isi}</p>
     </div>
   )
 }
@@ -336,7 +336,7 @@ function UnggahFoto({
 }) {
   return (
     <div>
-      <p className="block text-[0.8125rem] font-semibold text-ink-2 mb-1.5">
+      <p className="block text-isi font-semibold text-ink-2 mb-1.5">
         Foto Tampak Depan Tempat Usaha
         <span className="text-kritis ml-0.5" aria-hidden="true">
           *
@@ -360,7 +360,7 @@ function UnggahFoto({
             alt={`Pratinjau foto tempat usaha: ${foto.nama}`}
             className="w-full h-44 object-cover rounded-sm bg-sunken"
           />
-          <p className="mt-2 text-[0.8125rem] text-ink-3 truncate">{foto.nama}</p>
+          <p className="mt-2 text-isi text-ink-3 truncate">{foto.nama}</p>
           <div className="mt-2.5 flex gap-2.5">
             <Tombol ragam="garis" onClick={() => berkasRef.current?.click()}>
               Ganti foto
@@ -385,19 +385,19 @@ function UnggahFoto({
           <span className="size-12 rounded-xl bg-sunken text-ink-3 grid place-items-center mx-auto">
             <IkonUnggah size={22} />
           </span>
-          <span className="mt-3 block text-[0.9375rem] font-bold text-ink">Ambil atau pilih satu foto</span>
-          <span className="mt-1 block text-[0.8125rem] text-ink-3 leading-relaxed">
+          <span className="mt-3 block text-kartu font-bold text-ink">Ambil atau pilih satu foto</span>
+          <span className="mt-1 block text-isi text-ink-3 leading-relaxed">
             Tampak depan warung dari seberang jalan, papan namanya ikut kelihatan.
           </span>
         </button>
       )}
 
       {galat ? (
-        <p id="bantuan-foto-usaha" className="mt-1.5 text-[0.8125rem] text-kritis font-medium leading-snug">
+        <p id="bantuan-foto-usaha" className="mt-1.5 text-isi text-kritis font-medium leading-snug">
           {galat}
         </p>
       ) : (
-        <p id="bantuan-foto-usaha" className="mt-1.5 text-[0.8125rem] text-ink-2 leading-snug">
+        <p id="bantuan-foto-usaha" className="mt-1.5 text-isi text-ink-2 leading-snug">
           Cukup satu foto. Tidak perlu surat izin apa pun.
         </p>
       )}
@@ -496,7 +496,7 @@ function LayarAuth({
         <div className="bg-surface border border-line rounded-lg shadow-e1 p-5 sm:p-6 anim-muncul">
           <Link
             to={kembaliKe}
-            className="inline-flex items-center gap-1.5 h-11 -ml-1.5 pr-2.5 pl-1.5 rounded-md text-[0.8125rem] font-semibold text-ink-2 hover:text-ink hover:bg-sunken transition-colors"
+            className="inline-flex items-center gap-1.5 h-11 -ml-1.5 pr-2.5 pl-1.5 rounded-md text-isi font-semibold text-ink-2 hover:text-ink hover:bg-sunken transition-colors"
           >
             <IkonKembali size={18} />
             Kembali
@@ -517,8 +517,8 @@ function LayarAuth({
               />
             </div>
             <div className="mt-2 flex items-baseline justify-between gap-3">
-              <h1 className="text-[1.25rem] font-extrabold text-ink tracking-tight">{judul}</h1>
-              <span className="text-[0.8125rem] font-semibold text-ink-3 shrink-0">Langkah {langkah} dari 5</span>
+              <h1 className="text-judul font-extrabold text-ink tracking-tight">{judul}</h1>
+              <span className="text-isi font-semibold text-ink-3 shrink-0">Langkah {langkah} dari 5</span>
             </div>
           </div>
 

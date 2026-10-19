@@ -123,11 +123,11 @@ export function Lembar({
 
         <div className="flex items-start justify-between gap-3 px-4 sm:px-6 pt-3 sm:pt-5 pb-3 shrink-0">
           <div className="min-w-0">
-            <h2 id={idJudul} className="text-[1.0625rem] font-extrabold text-ink leading-tight">
+            <h2 id={idJudul} className="text-subjudul font-extrabold text-ink leading-tight">
               {judul}
             </h2>
             {keterangan && (
-              <p className="text-[0.8125rem] text-ink-3 mt-1 leading-snug">{keterangan}</p>
+              <p className="text-isi text-ink-3 mt-1 leading-snug">{keterangan}</p>
             )}
           </div>
           <TombolIkon label="Tutup" onClick={tutup} className="-mt-1.5 -mr-1.5">
@@ -197,7 +197,7 @@ export function Konfirmasi({
         </div>
       }
     >
-      <div className="pb-4 text-[0.9375rem] text-ink-2 leading-relaxed">{pesan}</div>
+      <div className="pb-4 text-kartu text-ink-2 leading-relaxed">{pesan}</div>
     </Lembar>
   )
 }

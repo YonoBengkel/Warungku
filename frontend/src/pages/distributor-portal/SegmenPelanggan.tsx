@@ -27,6 +27,12 @@ const NADA_SEGMEN: Record<string, 'aman' | 'info' | 'menipis' | 'netral' | 'mere
   jarang: 'menipis',
 }
 
+/** Recency dibulatkan ke hari: 0 hari dibaca "hari ini", bukan "0 hari lalu". */
+function hariLalu(hari: number): string {
+  const h = Math.round(hari)
+  return h <= 0 ? 'hari ini' : h === 1 ? 'kemarin' : `${angka(h)} hari lalu`
+}
+
 export default function SegmenPelanggan() {
   const sesi = useAplikasi((s) => s.sesiDistributor)
   const putus = useAplikasi((s) => s.putusDistributor)
@@ -62,8 +68,8 @@ export default function SegmenPelanggan() {
     <div className="pb-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-[1.25rem] font-extrabold text-ink tracking-tight">Pelanggan</h1>
-          <p className="mt-1 text-[0.8125rem] text-ink-3 leading-snug max-w-[70ch]">
+          <h1 className="text-judul font-extrabold text-ink tracking-tight">Pelanggan</h1>
+          <p className="mt-1 text-isi text-ink-3 leading-snug max-w-[70ch]">
             Pelanggan kamu dikelompokkan menurut kapan terakhir memesan, seberapa sering, dan seberapa besar belanjanya.
             Dipakai untuk memutuskan siapa yang perlu ditawari kontrak dan siapa yang perlu dihubungi.
           </p>
@@ -93,7 +99,7 @@ export default function SegmenPelanggan() {
         </Peringatan>
       ) : segmen === null ? (
         <Kartu className="mt-4" aria-busy="true">
-          <p className="text-[0.875rem] text-ink-3">Mengambil segmen pelanggan dari server&hellip;</p>
+          <p className="text-isi text-ink-3">Memuat segmen pelanggan&hellip;</p>
         </Kartu>
       ) : segmen.length === 0 ? (
         <KeadaanKosong
@@ -103,7 +109,7 @@ export default function SegmenPelanggan() {
         />
       ) : (
         <>
-          <p className="mt-3 text-[0.75rem] text-ink-3">
+          <p className="mt-3 text-kecil text-ink-3">
             Dihitung {waktuLalu(segmen[0].dijalankanPada)}, dari pesanan sampai {tanggalRingkas(segmen[0].tanggalAcuan)}{' '}
             &middot; {angka(segmen.reduce((t, s) => t + s.jumlah, 0))} pelanggan.
           </p>
@@ -120,14 +126,14 @@ export default function SegmenPelanggan() {
                   )}
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <p className="text-[0.9375rem] font-bold text-ink leading-snug">{s.namaSegmen}</p>
+                    <p className="text-kartu font-bold text-ink leading-snug">{s.namaSegmen}</p>
                     <Lencana nada={NADA_SEGMEN[s.segmen] ?? 'netral'}>{angka(s.jumlah)} toko</Lencana>
                   </div>
-                  {s.ciri && <p className="mt-1 text-[0.8125rem] text-ink-2 leading-snug">{s.ciri}</p>}
-                  <dl className="mt-2.5 grid grid-cols-3 gap-2 text-[0.75rem]">
+                  {s.ciri && <p className="mt-1 text-isi text-ink-2 leading-snug">{s.ciri}</p>}
+                  <dl className="mt-2.5 grid grid-cols-3 gap-2 text-kecil">
                     <div>
                       <dt className="text-ink-3">Terakhir pesan</dt>
-                      <dd className="font-bold text-ink">{angka(s.rataRecency)} hari lalu</dd>
+                      <dd className="font-bold text-ink">{hariLalu(s.rataRecency)}</dd>
                     </div>
                     <div>
                       <dt className="text-ink-3">Pesanan</dt>
@@ -139,7 +145,7 @@ export default function SegmenPelanggan() {
                     </div>
                   </dl>
                   {s.saran && (
-                    <p className="mt-2.5 pt-2.5 border-t border-line text-[0.8125rem] text-ink-2 leading-snug">
+                    <p className="mt-2.5 pt-2.5 border-t border-line text-isi text-ink-2 leading-snug">
                       <span className="font-bold text-ink">Saran: </span>
                       {s.saran}
                     </p>
@@ -148,7 +154,7 @@ export default function SegmenPelanggan() {
               </li>
             ))}
           </ul>
-          <p className="mt-2 text-[0.75rem] text-ink-3">Angka di kartu adalah rata-rata anggota segmen.</p>
+          <p className="mt-2 text-kecil text-ink-3">Angka di kartu adalah rata-rata anggota segmen.</p>
 
           {terpilih && sesi && (
             <DaftarAnggota
@@ -201,11 +207,11 @@ function DaftarAnggota({ sesi, segmen, nama }: { sesi: SesiDistributor; segmen: 
           {galat}
         </Peringatan>
       ) : !anggota || anggota.segmen !== segmen ? (
-        <p className="text-[0.875rem] text-ink-3">Memuat anggota&hellip;</p>
+        <p className="text-isi text-ink-3">Memuat anggota&hellip;</p>
       ) : (
         <Kartu className="p-0 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-[0.8125rem]">
+            <table className="w-full text-isi">
               <caption className="sr-only">Anggota segmen {nama}</caption>
               <thead className="bg-surface-2 text-ink-3 text-left">
                 <tr>
@@ -225,10 +231,10 @@ function DaftarAnggota({ sesi, segmen, nama }: { sesi: SesiDistributor; segmen: 
                         {a.kota} &middot; {LABEL_JENIS_USAHA[a.jenisUsaha as JenisUsaha]?.judul ?? a.jenisUsaha} &middot; langganan {angka(a.lamaBerlangganan)} hari
                       </p>
                       {a.jarakKePusat > ambangJauh && (
-                        <p className="mt-0.5 text-[0.75rem] text-menipis-ink">Kurang mirip anggota lain di segmen ini</p>
+                        <p className="mt-0.5 text-kecil text-menipis-ink">Kurang mirip anggota lain di segmen ini</p>
                       )}
                     </td>
-                    <td className="px-3 py-2.5 whitespace-nowrap">{angka(a.recency)} hari lalu</td>
+                    <td className="px-3 py-2.5 whitespace-nowrap">{hariLalu(a.recency)}</td>
                     <td className="px-3 py-2.5 text-right">{angka(a.frequency)}</td>
                     <td className="px-3 py-2.5 text-right whitespace-nowrap">{rupiah(a.monetary)}</td>
                     <td className="px-4 py-2.5">{a.kategoriUtama}</td>

@@ -132,7 +132,7 @@ export default function Keranjang() {
      ulang oleh bilah bawah (HP) dan kartu ringkasan (desktop). */
   const kalimatPemecahan: ReactNode =
     jumlahPesanan === 0 ? (
-      'Semua sub-keranjang sedang disimpan untuk nanti. Ikutkan lagi minimal satu supaya bisa dikirim.'
+      'Semua kelompok distributor sedang disimpan untuk nanti. Ikutkan lagi minimal satu supaya bisa dikirim.'
     ) : (
       <>
         <strong className="text-ink">{jumlahBarang} barang</strong> akan dikirim sebagai{' '}
@@ -141,14 +141,14 @@ export default function Keranjang() {
     )
 
   const tombolUtama = terkunci ? (
-    <TombolTerkunci label={`Buat ${jumlahPesanan} Pesanan`} penuh />
+    <TombolTerkunci label="Periksa & Kirim" penuh />
   ) : jumlahPesanan === 0 ? (
     <TombolTautan ke="/belanja" ragam="garis" penuh ukuran="besar">
       Cari Barang di Distributor
     </TombolTautan>
   ) : (
     <TombolTautan ke="/keranjang/ringkasan" penuh ukuran="besar">
-      Buat {jumlahPesanan} Pesanan
+      Periksa & Kirim
     </TombolTautan>
   )
 
@@ -200,7 +200,7 @@ export default function Keranjang() {
                         {distributor?.nama}
                       </Link>
                     </h2>
-                    <p className="text-[0.8125rem] text-ink-3">
+                    <p className="text-isi text-ink-3">
                       {sub.baris.length} barang &middot; perkiraan tiba {hariLagi(hariTiba)}
                     </p>
                   </div>
@@ -239,12 +239,12 @@ export default function Keranjang() {
                                   Kontrak
                                 </Lencana>
                               ) : (
-                                <Lencana nada="netral">Beli Lepas</Lencana>
+                                <Lencana nada="netral">Beli Sekali</Lencana>
                               )}
                               {/* Barisnya membungkus, bukan menggeser halaman:
                                   di 360px lencana promo turun ke baris baru. */}
                               {rincian.promo && <LencanaPromo promo={rincian.promo} />}
-                              <HargaBeli rincian={rincian} satuan={pw.satuan} className="text-[0.8125rem]" />
+                              <HargaBeli rincian={rincian} satuan={pw.satuan} className="text-isi" />
                             </div>
                           </div>
                           <TombolIkon
@@ -274,7 +274,7 @@ export default function Keranjang() {
                             membandingkan angkanya dengan angka yang disarankan sistem. */}
                         {baris.saranSistem != null && (
                           <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-                            <span className="text-[0.8125rem] text-ink-3">
+                            <span className="text-isi text-ink-3">
                               {berubah ? (
                                 <>
                                   Saran sistem {angka(baris.saranSistem)} {pw.satuan} &middot; kamu ubah jadi{' '}
@@ -296,7 +296,7 @@ export default function Keranjang() {
                                     baris.saranSistem as number,
                                   )
                                 }
-                                className="inline-flex items-center h-9 px-3 rounded-full border border-line-strong text-[0.8125rem] font-semibold text-brand hover:border-brand"
+                                className="inline-flex items-center h-9 px-3 rounded-full border border-line-strong text-isi font-semibold text-brand hover:border-brand"
                               >
                                 Kembalikan ke saran ({angka(baris.saranSistem)} {pw.satuan})
                               </button>
@@ -305,13 +305,13 @@ export default function Keranjang() {
                         )}
 
                         {brg && isi > 1 && (
-                          <p className="mt-1 text-[0.75rem] text-ink-3">
+                          <p className="mt-1 text-kecil text-ink-3">
                             = {jumlahTampil(brg, baris.jumlah * isi)} masuk ke stok {brg.nama}
                           </p>
                         )}
 
                         {rincian.sumber === 'promo' && (
-                          <p className="mt-1 text-[0.75rem] text-ink-3 leading-snug">
+                          <p className="mt-1 text-kecil text-ink-3 leading-snug">
                             Hemat{' '}
                             <span className="tabular">
                               {rupiah((rincian.hargaNormal - rincian.harga) * baris.jumlah)}
@@ -321,7 +321,7 @@ export default function Keranjang() {
                         )}
 
                         {kontrak && (
-                          <p className="mt-1 text-[0.75rem] text-ink-3">
+                          <p className="mt-1 text-kecil text-ink-3">
                             Harga mengikuti kontrak. Sisa kuota bulan ini{' '}
                             {angka(
                               Math.max(
@@ -342,10 +342,10 @@ export default function Keranjang() {
                 <Pemisah className="my-3" />
 
                 <div className="flex items-baseline justify-between gap-4">
-                  <span className="text-[0.875rem] font-semibold text-ink-2">
+                  <span className="text-isi font-semibold text-ink-2">
                     Subtotal ke {distributor?.nama ?? 'distributor ini'}
                   </span>
-                  <span className="text-[1.0625rem] font-bold text-ink tabular">{rupiah(totalSub(sub))}</span>
+                  <span className="text-subjudul font-bold text-ink tabular">{rupiah(totalSub(sub))}</span>
                 </div>
                 {/* Minimum pesanan diisi distributor di portalnya. Tidak
                     memblokir: pesanannya tetap boleh dikirim, tapi lebih baik
@@ -353,7 +353,7 @@ export default function Keranjang() {
                 {distributor?.info &&
                   distributor.info.minimumPesanan > 0 &&
                   totalSub(sub) < distributor.info.minimumPesanan && (
-                    <p className="mt-1.5 text-[0.8125rem] font-semibold text-menipis-ink leading-snug">
+                    <p className="mt-1.5 text-isi font-semibold text-menipis-ink leading-snug">
                       Belum mencapai minimum pesanan {distributor.nama}, {rupiah(distributor.info.minimumPesanan)}.
                       Kurang {rupiah(distributor.info.minimumPesanan - totalSub(sub))}; pesanan tetap bisa dikirim, tapi
                       distributor boleh menolaknya.
@@ -363,14 +363,14 @@ export default function Keranjang() {
                 <button
                   type="button"
                   onClick={() => ubahSimpan(sub.distributorId, !sub.disimpanUntukNanti)}
-                  className="mt-1 inline-flex items-center min-h-11 text-[0.8125rem] font-semibold text-ink-2 underline underline-offset-2 hover:text-ink"
+                  className="mt-1 inline-flex items-center min-h-11 text-isi font-semibold text-ink-2 underline underline-offset-2 hover:text-ink"
                 >
                   {sub.disimpanUntukNanti
-                    ? 'Ikutkan lagi sub-keranjang ini'
-                    : 'Simpan sub-keranjang ini untuk nanti'}
+                    ? 'Ikutkan lagi kelompok ini'
+                    : 'Simpan kelompok ini untuk nanti'}
                 </button>
                 {sub.disimpanUntukNanti && (
-                  <p className="mt-1 text-[0.75rem] text-ink-3">
+                  <p className="mt-1 text-kecil text-ink-3">
                     Tidak ikut dikirim sekarang, tapi tetap tersimpan di sini.
                   </p>
                 )}
@@ -387,7 +387,7 @@ export default function Keranjang() {
                 </span>
                 <div className="min-w-0">
                   <h2 className="text-[1rem] font-semibold text-ink leading-snug">Belum ada pemasok tetap</h2>
-                  <p className="text-[0.8125rem] text-ink-3 leading-snug">
+                  <p className="text-isi text-ink-3 leading-snug">
                     Barang ini perlu dibeli, tapi belum ada distributor yang memasoknya di daerah kamu. Barang
                     di bawah ini tidak ikut terkirim.
                   </p>
@@ -401,8 +401,8 @@ export default function Keranjang() {
                     className="flex flex-wrap items-center justify-between gap-2.5 rounded-md border border-line bg-surface-2 p-3"
                   >
                     <div className="min-w-0">
-                      <h3 className="text-[0.9375rem] font-semibold text-ink truncate">{b.nama}</h3>
-                      <p className="text-[0.8125rem] text-ink-3">
+                      <h3 className="text-kartu font-semibold text-ink truncate">{b.nama}</h3>
+                      <p className="text-isi text-ink-3">
                         Sisa {jumlahTampil(b, b.stok)} &middot; {b.kategori}
                       </p>
                     </div>
@@ -425,10 +425,10 @@ export default function Keranjang() {
             tombol "Buat N Pesanan" tidak muncul dua kali di satu layar. */}
         <aside className="hidden lg:block lg:col-span-5 xl:col-span-4 lg:sticky lg:top-24">
           <Kartu>
-            <h2 className="text-[0.75rem] font-semibold uppercase tracking-wide text-ink-3">
+            <h2 className="text-kecil font-semibold uppercase tracking-wide text-ink-3">
               Ringkasan belanja
             </h2>
-            <p className="mt-2 text-[1.625rem] font-extrabold text-ink leading-none tabular">
+            <p className="mt-2 text-angka font-extrabold text-ink leading-none tabular">
               {rupiah(totalSemua)}
             </p>
             <Pemisah className="my-3" />
@@ -437,7 +437,7 @@ export default function Keranjang() {
             {disimpan.length > 0 && (
               <BarisData label="Disimpan untuk nanti" nilai={`${disimpan.length} sub-keranjang`} />
             )}
-            <p className="mt-2 text-[0.8125rem] text-ink-2 leading-snug">{kalimatPemecahan}</p>
+            <p className="mt-2 text-isi text-ink-2 leading-snug">{kalimatPemecahan}</p>
             <div className="mt-4">{tombolUtama}</div>
           </Kartu>
         </aside>
@@ -449,7 +449,7 @@ export default function Keranjang() {
           <BilahAksi
             ringkasan={
               <div className="flex items-baseline justify-between gap-4">
-                <p className="text-[0.8125rem] text-ink-2 leading-snug">{kalimatPemecahan}</p>
+                <p className="text-isi text-ink-2 leading-snug">{kalimatPemecahan}</p>
                 <span className="text-[1rem] font-bold text-ink tabular shrink-0">{rupiah(totalSemua)}</span>
               </div>
             }

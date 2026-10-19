@@ -175,13 +175,13 @@ export default function Pengguna() {
                             {info.nama}
                           </Lencana>
                         </div>
-                        <p className="mt-0.5 text-[0.8125rem] text-ink-3 tabular">{formatHp(p.nomorHp)}</p>
-                        <p className="mt-1 text-[0.8125rem] text-ink-2 leading-snug">{info.ringkas}</p>
-                        <p className="mt-1 text-[0.75rem] text-ink-3">Punya akses sejak {p.sejak}</p>
+                        <p className="mt-0.5 text-isi text-ink-3 tabular">{formatHp(p.nomorHp)}</p>
+                        <p className="mt-1 text-isi text-ink-2 leading-snug">{info.ringkas}</p>
+                        <p className="mt-1 text-kecil text-ink-3">Punya akses sejak {p.sejak}</p>
 
                         <div className="mt-2.5 flex flex-wrap items-center gap-2">
                           {pemilik ? (
-                            <p className="text-[0.8125rem] text-ink-3">
+                            <p className="text-isi text-ink-3">
                               Peran pemilik tidak bisa diubah atau dihapus dari sini.
                             </p>
                           ) : (
@@ -257,13 +257,13 @@ export default function Pengguna() {
                       <Lencana nada={PERAN[kunci].nada} besar>
                         {PERAN[kunci].nama}
                       </Lencana>
-                      <span className="text-[0.8125rem] text-ink-3 truncate">
+                      <span className="text-isi text-ink-3 truncate">
                         {daftar.filter((p) => p.peran === kunci).length} orang
                       </span>
                     </div>
                     <ul className="mt-2.5 space-y-1.5">
                       {info.boleh.map((b) => (
-                        <li key={b} className="flex items-start gap-2 text-[0.8125rem] text-ink-2 leading-snug">
+                        <li key={b} className="flex items-start gap-2 text-isi text-ink-2 leading-snug">
                           <IkonCentang size={15} className="shrink-0 mt-0.5 text-aman" />
                           {b}
                         </li>
@@ -272,7 +272,7 @@ export default function Pengguna() {
                     <Pemisah className="my-2.5" />
                     <ul className="space-y-1.5">
                       {info.tidakBoleh.map((b) => (
-                        <li key={b} className="flex items-start gap-2 text-[0.8125rem] text-ink-3 leading-snug">
+                        <li key={b} className="flex items-start gap-2 text-isi text-ink-3 leading-snug">
                           <IkonSilang size={15} className="shrink-0 mt-0.5" />
                           {b}
                         </li>
@@ -283,7 +283,7 @@ export default function Pengguna() {
               })}
             </div>
 
-            <p className="mt-3 text-[0.8125rem] text-ink-3 leading-relaxed">
+            <p className="mt-3 text-isi text-ink-3 leading-relaxed">
               Peran <strong className="text-ink-2">Pemilik</strong> tidak ada di daftar ini karena ia melekat pada
               akun usaha dan tidak bisa diberikan ke orang lain. Pemilik bisa melakukan semua pekerjaan Manajer,
               ditambah menambah atau menghapus pengguna dan mengubah Data Usaha &amp; Legalitas.
@@ -320,7 +320,7 @@ export default function Pengguna() {
               judul={PERAN[kunci].nama}
               keterangan={PERAN[kunci].ringkas}
               anakan={
-                <span className="mt-2 block text-[0.8125rem] text-ink-3 leading-relaxed">
+                <span className="mt-2 block text-isi text-ink-3 leading-relaxed">
                   {HAK[kunci].tidakBoleh[0]}.
                 </span>
               }

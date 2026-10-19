@@ -44,14 +44,14 @@ export default function Hero() {
         <div className="max-w-[1100px] mx-auto px-4 sm:px-6 h-16 flex items-center gap-3">
           <span className="flex items-center gap-2.5 mr-auto min-w-0">
             <TandaMerek ukuran={36} />
-            <span className="font-extrabold text-ink text-[1.0625rem] tracking-tight truncate">
+            <span className="font-extrabold text-ink text-subjudul tracking-tight truncate">
               Turnify Flow
             </span>
           </span>
 
           <a
             href="#cara-kerja"
-            className="hidden sm:inline-flex items-center min-h-11 px-3 text-[0.9375rem] font-semibold text-ink-2 hover:text-ink"
+            className="hidden sm:inline-flex items-center min-h-11 px-3 text-kartu font-semibold text-ink-2 hover:text-ink"
           >
             Cara kerjanya
           </a>
@@ -69,7 +69,7 @@ export default function Hero() {
         {/* Hero                                                      */}
         {/* -------------------------------------------------------- */}
         <section className="max-w-[1100px] mx-auto px-4 sm:px-6 pt-10 pb-12 sm:pt-16 sm:pb-16">
-          <p className="text-[0.75rem] font-bold uppercase tracking-[0.12em] text-brand">
+          <p className="text-kecil font-bold uppercase tracking-[0.12em] text-brand">
             Pendamping aplikasi kasir &middot; UMKM &amp; Kafe
           </p>
 
@@ -78,7 +78,7 @@ export default function Hero() {
           </h1>
 
           {/* Paragraf pembuka wajib: penjelasan add-on. */}
-          <p className="mt-5 text-[1.0625rem] sm:text-[1.1875rem] text-ink-2 leading-relaxed max-w-[62ch]">
+          <p className="mt-5 text-subjudul sm:text-[1.1875rem] text-ink-2 leading-relaxed max-w-[62ch]">
             <strong className="text-ink font-bold">
               Turnify Flow adalah aplikasi tambahan, bukan aplikasi kasir baru.
             </strong>{' '}
@@ -97,7 +97,7 @@ export default function Hero() {
             </TombolTautan>
           </div>
 
-          <p className="mt-4 text-[0.8125rem] text-ink-3">
+          <p className="mt-4 text-isi text-ink-3">
             Belum punya akun? Pendaftarannya tiga langkah, dan bisa dilanjutkan nanti.
           </p>
         </section>
@@ -112,11 +112,11 @@ export default function Hero() {
           <div className="max-w-[1100px] mx-auto px-4 sm:px-6 py-12">
             <h2
               id="judul-tugas"
-              className="text-[1.375rem] sm:text-[1.625rem] font-extrabold text-ink tracking-tight"
+              className="text-[1.375rem] sm:text-angka font-extrabold text-ink tracking-tight"
             >
               Tiga pekerjaan yang tidak dikerjakan aplikasi kasir
             </h2>
-            <p className="mt-2 text-[0.9375rem] text-ink-2 leading-relaxed max-w-[62ch]">
+            <p className="mt-2 text-kartu text-ink-2 leading-relaxed max-w-[62ch]">
               Kasir mencatat apa yang terjual. Sisanya &mdash; berapa yang tersisa di gudang,
               kapan harus beli lagi, dan beli ke siapa &mdash; selama ini dihitung di kepala atau
               di buku tulis.
@@ -149,7 +149,7 @@ export default function Hero() {
           <div className="max-w-[1100px] mx-auto px-4 sm:px-6 py-12">
             <h2
               id="judul-cara"
-              className="text-[1.375rem] sm:text-[1.625rem] font-extrabold text-ink tracking-tight"
+              className="text-[1.375rem] sm:text-angka font-extrabold text-ink tracking-tight"
             >
               Cara kerjanya
             </h2>
@@ -190,7 +190,7 @@ export default function Hero() {
                 ].map((baris) => (
                   <li key={baris} className="flex items-start gap-2.5">
                     <IkonCentangLingkaran size={17} className="text-aman shrink-0 mt-0.5" />
-                    <span className="text-[0.9375rem] text-ink-2 leading-relaxed">{baris}</span>
+                    <span className="text-kartu text-ink-2 leading-relaxed">{baris}</span>
                   </li>
                 ))}
               </ul>
@@ -205,7 +205,7 @@ export default function Hero() {
           <div className="max-w-[1100px] mx-auto px-4 sm:px-6 py-12">
             <h2
               id="judul-ajakan"
-              className="text-[1.375rem] sm:text-[1.625rem] font-extrabold text-ink tracking-tight max-w-[24ch]"
+              className="text-[1.375rem] sm:text-angka font-extrabold text-ink tracking-tight max-w-[24ch]"
             >
               Kasirmu tetap yang sekarang. Gudangnya yang kami bereskan.
             </h2>
@@ -223,12 +223,12 @@ export default function Hero() {
 
       <footer className="border-t border-line">
         <div className="max-w-[1100px] mx-auto px-4 sm:px-6 py-8 flex flex-wrap items-center gap-x-5 gap-y-3">
-          <span className="text-[0.8125rem] text-ink-3">
+          <span className="text-isi text-ink-3">
             Turnify Flow &mdash; purwarupa antarmuka, data contoh.
           </span>
           <Link
             to="/akun/bantuan"
-            className="text-[0.8125rem] font-semibold text-brand hover:underline min-h-11 inline-flex items-center"
+            className="text-isi font-semibold text-brand hover:underline min-h-11 inline-flex items-center"
           >
             Bantuan &amp; tentang aplikasi
           </Link>
@@ -259,8 +259,8 @@ function KartuNilai({
       >
         {ikon}
       </span>
-      <h3 className="mt-3.5 text-[1.0625rem] font-bold text-ink leading-snug">{judul}</h3>
-      <p className="mt-1.5 text-[0.9375rem] text-ink-2 leading-relaxed">{isi}</p>
+      <h3 className="mt-3.5 text-subjudul font-bold text-ink leading-snug">{judul}</h3>
+      <p className="mt-1.5 text-kartu text-ink-2 leading-relaxed">{isi}</p>
     </div>
   )
 }
@@ -270,12 +270,12 @@ function Langkah({ nomor, judul, isi }: { nomor: number; judul: string; isi: str
     <li className="rounded-lg border border-line bg-surface p-5">
       <span
         aria-hidden="true"
-        className="size-9 rounded-full bg-brand text-ink-inverse grid place-items-center font-extrabold text-[0.9375rem] tabular"
+        className="size-9 rounded-full bg-brand text-ink-inverse grid place-items-center font-extrabold text-kartu tabular"
       >
         {nomor}
       </span>
       <h3 className="mt-3 text-[1rem] font-bold text-ink leading-snug">{judul}</h3>
-      <p className="mt-1.5 text-[0.875rem] text-ink-2 leading-relaxed">{isi}</p>
+      <p className="mt-1.5 text-isi text-ink-2 leading-relaxed">{isi}</p>
     </li>
   )
 }

@@ -98,7 +98,9 @@ function FormPromo({ promo, tutup }: { promo: Promo | null; tutup: () => void })
         : undefined,
     keterangan:
       keterangan.trim().length < 10
-        ? 'Keterangan belum diisi. Ceritakan singkat kenapa ada promo ini. Contoh: Stok panen bulan lalu masih banyak.'
+        ? keterangan.trim().length === 0
+          ? 'Keterangan belum diisi. Ceritakan singkat kenapa ada promo ini. Contoh: Stok panen bulan lalu masih banyak.'
+          : 'Keterangan terlalu pendek. Tulis paling sedikit 10 huruf. Contoh: Stok panen bulan lalu masih banyak.'
         : undefined,
     potongan:
       angkaPotongan != null && (!Number.isInteger(angkaPotongan) || angkaPotongan < 1 || angkaPotongan > 90)
@@ -160,14 +162,14 @@ function FormPromo({ promo, tutup }: { promo: Promo | null; tutup: () => void })
         {/* Pratinjau di atas: yang sedang disusun langsung terlihat persis
             seperti yang akan dilihat pemilik usaha. */}
         <div>
-          <p className="text-[0.8125rem] font-semibold text-ink-3 mb-2">Pratinjau di Beranda pemilik usaha</p>
+          <p className="text-isi font-semibold text-ink-3 mb-2">Pratinjau di Beranda pemilik usaha</p>
           <div className="max-w-[22rem]">
             <KartuPromo promo={draf} lebar pratinjau />
           </div>
         </div>
 
         <fieldset>
-          <legend className="text-[0.875rem] font-semibold text-ink-2 mb-2">Jenis promo</legend>
+          <legend className="text-isi font-semibold text-ink-2 mb-2">Jenis promo</legend>
           <div role="radiogroup" className="space-y-2">
             {URUTAN_JENIS.map((j) => (
               <PilihanKartu
@@ -213,8 +215,8 @@ function FormPromo({ promo, tutup }: { promo: Promo | null; tutup: () => void })
             tetap berlaku untuk semua anggota; tingkat menambah keuntungan lain. */}
         {jenis === 'membership' && (
           <fieldset>
-            <legend className="text-[0.875rem] font-semibold text-ink-2 mb-1">Keuntungan per tingkat</legend>
-            <p className="text-[0.8125rem] text-ink-3 leading-snug mb-2.5">
+            <legend className="text-isi font-semibold text-ink-2 mb-1">Keuntungan per tingkat</legend>
+            <p className="text-isi text-ink-3 leading-snug mb-2.5">
               Boleh dikosongkan. Tingkat tanpa keuntungan tidak ditampilkan ke pemilik usaha.
             </p>
             <div className="space-y-3">
@@ -244,7 +246,7 @@ function FormPromo({ promo, tutup }: { promo: Promo | null; tutup: () => void })
         )}
 
         <fieldset>
-          <legend className="text-[0.875rem] font-semibold text-ink-2 mb-1">
+          <legend className="text-isi font-semibold text-ink-2 mb-1">
             Barang yang ikut <span className="text-kritis" aria-hidden="true">*</span>
           </legend>
           <div className="space-y-0.5">
@@ -257,7 +259,7 @@ function FormPromo({ promo, tutup }: { promo: Promo | null; tutup: () => void })
               >
                 {p.nama}
                 {promoLain(p.id) && (
-                  <span className="block text-[0.75rem] font-normal text-ink-3">
+                  <span className="block text-kecil font-normal text-ink-3">
                     Sudah ikut &ldquo;{promoLain(p.id)!.judul}&rdquo;. Kalau dua-duanya memotong harga, yang dipakai
                     potongan terbesar.
                   </span>
@@ -266,7 +268,7 @@ function FormPromo({ promo, tutup }: { promo: Promo | null; tutup: () => void })
             ))}
           </div>
           {dicoba && galat.barang && (
-            <p className="mt-1.5 text-[0.8125rem] text-kritis font-medium leading-snug">{galat.barang}</p>
+            <p className="mt-1.5 text-isi text-kritis font-medium leading-snug">{galat.barang}</p>
           )}
         </fieldset>
 
@@ -321,8 +323,8 @@ export default function PromoDistributor() {
     <div className="pb-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-[1.25rem] font-extrabold text-ink tracking-tight">Promo</h1>
-          <p className="mt-1 text-[0.8125rem] text-ink-3 leading-snug max-w-[70ch]">
+          <h1 className="text-judul font-extrabold text-ink tracking-tight">Promo</h1>
+          <p className="mt-1 text-isi text-ink-3 leading-snug max-w-[70ch]">
             Promo yang kamu pasang tampil di Beranda pemilik usaha. Potongannya langsung masuk ke harga beli sekali;
             harga kontrak tidak ikut terpotong.
           </p>
@@ -352,7 +354,7 @@ export default function PromoDistributor() {
             {berjalan.map((p) => (
               <div key={p.id} className="flex flex-col gap-2">
                 <KartuPromo promo={p} lebar pratinjau />
-                <p className="text-[0.8125rem] text-ink-2 leading-snug">
+                <p className="text-isi text-ink-2 leading-snug">
                   <span className="text-ink-3">Barang ikut:</span> {namaBarang(p.penawaranIds)}
                 </p>
                 <div className="flex gap-2">
@@ -386,8 +388,8 @@ export default function PromoDistributor() {
               {berakhir.map((p) => (
                 <li key={p.id} className="py-2.5 flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-[0.9375rem] font-semibold text-ink leading-snug">{p.judul}</p>
-                    <p className="text-[0.8125rem] text-ink-3">
+                    <p className="text-kartu font-semibold text-ink leading-snug">{p.judul}</p>
+                    <p className="text-isi text-ink-3">
                       {LABEL_PROMO[p.jenis]}
                       {p.berakhir && ` · berakhir ${tanggalRingkas(p.berakhir)}`}
                     </p>

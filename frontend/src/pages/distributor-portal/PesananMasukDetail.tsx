@@ -107,14 +107,14 @@ export default function PesananMasukDetail() {
       <KepalaHalaman
         judul={p.nomor}
         keterangan={umkm?.nama ?? 'Pemilik usaha'}
-        kembaliKe="/distributor-portal/pesanan"
+        kembaliKe={`/distributor-portal/pesanan?tahap=${pesanan.status}`}
       />
 
       <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
         <Lencana nada={NADA_PESANAN_MASUK[p.status]} besar>
           {LABEL_PESANAN_MASUK[p.status]}
         </Lencana>
-        <span className="text-[0.8125rem] text-ink-3">Masuk {waktuLalu(p.dibuatPada)}</span>
+        <span className="text-isi text-ink-3">Masuk {waktuLalu(p.dibuatPada)}</span>
       </div>
 
       {p.status === 'ditolak' && (
@@ -128,7 +128,7 @@ export default function PesananMasukDetail() {
           {/* 1. Siapa yang memesan */}
           <section aria-labelledby="judul-pemesan">
             <Kartu>
-              <h2 id="judul-pemesan" className="text-[0.9375rem] font-bold text-ink mb-3">
+              <h2 id="judul-pemesan" className="text-kartu font-bold text-ink mb-3">
                 Pemesan
               </h2>
               {umkm ? (
@@ -136,12 +136,12 @@ export default function PesananMasukDetail() {
                   <div className="flex items-center gap-3">
                     <Avatar nama={umkm.nama} warna={umkm.warna} ukuran={44} />
                     <div className="min-w-0">
-                      <p className="text-[1.0625rem] font-bold text-ink leading-snug">{umkm.nama}</p>
-                      <p className="text-[0.8125rem] text-ink-3 leading-snug">{LABEL_JENIS_USAHA[umkm.jenisUsaha].judul}</p>
+                      <p className="text-subjudul font-bold text-ink leading-snug">{umkm.nama}</p>
+                      <p className="text-isi text-ink-3 leading-snug">{LABEL_JENIS_USAHA[umkm.jenisUsaha].judul}</p>
                     </div>
                   </div>
 
-                  <p className="mt-3 flex items-start gap-2 text-[0.875rem] text-ink-2 leading-relaxed">
+                  <p className="mt-3 flex items-start gap-2 text-isi text-ink-2 leading-relaxed">
                     <IkonLokasi size={16} className="shrink-0 mt-0.5 text-ink-3" />
                     <span>
                       {umkm.alamat}
@@ -151,20 +151,20 @@ export default function PesananMasukDetail() {
 
                   <a
                     href={`tel:${umkm.nomorHp}`}
-                    className="mt-1 inline-flex items-center gap-2 min-h-11 text-[0.875rem] font-semibold text-brand hover:underline"
+                    className="mt-1 inline-flex items-center gap-2 min-h-11 text-isi font-semibold text-brand hover:underline"
                   >
                     <IkonTelepon size={16} />
                     {nomorHp(umkm.nomorHp)}
                   </a>
                 </>
               ) : (
-                <p className="text-[0.875rem] text-ink-2">
+                <p className="text-isi text-ink-2">
                   Data pemilik usaha ini belum lengkap di catatan kami.
                 </p>
               )}
 
               {p.catatanDariUmkm && (
-                <p className="mt-3 text-[0.8125rem] text-ink-2 bg-sunken rounded-md px-3 py-2.5 leading-relaxed max-w-[68ch]">
+                <p className="mt-3 text-isi text-ink-2 bg-sunken rounded-md px-3 py-2.5 leading-relaxed max-w-[68ch]">
                   Catatan dari pemesan: &ldquo;{p.catatanDariUmkm}&rdquo;
                 </p>
               )}
@@ -174,7 +174,7 @@ export default function PesananMasukDetail() {
           {/* 2. Barang yang dipesan, lengkap dengan pintu ke peta sebaran */}
           <section aria-labelledby="judul-barang">
             <Kartu>
-              <h2 id="judul-barang" className="text-[0.9375rem] font-bold text-ink mb-3">
+              <h2 id="judul-barang" className="text-kartu font-bold text-ink mb-3">
                 Barang yang Dipesan
               </h2>
               <div className="space-y-3">
@@ -189,7 +189,7 @@ export default function PesananMasukDetail() {
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="text-[1rem] font-semibold text-ink leading-snug">{b.nama}</p>
-                        <p className="mt-0.5 text-[0.8125rem] text-ink-3 tabular">
+                        <p className="mt-0.5 text-isi text-ink-3 tabular">
                           {angka(b.jumlah)} {b.satuan} &times; {rupiah(b.hargaSatuan)}
                         </p>
                         {/* Tanpa tautan: /promo/:id milik portal pemilik usaha,
@@ -200,20 +200,20 @@ export default function PesananMasukDetail() {
                           <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
                             {promo && <LencanaPromo promo={promo} tanpaTautan />}
                             {dipotong && (
-                              <span className="text-[0.75rem] text-ink-3">
+                              <span className="text-kecil text-ink-3">
                                 harga normal <s className="tabular">{rupiah(b.hargaNormal!)}</s>
                               </span>
                             )}
                           </div>
                         )}
                       </div>
-                      <p className="text-[0.9375rem] font-bold text-ink tabular shrink-0">
+                      <p className="text-kartu font-bold text-ink tabular shrink-0">
                         {rupiah(b.jumlah * b.hargaSatuan)}
                       </p>
                     </div>
                     <Link
                       to={`/distributor-portal/sebaran/${b.penawaranId}`}
-                      className="inline-flex items-center gap-1.5 min-h-11 text-[0.8125rem] font-semibold text-brand hover:underline"
+                      className="inline-flex items-center gap-1.5 min-h-11 text-isi font-semibold text-brand hover:underline"
                     >
                       <IkonLokasi size={15} />
                       Lihat sebaran pemesan barang ini
@@ -226,25 +226,25 @@ export default function PesananMasukDetail() {
 
               <Pemisah className="my-3" />
               <div className="flex items-baseline justify-between gap-4 py-1">
-                <span className="text-[0.8125rem] text-ink-3">Subtotal barang</span>
-                <span className="text-[0.875rem] font-semibold text-ink tabular">
+                <span className="text-isi text-ink-3">Subtotal barang</span>
+                <span className="text-isi font-semibold text-ink tabular">
                   {rupiah(subtotal)}
                 </span>
               </div>
               <div className="flex items-baseline justify-between gap-4 py-1">
-                <span className="text-[0.8125rem] text-ink-3">Ongkos kirim</span>
-                <span className="text-[0.875rem] font-semibold text-ink tabular">
+                <span className="text-isi text-ink-3">Ongkos kirim</span>
+                <span className="text-isi font-semibold text-ink tabular">
                   {p.ongkosKirim > 0 ? rupiah(p.ongkosKirim) : 'Gratis'}
                 </span>
               </div>
               <Pemisah className="my-2" />
               <div className="flex items-baseline justify-between gap-4">
-                <span className="text-[0.875rem] font-bold text-ink">Total</span>
+                <span className="text-isi font-bold text-ink">Total</span>
                 <span className="text-[1.25rem] font-extrabold text-ink">{rupiah(total)}</span>
               </div>
               {/* Tidak ada tombol bayar dan tidak ada status pembayaran:
                   uangnya berpindah di luar aplikasi. */}
-              <p className="mt-2 text-[0.75rem] text-ink-3 leading-relaxed">
+              <p className="mt-2 text-kecil text-ink-3 leading-relaxed">
                 Pembayaran dicatat di luar aplikasi, jadi angka di atas hanya nilai pesanannya.
               </p>
             </Kartu>
@@ -255,7 +255,7 @@ export default function PesananMasukDetail() {
           {/* 3. Jejak: satu baris per kejadian, ikon + teks, bukan warna saja */}
           <section aria-labelledby="judul-jejak">
             <Kartu>
-              <h2 id="judul-jejak" className="text-[0.9375rem] font-bold text-ink mb-3">
+              <h2 id="judul-jejak" className="text-kartu font-bold text-ink mb-3">
                 Jejak Pesanan
               </h2>
               <ol>
@@ -278,10 +278,10 @@ export default function PesananMasukDetail() {
                       >
                         {Ikon && <Ikon size={9} strokeWidth={3.5} />}
                       </span>
-                      <p className="text-[0.875rem] font-semibold text-ink leading-snug">
+                      <p className="text-isi font-semibold text-ink leading-snug">
                         {LABEL_PESANAN_MASUK[j.status]}
                       </p>
-                      <p className="mt-0.5 text-[0.8125rem] text-ink-3 leading-snug max-w-[60ch]">
+                      <p className="mt-0.5 text-isi text-ink-3 leading-snug max-w-[60ch]">
                         {tanggalPendek(j.waktu)}, {jam(j.waktu)} &middot; {j.keterangan}
                       </p>
                     </li>
@@ -299,17 +299,17 @@ export default function PesananMasukDetail() {
           {p.status === 'selesai' && p.ulasan && (
             <section aria-labelledby="judul-ulasan">
               <Kartu>
-                <h2 id="judul-ulasan" className="text-[0.9375rem] font-bold text-ink mb-3">
+                <h2 id="judul-ulasan" className="text-kartu font-bold text-ink mb-3">
                   Penilaian dari Pemesan
                 </h2>
                 <Bintang nilai={p.ulasan.rating} />
                 {/* Cerita ulasan boleh dikosongkan pemesan; kutipan kosong tidak ditampilkan. */}
                 {p.ulasan.isi && (
-                  <p className="mt-2 text-[0.875rem] text-ink-2 leading-relaxed max-w-[60ch]">
+                  <p className="mt-2 text-isi text-ink-2 leading-relaxed max-w-[60ch]">
                     &ldquo;{p.ulasan.isi}&rdquo;
                   </p>
                 )}
-                <p className="mt-1 text-[0.75rem] text-ink-3">Ditulis {waktuLalu(p.ulasan.waktu)}</p>
+                <p className="mt-1 text-kecil text-ink-3">Ditulis {waktuLalu(p.ulasan.waktu)}</p>
 
                 <Pemisah className="my-3" />
                 <dl className="space-y-1.5">
@@ -331,7 +331,7 @@ export default function PesananMasukDetail() {
           )}
 
           {p.status === 'selesai' && !p.ulasan && (
-            <p className="flex items-start gap-2 text-[0.8125rem] text-ink-3 leading-relaxed">
+            <p className="flex items-start gap-2 text-isi text-ink-3 leading-relaxed">
               <IkonToko size={15} className="shrink-0 mt-0.5" />
               <span>Pemilik usaha ini belum menulis penilaian untuk pesanan tersebut.</span>
             </p>
@@ -470,7 +470,7 @@ function Bintang({ nilai }: { nilai: number }) {
           i <= nilai ? <IkonBintangIsi key={i} size={16} /> : <IkonBintang key={i} size={16} />,
         )}
       </span>
-      <span className="text-[0.9375rem] font-bold text-ink">{angka(nilai, 1)} dari 5</span>
+      <span className="text-kartu font-bold text-ink">{angka(nilai, 1)} dari 5</span>
     </p>
   )
 }

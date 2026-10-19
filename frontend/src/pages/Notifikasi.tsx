@@ -203,7 +203,7 @@ export default function Notifikasi() {
           <section key={g.kepala} aria-labelledby={`kepala-${g.kepala.replace(/\s+/g, '-')}`}>
             <h3
               id={`kepala-${g.kepala.replace(/\s+/g, '-')}`}
-              className="text-[0.75rem] font-bold uppercase tracking-wide text-ink-3 mb-2"
+              className="text-kecil font-bold uppercase tracking-wide text-ink-3 mb-2"
             >
               {g.kepala}
             </h3>
@@ -259,7 +259,7 @@ export default function Notifikasi() {
       <div className="mt-4 lg:grid lg:grid-cols-12 lg:gap-8 lg:items-start">
         <aside className="hidden lg:block lg:col-span-4 xl:col-span-3 lg:sticky lg:top-24 space-y-5">
           <nav aria-labelledby="judul-saring">
-            <h2 id="judul-saring" className="text-[0.75rem] font-bold uppercase tracking-wide text-ink-3 mb-2">
+            <h2 id="judul-saring" className="text-kecil font-bold uppercase tracking-wide text-ink-3 mb-2">
               Kategori
             </h2>
             <ul className="space-y-0.5">
@@ -271,7 +271,7 @@ export default function Notifikasi() {
                     aria-current={aktif === p.nilai ? 'true' : undefined}
                     className={cx(
                       'w-full flex items-center justify-between gap-3 h-11 px-3 rounded-md',
-                      'text-[0.875rem] font-semibold transition-colors duration-150',
+                      'text-isi font-semibold transition-colors duration-150',
                       aktif === p.nilai
                         ? 'bg-brand-soft text-brand-soft-ink'
                         : 'text-ink-2 hover:bg-sunken hover:text-ink',
@@ -288,11 +288,11 @@ export default function Notifikasi() {
             </ul>
           </nav>
 
-          <p className="text-[0.8125rem] text-ink-3 leading-relaxed max-w-[40ch]">{ANTI_BANJIR}</p>
+          <p className="text-isi text-ink-3 leading-relaxed max-w-[40ch]">{ANTI_BANJIR}</p>
         </aside>
 
         <div className="lg:col-span-8 xl:col-span-9">
-          <p className="lg:hidden mb-4 text-[0.8125rem] text-ink-3 leading-relaxed max-w-[68ch]">
+          <p className="lg:hidden mb-4 text-isi text-ink-3 leading-relaxed max-w-[68ch]">
             {ANTI_BANJIR}
           </p>
 
@@ -347,7 +347,7 @@ function BarisNotifikasi({
         <div className="flex items-start gap-2">
           <p
             className={cx(
-              'text-[0.9375rem] text-ink leading-snug truncate grow',
+              'text-kartu text-ink leading-snug truncate grow',
               notif.dibaca ? 'font-medium' : 'font-bold',
             )}
           >
@@ -361,14 +361,14 @@ function BarisNotifikasi({
           )}
         </div>
 
-        <p className="mt-0.5 text-[0.8125rem] text-ink-2 leading-snug truncate">{notif.detail}</p>
+        <p className="mt-0.5 text-isi text-ink-2 leading-snug truncate">{notif.detail}</p>
 
         <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
-          <span className="text-[0.75rem] text-ink-3" title={new Date(notif.waktu).toLocaleString('id-ID')}>
+          <span className="text-kecil text-ink-3" title={new Date(notif.waktu).toLocaleString('id-ID')}>
             {waktuLalu(notif.waktu)}
           </span>
-          <span className="text-[0.75rem] text-ink-3">&middot;</span>
-          <span className="text-[0.75rem] text-ink-3">{LABEL_KATEGORI_NOTIF[notif.kategori]}</span>
+          <span className="text-kecil text-ink-3">&middot;</span>
+          <span className="text-kecil text-ink-3">{LABEL_KATEGORI_NOTIF[notif.kategori]}</span>
           {pasif && (
             <Lencana nada="aman" ikon={<IkonPasokan size={13} />}>
               Sudah dipesan{dipesan.tiba ? ` · tiba ${waktuNanti(dipesan.tiba)}` : ''}
@@ -389,7 +389,7 @@ function BarisNotifikasi({
           {/* Label aksi ikut di baris keterangan, bukan di kolom kanan: di layar
               360px kolom kanan memakan judulnya sampai tinggal beberapa huruf. */}
           {aksiLabel && tautan ? (
-            <span className="ml-auto inline-flex items-center h-9 px-3 rounded-sm bg-sunken text-ink-2 text-[0.8125rem] font-semibold whitespace-nowrap">
+            <span className="ml-auto inline-flex items-center h-9 px-3 rounded-sm bg-sunken text-ink-2 text-isi font-semibold whitespace-nowrap">
               {aksiLabel}
               <IkonPanahKanan size={15} className="ml-1" />
             </span>

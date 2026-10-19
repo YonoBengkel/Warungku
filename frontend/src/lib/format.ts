@@ -160,7 +160,8 @@ export function waktuLalu(d: Date | string | number, sekarang = new Date()): str
   const t = toDate(d)
   const detik = Math.floor((sekarang.getTime() - t.getTime()) / 1000)
   if (detik < 45) return 'baru saja'
-  if (detik < 3600) return `${Math.floor(detik / 60)} menit lalu`
+  // Paling sedikit 1: detik ke-45 sampai ke-59 dulu terbaca "0 menit lalu".
+  if (detik < 3600) return `${Math.max(1, Math.floor(detik / 60))} menit lalu`
   const hari = selisihHari(sekarang, t)
   if (hari === 0) return `${Math.floor(detik / 3600)} jam lalu`
   if (hari === 1) return 'kemarin'

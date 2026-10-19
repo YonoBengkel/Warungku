@@ -220,12 +220,12 @@ export default function PesanCepat() {
           menggulir lima kali untuk pekerjaan yang muat dalam satu layar.
           Teks pengantarnya tetap ditahan ~68 karakter supaya enak dibaca. */}
       <div className="mx-auto w-full max-w-2xl lg:max-w-6xl">
-        <p className="mt-4 text-[0.875rem] text-ink-2 leading-relaxed max-w-[68ch]">
+        <p className="mt-4 text-isi text-ink-2 leading-relaxed max-w-[68ch]">
           Jumlah di bawah ini sudah diisi dari perkiraan pemakaianmu. Ubah sesukamu &mdash; angka saran tetap
           ditampilkan supaya kamu bisa membandingkan.
         </p>
 
-        <p className="mt-2 text-[0.8125rem] text-ink-3 leading-relaxed max-w-[68ch]">
+        <p className="mt-2 text-isi text-ink-3 leading-relaxed max-w-[68ch]">
           Kalau kamu tutup halaman ini, barang yang sudah masuk keranjang tetap tersimpan dan muncul lagi sebagai
           pita &ldquo;Belanja belum dikirim&rdquo; di Beranda.
         </p>
@@ -258,14 +258,14 @@ export default function PesanCepat() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <h2 className="text-[1rem] font-semibold text-ink leading-snug">{b.nama}</h2>
-                    <p className="mt-0.5 text-[0.8125rem] text-ink-2">
+                    <p className="mt-0.5 text-isi text-ink-2">
                       {status === 'habis'
                         ? `Stok tercatat ${jumlahTampil(b, 0)}`
                         : `Sisa ${jumlahTampil(b, b.stok)}`}
                       {habis && status !== 'habis' && <> &middot; diperkirakan habis {habis}</>}
                     </p>
                     {r.sedangDikirim > 0 && (
-                      <p className="mt-1 text-[0.8125rem] text-info-ink">
+                      <p className="mt-1 text-isi text-info-ink">
                         {angka(r.sedangDikirim)} {pw?.satuan ?? 'unit'} sedang dikirim dan sudah dikurangkan dari
                         saran ini.
                       </p>
@@ -309,14 +309,14 @@ export default function PesanCepat() {
                     {/* Baris pemasok. Varian A menerangkan kenapa pemasok ini yang dipilih. */}
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="text-[0.875rem] font-semibold text-ink flex items-center gap-1.5">
+                        <p className="text-isi font-semibold text-ink flex items-center gap-1.5">
                           <IkonToko size={15} className="text-ink-3 shrink-0" />
                           <span className="truncate">{distributor?.nama}</span>
                         </p>
                         {r.alasanPemasok && (
-                          <p className="mt-0.5 text-[0.8125rem] text-ink-3 leading-snug">{r.alasanPemasok}</p>
+                          <p className="mt-0.5 text-isi text-ink-3 leading-snug">{r.alasanPemasok}</p>
                         )}
-                        <p className="mt-1 text-[0.8125rem] text-ink-2 tabular">
+                        <p className="mt-1 text-isi text-ink-2 tabular">
                           {rupiah(hargaBerlaku(pw.id, kontrak?.id ?? null))} / {pw.satuan}
                           <span className="text-ink-3"> &middot; sisa stok {angka(pw.stokTersedia)} {pw.satuan}</span>
                         </p>
@@ -326,7 +326,7 @@ export default function PesanCepat() {
                           Kontrak
                         </Lencana>
                       ) : (
-                        <Lencana nada="netral">Beli Lepas</Lencana>
+                        <Lencana nada="netral">Beli Sekali</Lencana>
                       )}
                     </div>
 
@@ -334,7 +334,7 @@ export default function PesanCepat() {
                       <button
                         type="button"
                         onClick={() => setLembarPemasok(r.barangId)}
-                        className="mt-1.5 text-[0.8125rem] font-semibold text-brand hover:underline"
+                        className="mt-1.5 text-isi font-semibold text-brand hover:underline"
                       >
                         Ganti pemasok
                       </button>
@@ -364,7 +364,7 @@ export default function PesanCepat() {
                         tautan: di varian ini belum ada kontrak yang mengikat pilihan. */}
                     {r.varian === 'ada-pemasok' && kandidat.some((c) => c.id !== pw.id) && (
                       <div className="mt-3 space-y-2">
-                        <p className="text-[0.75rem] font-semibold text-ink-3 uppercase tracking-wide">
+                        <p className="text-kecil font-semibold text-ink-3 uppercase tracking-wide">
                           Pemasok lain untuk barang ini
                         </p>
                         {kandidat
@@ -378,8 +378,8 @@ export default function PesanCepat() {
                               <div key={c.id} className="rounded-md border border-line bg-surface-2 p-3">
                                 <div className="flex items-start justify-between gap-2">
                                   <div className="min-w-0">
-                                    <p className="text-[0.875rem] font-semibold text-ink truncate">{d?.nama}</p>
-                                    <p className="text-[0.8125rem] text-ink-2 tabular">
+                                    <p className="text-isi font-semibold text-ink truncate">{d?.nama}</p>
+                                    <p className="text-isi text-ink-2 tabular">
                                       {rupiah(hargaBerlaku(c.id))} / {c.satuan}
                                       <span className="text-ink-3">
                                         {' '}
@@ -427,13 +427,13 @@ export default function PesanCepat() {
                         <p className="text-[1.5rem] font-bold text-ink leading-none">
                           {angka(k.jumlah)} <span className="text-[1rem] font-semibold">{pw.satuan}</span>
                         </p>
-                        <p className="mt-1 text-[0.8125rem] text-ink-3">
+                        <p className="mt-1 text-isi text-ink-3">
                           = {jumlahTampil(b, k.jumlah * isi)}
                         </p>
                       </div>
                     </div>
 
-                    <p className="mt-1.5 text-[0.8125rem] text-ink-3">
+                    <p className="mt-1.5 text-isi text-ink-3">
                       Saran sistem {angka(r.jumlahSaran)} {pw.satuan}
                       {k.jumlah !== r.jumlahSaran && (
                         <>
@@ -470,7 +470,7 @@ export default function PesanCepat() {
                     )}
 
                     {k.ditunda && (
-                      <p className="mt-3 text-[0.8125rem] font-semibold text-info-ink">
+                      <p className="mt-3 text-isi font-semibold text-info-ink">
                         {k.tundaLabel
                           ? `Ditunda — kami ingatkan lagi ${k.tundaLabel.toLowerCase()}.`
                           : 'Ditunda.'}{' '}
@@ -499,7 +499,7 @@ export default function PesanCepat() {
         <div className="sticky bottom-[var(--nav-h)] lg:bottom-0 z-30">
           <BilahAksi
             ringkasan={
-              <p className="text-[0.8125rem] text-ink-2 leading-snug">
+              <p className="text-isi text-ink-2 leading-snug">
                 {terpilih.length === 0 ? (
                   'Belum ada barang yang dipilih. Centang minimal satu barang untuk melanjutkan.'
                 ) : (
@@ -577,7 +577,7 @@ export default function PesanCepat() {
                   />
                 )
               })}
-              <p className="pt-1 text-[0.8125rem] text-ink-3 leading-relaxed">
+              <p className="pt-1 text-isi text-ink-3 leading-relaxed">
                 Mengganti pemasok di sini hanya berlaku untuk pesanan ini. Kontrak yang sedang berjalan tidak ikut
                 berubah.
               </p>
@@ -656,7 +656,7 @@ export default function PesanCepat() {
                   keterangan={o.keterangan}
                 />
               ))}
-              <p className="pt-1 text-[0.8125rem] text-ink-3 leading-relaxed">
+              <p className="pt-1 text-isi text-ink-3 leading-relaxed">
                 Selama ditunda, barang ini tidak akan muncul lagi di pemberitahuan. Peringatan stok tetap terlihat di
                 daftar Stok.
               </p>

@@ -146,8 +146,8 @@ export default function LupaSandi() {
             kirimKode()
           }}
         >
-          <h1 className="text-[1.25rem] font-extrabold text-ink tracking-tight">Lupa Kata Sandi</h1>
-          <p className="mt-1 text-[0.875rem] text-ink-3 leading-relaxed">
+          <h1 className="text-judul font-extrabold text-ink tracking-tight">Lupa Kata Sandi</h1>
+          <p className="mt-1 text-isi text-ink-3 leading-relaxed">
             Tulis nomor HP yang kamu pakai mendaftar. Kami kirim kode 6 angka lewat SMS ke nomor itu.
           </p>
 
@@ -171,7 +171,7 @@ export default function LupaSandi() {
             </Tombol>
           </div>
 
-          <p className="mt-5 text-center text-[0.875rem] text-ink-2">
+          <p className="mt-5 text-center text-isi text-ink-2">
             Ingat kata sandinya?{' '}
             <Link
               to="/masuk"
@@ -197,14 +197,14 @@ export default function LupaSandi() {
               setTahap('nomor')
               setGalatKode(undefined)
             }}
-            className="inline-flex items-center gap-1.5 h-11 -ml-1.5 pr-2.5 pl-1.5 rounded-md text-[0.8125rem] font-semibold text-ink-2 hover:text-ink hover:bg-sunken transition-colors"
+            className="inline-flex items-center gap-1.5 h-11 -ml-1.5 pr-2.5 pl-1.5 rounded-md text-isi font-semibold text-ink-2 hover:text-ink hover:bg-sunken transition-colors"
           >
             <IkonKembali size={18} />
             Ubah nomor
           </button>
 
-          <h1 className="mt-2 text-[1.25rem] font-extrabold text-ink tracking-tight">Masukkan Kode</h1>
-          <p className="mt-1 text-[0.875rem] text-ink-3 leading-relaxed">
+          <h1 className="mt-2 text-judul font-extrabold text-ink tracking-tight">Masukkan Kode</h1>
+          <p className="mt-1 text-isi text-ink-3 leading-relaxed">
             Kode 6 angka sudah dikirim lewat SMS ke{' '}
             <span className="font-semibold text-ink-2">{nomorHp(hp)}</span>. Biasanya sampai dalam satu menit.
           </p>
@@ -242,14 +242,14 @@ export default function LupaSandi() {
           </div>
 
           {galatKode && (
-            <p id="galat-kode" className="mt-2 text-[0.8125rem] text-kritis font-medium leading-snug">
+            <p id="galat-kode" className="mt-2 text-isi text-kritis font-medium leading-snug">
               {galatKode}
             </p>
           )}
 
           <div className="mt-4 min-h-11 flex items-center">
             {sisaDetik > 0 ? (
-              <p className="text-[0.8125rem] text-ink-3">
+              <p className="text-isi text-ink-3">
                 Belum masuk? Kirim ulang bisa dalam{' '}
                 <span className="font-bold text-ink-2 tabular">{sisaDetik} detik</span>.
               </p>
@@ -257,7 +257,7 @@ export default function LupaSandi() {
               <button
                 type="button"
                 onClick={kirimUlang}
-                className="inline-flex items-center h-11 -ml-1 px-1 text-[0.875rem] font-bold text-brand hover:underline underline-offset-2"
+                className="inline-flex items-center h-11 -ml-1 px-1 text-isi font-bold text-brand hover:underline underline-offset-2"
               >
                 Kirim ulang kode
               </button>
@@ -268,7 +268,7 @@ export default function LupaSandi() {
             {memuat ? 'Sedang memeriksa kode' : 'Lanjutkan'}
           </Tombol>
 
-          <p className="mt-4 text-[0.8125rem] text-ink-3 leading-relaxed">
+          <p className="mt-4 text-isi text-ink-3 leading-relaxed">
             Nomor sudah tidak aktif? Hubungi kami lewat menu Bantuan, sertakan nama usaha dan alamatnya.
           </p>
         </form>
@@ -282,8 +282,8 @@ export default function LupaSandi() {
             simpanSandi()
           }}
         >
-          <h1 className="text-[1.25rem] font-extrabold text-ink tracking-tight">Buat Kata Sandi Baru</h1>
-          <p className="mt-1 text-[0.875rem] text-ink-3 leading-relaxed">
+          <h1 className="text-judul font-extrabold text-ink tracking-tight">Buat Kata Sandi Baru</h1>
+          <p className="mt-1 text-isi text-ink-3 leading-relaxed">
             Kodenya cocok. Sekarang buat kata sandi baru untuk nomor{' '}
             <span className="font-semibold text-ink-2">{nomorHp(hp)}</span>.
           </p>
@@ -308,7 +308,7 @@ export default function LupaSandi() {
             </Tombol>
           </div>
 
-          <p className="mt-4 text-[0.8125rem] text-ink-3 leading-relaxed">
+          <p className="mt-4 text-isi text-ink-3 leading-relaxed">
             Setelah tersimpan, kamu diantar ke layar Masuk dan bisa langsung memakai kata sandi yang baru.
           </p>
         </form>
@@ -345,7 +345,7 @@ function LayarAuth({ children }: { children: ReactNode }) {
 /* Warna bingkai tidak ditulis di sini: `kelasBingkai` memilih abu-abu atau
    merah, supaya keduanya tidak terpasang bersamaan. */
 const KELAS_SANDI =
-  'w-full h-12 pl-3.5 pr-14 rounded-md bg-surface text-ink text-[0.9375rem] ' +
+  'w-full h-12 pl-3.5 pr-14 rounded-md bg-surface text-ink text-kartu ' +
   'border placeholder:text-ink-3/70 ' +
   'transition-[border-color,box-shadow] duration-150 ' +
   'focus:outline-none focus:ring-4'
@@ -371,7 +371,7 @@ function KolomSandi({
 
   return (
     <div className="w-full">
-      <label htmlFor={id} className="block text-[0.8125rem] font-semibold text-ink-2 mb-1.5">
+      <label htmlFor={id} className="block text-isi font-semibold text-ink-2 mb-1.5">
         {label}
         <span className="text-kritis ml-0.5" aria-hidden="true">
           *
@@ -400,11 +400,11 @@ function KolomSandi({
         </button>
       </div>
       {galat ? (
-        <p id={`${id}-galat`} className="mt-1.5 text-[0.8125rem] text-kritis font-medium leading-snug">
+        <p id={`${id}-galat`} className="mt-1.5 text-isi text-kritis font-medium leading-snug">
           {galat}
         </p>
       ) : bantuan ? (
-        <p id={`${id}-bantuan`} className="mt-1.5 text-[0.8125rem] text-ink-3 leading-snug">
+        <p id={`${id}-bantuan`} className="mt-1.5 text-isi text-ink-3 leading-snug">
           {bantuan}
         </p>
       ) : null}

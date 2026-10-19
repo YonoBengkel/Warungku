@@ -32,14 +32,14 @@ export function KartuStruk({ transaksi, ringkas }: { transaksi: Transaksi; ringk
     <div className="rounded-md border border-line bg-surface-2 p-3.5">
       {/* Kepala struk: nomor, waktu, dan siapa yang jaga saat itu. */}
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
-        <p className="min-w-0 break-words font-mono text-[0.8125rem] font-bold text-ink leading-snug">
+        <p className="min-w-0 break-words font-mono text-isi font-bold text-ink leading-snug">
           {transaksi.nomorStruk}
         </p>
-        <p className="shrink-0 text-[0.75rem] text-ink-3">
+        <p className="shrink-0 text-kecil text-ink-3">
           {tanggalRingkas(transaksi.waktu)} &middot; {jam(transaksi.waktu)}
         </p>
       </div>
-      <p className="mt-0.5 text-[0.75rem] text-ink-3">Kasir {transaksi.kasir}</p>
+      <p className="mt-0.5 text-kecil text-ink-3">Kasir {transaksi.kasir}</p>
 
       {/* Pemisah putus-putus memakai token garis, bukan hex. */}
       <div className="my-2.5 border-t border-dashed border-line-strong" aria-hidden="true" />
@@ -49,8 +49,8 @@ export function KartuStruk({ transaksi, ringkas }: { transaksi: Transaksi; ringk
       <ul className="space-y-1.5">
         {tampil.map((b, i) => (
           <li key={`${b.nama}-${i}`} className="flex items-baseline justify-between gap-3">
-            <span className="min-w-0 break-words text-[0.8125rem] text-ink-2 leading-snug">{b.nama}</span>
-            <span className="shrink-0 text-[0.8125rem] font-semibold text-ink tabular">
+            <span className="min-w-0 break-words text-isi text-ink-2 leading-snug">{b.nama}</span>
+            <span className="shrink-0 text-isi font-semibold text-ink tabular">
               {jumlahSatuan(b.jumlah, b.satuan)}
             </span>
           </li>
@@ -58,14 +58,14 @@ export function KartuStruk({ transaksi, ringkas }: { transaksi: Transaksi; ringk
       </ul>
 
       {sisaBaris > 0 && (
-        <p className="mt-1.5 text-[0.75rem] text-ink-3">dan {angka(sisaBaris)} item lainnya</p>
+        <p className="mt-1.5 text-kecil text-ink-3">dan {angka(sisaBaris)} item lainnya</p>
       )}
 
       <div className="my-2.5 border-t border-dashed border-line-strong" aria-hidden="true" />
 
       <div className="flex items-baseline justify-between gap-3">
-        <span className="text-[0.8125rem] font-semibold text-ink-2">Total item</span>
-        <span className="shrink-0 text-[0.9375rem] font-extrabold text-ink tabular">{angka(totalItem)}</span>
+        <span className="text-isi font-semibold text-ink-2">Total item</span>
+        <span className="shrink-0 text-kartu font-extrabold text-ink tabular">{angka(totalItem)}</span>
       </div>
     </div>
   )
