@@ -155,6 +155,33 @@ class SaranDistributor(BaseModel):
     kedaluwarsa: bool
 
 
+class RingkasanSaranDistributor(BaseModel):
+    """
+    Saran Mesin 2 dirangkum per distributor, untuk halaman Distributor.
+
+    Mesin 2 hanya menilai pasangan (barang, distributor) untuk barang yang
+    perlu dibeli, jadi `jumlah_barang` bisa jauh lebih kecil daripada isi
+    gudang. Distributor yang tidak muncul di sini belum dinilai, bukan dinilai
+    buruk.
+    """
+
+    distributor_id: int
+    nama_distributor: str
+    #: Barang yang dinilai Mesin 2 untuk distributor ini.
+    jumlah_barang: int
+    #: Barang yang menempatkan distributor ini di urutan pertama, beserta namanya.
+    jumlah_teratas: int
+    barang_teratas: list[str]
+    #: Rata-rata skor dan peluang pesanan berjalan mulus atas `jumlah_barang`.
+    skor_rata: float
+    p_sukses_rata: float
+    #: Barang yang segmen fuzzy-nya "sangat-layak".
+    jumlah_sangat_layak: int
+    model_nama: str
+    dijalankan_pada: datetime
+    kedaluwarsa: bool
+
+
 class PesananMasuk(BaseModel):
     """Satu pesanan dilihat dari sisi distributor."""
 

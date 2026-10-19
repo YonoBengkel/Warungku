@@ -33,6 +33,7 @@ from .skema import (
     PemakaianBulanan,
     PeriodePemakaian,
     PerkiraanRingkas,
+    RingkasanSaranDistributor,
     RiwayatHarian,
     SaranDistributor,
     StrukMasuk,
@@ -323,6 +324,48 @@ def saran_distributor(barang_id: int = Path(ge=1), usaha_id: int = Depends(usaha
             ).bindparams(u=usaha_id, b=barang_id)
         ).all()
         return [SaranDistributor(**dict(r._mapping)) for r in baris]
+
+
+@rute.get("/saran-distributor", response_model=list[RingkasanSaranDistributor])
+def ringkasan_saran_distributor(usaha_id: int = Depends(usaha_saya)):
+    """
+    Saran Mesin 2 untuk semua barang usaha ini, dirangkum per distributor.
+
+    Skor tiap pasangan (barang, distributor) dirata-rata per distributor, dan
+    dihitung berapa barang yang menempatkannya di urutan pertama. Urutannya
+    mengikuti rata-rata skor. Seperti `/barang/{id}/saran`, yang dibaca hanya
+    tabel; layanan model tidak dipanggil, dan saran yang sudah lewat masa
+    berlakunya tetap dikirim dengan tanda `kedaluwarsa`.
+    """
+    with Session(mesin()) as sesi:
+        _usaha_atau_404(sesi, usaha_id)
+        baris = sesi.exec(
+            text(
+                """
+                WITH r AS (
+                    SELECT r.*, rank() OVER (PARTITION BY r.barang_id ORDER BY r.skor DESC) AS urut
+                      FROM rekomendasi_skor r
+                     WHERE r.usaha_id = :u AND r.barang_id IS NOT NULL
+                )
+                SELECT r.distributor_id, d.nama AS nama_distributor,
+                       count(*) AS jumlah_barang,
+                       count(*) FILTER (WHERE r.urut = 1) AS jumlah_teratas,
+                       coalesce(array_agg(b.nama ORDER BY b.nama) FILTER (WHERE r.urut = 1), '{}') AS barang_teratas,
+                       avg(r.skor) AS skor_rata,
+                       avg(r.p_sukses) AS p_sukses_rata,
+                       count(*) FILTER (WHERE r.segmen = 'sangat-layak') AS jumlah_sangat_layak,
+                       min(r.model_nama) AS model_nama,
+                       max(r.dijalankan_pada) AS dijalankan_pada,
+                       bool_and(r.kedaluwarsa_pada < now()) AS kedaluwarsa
+                  FROM r
+                  JOIN distributor d ON d.id = r.distributor_id
+                  JOIN barang b ON b.id = r.barang_id
+                 GROUP BY r.distributor_id, d.nama
+                 ORDER BY skor_rata DESC, jumlah_barang DESC, d.nama
+                """
+            ).bindparams(u=usaha_id)
+        ).all()
+        return [RingkasanSaranDistributor(**dict(r._mapping)) for r in baris]
 
 
 @rute.post("/transaksi", response_model=HasilStruk)

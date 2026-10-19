@@ -187,3 +187,41 @@ export async function ambilUlasan(sesi: SesiServer, distributorId: string, batas
     },
   }))
 }
+
+/** Saran Mesin 2 dirangkum per distributor, atas semua barang yang perlu dibeli. */
+export interface RingkasanSaranServer {
+  distributorId: string
+  namaDistributor: string
+  jumlahBarang: number
+  /** Nama barang yang menempatkan distributor ini di urutan pertama. */
+  barangTeratas: string[]
+  skorRata: number
+  peluangSuksesRata: number
+  dijalankanPada: string
+  kedaluwarsa: boolean
+}
+
+export async function ambilRingkasanSaran(sesi: SesiServer): Promise<RingkasanSaranServer[]> {
+  const isi = await minta<
+    Array<{
+      distributor_id: number
+      nama_distributor: string
+      jumlah_barang: number
+      barang_teratas: string[]
+      skor_rata: number
+      p_sukses_rata: number
+      dijalankan_pada: string
+      kedaluwarsa: boolean
+    }>
+  >(`/usaha/${sesi.usahaId}/saran-distributor`, { token: sesi.token })
+  return isi.map((r) => ({
+    distributorId: keIdDistributor(r.distributor_id),
+    namaDistributor: r.nama_distributor,
+    jumlahBarang: r.jumlah_barang,
+    barangTeratas: r.barang_teratas,
+    skorRata: r.skor_rata,
+    peluangSuksesRata: r.p_sukses_rata,
+    dijalankanPada: r.dijalankan_pada,
+    kedaluwarsa: r.kedaluwarsa,
+  }))
+}

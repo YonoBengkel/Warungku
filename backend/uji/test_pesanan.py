@@ -29,7 +29,16 @@ from api.otentikasi import acak_kata_sandi
 from api.utama import app
 from warungku.basis_data import mesin
 from warungku.enum import CaraHitungStok, JenisUsaha, PeranPengguna, StatusVerifikasi, SumberBatasAman
-from warungku.model import Barang, Distributor, Keanggotaan, Penawaran, Pengguna, ProdukMaster, Usaha
+from warungku.model import (
+    Barang,
+    Distributor,
+    Keanggotaan,
+    Penawaran,
+    Pengguna,
+    ProdukMaster,
+    RekomendasiSkor,
+    Usaha,
+)
 
 SANDI = "ujipesanan123"
 
@@ -397,3 +406,54 @@ def test_promo_memotong_harga_beli_sekali_sampai_diakhiri(dunia):
     [p] = klien.post(f"/usaha/{w['usaha']}/pesanan", headers=w["kepala_umkm"],
                      json={"baris": [{"penawaran_id": w["penawaran"], "jumlah": "1"}]}).json()
     assert p["baris"][0]["harga_satuan"] == 150000 and p["baris"][0]["promo_id"] is None
+
+
+def test_ringkasan_saran_mesin2_per_distributor(dunia):
+    """Rata-rata skor per distributor, urutan, dan barang yang menempatkannya di urutan pertama."""
+    w, klien = dunia, TestClient(app)
+    sekarang = datetime.now(timezone.utc)
+    with Session(mesin()) as sesi:
+        dunia_b = sesi.get(Barang, w["barang"])
+        dunia_p = sesi.get(Penawaran, w["penawaran"])
+        dist2 = Distributor(nama="Distributor Uji Dua", kota="Sleman", kategori=["Kopi & Teh"],
+                            area_kirim=["Sleman"], sejak=date(2024, 1, 1))
+        sesi.add(dist2)
+        sesi.flush()
+        pen2 = Penawaran(**dunia_p.model_dump(exclude={"id", "distributor_id"}), distributor_id=dist2.id)
+        brg2 = Barang(**dunia_b.model_dump(exclude={"id", "nama", "kode_barang"}), nama="Biji Kopi Uji Dua",
+                      kode_barang="UJIP02")
+        sesi.add(pen2)
+        sesi.add(brg2)
+        sesi.flush()
+        d2, p2, b2 = dist2.id, pen2.id, brg2.id
+        # Barang pertama: distributor dunia unggul. Barang kedua: distributor dua unggul.
+        for barang, dist, pen, skor, segmen in (
+            (w["barang"], w["distributor"], w["penawaran"], 0.9, "sangat-layak"),
+            (w["barang"], d2, p2, 0.5, "layak"),
+            (b2, d2, p2, 0.8, "sangat-layak"),
+            (b2, w["distributor"], w["penawaran"], 0.3, "kurang-layak"),
+        ):
+            sesi.add(RekomendasiSkor(
+                usaha_id=w["usaha"], barang_id=barang, penawaran_id=pen, distributor_id=dist, p_sukses=skor,
+                skor=skor, segmen=segmen, model_nama="beta+thompson+fuzzy", model_versi="uji",
+                dijalankan_pada=sekarang, kedaluwarsa_pada=sekarang.replace(year=sekarang.year + 1),
+            ))
+        sesi.commit()
+    try:
+        r = klien.get(f"/usaha/{w['usaha']}/saran-distributor", headers=w["kepala_umkm"])
+        assert r.status_code == 200, r.text
+        dua, satu = r.json()
+        assert dua["distributor_id"] == d2 and satu["distributor_id"] == w["distributor"]
+        assert round(dua["skor_rata"], 3) == 0.65 and round(satu["skor_rata"], 3) == 0.6
+        assert dua["jumlah_barang"] == 2 and dua["jumlah_teratas"] == 1 and dua["barang_teratas"] == ["Biji Kopi Uji Dua"]
+        assert satu["barang_teratas"] == ["Biji Kopi Uji"] and satu["jumlah_sangat_layak"] == 1
+        assert dua["kedaluwarsa"] is False
+        # Hanya pemilik usaha ini yang boleh membacanya.
+        r = klien.get(f"/usaha/{w['usaha']}/saran-distributor", headers=w["kepala_dist"])
+        assert r.status_code in (401, 403)
+    finally:
+        with mesin().begin() as kon:
+            kon.execute(text("DELETE FROM rekomendasi_skor WHERE usaha_id = :u"), {"u": w["usaha"]})
+            kon.execute(text("DELETE FROM barang WHERE id = :b"), {"b": b2})
+            kon.execute(text("DELETE FROM penawaran WHERE id = :p"), {"p": p2})
+            kon.execute(text("DELETE FROM distributor WHERE id = :d"), {"d": d2})

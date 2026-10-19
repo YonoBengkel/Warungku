@@ -376,8 +376,10 @@ jadi Mesin 1 meramal kebutuhan bahan baku UMKM produsen tanpa perlakuan khusus.
 | **3** | Pelanggan mana yang andal, mana yang mulai menjauh? (untuk distributor) | K-Prototypes atas RFM (frequency dan monetary di-log), jenis usaha, kategori | Gower + aglomeratif, Gower + HDBSCAN | Stabilitas segmen 0,913 (ARI subsampel 80%) |
 
 Nama metode setiap mesin juga tertulis di aplikasi: di halaman Prediksi (Mesin 1),
-kartu saran distributor (Mesin 2), dan halaman Pelanggan portal distributor
-(Mesin 3).
+kartu saran distributor dan bagian "Rekomendasi untuk usahamu" di halaman
+Distributor (Mesin 2), dan halaman Pelanggan portal distributor (Mesin 3). Di
+halaman Distributor, skor Mesin 2 tiap barang yang perlu dibeli dirata-rata per
+distributor; distributor yang belum dinilai menyusul dengan urutan ulasan dan harga.
 
 Semua angka di atas berasal dari berkas di [`ml/hasil/`](ml/hasil/), misalnya
 [`hasil_eksperimen_mesin1_lgbm.json`](ml/hasil/hasil_eksperimen_mesin1_lgbm.json)
@@ -442,6 +444,7 @@ turnify-flow/
 | GET | `/usaha/{usaha_id}/barang/{barang_id}/perkiraan` | Perkiraan terbaru Mesin 1 (p10, p50, p90 per hari), termasuk uji balik 14 hari (`uji_balik`) |
 | GET | `/usaha/{usaha_id}/barang/{barang_id}/riwayat` | Pemakaian harian terakhir; hari stok habis ditandai |
 | GET | `/usaha/{usaha_id}/barang/{barang_id}/saran` | Saran distributor terbaru Mesin 2, dibaca dari tabel |
+| GET | `/usaha/{usaha_id}/saran-distributor` | Saran Mesin 2 dirangkum per distributor: rata-rata skor, peluang lancar, barang yang menempatkannya di urutan pertama |
 | GET | `/usaha/{usaha_id}/pemakaian-bulanan` | Pemakaian per 30 hari beserta uji balik Mesin 1 tiap periode (`uji_balik`), dan perkiraan 30 hari ke depan, semua barang |
 | POST | `/usaha/{usaha_id}/transaksi` | Terima satu nota kasir; aman dikirim ulang |
 | GET | `/usaha/{usaha_id}/produksi/ringkasan` | UMKM produsen: barang jadi, resep, jumlah yang bisa dibuat, perkiraan pesanan 7 hari, saran masak, pembeli, omset bulanan |
@@ -511,7 +514,9 @@ halaman Stok, backend `0.4.0` belum menggambar garis perkiraan masa lalu di graf
 bulanan, dan backend `0.3.0` ke bawah serta basis data `0.1.0` belum memuat
 perubahan 16 Oktober 2026 (Mesin 1 LightGBM, UMKM produsen, gambar produk).
 Backend `0.6.0` membutuhkan basis data `0.2.0`, karena tabel produksinya baru ada di
-sana. Saat pertama menyala di atas basis data `0.2.0`, layanan model menjalankan
+sana. Backend `0.6.0` belum punya `/saran-distributor`, jadi di jalur A bagian
+"Rekomendasi untuk usahamu" masih diurutkan dari ulasan dan harga, tanpa keterangan
+Mesin 2. Saat pertama menyala di atas basis data `0.2.0`, layanan model menjalankan
 Mesin 1 sekali (sekitar 4 menit) untuk mengisi uji balik bulanan.
 
 | Image | Tag yang dipakai | Isi | Halaman Docker Hub |

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import {
   Avatar,
@@ -14,6 +14,7 @@ import { Lembar } from '@/components/ui/lembar'
 import { Chip, TabSegmen } from '@/components/ui/navigasi'
 import { KeadaanKosong } from '@/components/ui/umpanBalik'
 import { HargaBeli, LencanaPromo } from '@/components/domain/KartuPromo'
+import { KeteranganMetode, METODE_MESIN2 } from '@/components/domain/KeteranganMetode'
 import {
   IkonBintangIsi,
   IkonCari,
@@ -24,10 +25,11 @@ import {
   IkonSilang,
   IkonToko,
 } from '@/icons'
-import { angka, cx, waktuLalu } from '@/lib/format'
+import { angka, cx, persen, waktuLalu } from '@/lib/format'
 import { isiKemasan, kalimatIsiKemasan } from '@/lib/satuan'
 import { JUDUL, LABEL_JENIS_USAHA } from '@/lib/label'
 import type { Barang, Distributor, PaketKontrak, Penawaran } from '@/lib/types'
+import { ambilRingkasanSaran, type RingkasanSaranServer } from '@/lib/apiKatalog'
 import { distributorById, paketUntukPenawaran } from '@/data/dummy'
 import { rekomendasiDistributor, type AspekUlasan, type DistributorDirekomendasikan } from '@/data/rekomendasi'
 import { useAplikasi, usePenentuHarga } from '@/store/aplikasi'
@@ -232,14 +234,23 @@ const LABEL_ASPEK: Record<AspekUlasan, string> = {
   kondisiBarang: 'kondisi barang',
 }
 
+/** "A", "A dan B", atau "A, B, dan 3 lainnya". */
+function daftarNama(nama: string[]): string {
+  if (nama.length <= 2) return nama.join(' dan ')
+  return `${nama.slice(0, 2).join(', ')}, dan ${nama.length - 2} lainnya`
+}
+
 function KartuRekomendasi({
   rekomendasi,
   urutan,
   mitra,
+  mesin2,
 }: {
   rekomendasi: DistributorDirekomendasikan
   urutan: number
   mitra: boolean
+  /** Ringkasan saran Mesin 2 untuk distributor ini; kosong di data contoh atau bila belum dinilai. */
+  mesin2?: RingkasanSaranServer
 }) {
   const d = rekomendasi.distributor
   const belumDiulas = d.baru || d.rating == null
@@ -249,8 +260,11 @@ function KartuRekomendasi({
   /* Satu alasan per kartu, yang paling membedakan distributor ini dari yang
      lain. Daftar alasan yang panjang cuma memindahkan kerja memilih ke
      pemilik usaha lagi. */
-  const alasan =
-    rekomendasi.termurah.length > 0
+  const alasan = mesin2
+    ? mesin2.barangTeratas.length > 0
+      ? `Pilihan pertama Mesin 2 untuk ${daftarNama(mesin2.barangTeratas)}`
+      : `Dinilai Mesin 2 untuk ${mesin2.jumlahBarang} barang yang perlu kamu beli`
+    : rekomendasi.termurah.length > 0
       ? `Harga termurah: ${rekomendasi.termurah.join(', ')}`
       : belumDiulas
         ? 'Dinilai setara rata-rata distributor lain sampai ada ulasan'
@@ -286,6 +300,11 @@ function KartuRekomendasi({
           )}
         </div>
         <p className="mt-1.5 text-[0.8125rem] text-ink-2 leading-snug">{alasan}</p>
+        {mesin2 && (
+          <p className="mt-0.5 text-[0.8125rem] text-ink-3 leading-snug">
+            Peluang pesanan lancar {persen(mesin2.peluangSuksesRata * 100)}
+          </p>
+        )}
         {mitra && (
           <div className="mt-2">
             <Lencana nada="merek" ikon={<IkonKontrak size={13} />}>
@@ -316,6 +335,32 @@ export default function Belanja() {
   const katalog = useAplikasi((s) => s.katalog)
   const semuaDistributor = useAplikasi((s) => s.distributor)
   const katalogAktif = useMemo(() => katalog.filter((p) => p.aktif !== false), [katalog])
+  const sesiServer = useAplikasi((s) => s.sesiServer)
+
+  /* Saran Mesin 2 dirangkum per distributor (data server saja). Disimpan
+     bersama id usahanya supaya sesudah pindah akun ringkasan akun lama tidak
+     sempat dipakai. */
+  const [ringkasanMesin2, setRingkasanMesin2] = useState<{ usahaId: number; isi: RingkasanSaranServer[] } | null>(
+    null,
+  )
+  useEffect(() => {
+    if (!sesiServer) return
+    let batal = false
+    ambilRingkasanSaran(sesiServer)
+      .then((isi) => {
+        if (!batal) setRingkasanMesin2({ usahaId: sesiServer.usahaId, isi })
+      })
+      .catch(() => {
+        /* Tanpa ringkasan Mesin 2, urutan dari ulasan dan harga tetap dipakai. */
+      })
+    return () => {
+      batal = true
+    }
+  }, [sesiServer])
+  const saranMesin2 = useMemo(() => {
+    const isi = sesiServer && ringkasanMesin2?.usahaId === sesiServer.usahaId ? ringkasanMesin2.isi : []
+    return new Map(isi.map((r) => [r.distributorId, r]))
+  }, [sesiServer, ringkasanMesin2])
 
   const cari = params.get('cari') ?? ''
   const tab: TabBelanja = params.get('tab') === 'distributor' ? 'distributor' : 'barang'
@@ -412,7 +457,26 @@ export default function Belanja() {
     [profil.jenisUsaha, profil.kota, barangGudang, promoStore, semuaDistributor, katalogAktif],
   )
   const tampilkanRekomendasi = tab === 'distributor' && !cari && !kotaSaring
-  const rekomendasiTeratas = tampilkanRekomendasi ? rekomendasi.direkomendasikan.slice(0, 3) : []
+  /* Data server: distributor yang sudah dinilai Mesin 2 naik lebih dulu,
+     diurutkan dari rata-rata skornya atas barang yang perlu dibeli. Yang belum
+     dinilai menyusul dengan urutan ulasan dan harga (urutan sort stabil). */
+  const pakaiMesin2 = saranMesin2.size > 0
+  const urutanRekomendasi = useMemo(() => {
+    if (!pakaiMesin2) return rekomendasi.direkomendasikan
+    const skor = (id: string) => saranMesin2.get(id)?.skorRata ?? -1
+    return [...rekomendasi.direkomendasikan].sort((a, b) => skor(b.distributor.id) - skor(a.distributor.id))
+  }, [rekomendasi, saranMesin2, pakaiMesin2])
+  const rekomendasiTeratas = tampilkanRekomendasi ? urutanRekomendasi.slice(0, 3) : []
+  const dihitungMesin2 = useMemo(() => {
+    const waktu = [...saranMesin2.values()].map((r) => new Date(r.dijalankanPada).getTime())
+    return waktu.length > 0 ? new Date(Math.max(...waktu)) : null
+  }, [saranMesin2])
+  const adaBelumDinilai = rekomendasiTeratas.some((r) => !saranMesin2.has(r.distributor.id))
+  const dasarUrutan =
+    pakaiMesin2 && dihitungMesin2
+      ? `Diurutkan dari skor Mesin 2 untuk barang yang perlu kamu beli, dihitung ${waktuLalu(dihitungMesin2)}.` +
+        (adaBelumDinilai ? ' Yang belum dinilai Mesin 2 menyusul, diurutkan dari penilaian UMKM lain dan harga.' : '')
+      : 'Diurutkan dari penilaian UMKM lain dan harga.'
   /* Seperti "Perlu kamu isi ulang": distributor yang sudah naik ke atas tidak
      diulang di daftar di bawahnya. */
   const idTeratas = new Set(rekomendasiTeratas.map((r) => r.distributor.id))
@@ -717,6 +781,16 @@ export default function Belanja() {
           </>
         ) : (
           <div className="space-y-6">
+            {/* Seperti Mesin 1 di Prediksi: nama metode di atas bagian yang
+                memakai keluarannya. Hanya bila urutannya memang dari Mesin 2. */}
+            {tampilkanRekomendasi && pakaiMesin2 && (
+              <KeteranganMetode
+                className="max-w-[62ch]"
+                mesin="Mesin 2"
+                metode={METODE_MESIN2.metode}
+                masukan={`${METODE_MESIN2.masukan} Di halaman ini skor tiap barang dirata-rata per distributor.`}
+              />
+            )}
             {tampilkanRekomendasi && (
               <section aria-labelledby="judul-rekomendasi">
                 <JudulBagian
@@ -724,8 +798,8 @@ export default function Belanja() {
                   judul="Rekomendasi untuk usahamu"
                   keterangan={
                     profil.jenisUsaha === 'lainnya'
-                      ? `Mengirim ke ${wilayahProfil}. Diurutkan dari penilaian UMKM lain dan harga.`
-                      : `Cocok untuk ${jenisProfil} dan mengirim ke ${wilayahProfil}. Diurutkan dari penilaian UMKM lain dan harga.`
+                      ? `Mengirim ke ${wilayahProfil}. ${dasarUrutan}`
+                      : `Cocok untuk ${jenisProfil} dan mengirim ke ${wilayahProfil}. ${dasarUrutan}`
                   }
                 />
                 {rekomendasiTeratas.length > 0 ? (
@@ -736,6 +810,7 @@ export default function Belanja() {
                           rekomendasi={r}
                           urutan={i + 1}
                           mitra={idMitra.has(r.distributor.id)}
+                          mesin2={saranMesin2.get(r.distributor.id)}
                         />
                       </li>
                     ))}
