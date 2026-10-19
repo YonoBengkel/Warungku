@@ -189,7 +189,8 @@ curl.exe -X POST localhost:8001/mesin2/jalankan -H "Content-Type: application/js
 curl.exe -X POST localhost:8001/mesin3/jalankan
 ```
 
-Mesin 1 untuk semua barang butuh sekitar satu setengah menit.
+Mesin 1 untuk semua barang butuh sekitar tiga setengah menit, termasuk uji balik
+bulanan untuk garis perkiraan masa lalu di grafik bulanan.
 
 > Tulis `curl.exe`, bukan `curl`. Di PowerShell, `curl` adalah alias
 > `Invoke-WebRequest` yang tidak mengenal `-X`.
@@ -428,7 +429,7 @@ turnify-flow/
 | GET | `/usaha/{usaha_id}/barang/{barang_id}/perkiraan` | Perkiraan terbaru Mesin 1 (p10, p50, p90 per hari), termasuk uji balik 14 hari (`uji_balik`) |
 | GET | `/usaha/{usaha_id}/barang/{barang_id}/riwayat` | Pemakaian harian terakhir; hari stok habis ditandai |
 | GET | `/usaha/{usaha_id}/barang/{barang_id}/saran` | Saran distributor terbaru Mesin 2, dibaca dari tabel |
-| GET | `/usaha/{usaha_id}/pemakaian-bulanan` | Pemakaian per 30 hari dan perkiraan 30 hari ke depan, semua barang |
+| GET | `/usaha/{usaha_id}/pemakaian-bulanan` | Pemakaian per 30 hari beserta uji balik Mesin 1 tiap periode (`uji_balik`), dan perkiraan 30 hari ke depan, semua barang |
 | POST | `/usaha/{usaha_id}/transaksi` | Terima satu nota kasir; aman dikirim ulang |
 | GET | `/usaha/{usaha_id}/produksi/ringkasan` | UMKM produsen: barang jadi, resep, jumlah yang bisa dibuat, perkiraan pesanan 7 hari, saran masak, pembeli, omset bulanan |
 | GET, POST | `/usaha/{usaha_id}/produksi` | Riwayat sesi masak; catat sesi masak (bahan dipotong sesuai resep, ditolak kalau bahan kurang) |
@@ -471,7 +472,7 @@ pesanan dijaga server: langkah yang dilompati ditolak dengan 409.
 
 | Method | Endpoint | Keterangan |
 | --- | --- | --- |
-| POST | `/mesin1/jalankan` | Jalankan Mesin 1, tulis ke `prediksi` (memblokir). Bawaan `{"metode": "lightgbm"}`; `"sarima"` juga bisa |
+| POST | `/mesin1/jalankan` | Jalankan Mesin 1, tulis ke `prediksi` (memblokir): perkiraan 30 hari, uji balik 14 hari, dan uji balik bulanan. Bawaan `{"metode": "lightgbm"}`; `"sarima"` juga bisa; `{"uji_bulanan": false}` melewati uji balik bulanan |
 | POST | `/mesin1/jadwalkan` | Sama, di latar; jalur yang dipakai penjadwal |
 | POST | `/mesin2/jalankan` | Nilai kandidat distributor, tulis ke `rekomendasi_skor` |
 | POST | `/mesin3/jalankan` | Segmentasi pelanggan tiap distributor, tulis ke `segmen_pelanggan` |
@@ -492,15 +493,17 @@ dijadwalkan dari luar. Metode Mesin 1 yang dipakai penjadwal diatur lewat
 Ada dua image di Docker Hub, keduanya publik (tidak perlu `docker login` untuk
 mengunduh). **Unduh tag yang tertulis di tabel ini**: tag inilah yang dipakai
 [`deployment/docker-compose.yml`](deployment/docker-compose.yml). Tag yang lebih
-lama jangan dipakai: backend `0.3.0` ke bawah dan basis data `0.1.0` belum memuat
+lama jangan dipakai: backend `0.4.0` belum menggambar garis perkiraan masa lalu di
+grafik bulanan, dan backend `0.3.0` ke bawah serta basis data `0.1.0` belum memuat
 perubahan 16 Oktober 2026 (Mesin 1 LightGBM, UMKM produsen, gambar produk).
-Backend `0.4.0` membutuhkan basis data `0.2.0`, karena tabel produksinya baru ada di
-sana.
+Backend `0.5.0` membutuhkan basis data `0.2.0`, karena tabel produksinya baru ada di
+sana. Saat pertama menyala di atas basis data `0.2.0`, layanan model menjalankan
+Mesin 1 sekali (sekitar 4 menit) untuk mengisi uji balik bulanan.
 
 | Image | Tag yang dipakai | Isi | Halaman Docker Hub |
 | --- | --- | --- | --- |
 | `yonobengkel/turnify-flow-db` | **`0.2.0`** | PostgreSQL 16 yang memulihkan data simulasi (70 UMKM, 1 UMKM produsen, 8 distributor, 400 hari) beserta keluaran ketiga mesin saat pertama kali dinyalakan | https://hub.docker.com/r/yonobengkel/turnify-flow-db/tags |
-| `yonobengkel/turnify-flow-backend` | **`0.4.0`** | Satu image untuk API (port 8000) dan layanan model (port 8001). Isinya hanya model produksi (LightGBM, Beta-Bernoulli + fuzzy, K-Prototypes), lihat [`requirements-produksi.txt`](requirements-produksi.txt); tanpa Chronos atau PyMC | https://hub.docker.com/r/yonobengkel/turnify-flow-backend/tags |
+| `yonobengkel/turnify-flow-backend` | **`0.5.0`** | Satu image untuk API (port 8000) dan layanan model (port 8001). Isinya hanya model produksi (LightGBM, Beta-Bernoulli + fuzzy, K-Prototypes), lihat [`requirements-produksi.txt`](requirements-produksi.txt); tanpa Chronos atau PyMC | https://hub.docker.com/r/yonobengkel/turnify-flow-backend/tags |
 
 **Tidak perlu mengunduh dengan tangan.** Perintah `docker compose ... up -d` di
 jalur A dan B, juga `nyalakan.cmd`, mengunduh image yang dibutuhkan secara
@@ -509,7 +512,7 @@ internet lambat):
 
 ```powershell
 docker pull yonobengkel/turnify-flow-db:0.2.0
-docker pull yonobengkel/turnify-flow-backend:0.4.0
+docker pull yonobengkel/turnify-flow-backend:0.5.0
 ```
 
 `nyalakan.cmd` dan jalur B hanya memakai image basis data. Image backend hanya
