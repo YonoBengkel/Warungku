@@ -75,6 +75,8 @@ dikerjakan sekaligus:
 - paket Python dan frontend dipasang bila belum ada;
 - `backend\.env` disiapkan, termasuk rahasia login acak;
 - skema dinaikkan dan UMKM produsen ditambahkan bila belum ada;
+- variasi demo untuk kedua akun simulasi disegarkan bila umurnya lebih dari tiga
+  hari (lihat [Akun simulasi](#akun-simulasi));
 - API, layanan model, dan frontend dibuka di tiga jendela;
 - ketiga mesin dijalankan bila keluarannya belum lengkap;
 - peramban dibuka di halaman Masuk.
@@ -277,6 +279,16 @@ ketiga mesin, masuk dengan salah satu akun berikut. API (port 8000) harus menyal
 `distributor8` (semua `@warungku.test`). Kata sandi semua akun simulasi adalah
 `KATA_SANDI_CONTOH` di [`data/dataset/buat_dataset.py`](data/dataset/buat_dataset.py).
 Ini akun uji untuk data buatan tim, bukan akun sungguhan.
+
+**Variasi demo.** Supaya setiap penyaring punya isi, `umkm1` dan `produksi1` diberi
+pesanan yang masih berjalan (menunggu konfirmasi, disiapkan, dikirim, sudah sampai)
+dan yang dibatalkan, kontrak dengan beberapa distributor (berjalan, akan berakhir,
+menunggu persetujuan, selesai, dihentikan atau ditolak), serta barang yang habis dan
+menipis. Tanggal pesanan dan kontraknya relatif terhadap hari ini, jadi
+`nyalakan.cmd` menyegarkannya bila umurnya lebih dari tiga hari. Memasangnya ulang
+dengan tangan (mengembalikan pesanan dan kontrak demo ke keadaan awal):
+`python -m dataset.variasi_demo`. Rinciannya di
+[`data/dataset/variasi_demo.py`](data/dataset/variasi_demo.py).
 
 **Tanggal data.** Data simulasi berjalan 400 hari dan berhenti pada **5 Oktober
 2026**. Grafik menulis "data terakhir", bukan "hari ini". Mencatat kiriman baru

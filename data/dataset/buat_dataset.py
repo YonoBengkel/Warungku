@@ -1334,6 +1334,12 @@ def main() -> None:
             NAMA_USAHA, sum(n for k, n in tambahan.items() if k != "persen_terpenuhi"),
             tambahan["persen_terpenuhi"],
         ))
+        # Variasi pesanan, kontrak, dan stok untuk dua akun demo (lihat variasi_demo.py).
+        from .variasi_demo import pasang as pasang_variasi
+
+        for email, v in (pasang_variasi() or {}).items():
+            print("Variasi demo     : %s, %d pesanan, %d kontrak, %d koreksi stok" % (
+                email, v["pesanan"], v["kontrak"], v["koreksi_stok"]))
         print()
         print("Pemeriksaan konsistensi:")
         for c in periksa_turunan():
