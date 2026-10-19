@@ -493,7 +493,7 @@ export default function Beranda() {
         />
         <div
           aria-label="Pintasan ke daftar stok dan kontrak yang perlu ditindak"
-          className="flex gap-2 sm:gap-4 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0"
+          className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-4 sm:gap-3 sm:overflow-visible"
         >
           {pintasan.map((p) => (
             <Link
@@ -504,7 +504,13 @@ export default function Beranda() {
                   ? `${p.label.join(' ')}, ${p.jumlah} ${p.satuan}`
                   : `${p.label.join(' ')}, tidak ada ${p.satuan}`
               }
-              className="shrink-0 w-[4.75rem] sm:w-[5.5rem] flex flex-col items-center gap-1.5 rounded-md py-1 hover:bg-sunken transition-colors"
+              /* HP: ikon bulat berlabel, bisa digeser. Mulai 640px: empat ubin
+                 berangka sebaris, supaya tidak ada empat ikon kecil di kiri dan
+                 ruang kosong selebar layar di kanannya. */
+              className={cx(
+                'shrink-0 w-[4.75rem] flex flex-col items-center gap-1.5 rounded-md py-1 hover:bg-sunken transition-colors',
+                'sm:w-auto sm:flex-row sm:items-center sm:gap-3 sm:p-3 sm:bg-surface sm:border sm:border-line sm:rounded-lg sm:shadow-e1 sm:hover:bg-surface sm:hover:border-line-strong',
+              )}
             >
               {/* relative: lencana angka ditempel ke lingkaran ini, bukan ke
                   leluhur berposisi entah di mana di luar wadah gulir. */}
@@ -513,7 +519,7 @@ export default function Beranda() {
                 {p.jumlah > 0 && (
                   <span
                     aria-hidden="true"
-                    className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-kritis text-ink-inverse text-[0.6875rem] font-bold grid place-items-center"
+                    className="sm:hidden absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-kritis text-ink-inverse text-[0.6875rem] font-bold grid place-items-center"
                   >
                     {p.jumlah > 99 ? '99+' : p.jumlah}
                   </span>
@@ -521,11 +527,17 @@ export default function Beranda() {
               </span>
               <span
                 aria-hidden="true"
-                className="text-[0.6875rem] sm:text-kecil font-semibold text-ink-2 text-center leading-tight"
+                className="sm:hidden text-[0.6875rem] font-semibold text-ink-2 text-center leading-tight"
               >
                 {p.label[0]}
                 <br />
                 {p.label[1]}
+              </span>
+              <span aria-hidden="true" className="hidden sm:block min-w-0">
+                <span className={cx('block text-angka font-extrabold tabular', p.jumlah > 0 ? 'text-ink' : 'text-ink-3')}>
+                  {p.jumlah > 99 ? '99+' : p.jumlah}
+                </span>
+                <span className="block mt-1 text-kecil font-semibold text-ink-2 leading-tight">{p.label.join(' ')}</span>
               </span>
             </Link>
           ))}

@@ -75,6 +75,12 @@ Tanda: [x] selesai, [~] sebagian, [ ] belum.
 - [x] Kontras teks `Penjelasan` diukur di tema terang dan gelap: terendah 4,93:1 (syarat AA 4,5:1).
 - [x] Konstanta `BANTUAN.*` di `lib/label.ts` ditinjau: semuanya sudah di bawah 90 huruf.
 
+### Telaah ulang sesudah tahap 3
+- [x] Kartu pesanan: nama distributor tidak lagi terpotong oleh lencana dua baris; baris judul membungkus dan lencana status satu baris.
+- [x] Beranda: "Perlu Tindakan" mulai 640px berupa empat ubin berangka, bukan empat ikon kecil di kiri.
+- [x] Beranda distributor: "Sebaran pemesan" berupa titik kecil berwarna dan angka, bukan tiga lingkaran besar.
+- [x] Portal distributor desktop: bilah atas yang hanya berisi lonceng disembunyikan; angkanya pindah ke menu Pesanan di navigasi samping.
+
 ### Lain-lain
 - [x] Pemberitahuan stok merah hanya untuk yang genting; tanda wajib `*` tidak lagi merah.
 

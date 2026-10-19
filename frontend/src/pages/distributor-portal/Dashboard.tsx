@@ -199,18 +199,20 @@ export default function Dashboard() {
           }
         />
         <Kartu>
+          {/* Titik kecil berwarna sama dengan titik di peta, angkanya besar.
+              Dulu tiga lingkaran penuh berwarna: berat untuk tiga angka saja. */}
           <div className="grid grid-cols-3 gap-3">
             {URUT_TITIK.map((warna) => (
-              <div key={warna} className="flex flex-col items-center text-center min-w-0">
-                <span
-                  className="size-14 rounded-full grid place-items-center text-ink-inverse text-[1.125rem] font-extrabold"
-                  style={{ background: WARNA_TITIK_TOKEN[warna] }}
-                >
-                  {jumlahPerWarna[warna]}
-                </span>
-                <p className="mt-2 text-isi font-semibold text-ink leading-snug">
-                  {LABEL_TITIK[warna]}
+              <div key={warna} className="min-w-0">
+                <p className="flex items-center gap-2">
+                  <span
+                    aria-hidden="true"
+                    className="size-3 shrink-0 rounded-full"
+                    style={{ background: WARNA_TITIK_TOKEN[warna] }}
+                  />
+                  <span className="text-angka font-extrabold text-ink tabular">{jumlahPerWarna[warna]}</span>
                 </p>
+                <p className="mt-1.5 text-kecil font-semibold text-ink-2 leading-snug">{LABEL_TITIK[warna]}</p>
               </div>
             ))}
           </div>

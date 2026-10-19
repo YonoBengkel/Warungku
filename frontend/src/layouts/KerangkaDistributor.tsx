@@ -148,7 +148,17 @@ export default function KerangkaDistributor() {
                 )}
               >
                 <Ikon size={22} />
-                {label}
+                <span className="grow">{label}</span>
+                {/* Di desktop angka lonceng pindah ke sini: lonceng di bilah atas
+                    hanya membuka Pesanan, dan bilah itu disembunyikan. */}
+                {ke === '/distributor-portal/pesanan' && perluKonfirmasi > 0 && (
+                  <span
+                    aria-label={`${perluKonfirmasi} menunggu konfirmasi`}
+                    className="min-w-[1.25rem] h-5 px-1.5 rounded-full bg-kritis text-ink-inverse text-[0.6875rem] font-bold grid place-items-center tabular"
+                  >
+                    {perluKonfirmasi}
+                  </span>
+                )}
               </NavLink>
             )
           })}
@@ -159,18 +169,17 @@ export default function KerangkaDistributor() {
 
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Kepala halaman: siapa yang sedang dilihat, dan apa yang menunggu */}
-        <header className="sticky top-0 z-40 bg-surface/95 backdrop-blur border-b border-line pt-aman">
+        <header className="lg:hidden sticky top-0 z-40 bg-surface/95 backdrop-blur border-b border-line pt-aman">
           <div className="h-14 px-4 sm:px-6 flex items-center gap-2 max-w-[1400px] mx-auto w-full">
             <Link
               to="/distributor-portal"
-              className="lg:hidden flex items-center gap-2 mr-auto min-w-0 min-h-11 pr-2"
+              className="flex items-center gap-2 mr-auto min-w-0 min-h-11 pr-2"
             >
               <Avatar nama={distributorAktif.nama} warna={distributorAktif.warna} ukuran={32} />
               <span className="font-extrabold text-ink text-kartu truncate">
                 {distributorAktif.nama}
               </span>
             </Link>
-            <span className="hidden lg:block mr-auto" />
 
             <Link
               to="/distributor-portal/pesanan"
@@ -197,7 +206,7 @@ export default function KerangkaDistributor() {
 
         <main
           id="konten"
-          className="flex-1 px-4 sm:px-6 pb-[calc(var(--nav-h)+1rem)] lg:pb-8 pt-4 max-w-[1400px] mx-auto w-full"
+          className="flex-1 px-4 sm:px-6 pb-[calc(var(--nav-h)+1rem)] lg:pb-8 pt-4 lg:pt-6 max-w-[1400px] mx-auto w-full"
         >
           <Outlet />
         </main>

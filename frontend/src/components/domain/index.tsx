@@ -65,9 +65,17 @@ export function ChipStok({ status, besar }: { status: StatusStok; besar?: boolea
   )
 }
 
-export function ChipPesanan({ status, besar }: { status: Pesanan['status']; besar?: boolean }) {
+export function ChipPesanan({
+  status,
+  besar,
+  className,
+}: {
+  status: Pesanan['status']
+  besar?: boolean
+  className?: string
+}) {
   return (
-    <Lencana nada={NADA_PESANAN[status]} besar={besar}>
+    <Lencana nada={NADA_PESANAN[status]} besar={besar} className={className}>
       {LABEL_PESANAN[status]}
     </Lencana>
   )
@@ -695,13 +703,15 @@ export function KartuPesanan({ pesanan }: { pesanan: Pesanan }) {
       <div className="flex items-start gap-3">
         <Avatar nama={distributor?.nama ?? '?'} warna={distributor?.warna} ukuran={40} />
         <div className="min-w-0 grow">
-          <div className="flex items-start justify-between gap-2">
-            <p className="text-kartu font-bold text-ink truncate">
+          {/* Baris judul boleh membungkus: kalau sempit, lencana status turun ke
+              bawah nama, bukan memotong nama distributor ("Sumber Tani Nus…"). */}
+          <div className="flex flex-wrap items-start justify-between gap-x-2 gap-y-1">
+            <p className="min-w-0 text-kartu font-bold text-ink line-clamp-2">
               <Link to={`/pesanan/${pesanan.id}`} className="after:absolute after:inset-0 after:rounded-lg">
                 {distributor?.nama}
               </Link>
             </p>
-            <ChipPesanan status={pesanan.status} />
+            <ChipPesanan status={pesanan.status} className="shrink-0 whitespace-nowrap" />
           </div>
           <p className="mt-0.5 text-isi text-ink-2 truncate">
             {utama ? `${utama.nama} ${angka(utama.jumlah)} ${utama.satuan}` : 'Pesanan kosong'}
