@@ -32,6 +32,8 @@ export interface SesiServer {
   namaPengguna: string
   namaUsaha: string | null
   kedaluwarsaPada: string
+  /** Email yang dipakai masuk. Kosong untuk sesi yang tersimpan sebelum kolom ini ada. */
+  email?: string
 }
 
 /* ------------------------------------------------------------------ */
@@ -115,6 +117,7 @@ export async function masukUmkm(email: string, kataSandi: string): Promise<SesiS
     namaPengguna: t.nama,
     namaUsaha: t.nama_usaha ?? null,
     kedaluwarsaPada: t.kedaluwarsa_pada,
+    email,
   }
 }
 

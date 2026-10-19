@@ -9,6 +9,7 @@ import { IkonMata, IkonMataTutup, IkonTelepon } from '@/icons'
 import { cx, nomorHp } from '@/lib/format'
 import { profilAwal } from '@/data/dummy'
 import { GalatApi, ServerTakTerjangkau } from '@/lib/api'
+import { AKUN_BU_RATMI, AKUN_KOPI_KITA } from '@/lib/akunSimulasi'
 import { useAplikasi } from '@/store/aplikasi'
 import { TandaMerek } from '@/components/ui/Merek'
 
@@ -215,18 +216,18 @@ export default function Masuk() {
             Isikan nomor akun contoh
           </button>
           <span className="block mt-1">
-            Untuk melihat angka dari mesin analitik, masuk lewat email dengan akun simulasi {AKUN_SERVER.email}.
+            Untuk melihat angka dari mesin analitik, masuk lewat email dengan akun simulasi {AKUN_KOPI_KITA.email}.
           </span>
           <button
             type="button"
-            onClick={() => isiAkunServer(AKUN_SERVER)}
+            onClick={() => isiAkunServer(AKUN_KOPI_KITA)}
             className="mt-1 flex items-center gap-1.5 min-h-11 text-[0.8125rem] font-bold underline underline-offset-2"
           >
             Isikan akun simulasi: Kopi Kita Jogja
           </button>
           <button
             type="button"
-            onClick={() => isiAkunServer(AKUN_PRODUKSI)}
+            onClick={() => isiAkunServer(AKUN_BU_RATMI)}
             className="flex items-center gap-1.5 min-h-11 text-[0.8125rem] font-bold underline underline-offset-2"
           >
             Isikan akun simulasi produsen: Dapur Sambal Bu Ratmi
@@ -240,14 +241,6 @@ export default function Masuk() {
 /* ================================================================== */
 /* Bagian yang hanya dipakai layar ini                                */
 /* ================================================================== */
-
-/**
- * Akun contoh dari pembangkit dataset (`data/dataset/buat_dataset.py`, KATA_SANDI_CONTOH).
- * Nilai uji untuk basis data lokal, bukan akun sungguhan.
- */
-const AKUN_SERVER = { email: 'umkm1@warungku.test', kataSandi: 'warungku123' }
-/** UMKM produsen dari `data/dataset/umkm_produksi.py`; kata sandinya sama dengan akun contoh lain. */
-const AKUN_PRODUKSI = { email: 'produksi1@warungku.test', kataSandi: AKUN_SERVER.kataSandi }
 
 /** Kerangka layar di luar 4 tab: satu kolom terpusat, kartu di tengah. */
 function LayarAuth({ children }: { children: ReactNode }) {

@@ -17,7 +17,9 @@ import {
   IkonProfil,
   IkonGrafik,
   IkonSinkron,
+  IkonToko,
 } from '@/icons'
+import { AKUN_SIMULASI_UMKM, type AkunSimulasi } from '@/lib/akunSimulasi'
 import { cx, tanggalPanjang } from '@/lib/format'
 import { JUDUL, LABEL_JENIS_USAHA } from '@/lib/label'
 import { useAplikasi } from '@/store/aplikasi'
@@ -40,8 +42,36 @@ export default function Akun() {
   const aturLayananPerkiraan = useAplikasi((s) => s.aturLayananPerkiraan)
   const aturMasuk = useAplikasi((s) => s.aturMasuk)
   const aturPeran = useAplikasi((s) => s.aturPeran)
+  const sesiServer = useAplikasi((s) => s.sesiServer)
+  const masukServer = useAplikasi((s) => s.masukServer)
+  const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
 
   const [tanyaKeluar, setTanyaKeluar] = useState(false)
+  const [berpindah, setBerpindah] = useState(false)
+  const [galatPindah, setGalatPindah] = useState<string | null>(null)
+
+  // Pindah akun hanya untuk dua akun simulasi UMKM. Sesi yang tersimpan sebelum
+  // email ikut disimpan dikenali dari nama usahanya.
+  const akunIni = sesiServer
+    ? AKUN_SIMULASI_UMKM.find((a) => a.email === sesiServer.email || a.namaUsaha === sesiServer.namaUsaha)
+    : undefined
+  const akunLain = akunIni ? AKUN_SIMULASI_UMKM.find((a) => a !== akunIni) : undefined
+
+  function pindahAkun(akun: AkunSimulasi) {
+    setBerpindah(true)
+    setGalatPindah(null)
+    // masukServer mengganti sesi dan seluruh data gudang sekaligus, sama
+    // seperti masuk dari halaman Masuk; sesi akun lama ditinggalkan.
+    masukServer(akun.email, akun.kataSandi)
+      .then(() => {
+        tampilkanRacun(`Sekarang kamu memakai akun ${akun.namaUsaha}.`, 'aman')
+        navigate('/beranda')
+      })
+      .catch(() => {
+        setGalatPindah(`Akun ${akun.namaUsaha} belum bisa dibuka. Pastikan data simulasinya sudah dibuat, lalu coba lagi.`)
+      })
+      .finally(() => setBerpindah(false))
+  }
 
   const belumDipasangkan = kasir.menuBelumDipasangkan.length
 
@@ -221,6 +251,32 @@ export default function Akun() {
                   </button>
                 ))}
               </div>
+
+              {/* Pindah di antara dua akun simulasi tanpa keluar dan mengetik
+                  ulang: kedai kopi (penjual eceran) dan dapur sambal (produsen). */}
+              {akunIni && akunLain && (
+                <>
+                  <h3 className="mt-5 text-[0.875rem] font-bold text-ink">Akun simulasi</h3>
+                  <p className="mt-1 text-[0.8125rem] text-ink-3 leading-relaxed">
+                    Kamu sedang memakai {akunIni.namaUsaha}. Tombol ini membuka {akunLain.namaUsaha} tanpa keluar
+                    dan masuk lagi.
+                  </p>
+                  <Tombol
+                    ragam="garis"
+                    ikonKiri={<IkonToko size={17} />}
+                    className="mt-3"
+                    memuat={berpindah}
+                    onClick={() => pindahAkun(akunLain)}
+                  >
+                    Pindah ke {akunLain.namaUsaha}
+                  </Tombol>
+                  {galatPindah && (
+                    <p role="alert" className="mt-2 text-[0.8125rem] text-kritis leading-relaxed">
+                      {galatPindah}
+                    </p>
+                  )}
+                </>
+              )}
 
               {/* Pintu ke sisi distributor. Sengaja memakai Tombol, bukan tautan
                   biasa: perannya harus ikut berpindah sebelum layarnya dibuka,
