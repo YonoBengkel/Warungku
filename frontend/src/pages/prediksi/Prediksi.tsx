@@ -107,7 +107,14 @@ export default function Prediksi() {
      kosong: alamat halaman bisa saja diketik sendiri atau dibagikan dari versi
      lama yang masih punya "Semua kategori". */
   const kategoriMentah = param.get('kategori') ?? ''
-  const kategori = kategoriBarang.includes(kategoriMentah) ? kategoriMentah : (kategoriBarang[0] ?? '')
+  /* Kategori bawaan: yang pertama punya barang dengan riwayat cukup. Kategori
+     yang isinya baru dibeli dan belum pernah terpakai tetap bisa dipilih, tapi
+     halaman tidak dibuka dengan grafik kosong. */
+  const kategoriAwal =
+    kategoriBarang.find((k) => barang.some((b) => b.kategori === k && layakDiperkirakan(b))) ??
+    kategoriBarang[0] ??
+    ''
+  const kategori = kategoriBarang.includes(kategoriMentah) ? kategoriMentah : kategoriAwal
   const barangMentah = param.get('barang') ?? ''
   const barangTerpilih = barangMentah ? barang.find((b) => b.id === barangMentah) : undefined
   /* Pulang ke kategori asal kalau datang dari sana, ke kategori barangnya kalau
