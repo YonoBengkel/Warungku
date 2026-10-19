@@ -804,7 +804,7 @@ function PilihanTema({
       className={cx(
         'inline-flex items-center gap-2 h-11 px-4 rounded-md text-isi font-semibold border',
         'transition-colors duration-150',
-        aktif ? 'bg-ink text-ink-inverse border-ink' : 'bg-surface text-ink-2 border-line-strong hover:text-ink',
+        aktif ? 'bg-brand-soft text-brand-soft-ink border-brand' : 'bg-surface text-ink-2 border-line-strong hover:text-ink',
       )}
     >
       {ikon}

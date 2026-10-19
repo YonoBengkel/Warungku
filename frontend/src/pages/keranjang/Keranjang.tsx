@@ -265,7 +265,7 @@ export default function Keranjang() {
                             ukuran="kecil"
                             label={`Jumlah ${pw.nama}`}
                           />
-                          <p className="text-[1.5rem] font-bold text-ink leading-none tabular">
+                          <p className="text-subjudul font-bold text-ink leading-none tabular whitespace-nowrap">
                             {rupiah(harga * baris.jumlah)}
                           </p>
                         </div>
@@ -342,10 +342,13 @@ export default function Keranjang() {
                 <Pemisah className="my-3" />
 
                 <div className="flex items-baseline justify-between gap-4">
-                  <span className="text-isi font-semibold text-ink-2">
+                  <span className="min-w-0 text-isi font-semibold text-ink-2">
                     Subtotal ke {distributor?.nama ?? 'distributor ini'}
                   </span>
-                  <span className="text-subjudul font-bold text-ink tabular">{rupiah(totalSub(sub))}</span>
+                  {/* nowrap: di 390px "Rp" dan angkanya sempat terpisah dua baris. */}
+                  <span className="shrink-0 whitespace-nowrap text-subjudul font-bold text-ink tabular">
+                    {rupiah(totalSub(sub))}
+                  </span>
                 </div>
                 {/* Minimum pesanan diisi distributor di portalnya. Tidak
                     memblokir: pesanannya tetap boleh dikirim, tapi lebih baik

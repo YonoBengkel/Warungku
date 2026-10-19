@@ -81,6 +81,12 @@ Tanda: [x] selesai, [~] sebagian, [ ] belum.
 - [x] Beranda distributor: "Sebaran pemesan" berupa titik kecil berwarna dan angka, bukan tiga lingkaran besar.
 - [x] Portal distributor desktop: bilah atas yang hanya berisi lonceng disembunyikan; angkanya pindah ke menu Pesanan di navigasi samping.
 
+### Telaah alur sekunder (Keranjang, Periksa, Terima Barang, Koreksi, paket kontrak, Akun, Masuk, Daftar)
+- [x] Keranjang HP: harga subtotal tidak lagi terpecah ("Rp" dan angkanya di dua baris); harga per baris 17px, tidak lagi 24px yang bersaing dengan total.
+- [x] Tombol pilihan bergaya hitam di Akun, Data Usaha, Panduan Kasir, dan Profil Distributor memakai gaya terpilih ungu muda. Komponen `TabTautan` yang tidak dipakai dibuang.
+- [ ] Mode data server: halaman Pemberitahuan selalu kosong (`notifikasi: []` di `keadaanServer`), padahal Beranda menampilkan tugas. Perlu pemberitahuan yang diturunkan dari data server; ini fitur baru, bukan kurasi.
+- Tetap: tombol "Login" di halaman depan, sesuai catatan pemilik proyek yang tertulis di kode.
+
 ### Lain-lain
 - [x] Pemberitahuan stok merah hanya untuk yang genting; tanda wajib `*` tidak lagi merah.
 

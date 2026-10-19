@@ -250,7 +250,7 @@ export default function DataUsaha() {
                 className={cx(
                   'h-11 px-3.5 rounded-md text-isi font-semibold border transition-colors',
                   profil.verifikasi === o.nilai
-                    ? 'bg-ink text-ink-inverse border-ink'
+                    ? 'bg-brand-soft text-brand-soft-ink border-brand'
                     : 'bg-surface text-ink-2 border-line-strong hover:text-ink',
                 )}
               >

@@ -402,7 +402,7 @@ function TombolUji({
       onClick={onClick}
       className={cx(
         'h-11 px-3.5 rounded-md text-isi font-semibold border transition-colors',
-        aktif ? 'bg-ink text-ink-inverse border-ink' : 'bg-surface text-ink-2 border-line-strong hover:text-ink',
+        aktif ? 'bg-brand-soft text-brand-soft-ink border-brand' : 'bg-surface text-ink-2 border-line-strong hover:text-ink',
       )}
     >
       {children}

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { cx } from '@/lib/format'
 import { IkonKembali } from '@/icons'
 
@@ -59,48 +59,6 @@ export function TabSegmen<T extends string>({
           )
         })}
       </div>
-    </div>
-  )
-}
-
-/** Tab yang mengubah URL, supaya bisa ditautkan langsung dari notifikasi. */
-export function TabTautan({
-  tab,
-  className,
-}: {
-  tab: Array<{ ke: string; label: string; jumlah?: number }>
-  className?: string
-}) {
-  const { pathname } = useLocation()
-  return (
-    <div className={cx('flex gap-1 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0', className)}>
-      {tab.map((t) => {
-        const terpilih = pathname === t.ke || pathname.startsWith(`${t.ke}/`)
-        return (
-          <Link
-            key={t.ke}
-            to={t.ke}
-            aria-current={terpilih ? 'page' : undefined}
-            className={cx(
-              'shrink-0 h-11 px-3.5 rounded-md text-isi font-semibold transition-colors duration-150',
-              'inline-flex items-center gap-1.5',
-              terpilih ? 'bg-ink text-ink-inverse' : 'bg-sunken text-ink-2 hover:text-ink',
-            )}
-          >
-            {t.label}
-            {t.jumlah != null && t.jumlah > 0 && (
-              <span
-                className={cx(
-                  'text-[0.6875rem] font-bold rounded-full px-1.5 py-px tabular',
-                  terpilih ? 'bg-ink-inverse/20' : 'bg-surface text-ink-2',
-                )}
-              >
-                {t.jumlah}
-              </span>
-            )}
-          </Link>
-        )
-      })}
     </div>
   )
 }
