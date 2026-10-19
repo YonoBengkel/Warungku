@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { HanyaPembacaLayar, Lencana, Tombol } from '@/components/ui/dasar'
-import { AreaTeks } from '@/components/ui/formulir'
+import { AreaTeks, Kolom } from '@/components/ui/formulir'
 import { Konfirmasi, Lembar } from '@/components/ui/lembar'
 import { BarisChip, Chip, TabSegmen } from '@/components/ui/navigasi'
 import { KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
@@ -189,6 +189,8 @@ export default function PesananMasukDaftar() {
   const terimaPesananMasuk = useAplikasi((s) => s.terimaPesananMasuk)
   const terimaSemuaPesananMasuk = useAplikasi((s) => s.terimaSemuaPesananMasuk)
   const [tanyaTerimaSemua, setTanyaTerimaSemua] = useState(false)
+  const majukanSemuaPesananMasuk = useAplikasi((s) => s.majukanSemuaPesananMasuk)
+  const [lembarMajuSemua, setLembarMajuSemua] = useState(false)
   const majukanPesananMasuk = useAplikasi((s) => s.majukanPesananMasuk)
 
   const [pesananDitolak, setPesananDitolak] = useState<PesananMasuk | null>(null)
@@ -249,8 +251,9 @@ export default function PesananMasukDaftar() {
           {LABEL_PESANAN_MASUK[tahap]}
         </h2>
 
-        {/* Aksi massal hanya untuk Terima: keputusannya seragam untuk banyak
-            pesanan kecil. Tolak tetap satu per satu karena butuh alasan. */}
+        {/* Aksi massal untuk keputusan yang seragam pada banyak pesanan kecil:
+            terima, berangkatkan bersama, tandai sampai. Tolak tetap satu per
+            satu karena tiap pesanan butuh alasannya sendiri. */}
         {tahap === 'menunggu-konfirmasi' && daftar.length > 1 && (
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <p className="text-isi text-ink-2">
@@ -258,6 +261,18 @@ export default function PesananMasukDaftar() {
             </p>
             <Tombol ukuran="kecil" ikonKiri={<IkonCentang size={15} />} onClick={() => setTanyaTerimaSemua(true)}>
               Terima Semua ({daftar.length})
+            </Tombol>
+          </div>
+        )}
+        {(tahap === 'disiapkan' || tahap === 'dikirim') && daftar.length > 1 && (
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-isi text-ink-2">
+              {tahap === 'disiapkan'
+                ? `${daftar.length} pesanan siap berangkat.`
+                : `${daftar.length} pesanan sedang di jalan.`}
+            </p>
+            <Tombol ukuran="kecil" ikonKiri={<IkonKirim size={15} />} onClick={() => setLembarMajuSemua(true)}>
+              {tahap === 'disiapkan' ? `Kirim Semua (${daftar.length})` : `Tandai Semua Sampai (${daftar.length})`}
             </Tombol>
           </div>
         )}
@@ -283,6 +298,20 @@ export default function PesananMasukDaftar() {
           </div>
         )}
       </section>
+
+      {lembarMajuSemua && (tahap === 'disiapkan' || tahap === 'dikirim') && (
+        <LembarBukti
+          tahap={tahap}
+          tutup={() => setLembarMajuSemua(false)}
+          kirim={(bukti) => {
+            majukanSemuaPesananMasuk(
+              daftar.map((x) => x.id),
+              bukti,
+            )
+            setLembarMajuSemua(false)
+          }}
+        />
+      )}
 
       <Konfirmasi
         terbuka={tanyaTerimaSemua}
@@ -454,5 +483,76 @@ function BarisPesanan({
         </div>
       )}
     </div>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/* Lembar bukti antar (dipakai rincian dan aksi massal)                */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Bukti antar: saat berangkat (kurir, pengantar, resi) dan saat sampai
+ * (penerima, catatan). Semuanya boleh kosong; yang kosong tertulis "Belum
+ * dicatat" di rincian, bukan dikarang.
+ */
+export function LembarBukti({
+  tahap,
+  tutup,
+  kirim,
+}: {
+  tahap: 'disiapkan' | 'dikirim'
+  tutup: () => void
+  kirim: (bukti: Record<string, string | null>) => void
+}) {
+  const [a, setA] = useState('')
+  const [b, setB] = useState('')
+  const [c, setC] = useState('')
+  const berangkat = tahap === 'disiapkan'
+  const kosongJadiNull = (v: string) => v.trim() || null
+  return (
+    <Lembar
+      terbuka
+      tutup={tutup}
+      judul={berangkat ? 'Catat pengiriman' : 'Catat barang sampai'}
+      keterangan={
+        berangkat
+          ? 'Isian ini tampil di rincian pesanan pemilik usaha. Boleh dikosongkan.'
+          : 'Stok pemilik usaha bertambah setelah ia menghitung barangnya sendiri.'
+      }
+      kaki={
+        <div className="flex gap-2.5">
+          <Tombol ragam="garis" penuh onClick={tutup}>
+            Batal
+          </Tombol>
+          <Tombol
+            penuh
+            onClick={() =>
+              kirim(
+                berangkat
+                  ? { kurir: kosongJadiNull(a), pengantar: kosongJadiNull(b), nomor_resi: kosongJadiNull(c) }
+                  : { diterima_oleh: kosongJadiNull(a), catatan: kosongJadiNull(b) },
+              )
+            }
+          >
+            {berangkat ? 'Tandai Sedang Dikirim' : 'Tandai Sudah Sampai'}
+          </Tombol>
+        </div>
+      }
+    >
+      <div className="pb-4 space-y-4">
+        {berangkat ? (
+          <>
+            <Kolom label="Jasa kirim" placeholder="Armada sendiri" value={a} onChange={(e) => setA(e.target.value)} />
+            <Kolom label="Nama pengantar" value={b} onChange={(e) => setB(e.target.value)} />
+            <Kolom label="Nomor resi" value={c} onChange={(e) => setC(e.target.value)} />
+          </>
+        ) : (
+          <>
+            <Kolom label="Diterima oleh" value={a} onChange={(e) => setA(e.target.value)} />
+            <Kolom label="Catatan" value={b} onChange={(e) => setB(e.target.value)} />
+          </>
+        )}
+      </div>
+    </Lembar>
   )
 }

@@ -37,7 +37,7 @@ Tanda: [x] selesai, [~] sebagian, [ ] belum.
 - [x] Kata "server" di layar: "Putuskan dari Server", "Sambungkan ke server", "Data server · …", "Dibaca dari server", "Mengambil … dari server", pesan galat bawaan `lib/api.ts`.
 - [x] "0 hari lalu" di Pelanggan, "Bahan cukup untuk 0 toples saja" di Produksi, pesan galat Promo yang menulis "belum diisi" padahal hanya kurang panjang.
 - [x] Format angka dari backend: `ml/mesin2/saran.py` menulis "4.8 dari 5"; `backend/api/produksi.py` menulis "20000.000 gram". Sesudah diperbaiki, Mesin 2 dijalankan ulang.
-- [x] Rating ditulis empat cara → satu `bintang()` ("4,0"); `fmtJml` yang disalin tiga kali → `angkaJumlah()` di `lib/format.ts`. Sisa: ±20 pasangan `{angka(x)} {satuan}` masih membulatkan jumlah pecahan.
+- [x] Rating ditulis empat cara → satu `bintang()` ("4,0"); `fmtJml` yang disalin tiga kali → `angkaJumlah()` di `lib/format.ts`. Jumlah kuota kontrak kini memakai `angkaJumlah()` (tidak lagi "13 dus" di samping "12,5 dus"); sisa pasangan `{angka(x)} {satuan}` adalah jumlah kemasan yang memang bulat.
 - [x] "Beri Penilaian" tampil dua kali di Rincian Pesanan.
 - [x] Deskripsi barang "20000 gram per karung" menjadi "1 karung = 20 kg" (`katalog.deskripsi_kemasan`; basis data lama dirapikan `dataset.rapikan_deskripsi`, dijalankan `nyalakan`).
 - [x] "0 menit lalu" di `waktuLalu`; label "(boleh dikosongkan)" di kolom masuk distributor yang sebenarnya wajib.
@@ -52,19 +52,19 @@ Tanda: [x] selesai, [~] sebagian, [ ] belum.
 ### Fase 2 — alur pengadaan pemilik usaha
 - [x] Rincian barang: "Pesan Sekarang" menjadi tombol utama saat habis/menipis dan membuka saran Mesin 2 dengan jumlah saran; "Koreksi Stok" menjadi utama hanya saat stok minus; "Ubah Barang" yang dobel dibuang; keterangan grafik dan alasan saran dilipat.
 - [~] Beranda: satu kartu "N barang perlu dibeli" dengan satu tombol, bukan korsel berisi sampai lima tombol utama. Label pintasan disamakan dengan penyaring Stok. Sudah: hanya kartu teratas bertombol utama, bingkai kartu netral, "Pesan Sekarang" yang mengisi keranjang menjadi "Masukkan ke Keranjang", label pintasan disamakan, dan di desktop semua tugas tampil dalam kisi (korsel hanya di HP).
-- [~] Detail Penawaran: jumlah awal Beli Sekali = kekurangan terhadap perkiraan bulan depan (sudah). "Ikat Kontrak" tetap tombol utama, sesuai keputusan yang tertulis di kodenya; perlu keputusan Ilham kalau mau dibalik.
+- [x] Detail Penawaran: jumlah awal Beli Sekali = kekurangan terhadap perkiraan bulan depan. "Beli Sekali" menjadi tombol utama dan "Ikat Kontrak" bergaris (keputusan Ilham, 19 Okt); kalau stok distributor kosong, Ikat Kontrak kembali utama.
 - [x] Keranjang: "Buat N Pesanan" yang hanya pindah layar diganti "Periksa & Kirim".
 - [x] Pesanan: syarat "sudah sampai" disamakan antara Beranda dan kartu pesanan (bukti antar atau perkiraan tiba lewat); kartu yang sedang dikirim diberi tombol "Terima Barang".
 - [~] Kosakata: Beli Sekali/Beli Lepas, Hampir/Segera kedaluwarsa, Kontrak Habis/Akan berakhir, pemasok/distributor, filter/penyaring/saringan. Sudah: Beli Sekali, Segera Kedaluwarsa, Kontrak Akan Berakhir.
 
 ### Fase 3 — portal distributor
 - [x] Tab Menunggu diurutkan dari yang paling lama menunggu; lama tunggu tampil jelas di kartu.
-- [~] Aksi massal "Terima Semua (n)" di tab Menunggu, dengan satu konfirmasi dan satu ringkasan (sudah). "Tandai dikirim (n)" belum, karena data server meminta bukti antar per pesanan.
+- [x] Aksi massal: "Terima Semua (n)" (Menunggu), "Kirim Semua (n)" (Disiapkan) dan "Tandai Semua Sampai (n)" (Dikirim), dengan satu lembar bukti antar untuk semua dan satu ringkasan. Tolak tetap satu per satu.
 - [x] Rincian pesanan: kembali ke tab asal, dan tautan "Menunggu berikutnya" ke pesanan menunggu yang paling lama.
 - [x] Status memuat pada aksi supaya ketukan ganda tidak terkirim dua kali (`pesananDiproses`).
 - [x] Kartu ringkasan di halaman Pesanan yang mengulang tab dihapus; tombol Terima di setiap kartu tidak lagi ungu penuh.
 - [x] Kontrak: membuka tab yang berisi, urutan tombol [Utama | Tolak] sama dengan Pesanan.
-- [ ] Pelanggan: saran segmen diberi aksi (hubungi, tawarkan kontrak).
+- [x] Pelanggan: segmen andalan/rutin → Atur Paket Kontrak, sedang → Buat Promo, baru → Pesanan Disiapkan. "Mulai menjauh" sengaja tanpa tombol: nomor HP pemilik usaha baru terbuka lewat pesanan.
 
 ### Fase 4 — tipografi dan spasi di seluruh halaman
 - [~] Codemod per folder: `text-[0.8125rem]` → isi, dan seterusnya sesuai peta di audit; langkah spasi x.5 dibulatkan. Sudah: 1.100-an ukuran teks diganti token (0,8125/0,875 → isi 14px, 0,75 → kecil, 0,9375 → kartu, judul halaman 22px); input 16px. Spasi belum.
@@ -73,7 +73,7 @@ Tanda: [x] selesai, [~] sebagian, [ ] belum.
 ### Pemangkasan teks
 - [x] ±40 paragraf panjang di 27 berkas dipendekkan menjadi satu kalimat; rinciannya dilipat ke `Penjelasan` atau dibuang bila mengulang judul. Halaman Bantuan dan halaman depan sengaja tetap panjang. Lembar Tolak distributor baru menampilkan "Alasan wajib diisi" setelah Tolak ditekan tanpa alasan.
 - [x] Kontras teks `Penjelasan` diukur di tema terang dan gelap: terendah 4,93:1 (syarat AA 4,5:1).
-- [ ] Konstanta `BANTUAN.*` di `lib/label.ts` belum ditinjau.
+- [x] Konstanta `BANTUAN.*` di `lib/label.ts` ditinjau: semuanya sudah di bawah 90 huruf.
 
 ### Lain-lain
 - [x] Pemberitahuan stok merah hanya untuk yang genting; tanda wajib `*` tidak lagi merah.

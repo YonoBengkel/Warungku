@@ -26,7 +26,7 @@ import {
   IkonTrenNaik,
   IkonTrenTurun,
 } from '@/icons'
-import { angka, cx, hariLagi, tanggalLengkapHari } from '@/lib/format'
+import { angka, angkaJumlah, cx, hariLagi, tanggalLengkapHari } from '@/lib/format'
 import { jumlahTampil } from '@/lib/satuan'
 import {
   layakDiperkirakan,
@@ -218,7 +218,7 @@ export default function Beranda() {
             nada="menipis"
             ikon={<IkonKontrak size={18} />}
             judul={`Kuota ${k.namaBarang} masih kurang`}
-            detail={`Kurang ${angka(kurang)} ${k.satuan} dari kuota ${angka(k.periodeBerjalan.kuota)} ${k.satuan} bulan ini. Sisa ${sisaHariPeriode()} hari.`}
+            detail={`Kurang ${angkaJumlah(kurang)} ${k.satuan} dari kuota ${angkaJumlah(k.periodeBerjalan.kuota)} ${k.satuan} bulan ini. Sisa ${sisaHariPeriode()} hari.`}
             aksiLabel="Lihat Kontrak"
             aksiKe={`/kontrak/${k.id}`}
           />

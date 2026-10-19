@@ -242,7 +242,9 @@ interface KeadaanAplikasi {
   terimaSemuaPesananMasuk: (ids: string[]) => void
   tolakPesananMasuk: (id: string, alasan: string) => void
   /** `bukti` hanya dipakai di data server: isian kurir/pengantar/resi (kirim) atau penerima/catatan (sampai). */
-  majukanPesananMasuk: (id: string, bukti?: Record<string, string | null>) => void
+  majukanPesananMasuk: (id: string, bukti?: Record<string, string | null>, diam?: boolean) => void
+  /** Majukan beberapa pesanan setahap (berangkat atau sampai) dengan bukti yang sama, satu ringkasan. */
+  majukanSemuaPesananMasuk: (ids: string[], bukti?: Record<string, string | null>) => void
 
   /* Kontrak */
   ajukanKontrak: (paketId: string) => string
@@ -1322,7 +1324,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
    * Satu tombol untuk maju satu tahap, karena tahapnya memang berurutan dan
    * distributor tidak pernah boleh melompati pengiriman.
    */
-  majukanPesananMasuk: (id, isianBukti = {}) => {
+  majukanPesananMasuk: (id, isianBukti = {}, diam = false) => {
     const pesanan = cariPesananMasuk(get(), id)
     if (!pesanan) return
     if (get().pesananMasukServer) {
@@ -1352,7 +1354,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
             { perkiraanTiba: tiba },
           ),
         }))
-        get().tampilkanRacun(
+        if (!diam) get().tampilkanRacun(
           `Pesanan ${pesanan.nomor} ditandai sedang dikirim. Perkiraan sampai ${waktuNanti(tiba)}.`,
           'info',
         )
@@ -1378,7 +1380,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
         ),
       }))
       // Racunnya menyebut tanggal yang benar-benar tersimpan, bukan angka tetap.
-      get().tampilkanRacun(
+      if (!diam) get().tampilkanRacun(
         `Pesanan ${pesanan.nomor} ditandai sedang dikirim. Perkiraan sampai ${waktuNanti(tiba)}.`,
         'info',
       )
@@ -1413,7 +1415,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
           { pengiriman: bukti },
         ),
       }))
-      get().tampilkanRacun(`Pesanan ${pesanan.nomor} sudah sampai. Bukti pengirimannya tersimpan.`, 'aman')
+      if (!diam) get().tampilkanRacun(`Pesanan ${pesanan.nomor} sudah sampai. Bukti pengirimannya tersimpan.`, 'aman')
       return
     }
     set((s) => ({
@@ -1435,7 +1437,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
             },
       ),
     }))
-    get().tampilkanRacun(`Pesanan ${pesanan.nomor} sudah sampai. Bukti pengirimannya tersimpan.`, 'aman')
+    if (!diam) get().tampilkanRacun(`Pesanan ${pesanan.nomor} sudah sampai. Bukti pengirimannya tersimpan.`, 'aman')
   },
 
   /**
@@ -1445,6 +1447,41 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
    * tersimpan — layar Periksa Kesepakatan menjanjikan bahwa isinya terekam
    * sebagai bukti dan bisa dibuka lagi di daftar kontrak.
    */
+
+  majukanSemuaPesananMasuk: (ids, bukti = {}) => {
+    const daftar = ids.map((id) => cariPesananMasuk(get(), id)).filter((p): p is PesananMasuk => p != null)
+    if (daftar.length === 0) return
+    const berangkat = daftar[0].status === 'disiapkan'
+    const kalimat = (n: number) =>
+      berangkat ? `${n} pesanan ditandai sedang dikirim.` : `${n} pesanan ditandai sudah sampai.`
+    const sesi = get().sesiDistributor
+    if (!get().pesananMasukServer || !sesi) {
+      for (const p of daftar) get().majukanPesananMasuk(p.id, bukti, true)
+      get().tampilkanRacun(kalimat(daftar.length), 'aman')
+      return
+    }
+    const baru = daftar.map((p) => p.id).filter((id) => !get().pesananDiproses.includes(id))
+    if (baru.length === 0) return
+    set((s) => ({ pesananDiproses: [...s.pesananDiproses, ...baru] }))
+    Promise.allSettled(baru.map((id) => aksiPesananMasuk(sesi, id, berangkat ? 'kirim' : 'sampai', bukti)))
+      .then(async (hasil) => {
+        const gagal = hasil.filter((h) => h.status === 'rejected').length
+        await get().muatPesananMasuk()
+        const umkm = get().sesiServer
+        if (umkm) {
+          const pesanan = await ambilPesanan(umkm).catch(() => null)
+          if (pesanan) useAplikasi.setState({ pesanan })
+        }
+        get().tampilkanRacun(
+          gagal === 0
+            ? kalimat(baru.length)
+            : `${baru.length - gagal} pesanan berhasil, ${gagal} gagal disimpan. Coba yang tersisa sekali lagi.`,
+          gagal === 0 ? 'aman' : 'menipis',
+        )
+      })
+      .finally(() => set((s) => ({ pesananDiproses: s.pesananDiproses.filter((x) => !baru.includes(x)) })))
+  },
+
   ajukanKontrak: (paketId) => {
     const sesi = get().sesiServer
     if (sesi && /^\d+$/.test(paketId)) {

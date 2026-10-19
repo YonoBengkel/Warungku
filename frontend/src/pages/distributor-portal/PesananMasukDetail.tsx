@@ -5,8 +5,6 @@ import { LencanaPromo } from '@/components/domain/KartuPromo'
 import { Avatar, Kartu, Lencana, Pemisah, Tombol, TombolTautan } from '@/components/ui/dasar'
 import { BilahAksi, KepalaHalaman } from '@/components/ui/navigasi'
 import { KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
-import { Kolom } from '@/components/ui/formulir'
-import { Lembar } from '@/components/ui/lembar'
 import {
   IkonBintang,
   IkonBintangIsi,
@@ -23,7 +21,7 @@ import { LABEL_JENIS_USAHA, LABEL_PESANAN_MASUK, NADA_PESANAN_MASUK } from '@/li
 import { umkmById } from '@/data/dummy'
 import type { StatusPesananMasuk } from '@/lib/types'
 import { useAplikasi, usePenentuHarga, usePesananMasuk } from '@/store/aplikasi'
-import { LembarTolak, totalPesananMasuk } from './PesananMasukDaftar'
+import { LembarBukti, LembarTolak, totalPesananMasuk } from './PesananMasukDaftar'
 
 /**
  * Rincian satu pesanan yang masuk ke distributor.
@@ -413,72 +411,6 @@ export default function PesananMasukDetail() {
   )
 }
 
-/**
- * Bukti antar: saat berangkat (kurir, pengantar, resi) dan saat sampai
- * (penerima, catatan). Semuanya boleh kosong; yang kosong tertulis "Belum
- * dicatat" di rincian, bukan dikarang.
- */
-function LembarBukti({
-  tahap,
-  tutup,
-  kirim,
-}: {
-  tahap: 'disiapkan' | 'dikirim'
-  tutup: () => void
-  kirim: (bukti: Record<string, string | null>) => void
-}) {
-  const [a, setA] = useState('')
-  const [b, setB] = useState('')
-  const [c, setC] = useState('')
-  const berangkat = tahap === 'disiapkan'
-  const kosongJadiNull = (v: string) => v.trim() || null
-  return (
-    <Lembar
-      terbuka
-      tutup={tutup}
-      judul={berangkat ? 'Catat pengiriman' : 'Catat barang sampai'}
-      keterangan={
-        berangkat
-          ? 'Isian ini tampil di rincian pesanan pemilik usaha. Boleh dikosongkan.'
-          : 'Stok pemilik usaha bertambah setelah ia menghitung barangnya sendiri.'
-      }
-      kaki={
-        <div className="flex gap-2.5">
-          <Tombol ragam="garis" penuh onClick={tutup}>
-            Batal
-          </Tombol>
-          <Tombol
-            penuh
-            onClick={() =>
-              kirim(
-                berangkat
-                  ? { kurir: kosongJadiNull(a), pengantar: kosongJadiNull(b), nomor_resi: kosongJadiNull(c) }
-                  : { diterima_oleh: kosongJadiNull(a), catatan: kosongJadiNull(b) },
-              )
-            }
-          >
-            {berangkat ? 'Tandai Sedang Dikirim' : 'Tandai Sudah Sampai'}
-          </Tombol>
-        </div>
-      }
-    >
-      <div className="pb-4 space-y-4">
-        {berangkat ? (
-          <>
-            <Kolom label="Jasa kirim" placeholder="Armada sendiri" value={a} onChange={(e) => setA(e.target.value)} />
-            <Kolom label="Nama pengantar" value={b} onChange={(e) => setB(e.target.value)} />
-            <Kolom label="Nomor resi" value={c} onChange={(e) => setC(e.target.value)} />
-          </>
-        ) : (
-          <>
-            <Kolom label="Diterima oleh" value={a} onChange={(e) => setA(e.target.value)} />
-            <Kolom label="Catatan" value={b} onChange={(e) => setB(e.target.value)} />
-          </>
-        )}
-      </div>
-    </Lembar>
-  )
-}
 
 /* ------------------------------------------------------------------ */
 /* Potongan kecil                                                      */

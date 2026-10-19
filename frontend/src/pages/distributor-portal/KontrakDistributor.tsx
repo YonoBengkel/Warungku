@@ -6,7 +6,7 @@ import { Konfirmasi, Lembar } from '@/components/ui/lembar'
 import { BarisChip, Chip, TabSegmen } from '@/components/ui/navigasi'
 import { KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
 import { IkonCentangLingkaran, IkonJam, IkonKontrak, IkonPena, IkonSampah, IkonTambah } from '@/icons'
-import { angka, bacaAngkaIndonesia, rupiah, tanggalPendek, waktuLalu, waktuNanti } from '@/lib/format'
+import { angka, angkaJumlah, bacaAngkaIndonesia, rupiah, tanggalPendek, waktuLalu, waktuNanti } from '@/lib/format'
 import {
   ALASAN_TOLAK_BERHENTI,
   ALASAN_TOLAK_KONTRAK,
@@ -84,8 +84,8 @@ function BarisKuota({ kontrak, label }: { kontrak: KontrakPelanggan; label: Reac
       </div>
       <div
         role="img"
-        aria-label={`${angka(diterima)} dari ${angka(kuota)} ${kontrak.satuan} sudah diterima${
-          jalan > 0 ? `, ${angka(jalan)} ${kontrak.satuan} dalam perjalanan` : ''
+        aria-label={`${angkaJumlah(diterima)} dari ${angkaJumlah(kuota)} ${kontrak.satuan} sudah diterima${
+          jalan > 0 ? `, ${angkaJumlah(jalan)} ${kontrak.satuan} dalam perjalanan` : ''
         }`}
         className="mt-2 h-2 w-full rounded-full bg-sunken overflow-hidden flex"
       >
@@ -94,7 +94,7 @@ function BarisKuota({ kontrak, label }: { kontrak: KontrakPelanggan; label: Reac
       </div>
       <p className="mt-1.5 text-isi text-ink-2 tabular">
         <strong className="text-ink">{angka(diterima)}</strong>
-        {jalan > 0 && <> + {angka(jalan)} di jalan</>} dari {angka(kuota)} {kontrak.satuan} bulan ini
+        {jalan > 0 && <> + {angkaJumlah(jalan)} di jalan</>} dari {angkaJumlah(kuota)} {kontrak.satuan} bulan ini
       </p>
     </div>
   )
@@ -211,7 +211,7 @@ function FormPaket({
   const hemat = Number.isFinite(hargaAngka) && hargaAngka > 0 ? Math.round((1 - hargaAngka / eceran) * 100) : null
 
   const galatHarga = !Number.isFinite(hargaAngka) || hargaAngka <= 0
-    ? `Harga kontrak belum diisi. Tulis harga per ${penawaran.satuan} dalam rupiah. Contoh: ${angka(Math.round(eceran * 0.95))}.`
+    ? `Harga kontrak belum diisi. Tulis harga per ${penawaran.satuan} dalam rupiah. Contoh: ${angkaJumlah(Math.round(eceran * 0.95))}.`
     : hargaAngka > eceran
       ? `Harga kontrak lebih mahal dari harga beli sekali (${rupiah(eceran)}). Pemilik usaha tidak punya alasan memilihnya. Turunkan, misalnya ke ${angka(Math.round(eceran * 0.95))}.`
       : undefined
@@ -445,7 +445,7 @@ export default function KontrakDistributor() {
                       <p className="mt-0.5 text-isi text-ink-2">
                         {k.durasiBulan} bulan &middot;{' '}
                         <span className="whitespace-nowrap">
-                          minimal {angka(k.kuotaMinPerBulan)} {k.satuan}/bulan
+                          minimal {angkaJumlah(k.kuotaMinPerBulan)} {k.satuan}/bulan
                         </span>{' '}
                         &middot;{' '}
                         <span className="whitespace-nowrap">
@@ -453,7 +453,7 @@ export default function KontrakDistributor() {
                         </span>
                       </p>
                       <p className="mt-1 text-isi text-ink-3 tabular">
-                        Total wajib {angka(totalWajib)} {k.satuan} &middot; {rupiah(totalWajib * k.hargaSatuan)}
+                        Total wajib {angkaJumlah(totalWajib)} {k.satuan} &middot; {rupiah(totalWajib * k.hargaSatuan)}
                       </p>
                     </div>
                     <p className="mt-2.5 text-isi text-ink-2">{riwayatToko(k.umkmId)}</p>
@@ -538,8 +538,8 @@ export default function KontrakDistributor() {
                         <Kartu key={penawaranId}>
                           <p className="text-kartu font-bold text-ink leading-snug">{daftar[0].namaBarang}</p>
                           <p className="mt-0.5 text-isi text-ink-3 tabular">
-                            {daftar.length} toko &middot; wajib {angka(totalKuota)} {satuan} bulan ini, sudah sampai{' '}
-                            {angka(totalDiterima)} {satuan}
+                            {daftar.length} toko &middot; wajib {angkaJumlah(totalKuota)} {satuan} bulan ini, sudah sampai{' '}
+                            {angkaJumlah(totalDiterima)} {satuan}
                           </p>
                           <div className="mt-3 space-y-4">
                             {daftar.map((k) => (
@@ -670,7 +670,7 @@ export default function KontrakDistributor() {
                               </p>
                               <p className="text-isi text-ink-2 tabular">
                                 <span className="whitespace-nowrap">
-                                  Min {angka(p.kuotaMinPerBulan)} {pw.satuan}/bulan
+                                  Min {angkaJumlah(p.kuotaMinPerBulan)} {pw.satuan}/bulan
                                 </span>{' '}
                                 &middot; <span className="whitespace-nowrap">{rupiah(p.hargaSatuan)}</span>
                                 {p.hematPersen > 0 && ` · hemat ${p.hematPersen}%`}
@@ -721,7 +721,7 @@ export default function KontrakDistributor() {
           akanDisetujui && (
             <>
               Mulai hari ini {umkmById(akanDisetujui.umkmId)?.nama ?? 'pemilik usaha'} mengambil minimal{' '}
-              {angka(akanDisetujui.kuotaMinPerBulan)} {akanDisetujui.satuan} {akanDisetujui.namaBarang} per bulan selama{' '}
+              {angkaJumlah(akanDisetujui.kuotaMinPerBulan)} {akanDisetujui.satuan} {akanDisetujui.namaBarang} per bulan selama{' '}
               {akanDisetujui.durasiBulan} bulan, dengan harga {rupiah(akanDisetujui.hargaSatuan)}/{akanDisetujui.satuan}.
               Kamu wajib menyediakan barangnya selama masa itu.
             </>

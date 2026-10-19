@@ -13,16 +13,7 @@ import {
   NADA_PESANAN,
   NADA_STOK,
 } from '@/lib/label'
-import {
-  angka,
-  cx,
-  hariLagi,
-  jam,
-  rupiah,
-  tanggalPendek,
-  waktuLalu,
-  waktuNanti,
-} from '@/lib/format'
+import { angka, angkaJumlah, cx, hariLagi, jam, rupiah, tanggalPendek, waktuLalu, waktuNanti } from '@/lib/format'
 import { angkaTampil, jumlahTampil, satuanTampil } from '@/lib/satuan'
 import {
   IkonCentangLingkaran,
@@ -468,7 +459,7 @@ export function KuotaBulanIni({ kontrak, ringkas }: { kontrak: Kontrak; ringkas?
           <span className="size-2.5 rounded-full bg-brand" aria-hidden="true" />
           Sudah diterima{' '}
           <strong className="text-ink tabular">
-            {angka(diterima)} {kontrak.satuan}
+            {angkaJumlah(diterima)} {kontrak.satuan}
           </strong>
         </span>
         {jalan > 0 && (
@@ -476,12 +467,12 @@ export function KuotaBulanIni({ kontrak, ringkas }: { kontrak: Kontrak; ringkas?
             <span className="size-2.5 rounded-full bg-info/55" aria-hidden="true" />
             Dalam perjalanan{' '}
             <strong className="text-ink tabular">
-              {angka(jalan)} {kontrak.satuan}
+              {angkaJumlah(jalan)} {kontrak.satuan}
             </strong>
           </span>
         )}
         <span className="text-ink-3">
-          dari {angka(kuota)} {kontrak.satuan}
+          dari {angkaJumlah(kuota)} {kontrak.satuan}
         </span>
       </div>
 
@@ -493,7 +484,7 @@ export function KuotaBulanIni({ kontrak, ringkas }: { kontrak: Kontrak; ringkas?
         <p className="mt-2 text-isi text-ink-2">
           Kurang{' '}
           <strong className="text-ink tabular">
-            {angka(kurang)} {kontrak.satuan}
+            {angkaJumlah(kurang)} {kontrak.satuan}
           </strong>{' '}
           &middot; sisa {sisaHari} hari
         </p>

@@ -15,7 +15,7 @@ import {
   IkonPetir,
   IkonSalin,
 } from '@/icons'
-import { angka, jam, jumlahSatuan, rupiah, tanggalPanjang, tanggalPendek, waktuNanti } from '@/lib/format'
+import { angka, angkaJumlah, jam, jumlahSatuan, rupiah, tanggalPanjang, tanggalPendek, waktuNanti } from '@/lib/format'
 import { jumlahTampil } from '@/lib/satuan'
 import { ALASAN_BERHENTI, BANTUAN, LABEL_KONTRAK } from '@/lib/label'
 import { distributorById, penawaranById, sisaHariPeriode } from '@/data/dummy'
@@ -139,7 +139,7 @@ export default function KontrakDetail() {
   function pesanKekurangan() {
     if (kurang <= 0) return
     tambahKeKeranjang(kt.distributorId, kt.penawaranId, kurang, kurang, kt.id)
-    tampilkanRacun(`${angka(kurang)} ${kt.satuan} ${kt.namaBarang} masuk keranjang.`, 'aman')
+    tampilkanRacun(`${angkaJumlah(kurang)} ${kt.satuan} ${kt.namaBarang} masuk keranjang.`, 'aman')
     navigate('/keranjang')
   }
 
@@ -147,10 +147,10 @@ export default function KontrakDetail() {
     const teks = [
       `Kontrak ${kt.namaBarang} — ${kt.durasiBulan} bulan`,
       `Distributor: ${distributor?.nama ?? '-'}`,
-      `Minimal ambil: ${angka(kt.kuotaMinPerBulan)} ${kt.satuan} per bulan`,
+      `Minimal ambil: ${angkaJumlah(kt.kuotaMinPerBulan)} ${kt.satuan} per bulan`,
       `Harga kontrak: ${rupiah(kt.hargaSatuan)} per ${kt.satuan}`,
       `Berjalan: ${tanggalPanjang(kt.mulai)} sampai ${tanggalPanjang(kt.berakhir)}`,
-      `Total wajib selama kontrak: ${angka(totalWajib)} ${kt.satuan} (${rupiah(nilaiTotal)})`,
+      `Total wajib selama kontrak: ${angkaJumlah(totalWajib)} ${kt.satuan} (${rupiah(nilaiTotal)})`,
       `Kalau kuota tidak terpenuhi: ${ketentuan}`,
     ].join('\n')
     navigator.clipboard
@@ -254,15 +254,15 @@ export default function KontrakDetail() {
               ) : kurang > 0 ? (
                 <div className="mt-4 border-t border-line pt-3.5">
                   <p className="text-[1rem] font-bold text-ink">
-                    Kurang {angka(kurang)} {kontrak.satuan} &middot; sisa {sisaHari} hari di bulan ini
+                    Kurang {angkaJumlah(kurang)} {kontrak.satuan} &middot; sisa {sisaHari} hari di bulan ini
                   </p>
                   {konversi && <p className="mt-0.5 text-isi text-ink-2">{konversi}</p>}
                   <div className="mt-3">
                     {terkunci ? (
-                      <TombolTerkunci label={`Pesan ${angka(kurang)} ${kontrak.satuan}`} penuh />
+                      <TombolTerkunci label={`Pesan ${angkaJumlah(kurang)} ${kontrak.satuan}`} penuh />
                     ) : (
                       <Tombol penuh ikonKiri={<IkonKeranjang size={16} />} onClick={pesanKekurangan}>
-                        Pesan {angka(kurang)} {kontrak.satuan}
+                        Pesan {angkaJumlah(kurang)} {kontrak.satuan}
                       </Tombol>
                     )}
                   </div>
@@ -283,7 +283,7 @@ export default function KontrakDetail() {
                   Isi kesepakatan
                 </h2>
                 <div className="space-y-1">
-                  <BarisIsi label="Minimal ambil tiap bulan" nilai={`${angka(kontrak.kuotaMinPerBulan)} ${kontrak.satuan}`} />
+                  <BarisIsi label="Minimal ambil tiap bulan" nilai={`${angkaJumlah(kontrak.kuotaMinPerBulan)} ${kontrak.satuan}`} />
                   <BarisIsi label="Harga kontrak" nilai={`${rupiah(kontrak.hargaSatuan)} / ${kontrak.satuan}`} />
                   <BarisIsi label="Mulai" nilai={tanggalPendek(kontrak.mulai)} />
                   <BarisIsi
@@ -298,13 +298,13 @@ export default function KontrakDetail() {
                       Total wajib selama kontrak
                     </p>
                     <p className="mt-1 text-angka font-extrabold text-ink leading-none">
-                      {angka(totalWajib)} <span className="text-isi font-semibold text-ink-3">{kontrak.satuan}</span>
+                      {angkaJumlah(totalWajib)} <span className="text-isi font-semibold text-ink-3">{kontrak.satuan}</span>
                     </p>
                   </div>
                   <p className="text-kartu font-bold text-ink tabular text-right">{rupiah(nilaiTotal)}</p>
                 </div>
                 <p className="mt-1 text-kecil text-ink-3 tabular">
-                  {angka(kontrak.kuotaMinPerBulan)} {kontrak.satuan} &times; {kontrak.durasiBulan} bulan
+                  {angkaJumlah(kontrak.kuotaMinPerBulan)} {kontrak.satuan} &times; {kontrak.durasiBulan} bulan
                 </p>
               </Kartu>
             </section>
@@ -357,7 +357,7 @@ export default function KontrakDetail() {
               (kontrak.pengajuanBerhenti ? (
                 <Peringatan nada="menipis" judul="Pengajuan penghentian sudah terkirim">
                   {namaDistributor} akan menjawabnya. Sampai ada jawaban, kontrak ini tetap berjalan dan kewajiban{' '}
-                  {angka(kontrak.kuotaMinPerBulan)} {kontrak.satuan} per bulan masih berlaku. Alasanmu: &ldquo;
+                  {angkaJumlah(kontrak.kuotaMinPerBulan)} {kontrak.satuan} per bulan masih berlaku. Alasanmu: &ldquo;
                   {kontrak.pengajuanBerhenti.alasan}&rdquo;
                 </Peringatan>
               ) : (
@@ -445,9 +445,9 @@ export default function KontrakDetail() {
               <BarisIsi label="Barang" nilai={kontrak.namaBarang} />
               <BarisIsi label="Distributor" nilai={distributor?.nama ?? '-'} />
               <BarisIsi label="Lama kontrak" nilai={`${kontrak.durasiBulan} bulan`} />
-              <BarisIsi label="Minimal ambil tiap bulan" nilai={`${angka(kontrak.kuotaMinPerBulan)} ${kontrak.satuan}`} />
+              <BarisIsi label="Minimal ambil tiap bulan" nilai={`${angkaJumlah(kontrak.kuotaMinPerBulan)} ${kontrak.satuan}`} />
               <BarisIsi label="Harga kontrak" nilai={`${rupiah(kontrak.hargaSatuan)} / ${kontrak.satuan}`} />
-              <BarisIsi label="Total wajib selama kontrak" nilai={`${angka(totalWajib)} ${kontrak.satuan}`} />
+              <BarisIsi label="Total wajib selama kontrak" nilai={`${angkaJumlah(totalWajib)} ${kontrak.satuan}`} />
               <BarisIsi label="Berlaku" nilai={`${tanggalPanjang(kontrak.mulai)} – ${tanggalPanjang(kontrak.berakhir)}`} />
             </div>
             <p className="mt-3 text-isi text-ink-2 leading-relaxed bg-sunken rounded-md px-3 py-2.5">
@@ -527,7 +527,7 @@ export default function KontrakDetail() {
         <div className="pb-4 space-y-4">
           <p className="text-isi text-ink-2 leading-relaxed">
             Kontrak ini berjalan sampai {tanggalPanjang(kontrak.berakhir)} dan tidak bisa dihentikan sepihak. Selama
-            menunggu jawaban, kewajiban {angka(kontrak.kuotaMinPerBulan)} {kontrak.satuan} per bulan masih berlaku.
+            menunggu jawaban, kewajiban {angkaJumlah(kontrak.kuotaMinPerBulan)} {kontrak.satuan} per bulan masih berlaku.
           </p>
           <div>
             <p className="text-isi font-semibold text-ink-2 mb-2.5">Kenapa ingin berhenti?</p>
@@ -585,7 +585,7 @@ function BarisBulan({
         <div className="min-w-0">
           <p className="text-kartu font-bold text-ink">{namaPeriode(periode)}</p>
           <p className="text-isi text-ink-3 tabular">
-            {angka(diterima)} dari {angka(kuota)} {satuan} diterima
+            {angkaJumlah(diterima)} dari {angkaJumlah(kuota)} {satuan} diterima
           </p>
         </div>
         <Lencana nada={terpenuhi ? 'aman' : berjalan ? 'menipis' : 'kritis'} ikon={berjalan ? <IkonJam size={13} /> : undefined}>

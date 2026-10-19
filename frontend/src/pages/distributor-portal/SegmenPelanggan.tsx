@@ -27,6 +27,19 @@ const NADA_SEGMEN: Record<string, 'aman' | 'info' | 'menipis' | 'netral' | 'mere
   jarang: 'menipis',
 }
 
+/**
+ * Tempat menjalankan saran tiap segmen (saran ditulis Mesin 3,
+ * ml/mesin3/segmentasi.py). "Mulai menjauh" sengaja tanpa tombol: sarannya
+ * menghubungi pemilik usaha, dan nomor HP baru terbuka untuk distributor
+ * lewat pesanan. "Kecil" juga tanpa tombol, karena sarannya membiarkan.
+ */
+const TINDAKAN_SEGMEN: Record<string, { label: string; ke: string } | undefined> = {
+  andalan: { label: 'Atur Paket Kontrak', ke: '/distributor-portal/kontrak?tab=paket' },
+  rutin: { label: 'Atur Paket Kontrak', ke: '/distributor-portal/kontrak?tab=paket' },
+  sedang: { label: 'Buat Promo', ke: '/distributor-portal/promo' },
+  baru: { label: 'Lihat Pesanan Disiapkan', ke: '/distributor-portal/pesanan?tahap=disiapkan' },
+}
+
 /** Recency dibulatkan ke hari: 0 hari dibaca "hari ini", bukan "0 hari lalu". */
 function hariLalu(hari: number): string {
   const h = Math.round(hari)
@@ -203,7 +216,18 @@ function DaftarAnggota({ sesi, segmen, nama }: { sesi: SesiDistributor; segmen: 
 
   return (
     <section aria-labelledby="judul-anggota" className="mt-6">
-      <JudulBagian id="judul-anggota" judul={nama} keterangan="Diurutkan dari belanja terbesar." />
+      <JudulBagian
+        id="judul-anggota"
+        judul={nama}
+        keterangan="Diurutkan dari belanja terbesar."
+        aksi={
+          TINDAKAN_SEGMEN[segmen] && (
+            <TombolTautan ke={TINDAKAN_SEGMEN[segmen].ke} ragam="garis" ukuran="kecil">
+              {TINDAKAN_SEGMEN[segmen].label}
+            </TombolTautan>
+          )
+        }
+      />
       {galat ? (
         <Peringatan nada="kritis" judul="Anggota segmen gagal dimuat">
           {galat}

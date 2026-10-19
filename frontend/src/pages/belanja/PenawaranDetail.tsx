@@ -41,11 +41,13 @@ import { useAplikasi, usePenentuHarga } from '@/store/aplikasi'
 /**
  * Detail satu penawaran: satu barang dari satu distributor.
  *
- * Dua tombol di kaki layar sengaja dibedakan bobotnya. "Ikat Kontrak" penuh dan
- * berwarna, "Beli Sekali" bergaris. Bukan untuk mendorong kontrak diam-diam,
- * tapi karena kontrak adalah keputusan yang perlu dipikirkan, jadi jalur menuju
- * layar pembandingnya harus paling mudah ditemukan. Harga kedua jalur ditulis
- * bersebelahan tepat di atas tombol supaya perbandingannya tidak bisa dilewati.
+ * Dua tombol di kaki layar sengaja dibedakan bobotnya. "Beli Sekali" penuh dan
+ * berwarna, "Ikat Kontrak" bergaris (keputusan Ilham, 19 Okt 2026). Pemilik
+ * usaha paling sering tiba di sini karena stoknya habis atau menipis, dan yang
+ * ia butuhkan saat itu adalah membeli; kontrak tetap satu ketukan di sebelahnya.
+ * Kalau stok distributor kosong, Beli Sekali nonaktif dan Ikat Kontrak kembali
+ * menjadi tombol utama. Harga kedua jalur ditulis bersebelahan tepat di atas
+ * tombol supaya perbandingannya tidak bisa dilewati.
  */
 export default function PenawaranDetail() {
   const { id = '' } = useParams()
@@ -94,6 +96,7 @@ export default function PenawaranDetail() {
   /* Disembunyikan distributor dari katalog. Halamannya tetap bisa dibuka dari
      pesanan atau kontrak lama, tapi tidak lagi bisa dipesan. */
   const tidakDijual = penawaran.aktif === false
+  const bisaBeliSekali = !habisDiDistributor && !tidakDijual
   /* Kontrak dibaca dari penyimpanan aplikasi, bukan dari berkas contoh, supaya
      kontrak yang baru berubah di layar lain langsung ikut terlihat di sini. */
   const kontrakBarang = barang
@@ -363,6 +366,24 @@ export default function PenawaranDetail() {
         }
       >
         <div className="flex flex-col sm:flex-row gap-2.5">
+          {terkunci ? (
+            <div className="sm:flex-1">
+              <TombolTerkunci label="Beli Sekali" penuh />
+            </div>
+          ) : (
+            <Tombol
+              ragam={bisaBeliSekali ? 'utama' : 'garis'}
+              penuh
+              ukuran="besar"
+              className="sm:flex-1"
+              ikonKiri={<IkonKeranjang size={18} />}
+              onClick={bukaLembarBeli}
+              disabled={!bisaBeliSekali}
+            >
+              Beli Sekali
+            </Tombol>
+          )}
+
           {paket.length > 0 &&
             !tidakDijual &&
             (terkunci ? (
@@ -372,6 +393,7 @@ export default function PenawaranDetail() {
             ) : (
               <TombolTautan
                 ke={`/penawaran/${penawaran.id}/kontrak`}
+                ragam={bisaBeliSekali ? 'garis' : 'utama'}
                 penuh
                 ukuran="besar"
                 className="sm:flex-1"
@@ -380,24 +402,6 @@ export default function PenawaranDetail() {
                 Ikat Kontrak
               </TombolTautan>
             ))}
-
-          {terkunci ? (
-            <div className="sm:flex-1">
-              <TombolTerkunci label="Beli Sekali" penuh />
-            </div>
-          ) : (
-            <Tombol
-              ragam="garis"
-              penuh
-              ukuran="besar"
-              className="sm:flex-1"
-              ikonKiri={<IkonKeranjang size={18} />}
-              onClick={bukaLembarBeli}
-              disabled={habisDiDistributor || tidakDijual}
-            >
-              Beli Sekali
-            </Tombol>
-          )}
         </div>
       </BilahAksi>
 
