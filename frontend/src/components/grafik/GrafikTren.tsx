@@ -14,11 +14,16 @@ import { useLebarWadah, batasRapi, tandaSumbu, garisHalus } from './dasarGrafik'
  *   (16 Okt 2026). Dulu satu warna; sekarang kedua garis bisa tumpang tindih
  *   di hari yang sudah tercatat (perkiraan uji balik), jadi keduanya harus
  *   bisa dibedakan. Gaya garis tetap ada supaya warna tidak bekerja sendirian.
- * - Sesudah hari terakhir yang tercatat, hanya garis perkiraan yang tersisa.
- *   Kalau datanya tidak tumpang tindih (data contoh, grafik bulanan), garis
- *   perkiraan disambung ke titik aktual terakhir supaya tidak terputus.
- * - Pita ketidakpastian selalu ditampilkan kalau ada. Menyembunyikan rentang
- *   membuat perkiraan terlihat lebih pasti daripada kenyataannya.
+ * - Bentuknya mengikuti sketsa tim (19 Okt 2026). Masa lalu: dua garis, aktual
+ *   dan perkiraan uji balik, tanpa pita. Masa depan: garis perkiraan dan pita
+ *   rentang yang berangkat dari titik aktual terakhir, tempat ketidakpastian
+ *   masih nol, lalu mengembang seperti kipas.
+ * - Perkiraan uji balik dan perkiraan ke depan adalah dua ramalan berbeda
+ *   (dibuat dari titik asal yang berbeda), jadi digambar sebagai dua ruas yang
+ *   tidak saling disambung. Lompatan kecil di garis "data terakhir" itu jujur.
+ * - Pita di masa depan selalu ditampilkan kalau ada. Menyembunyikan rentang
+ *   membuat perkiraan terlihat lebih pasti daripada kenyataannya. Lebarnya
+ *   mengikuti model, tidak dipaksa melebar.
  * - Ada tampilan tabel, supaya angka tetap terbaca oleh pembaca layar dan oleh
  *   pengguna yang tidak nyaman membaca grafik.
  */
@@ -77,43 +82,38 @@ export function GrafikTren({
     const y = (v: number) => sisi.atas + ph - (v / maks) * ph
 
     const titikAktual: Array<[number, number]> = []
-    const titikPrediksi: Array<[number, number]> = []
     let indeksSambung = -1
-
     data.forEach((d, i) => {
       if (d.aktual != null) {
         titikAktual.push([x(i), y(d.aktual)])
         indeksSambung = i
       }
-      if (d.prediksi != null) titikPrediksi.push([x(i), y(d.prediksi)])
     })
 
-    // Sambungkan garis prediksi ke titik aktual terakhir supaya tidak terputus,
-    // tapi hanya kalau perkiraan baru mulai sesudahnya (tidak tumpang tindih).
-    const disambung =
-      indeksSambung >= 0 &&
-      data[indeksSambung].aktual != null &&
-      data[indeksSambung].prediksi == null &&
-      titikPrediksi.length > 0
-    if (disambung) {
-      titikPrediksi.unshift([x(indeksSambung), y(data[indeksSambung].aktual!)])
-    }
-
+    // Dua ruas perkiraan: uji balik di hari yang sudah tercatat, dan perkiraan
+    // ke depan sesudah hari terakhir. Pita hanya untuk yang ke depan.
+    const titikLalu: Array<[number, number]> = []
+    const titikDepan: Array<[number, number]> = []
     const pitaAtas: Array<[number, number]> = []
     const pitaBawah: Array<[number, number]> = []
     data.forEach((d, i) => {
-      if (d.batasAtas != null && d.batasBawah != null) {
+      const lalu = i <= indeksSambung
+      if (d.prediksi != null) (lalu ? titikLalu : titikDepan).push([x(i), y(d.prediksi)])
+      if (!lalu && d.batasAtas != null && d.batasBawah != null) {
         pitaAtas.push([x(i), y(d.batasAtas)])
         pitaBawah.push([x(i), y(d.batasBawah)])
       }
     })
 
-    // Sama seperti garisnya: pita yang baru mulai sesudah data terakhir ditarik
-    // dari titik aktual terakhir, sehingga perkiraan satu bulan pun punya pita.
-    if (disambung && pitaAtas.length > 0) {
+    // Perkiraan ke depan dan pitanya berangkat dari titik aktual terakhir: di
+    // sana yang terjadi sudah diketahui, jadi rentangnya mulai dari nol.
+    if (indeksSambung >= 0) {
       const awal: [number, number] = [x(indeksSambung), y(data[indeksSambung].aktual!)]
-      pitaAtas.unshift(awal)
-      pitaBawah.unshift(awal)
+      if (titikDepan.length > 0) titikDepan.unshift(awal)
+      if (pitaAtas.length > 0) {
+        pitaAtas.unshift(awal)
+        pitaBawah.unshift(awal)
+      }
     }
 
     const jalurPita =
@@ -128,11 +128,14 @@ export function GrafikTren({
       x,
       y,
       jalurAktual: garisHalus(titikAktual),
-      jalurPrediksi: garisHalus(titikPrediksi),
+      jalurPrediksi: [titikLalu, titikDepan]
+        .filter((t) => t.length > 0)
+        .map(garisHalus)
+        .join(' '),
       jalurPita,
       indeksSambung,
       ujungAktual: titikAktual[titikAktual.length - 1],
-      ujungPrediksi: titikPrediksi[titikPrediksi.length - 1],
+      ujungPrediksi: titikDepan[titikDepan.length - 1] ?? titikLalu[titikLalu.length - 1],
     }
     // `sisi` lahir dari `lebarSumbu`, jadi cukup itu yang dipantau.
   }, [data, lebar, tinggi, lebarSumbu])
@@ -193,7 +196,7 @@ export function GrafikTren({
           ))}
 
           {/* Pita ketidakpastian prediksi */}
-          {g.jalurPita && <path d={g.jalurPita} fill="var(--c-seri-perkiraan)" opacity="0.12" />}
+          {g.jalurPita && <path d={g.jalurPita} fill="var(--c-pita-perkiraan)" />}
 
           {/* Batas hari ini */}
           {g.indeksSambung >= 0 && g.indeksSambung < data.length - 1 && (
@@ -362,9 +365,11 @@ export function GrafikTren({
         {g.jalurPita && (
           <span className="inline-flex items-center gap-1.5">
             <svg width="18" height="10" aria-hidden="true">
-              <rect x="0" y="0" width="18" height="10" rx="2" fill="var(--c-seri-perkiraan)" opacity="0.18" />
+              <rect x="0" y="0" width="18" height="10" rx="2" fill="var(--c-pita-perkiraan)" />
             </svg>
-            Rentang perkiraan
+            {/* "8 dari 10" hanya berlaku untuk rentang harian (p10-p90 tiap hari).
+                Rentang bulanan adalah jumlah batas harian, jadi peluangnya lain. */}
+            {bulanan ? 'Rentang perkiraan' : 'Rentang perkiraan (8 dari 10 hari)'}
           </span>
         )}
         <button

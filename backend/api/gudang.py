@@ -202,6 +202,23 @@ def pemakaian_bulanan(
                 """
             ).bindparams(u=usaha_id)
         ).all()
+        # Uji balik bulanan dari jalan terbaru barang itu: satu baris per periode,
+        # tanggal_target = hari pertama periode (lihat ml/layanan.py).
+        balik = sesi.exec(
+            text(
+                """
+                WITH terbaru AS (
+                    SELECT DISTINCT ON (barang_id) barang_id, jalan_id
+                      FROM prediksi WHERE usaha_id = :u
+                     ORDER BY barang_id, dijalankan_pada DESC
+                )
+                SELECT p.barang_id, p.tanggal_target, p.p50
+                  FROM prediksi p JOIN terbaru t USING (barang_id, jalan_id)
+                 WHERE p.model_versi = 'lightgbm/uji-balik-bulanan'
+                """
+            ).bindparams(u=usaha_id)
+        ).all()
+        uji_balik = {(r.barang_id, r.tanggal_target): r.p50 for r in balik}
         perkiraan = {r.barang_id: r for r in depan}
         hasil: dict[int, PemakaianBulanan] = {}
         for r in riwayat:
@@ -212,6 +229,7 @@ def pemakaian_bulanan(
                     tanggal=tengah,
                     jumlah=(Decimal(r.rata) * 30).quantize(Decimal("0.001")) if r.rata is not None else Decimal(0),
                     hari_tercatat=r.n,
+                    uji_balik=uji_balik.get((r.barang_id, r.awal)),
                 )
             )
         for bid, h in hasil.items():
@@ -243,6 +261,8 @@ def perkiraan_barang(barang_id: int = Path(ge=1), usaha_id: int = Depends(usaha_
                        model_versi, dijalankan_pada, kematangan, tingkat_layanan
                   FROM prediksi
                  WHERE usaha_id = :u AND barang_id = :b
+                   -- Uji balik bulanan berisi jumlah 30 hari, bukan angka harian.
+                   AND model_versi IS DISTINCT FROM 'lightgbm/uji-balik-bulanan'
                    AND jalan_id = (
                        SELECT jalan_id FROM prediksi
                         WHERE barang_id = :b ORDER BY dijalankan_pada DESC LIMIT 1

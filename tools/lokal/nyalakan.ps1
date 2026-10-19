@@ -229,7 +229,7 @@ $perlu = $JalankanMesin -or $produsenBaru -or ($null -eq $keadaan) -or ($keadaan
          ($keadaan.tanpa_perkiraan -gt 0) -or ($keadaan.saran -eq 0) -or ($keadaan.segmen -eq 0)
 if ($perlu) {
     $mesin = @(
-        @{ Nama = 'Mesin 1 (perkiraan, sekitar 1,5 menit)'; Url = 'http://localhost:8001/mesin1/jalankan'; Badan = '{}' },
+        @{ Nama = 'Mesin 1 (perkiraan, sekitar 3,5 menit)'; Url = 'http://localhost:8001/mesin1/jalankan'; Badan = '{}' },
         @{ Nama = 'Mesin 2 (saran distributor)'; Url = 'http://localhost:8001/mesin2/jalankan'; Badan = '{}' },
         @{ Nama = 'Mesin 3 (segmen pelanggan)'; Url = 'http://localhost:8001/mesin3/jalankan'; Badan = $null }
     )

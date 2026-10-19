@@ -73,6 +73,9 @@
      penglihatan normal dE 29,9, kontras >= 3:1. Gaya putus-putus menjadi
      penanda kedua, jadi warna tidak bekerja sendirian. */
   --c-seri-perkiraan: #e34948;
+  /* Bayangan rentang perkiraan: warna yang sama, dipudarkan per tema supaya
+     tetap terlihat di permukaan gelap tanpa menutupi garis di atasnya. */
+  --c-pita-perkiraan: rgb(227 73 72 / 0.14);
   --c-grid: #e6eaee;
   --c-sumbu: #9aa5b1;
 
@@ -139,6 +142,7 @@
   --c-seri-3: #8577dd;
   /* Pasangan gelap seri-1: dE 9,5 (deutan), 26,9 (normal), kontras >= 3:1. */
   --c-seri-perkiraan: #e66767;
+  --c-pita-perkiraan: rgb(230 103 103 / 0.24);
   --c-grid: #22303b;
   --c-sumbu: #64717d;
 

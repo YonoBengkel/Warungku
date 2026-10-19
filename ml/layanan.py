@@ -76,6 +76,9 @@ class PermintaanJalan(BaseModel):
     #: (ml/hasil/hasil_eksperimen_mesin1_lgbm.json).
     metode: str = "lightgbm"
     cakrawala: int = CAKRAWALA
+    #: Uji balik bulanan untuk grafik bulanan (sekitar 3,5 menit untuk semua
+    #: barang). Matikan untuk jalan cepat, mis. saat mencoba satu usaha.
+    uji_bulanan: bool = True
 
 
 class HasilJalan(BaseModel):
@@ -107,7 +110,14 @@ def _kematangan(panjang: int) -> KematanganPerkiraan:
     return KematanganPerkiraan.MANTAP
 
 
-def _jalankan_mesin1(usaha_id: int | None, metode: str, cakrawala: int) -> HasilJalan:
+#: Uji balik bulanan: berapa blok 30 hari ke belakang, dan riwayat minimum
+#: sebelum titik asal supaya fitur lag dan rata-rata 28 hari sudah terisi.
+BLOK_UJI_BULANAN = 12
+MIN_ASAL_BULANAN = 60
+VERSI_UJI_BULANAN = "lightgbm/uji-balik-bulanan"
+
+
+def _jalankan_mesin1(usaha_id: int | None, metode: str, cakrawala: int, uji_bulanan: bool = True) -> HasilJalan:
     import time
 
     import numpy as np
@@ -218,6 +228,45 @@ def _jalankan_mesin1(usaha_id: int | None, metode: str, cakrawala: int) -> Hasil
                     }
                 )
 
+    # Uji balik bulanan: garis perkiraan masa lalu di grafik bulanan. Untuk tiap
+    # blok 30 hari yang sudah lewat (blok yang sama dengan endpoint
+    # pemakaian-bulanan: dihitung mundur dari hari terakhir data), model
+    # meramal 30 hari dari titik tepat sebelum blok itu, tanpa melihat isi
+    # bloknya. Yang disimpan SATU baris per barang per blok: tanggal_target =
+    # hari PERTAMA blok (hari terakhir blok paling baru bentrok dengan baris uji
+    # balik harian pada kunci unik barang + tanggal + jalan), p50 = jumlah
+    # perkiraan 30 hari. Hanya nilai tengah
+    # yang dihitung (grafik masa lalu tidak berpita), jadi p10 dan p90 diisi
+    # sama dengan p50 dan tidak bermakna. Satu titik asal sekitar 18 detik
+    # untuk 898 barang.
+    if metode == "lightgbm" and deret and uji_bulanan:
+        from .mesin1.lgbm import ramal_kuantil
+
+        for k in range(BLOK_UJI_BULANAN):
+            tugas_blok = [
+                (d, len(d) - 30 * (k + 1)) for d in deret if len(d) - 30 * (k + 1) >= MIN_ASAL_BULANAN
+            ]
+            if not tugas_blok:
+                break
+            for (d, asal), r in zip(tugas_blok, ramal_kuantil(tugas_blok, 30, taraf=(0.5,))):
+                jumlah = float(np.round(r[0.5].sum(), 3))
+                baris.append(
+                    {
+                        "usaha_id": d.usaha_id,
+                        "barang_id": d.barang_id,
+                        "tanggal_target": d.tanggal[asal],
+                        "p10": jumlah,
+                        "p50": jumlah,
+                        "p90": jumlah,
+                        "jalan_id": jalan_id,
+                        "model_nama": nama_model,
+                        "model_versi": VERSI_UJI_BULANAN,
+                        "dijalankan_pada": sekarang,
+                        "kematangan": _kematangan(asal).value,
+                        "tingkat_layanan": TingkatLayanan.SEGAR.value,
+                    }
+                )
+
     if baris:
         from warungku.model import Prediksi
 
@@ -239,7 +288,7 @@ def _jalankan_mesin1(usaha_id: int | None, metode: str, cakrawala: int) -> Hasil
 @app.post("/mesin1/jalankan", response_model=HasilJalan, tags=["mesin1"])
 def mesin1(p: PermintaanJalan) -> HasilJalan:
     """Jalankan Mesin 1 dan tulis ke `prediksi`. Memblokir sampai selesai."""
-    return _jalankan_mesin1(p.usaha_id, p.metode, p.cakrawala)
+    return _jalankan_mesin1(p.usaha_id, p.metode, p.cakrawala, p.uji_bulanan)
 
 
 @app.post("/mesin1/jadwalkan", tags=["mesin1"])
@@ -251,7 +300,7 @@ def mesin1_jadwalkan(p: PermintaanJalan, tugas: BackgroundTasks) -> dict:
     lama daripada batas waktu HTTP mana pun yang pantas. Jadi jawabannya
     dikirim segera, dan hasilnya diperiksa lewat `/sehat`.
     """
-    tugas.add_task(_jalankan_mesin1, p.usaha_id, p.metode, p.cakrawala)
+    tugas.add_task(_jalankan_mesin1, p.usaha_id, p.metode, p.cakrawala, p.uji_bulanan)
     return {"dijadwalkan": True, "metode": p.metode}
 
 

@@ -959,16 +959,13 @@ export function trenBarang(barangId: string): TitikTren[] {
   const lebarDasar = perkiraan.kematangan === 'kasar' ? 0.2 : 0.1
 
   // Perkiraan uji balik untuk 14 hari tercatat, seperti di mode server: garis
-  // perkiraan menumpang garis aktual. Angka acaknya terpisah supaya nilai
-  // aktual di atas tidak berubah.
+  // perkiraan menumpang garis aktual, tanpa pita. Angka acaknya terpisah
+  // supaya nilai aktual di atas tidak berubah.
   const rndBalik = acakBersemai(barangId.split('').reduce((a, c) => a + c.charCodeAt(0), 11))
   for (const t of titik) {
     const hari = new Date(t.tanggal).getDay()
     const p = Math.round(b.pemakaianHarian * (hari === 0 || hari === 6 ? 1.32 : 0.95) * (0.94 + rndBalik() * 0.12))
-    const lebar = lebarDasar + 0.15
     t.prediksi = p
-    t.batasBawah = Math.round(p * (1 - lebar))
-    t.batasAtas = Math.round(p * (1 + lebar))
   }
 
   for (let i = 1; i <= 7; i++) {
@@ -1036,6 +1033,25 @@ function pemakaianBulan(b: Barang, mundur: number): number {
 }
 
 /**
+ * Perkiraan untuk bulan yang SUDAH lewat, dibuat sebelum bulan itu dimulai
+ * (uji balik). Inilah garis perkiraan masa lalu di grafik bulanan.
+ *
+ * Mode server: dari Mesin 1. Data contoh: dari bulan sebelumnya dengan angka
+ * acak tersendiri, supaya bentuk grafiknya sama dengan mode server. Bulan
+ * paling awal tidak punya nilai karena tidak ada riwayat sebelumnya.
+ */
+function ujiBalikBulan(b: Barang, mundur: number): number | null {
+  const server = bulananServer?.get(b.id)
+  if (server) {
+    const v = server.periode[server.periode.length - 1 - mundur]?.ujiBalik
+    return v == null ? null : Math.round(v)
+  }
+  if (mundur >= BULAN_RIWAYAT - 1) return null
+  const rnd = acakBersemai(semaiDari(`${b.id}|balik|${mundur}`))
+  return Math.max(0, Math.round(pemakaianBulan(b, mundur + 1) * (0.93 + rnd() * 0.14)))
+}
+
+/**
  * Perkiraan bulan depan: laju bulan ini terhadap bulan lalu, dijaga di rentang
  * wajar. Model boleh salah, tapi tidak boleh melompat dua kali lipat hanya
  * karena satu bulan kebetulan ramai.
@@ -1058,7 +1074,11 @@ function perkiraanBulanDepan(b: Barang): number {
  * Mesin 1 tanpa perlu tahu dari mana angkanya.
  */
 export interface BulananBarang {
-  periode: Array<{ tanggal: string; jumlah: number }>
+  /**
+   * `ujiBalik`: perkiraan Mesin 1 untuk periode itu yang dibuat dari data
+   * sebelum periode dimulai, jadi bisa dibandingkan dengan `jumlah`.
+   */
+  periode: Array<{ tanggal: string; jumlah: number; ujiBalik: number | null }>
   p10: number | null
   p50: number | null
   p90: number | null
@@ -1086,7 +1106,8 @@ export function pasangDataServer(bulanan: Map<string, BulananBarang> | null, bar
 const BULAN_RIWAYAT = 12
 
 /**
- * Bentuk baku semua grafik bulanan: 12 bulan aktual + 1 bulan perkiraan.
+ * Bentuk baku semua grafik bulanan: 12 bulan aktual beserta perkiraan uji
+ * baliknya, lalu 1 bulan perkiraan ke depan dengan pita.
  * `nilai` mengubah pemakaian satu barang menjadi angka yang digambar — satuan
  * barangnya sendiri, atau Rupiah untuk grafik yang menjumlahkan lintas barang.
  */
@@ -1102,10 +1123,16 @@ function trenDari(kumpulan: Barang[], nilai: (b: Barang, jumlah: number) => numb
     return d.toISOString()
   }
   for (let i = BULAN_RIWAYAT - 1; i >= 0; i--) {
+    // Garis perkiraan masa lalu hanya kalau SEMUA barang punya uji baliknya:
+    // jumlah sebagian barang akan terlihat seperti perkiraan yang terlalu rendah.
+    const balik = kumpulan.map((b) => ujiBalikBulan(b, i))
     titik.push({
       tanggal: tanggalKe(i),
       aktual: kumpulan.reduce((t, b) => t + nilai(b, pemakaianBulan(b, i)), 0),
-      prediksi: null,
+      prediksi:
+        kumpulan.length > 0 && balik.every((v) => v != null)
+          ? kumpulan.reduce((t, b, k) => t + nilai(b, balik[k]!), 0)
+          : null,
     })
   }
   const p = kumpulan.reduce((t, b) => t + nilai(b, perkiraanBulanDepan(b)), 0)

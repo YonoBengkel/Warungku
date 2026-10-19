@@ -41,3 +41,15 @@ def test_uji_balik_tidak_melihat_data_sesudah_titik_asal():
     b = L.ramal_kuantil([(d, akhir)], 14, n_estimators=60, n_jobs=1)[0]
     for t in TARAF:
         assert np.allclose(a[t], b[t])
+
+
+def test_hanya_nilai_tengah_untuk_uji_balik_bulanan():
+    # Uji balik bulanan hanya menghitung p50 (sepertiga biaya); hasilnya tetap
+    # 30 hari tak negatif dan sama dengan nilai tengah jalan lengkap.
+    d = _deret()
+    akhir = len(d) - 30
+    tengah = L.ramal_kuantil([(d, akhir)], 30, n_estimators=60, n_jobs=1, taraf=(0.5,))[0]
+    lengkap = L.ramal_kuantil([(d, akhir)], 30, n_estimators=60, n_jobs=1)[0]
+    assert set(tengah) == {0.5}
+    assert tengah[0.5].shape == (30,) and np.all(tengah[0.5] >= 0)
+    assert np.allclose(tengah[0.5], lengkap[0.5])

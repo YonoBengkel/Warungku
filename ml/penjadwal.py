@@ -25,8 +25,11 @@ from __future__ import annotations
 import os
 from datetime import datetime, timezone
 
+from datetime import timedelta
+
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
+from apscheduler.triggers.date import DateTrigger
 
 ZONA = "Asia/Jakarta"
 
@@ -80,6 +83,33 @@ def _mesin3() -> dict:
     return jalankan()
 
 
+def _perlu_mesin1_awal() -> bool:
+    """
+    Basis data belum punya uji balik bulanan, mis. baru dipulihkan dari image
+    basis data yang dibuat sebelum fitur itu ada. Tanpa jalan awal ini, garis
+    perkiraan masa lalu di grafik bulanan baru muncul sesudah jadwal 02.00.
+    """
+    if os.environ.get("WARUNGKU_METODE_MESIN1", "lightgbm") != "lightgbm":
+        return False
+    try:
+        from sqlalchemy import text
+
+        from warungku.basis_data import mesin
+
+        from .layanan import VERSI_UJI_BULANAN
+
+        with mesin().connect() as kon:
+            return bool(
+                kon.execute(
+                    text("SELECT NOT EXISTS (SELECT 1 FROM prediksi WHERE model_versi = :v)"),
+                    {"v": VERSI_UJI_BULANAN},
+                ).scalar_one()
+            )
+    except Exception:
+        # Basis data belum siap: biarkan jadwal biasa yang menanganinya.
+        return False
+
+
 def mulai() -> BackgroundScheduler | None:
     """Nyalakan penjadwal. Dipanggil saat layanan `ml` mulai."""
     global _penjadwal
@@ -109,6 +139,13 @@ def mulai() -> BackgroundScheduler | None:
         id="mesin3", name="Mesin 3 — segmentasi pelanggan",
         coalesce=True, misfire_grace_time=1800, max_instances=1,
     )
+    if _perlu_mesin1_awal():
+        p.add_job(
+            lambda: _catat("mesin1", _mesin1),
+            DateTrigger(run_date=datetime.now(timezone.utc) + timedelta(seconds=20)),
+            id="mesin1-awal", name="Mesin 1 — jalan awal (uji balik bulanan belum ada)",
+            max_instances=1,
+        )
     p.start()
     _penjadwal = p
     return p

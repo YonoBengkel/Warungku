@@ -548,9 +548,11 @@ function DetailBarang({
                     bulanan
                   />
                 </div>
+                {/* Nama garis pembatas sama dengan yang tertulis di grafik. */}
                 <p className="mt-2 text-[0.75rem] text-ink-3 leading-relaxed">
-                  Garis merah putus-putus dan pita di sekelilingnya adalah perkiraan, bukan kenyataan. Ia bisa meleset ke
-                  atas maupun ke bawah.
+                  Sebelum garis &ldquo;{sumberServer ? 'data terakhir' : 'hari ini'}&rdquo;, garis merah adalah perkiraan
+                  tiap bulan yang dibuat sebelum bulan itu dimulai; bandingkan dengan pemakaian tercatat. Sesudahnya, garis
+                  merah dan bayangannya adalah perkiraan bulan depan, yang bisa meleset ke atas maupun ke bawah.
                 </p>
               </div>
             ) : (

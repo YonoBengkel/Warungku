@@ -146,7 +146,8 @@ function perkiraanDariServer(b: Barang, hari: HariPerkiraan[]): Perkiraan {
  *
  * Di 14 hari tercatat itu ikut digambar perkiraan uji balik (dibuat dari titik
  * 14 hari sebelum data terakhir), jadi garis aktual dan garis perkiraan
- * tumpang tindih. Sesudah data terakhir hanya garis perkiraan yang tersisa.
+ * tumpang tindih, tanpa pita. Sesudah data terakhir hanya garis perkiraan
+ * beserta pita p10-p90 yang tersisa.
  * Hari tersensor (stok habis) tidak digambar di garis aktual.
  */
 function trenDariServer(riwayat: HariRiwayat[], perkiraan: HariPerkiraan[]): TitikTren[] {
@@ -157,7 +158,6 @@ function trenDariServer(riwayat: HariRiwayat[], perkiraan: HariPerkiraan[]): Tit
       tanggal: h.tanggal,
       aktual: h.stokHabis ? null : Math.round(h.jumlah),
       prediksi: b ? Math.round(b.p50) : null,
-      ...(b ? { batasBawah: Math.round(b.p10), batasAtas: Math.round(b.p90) } : {}),
     }
   })
   const terakhir = riwayat[riwayat.length - 1]?.tanggal ?? ''

@@ -308,7 +308,7 @@ export async function ambilPemakaianBulanan(sesi: SesiServer): Promise<Map<strin
   const isi = await minta<
     Array<{
       barang_id: number
-      periode: Array<{ tanggal: string; jumlah: string }>
+      periode: Array<{ tanggal: string; jumlah: string; uji_balik?: string | null }>
       perkiraan_p10: string | null
       perkiraan_p50: string | null
       perkiraan_p90: string | null
@@ -318,7 +318,11 @@ export async function ambilPemakaianBulanan(sesi: SesiServer): Promise<Map<strin
   const peta = new Map<string, BulananBarang>()
   for (const b of isi) {
     peta.set(String(b.barang_id), {
-      periode: b.periode.map((p) => ({ tanggal: p.tanggal, jumlah: angka(p.jumlah) })),
+      periode: b.periode.map((p) => ({
+        tanggal: p.tanggal,
+        jumlah: angka(p.jumlah),
+        ujiBalik: p.uji_balik == null ? null : angka(p.uji_balik),
+      })),
       p10: b.perkiraan_p10 == null ? null : angka(b.perkiraan_p10),
       p50: b.perkiraan_p50 == null ? null : angka(b.perkiraan_p50),
       p90: b.perkiraan_p90 == null ? null : angka(b.perkiraan_p90),

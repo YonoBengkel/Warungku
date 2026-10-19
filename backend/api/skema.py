@@ -214,6 +214,10 @@ class PeriodePemakaian(BaseModel):
     #: Perkiraan pemakaian 30 hari: rata-rata hari yang tidak tersensor dikali 30.
     jumlah: Decimal
     hari_tercatat: int
+    #: Uji balik Mesin 1: jumlah perkiraan 30 hari periode ini yang dibuat dari
+    #: data SEBELUM periode itu dimulai. Kosong kalau belum dihitung atau
+    #: riwayatnya belum cukup (periode paling awal).
+    uji_balik: Decimal | None = None
 
 
 class PemakaianBulanan(BaseModel):

@@ -359,13 +359,13 @@ export default function StokDetail() {
                     data={trenTampil(barang, tren)}
                     satuan={satuanTampil(barang).nama}
                   />
-                  {tren.some((t) => t.aktual != null && t.prediksi != null) && (
-                    <p className="mt-2 text-[0.75rem] text-ink-3 leading-relaxed">
-                      Di 14 hari terakhir, garis merah adalah perkiraan yang dibuat 14 hari sebelumnya, tanpa melihat
-                      pemakaian sesudahnya. Bandingkan dengan garis pemakaian tercatat untuk melihat seberapa dekat
-                      perkiraannya.
-                    </p>
-                  )}
+                  {/* Nama garis pembatas sama dengan yang tertulis di grafik. */}
+                  <p className="mt-2 text-[0.75rem] text-ink-3 leading-relaxed">
+                    {tren.some((t) => t.aktual != null && t.prediksi != null) &&
+                      `Sebelum garis “${mesin.status === 'contoh' ? 'hari ini' : 'data terakhir'}”, garis merah adalah perkiraan yang dibuat 14 hari sebelumnya tanpa melihat pemakaian sesudahnya; bandingkan dengan garis pemakaian tercatat. `}
+                    Sesudah garis &ldquo;{mesin.status === 'contoh' ? 'hari ini' : 'data terakhir'}&rdquo;, bayangan merah
+                    adalah rentang perkiraan: sekitar 8 dari 10 hari jatuh di dalamnya.
+                  </p>
                 </Kartu>
               )}
 
