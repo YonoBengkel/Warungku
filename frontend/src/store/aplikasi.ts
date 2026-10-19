@@ -60,6 +60,7 @@ import {
   umkmById,
   warnaTitikUntuk,
 } from '@/data/dummy'
+import { notifikasiDariServer } from '@/lib/notifikasiServer'
 import { jumlahTampil } from '@/lib/satuan'
 import {
   ambilBarang,
@@ -1899,6 +1900,15 @@ export function usePesananMasuk(): PesananMasuk[] {
 // Setiap perubahan keranjang disimpan ke kunci milik usaha yang sedang aktif.
 useAplikasi.subscribe((s, sebelum) => {
   if (s.keranjang !== sebelum.keranjang) simpanKeranjang(kunciKeranjang(s.sesiServer), s.keranjang)
+})
+
+// Mode data server: pemberitahuan diturunkan ulang setiap stok, pesanan, atau
+// kontrak berubah (dimuat, diterima, dipesan). Penjaga di atas mencegah
+// putaran: setState di sini hanya mengubah notifikasi.
+useAplikasi.subscribe((s, sebelum) => {
+  if (s.sumberData !== 'server') return
+  if (s.barang === sebelum.barang && s.pesanan === sebelum.pesanan && s.kontrak === sebelum.kontrak && s.sumberData === sebelum.sumberData) return
+  useAplikasi.setState({ notifikasi: notifikasiDariServer(s, s.notifikasi) })
 })
 
 useAplikasi.subscribe((s, sebelum) => {

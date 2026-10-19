@@ -84,7 +84,7 @@ Tanda: [x] selesai, [~] sebagian, [ ] belum.
 ### Telaah alur sekunder (Keranjang, Periksa, Terima Barang, Koreksi, paket kontrak, Akun, Masuk, Daftar)
 - [x] Keranjang HP: harga subtotal tidak lagi terpecah ("Rp" dan angkanya di dua baris); harga per baris 17px, tidak lagi 24px yang bersaing dengan total.
 - [x] Tombol pilihan bergaya hitam di Akun, Data Usaha, Panduan Kasir, dan Profil Distributor memakai gaya terpilih ungu muda. Komponen `TabTautan` yang tidak dipakai dibuang.
-- [ ] Mode data server: halaman Pemberitahuan selalu kosong (`notifikasi: []` di `keadaanServer`), padahal Beranda menampilkan tugas. Perlu pemberitahuan yang diturunkan dari data server; ini fitur baru, bukan kurasi.
+- [x] Mode data server: pemberitahuan diturunkan dari data yang sudah dimuat (`lib/notifikasiServer.ts`): stok habis/menipis, kiriman sampai, kontrak akan berakhir. Diperbarui otomatis setiap stok, pesanan, atau kontrak berubah; status dibaca dipertahankan per id. Barang yang sudah dipesan tampil tapi tidak dihitung di lonceng. "Pesan Sekarang" membuka saran Mesin 2 di rincian barang.
 - Tetap: tombol "Login" di halaman depan, sesuai catatan pemilik proyek yang tertulis di kode.
 
 ### Lain-lain
