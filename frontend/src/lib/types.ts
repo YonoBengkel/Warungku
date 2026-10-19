@@ -172,6 +172,11 @@ export interface Barang {
   hariDataTerkumpul: number
   ingatkanKedaluwarsa: boolean
   kedaluwarsa: string | null
+  /**
+   * Hari sejak terakhir terpakai, dari hari terakhir data (hanya data server).
+   * null = belum pernah terpakai; tidak ada = data contoh, dihitung dari riwayat.
+   */
+  hariTanpaPemakaian?: number | null
   /** Terpasang ke menu di kasir? Kalau tidak, stok tidak berkurang otomatis. */
   terhubungKasir: boolean
   /** Barang yang memang dicatat manual (gas, tisu): tidak diperingatkan, tidak masuk data ML. */

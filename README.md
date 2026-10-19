@@ -283,8 +283,9 @@ Ini akun uji untuk data buatan tim, bukan akun sungguhan.
 **Variasi demo.** Supaya setiap penyaring punya isi, `umkm1` dan `produksi1` diberi
 pesanan yang masih berjalan (menunggu konfirmasi, disiapkan, dikirim, sudah sampai)
 dan yang dibatalkan, kontrak dengan beberapa distributor (berjalan, akan berakhir,
-menunggu persetujuan, selesai, dihentikan atau ditolak), serta barang yang habis dan
-menipis. Tanggal pesanan dan kontraknya relatif terhadap hari ini, jadi
+menunggu persetujuan, selesai, dihentikan atau ditolak), serta stok yang mengisi
+setiap penyaring di halaman Stok: habis, menipis, perlu dibeli, segera kedaluwarsa,
+masih batas bawaan, dan tidak bergerak (barang yang dibeli tapi belum terpakai). Tanggal pesanan dan kontraknya relatif terhadap hari ini, jadi
 `nyalakan.cmd` menyegarkannya bila umurnya lebih dari tiga hari. Memasangnya ulang
 dengan tangan (mengembalikan pesanan dan kontrak demo ke keadaan awal):
 `python -m dataset.variasi_demo`. Rinciannya di
@@ -437,7 +438,7 @@ turnify-flow/
 | POST | `/auth/umkm/masuk` | Masuk sebagai pemilik usaha |
 | POST | `/auth/distributor/masuk` | Masuk sebagai distributor |
 | GET | `/auth/saya` | Siapa pemegang token ini |
-| GET | `/usaha/{usaha_id}/barang` | Daftar barang di gudang, termasuk pemakaian rata-rata 28 hari dan harga per satuan |
+| GET | `/usaha/{usaha_id}/barang` | Daftar barang di gudang, termasuk pemakaian rata-rata 28 hari, harga per satuan, dan hari sejak terakhir terpakai (`hari_tanpa_pemakaian`, dihitung dari hari terakhir data) |
 | GET | `/usaha/{usaha_id}/barang/{barang_id}/perkiraan` | Perkiraan terbaru Mesin 1 (p10, p50, p90 per hari), termasuk uji balik 14 hari (`uji_balik`) |
 | GET | `/usaha/{usaha_id}/barang/{barang_id}/riwayat` | Pemakaian harian terakhir; hari stok habis ditandai |
 | GET | `/usaha/{usaha_id}/barang/{barang_id}/saran` | Saran distributor terbaru Mesin 2, dibaca dari tabel |

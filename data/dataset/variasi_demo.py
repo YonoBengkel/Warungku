@@ -12,7 +12,11 @@ Sambal Bu Ratmi (produksi1):
 
 * **Stok**: beberapa barang dibuat habis dan menipis lewat baris `koreksi`
   pada hari terakhir data (5 Okt 2026). Koreksi tidak masuk data latih Mesin 1,
-  jadi perkiraan tidak berubah dan pemeriksaan konsistensi tetap lolos.
+  jadi perkiraan tidak berubah dan pemeriksaan konsistensi tetap lolos. Supaya
+  setiap penyaring di halaman Stok berisi: beberapa barang diberi pengingat
+  kedaluwarsa yang dekat, beberapa batas amannya dikembalikan ke bawaan, dan
+  ada barang baru (kode `V..`) yang dibeli tapi belum pernah terpakai, untuk
+  penyaring "Tidak bergerak".
 * **Pesanan**: menunggu konfirmasi, disiapkan, dikirim, sudah sampai (menunggu
   dihitung), dan dibatalkan, ke beberapa distributor. Nomornya berawalan
   `PS-yymmdd-V`.
@@ -53,8 +57,34 @@ STOK: dict[str, dict[str, tuple[str, ...]]] = {
     },
     "produksi1@warungku.test": {
         "habis": ("Teri Nasi",),
-        "menipis": ("Minyak Goreng", "Bawang Putih", "Bawang Merah"),
+        # Cabai Merah tidak punya pesanan berjalan, jadi masuk penyaring "Perlu dibeli".
+        "menipis": ("Minyak Goreng", "Bawang Putih", "Bawang Merah", "Cabai Merah"),
     },
+}
+
+#: Pengingat kedaluwarsa: (barang, berapa hari lagi). Di bawah 14 hari = "Segera kedaluwarsa".
+KEDALUWARSA: dict[str, tuple[tuple[str, int], ...]] = {
+    "umkm1@warungku.test": (("Susu Kental Manis", 6), ("Teh Hitam", 11), ("Matcha Bubuk", 75)),
+    "produksi1@warungku.test": (("Cabai Merah", 3), ("Bawang Merah", 9), ("Garam Dapur", 300)),
+}
+
+#: Batas aman yang dikembalikan ke bawaan (belum diatur sistem maupun pemilik).
+BAWAAN: dict[str, tuple[str, ...]] = {
+    "umkm1@warungku.test": ("Cup Sealer Film", "Sirup Vanila"),
+    "produksi1@warungku.test": ("Gula Pasir", "Garam Dapur"),
+}
+
+#: Barang baru yang dibeli tapi belum pernah terpakai: (produk katalog, jumlah
+#: kemasan, berapa hari sebelum akhir data dibeli, catatan). Kodenya V01, V02, ...
+BARANG_BARU: dict[str, tuple[tuple[str, int, int, str], ...]] = {
+    "umkm1@warungku.test": (
+        ("Keju Cheddar", 2, 45, "Untuk menu roti bakar keju yang belum mulai dijual."),
+        ("Kentang Beku", 3, 60, "Untuk camilan kentang goreng; menunggu penggorengan baru."),
+    ),
+    "produksi1@warungku.test": (
+        ("Kantong Plastik", 2, 50, "Untuk kemasan eceran yang belum dijalankan; kiriman ke toko memakai dus."),
+        ("Gula Aren Cair", 1, 40, "Untuk uji coba sambal manis yang belum diproduksi."),
+    ),
 }
 
 #: (status, distributor, [(barang, jumlah kemasan)], hari yang lalu, alasan tolak)
@@ -153,6 +183,29 @@ def hapus(kon, usaha_id: int) -> None:
         "DELETE FROM kontrak WHERE usaha_id = :u",
     ):
         kon.execute(text(sql), p)
+    baru = "SELECT id FROM barang WHERE usaha_id = :u AND kode_barang LIKE 'V%'"
+    for sql in (
+        f"UPDATE pesanan_baris SET barang_id = NULL WHERE barang_id IN ({baru})",
+        f"UPDATE notifikasi SET barang_id = NULL WHERE barang_id IN ({baru})",
+        f"DELETE FROM rekomendasi_skor WHERE barang_id IN ({baru})",
+        f"DELETE FROM prediksi WHERE barang_id IN ({baru})",
+        f"DELETE FROM permintaan_harian WHERE barang_id IN ({baru})",
+        f"DELETE FROM pergerakan WHERE barang_id IN ({baru})",
+        f"DELETE FROM kemasan WHERE barang_id IN ({baru})",
+        "DELETE FROM barang WHERE usaha_id = :u AND kode_barang LIKE 'V%'",
+    ):
+        kon.execute(text(sql), p)
+    email = kon.execute(text("SELECT email FROM usaha WHERE id = :u"), p).scalar()
+    for nama, _ in KEDALUWARSA.get(email, ()):
+        kon.execute(
+            text("UPDATE barang SET ingatkan_kedaluwarsa = false, kedaluwarsa = NULL WHERE usaha_id = :u AND nama = :n"),
+            {"u": usaha_id, "n": nama},
+        )
+    for nama in BAWAAN.get(email, ()):
+        kon.execute(
+            text("UPDATE barang SET sumber_batas_aman = 'sistem' WHERE usaha_id = :u AND nama = :n AND sumber_batas_aman = 'bawaan'"),
+            {"u": usaha_id, "n": nama},
+        )
     kena = [r[0] for r in kon.execute(
         text("SELECT DISTINCT barang_id FROM pergerakan WHERE usaha_id = :u AND oleh = :o"), {"u": usaha_id, "o": OLEH}
     )]
@@ -196,6 +249,75 @@ def _variasi_stok(kon, usaha_id: int, email: str) -> int:
             )
             kon.execute(text("UPDATE barang SET stok = :s WHERE id = :b"), {"s": sasaran, "b": b["id"]})
             n += 1
+    return n
+
+
+def _variasi_atribut(kon, usaha_id: int, email: str, sekarang: datetime) -> None:
+    """Pengingat kedaluwarsa (relatif terhadap hari ini) dan batas aman bawaan."""
+    hari_ini = sekarang.astimezone(WIB).date()
+    for nama, hari in KEDALUWARSA[email]:
+        kon.execute(
+            text("UPDATE barang SET ingatkan_kedaluwarsa = true, kedaluwarsa = :t WHERE usaha_id = :u AND nama = :n"),
+            {"t": hari_ini + timedelta(days=hari), "u": usaha_id, "n": nama},
+        )
+    for nama in BAWAAN[email]:
+        kon.execute(
+            text("UPDATE barang SET sumber_batas_aman = 'bawaan' WHERE usaha_id = :u AND nama = :n"),
+            {"u": usaha_id, "n": nama},
+        )
+
+
+def _barang_baru(kon, usaha_id: int, email: str) -> int:
+    """Barang yang sudah dibeli tapi belum pernah terpakai: isi penyaring "Tidak bergerak"."""
+    pos = kon.execute(
+        text("SELECT status::text FROM data_kasir WHERE usaha_id = :u"), {"u": usaha_id}
+    ).scalar() == "terhubung"
+    n = 0
+    for urut, (nama, jumlah, hari_lalu, catatan) in enumerate(BARANG_BARU[email], start=1):
+        pm = kon.execute(
+            text(
+                """
+                SELECT pm.id, pm.kategori, pm.satuan_dasar, pm.sinonim, p.kemasan_nama, p.kemasan_isi, p.harga_satuan
+                  FROM produk_master pm JOIN penawaran p ON p.produk_master_id = pm.id
+                 WHERE pm.nama_kanonik = :n AND p.aktif ORDER BY p.harga_satuan LIMIT 1
+                """
+            ),
+            {"n": nama},
+        ).mappings().one()
+        isi = Decimal(pm["kemasan_isi"])
+        stok = isi * jumlah
+        bid = kon.execute(
+            text(
+                """
+                INSERT INTO barang (usaha_id, produk_master_id, nama, deskripsi, nama_lain, kategori, kode_barang,
+                                    satuan, stok, batas_aman, batas_aman_saran, sumber_batas_aman, hari_kirim,
+                                    harga_beli_terakhir, hari_data_terkumpul, ingatkan_kedaluwarsa,
+                                    terhubung_kasir, dicatat_manual, catatan)
+                VALUES (:u, :pm, :nama, :desk, :lain, :kat, :kode, :sat, :stok, :batas, 0, 'bawaan', 2,
+                        :harga, 0, false, :pos, false, :cat)
+                RETURNING id
+                """
+            ),
+            {
+                "u": usaha_id, "pm": pm["id"], "nama": nama, "desk": f"{float(isi):g} {pm['satuan_dasar']} per {pm['kemasan_nama']}",
+                "lain": list(pm["sinonim"] or []), "kat": pm["kategori"], "kode": f"V{urut:02d}",
+                "sat": pm["satuan_dasar"], "stok": stok, "batas": (isi / 2).quantize(Decimal("1")),
+                "harga": pm["harga_satuan"], "pos": pos, "cat": catatan,
+            },
+        ).scalar_one()
+        kon.execute(
+            text("INSERT INTO kemasan (barang_id, nama, isi) VALUES (:b, :n, :i)"),
+            {"b": bid, "n": pm["kemasan_nama"], "i": isi},
+        )
+        kon.execute(
+            Pergerakan.__table__.insert(),
+            {
+                "usaha_id": usaha_id, "barang_id": bid, "waktu": _wkt(AKHIR - timedelta(days=hari_lalu), 10, 0),
+                "jenis": JenisPergerakan.MASUK, "jumlah": stok, "stok_sesudah": stok,
+                "keterangan": "Dibeli langsung, belum dipakai", "oleh": OLEH,
+            },
+        )
+        n += 1
     return n
 
 
@@ -349,8 +471,10 @@ def pasang(jika_basi: bool = False) -> dict | None:
             hasil[email] = {
                 "usaha_id": u,
                 "koreksi_stok": _variasi_stok(kon, u, email),
+                "barang_baru": _barang_baru(kon, u, email),
                 "kontrak": _variasi_kontrak(kon, u, email, sekarang),
             }
+            _variasi_atribut(kon, u, email, sekarang)
             nomor = _variasi_pesanan(kon, u, email, sekarang, nomor)
             hasil[email]["pesanan"] = nomor - awal
     return hasil
@@ -366,7 +490,8 @@ def main() -> None:
         print("Variasi demo masih segar, tidak diubah.")
         return
     for email, h in hasil.items():
-        print(f"  {email}: {h['pesanan']} pesanan, {h['kontrak']} kontrak, {h['koreksi_stok']} koreksi stok")
+        print(f"  {email}: {h['pesanan']} pesanan, {h['kontrak']} kontrak, {h['koreksi_stok']} koreksi stok, "
+              f"{h['barang_baru']} barang belum terpakai")
     if not arg.tanpa_mesin2:
         # Barang yang kini menipis dan habis butuh saran distributor yang segar.
         from ml.mesin2.saran import jalankan

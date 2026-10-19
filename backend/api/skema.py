@@ -98,6 +98,10 @@ class BarangRingkas(BaseModel):
     terhubung_kasir: bool = False
     status: str
     dicatat_manual: bool
+    #: Hari sejak barang ini terakhir terpakai (terjual atau dipakai produksi),
+    #: dihitung dari hari terakhir data usaha, bukan dari hari ini. Kosong kalau
+    #: belum pernah terpakai. Dasar penyaring "Tidak bergerak".
+    hari_tanpa_pemakaian: int | None = None
     catatan: str | None = None
 
 

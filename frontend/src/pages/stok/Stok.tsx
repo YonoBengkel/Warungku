@@ -182,8 +182,13 @@ export default function Stok() {
   }, [pergerakan])
 
   function tidakBergerak(b: Barang): boolean {
-    const terakhir = terakhirTerjual.get(b.id)
     if (b.dicatatManual) return false
+    // Data server: riwayat pergerakan tidak dimuat ke peramban, jadi API yang
+    // menghitung hari sejak terakhir terpakai (dari hari terakhir data).
+    if (b.hariTanpaPemakaian !== undefined) {
+      return b.hariTanpaPemakaian === null || b.hariTanpaPemakaian > HARI_TIDAK_BERGERAK
+    }
+    const terakhir = terakhirTerjual.get(b.id)
     if (!terakhir) return true
     return (Date.now() - terakhir) / 86_400_000 > HARI_TIDAK_BERGERAK
   }
@@ -349,6 +354,10 @@ export default function Stok() {
         </div>
 
         <BarisChip className="mt-3">
+          {/* Jalan kembali ke seluruh barang tanpa harus mencari "Bersihkan penyaring". */}
+          <Chip aktif={filter === 'semua'} onClick={() => aturParam({ filter: null })}>
+            Semua
+          </Chip>
           <Chip aktif={filter === 'perlu-dibeli'} onClick={() => aturParam({ filter: chipAktif('perlu-dibeli') })}>
             Perlu dibeli
           </Chip>

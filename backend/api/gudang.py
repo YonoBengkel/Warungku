@@ -91,6 +91,26 @@ def daftar_barang(usaha_id: int = Depends(usaha_saya)) -> list[BarangRingkas]:
                 ).bindparams(u=usaha_id)
             ).all()
         )
+        # Terakhir terpakai per barang, dan hari acuan usaha: data simulasi berhenti
+        # sebelum hari ini, jadi "sudah lama tidak terpakai" diukur dari hari
+        # terakhir yang tercatat. Kalau diukur dari hari ini, semua barang lambat
+        # laun terbaca tidak bergerak.
+        terakhir = {
+            r[0]: r[1]
+            for r in sesi.exec(
+                text(
+                    """
+                    SELECT barang_id, max((waktu AT TIME ZONE 'UTC')::date)
+                      FROM pergerakan WHERE usaha_id = :u AND jenis = 'terjual'
+                     GROUP BY barang_id
+                    """
+                ).bindparams(u=usaha_id)
+            ).all()
+        }
+        acuan = sesi.exec(
+            text("SELECT max(tanggal) FROM permintaan_harian WHERE usaha_id = :u").bindparams(u=usaha_id)
+        ).scalar()
+        acuan = max([t for t in [acuan, *terakhir.values()] if t is not None], default=None)
         return [
             BarangRingkas(
                 id=b.id,
@@ -117,6 +137,7 @@ def daftar_barang(usaha_id: int = Depends(usaha_saya)) -> list[BarangRingkas]:
                 status=_status(b.stok, b.batas_aman),
                 dicatat_manual=b.dicatat_manual,
                 catatan=b.catatan,
+                hari_tanpa_pemakaian=(acuan - terakhir[b.id]).days if b.id in terakhir else None,
             )
             for b in barang
         ]
