@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
 import { JudulBagian, Kartu, Lencana, TombolTautan } from '@/components/ui/dasar'
-import { TombolPutusDistributor } from '@/components/domain/SambungDistributor'
 import { KeadaanKosong, Penjelasan, Peringatan } from '@/components/ui/umpanBalik'
 import { IkonProfil } from '@/icons'
 import { angka, cx, rupiah, rupiahRingkas, tanggalRingkas, waktuLalu } from '@/lib/format'
@@ -82,7 +81,7 @@ export default function SegmenPelanggan() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h1 className="text-judul font-extrabold text-ink tracking-tight">Pelanggan</h1>
-          <p className="mt-1 text-isi text-ink-3 leading-snug max-w-[70ch]">
+          <p className="mt-1 text-isi text-ink-2 leading-relaxed max-w-[62ch]">
             Dipakai untuk memutuskan siapa ditawari kontrak dan siapa perlu dihubungi.
           </p>
           <Penjelasan label="Cara dikelompokkan" className="max-w-[70ch]">
@@ -96,7 +95,6 @@ export default function SegmenPelanggan() {
             masukan={METODE_MESIN3.masukan}
           />
         </div>
-        {sesi && <TombolPutusDistributor />}
       </div>
 
       {!sesi ? (

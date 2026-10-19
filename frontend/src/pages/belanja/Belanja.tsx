@@ -539,7 +539,7 @@ export default function Belanja() {
 
       {tab === 'barang' && (
         <div className="border-t border-line pt-4">
-          <p className="text-isi font-bold text-ink mb-2">Saring hasil</p>
+          <p className="text-isi font-bold text-ink mb-2">Filter hasil</p>
           <div className="flex flex-col gap-2">
             <Chip aktif={hanyaAdaStok} onClick={() => aturParam({ stok: hanyaAdaStok ? null : 'ada' })}>
               Stok tersedia
@@ -569,7 +569,7 @@ export default function Belanja() {
       <h1 className="text-judul font-extrabold text-ink tracking-tight">{JUDUL.belanja}</h1>
       {/* Halaman ini berjudul sama dengan salah satu sub-tabnya, jadi kalimat
           pembuka harus langsung menerangkan apa yang bisa dikerjakan di sini. */}
-      <p className="mt-0.5 text-isi text-ink-3">
+      <p className="mt-1 text-isi text-ink-2 leading-relaxed max-w-[62ch]">
         Tempat kamu mencari barang dan memilih distributor untuk dipesan. Harga dan stok di bawah berasal
         dari distributor, bukan dari gudang kamu.
       </p>
@@ -641,7 +641,7 @@ export default function Belanja() {
               key={s.kunci}
               type="button"
               onClick={() => aturParam({ [s.kunci]: null })}
-              aria-label={`Lepas saringan ${s.label}`}
+              aria-label={`Lepas filter ${s.label}`}
               className="inline-flex items-center gap-1.5 h-11 pl-3.5 pr-3 rounded-full bg-brand-soft text-brand-soft-ink text-isi font-semibold hover:brightness-97"
             >
               {s.label}
@@ -680,13 +680,13 @@ export default function Belanja() {
                   judul={cari ? `Belum ada yang cocok dengan "${cari}"` : 'Belum ada penawaran yang cocok'}
                   pesan={
                     adaSaringAktif
-                      ? 'Saringan yang kamu pasang mempersempit hasilnya. Coba lepas salah satu, atau ganti kata kunci dengan nama yang lebih umum.'
+                      ? 'Filter yang kamu pasang mempersempit hasilnya. Coba lepas salah satu, atau ganti kata kunci dengan nama yang lebih umum.'
                       : 'Coba kata yang lebih umum, misalnya "kopi" saja tanpa merek, atau lihat daftar distributor di kotamu.'
                   }
                   aksi={
                     adaSaringAktif ? (
                       <Tombol onClick={() => aturParam({ kota: null, stok: null, kontrak: null })}>
-                        Hapus semua saringan
+                        Hapus semua filter
                       </Tombol>
                     ) : (
                       <Tombol onClick={() => aturParam({ tab: 'distributor' })}>
@@ -832,10 +832,10 @@ export default function Belanja() {
                 <KeadaanKosong
                   ikon={<IkonToko size={26} />}
                   judul="Belum ada distributor yang cocok"
-                  pesan={`Belum ada distributor yang namanya atau kategorinya cocok${kotaSaring ? ` di ${kotaSaring}` : ''}. Coba lepas saringan kota atau cari lewat nama barangnya.`}
+                  pesan={`Belum ada distributor yang namanya atau kategorinya cocok${kotaSaring ? ` di ${kotaSaring}` : ''}. Coba lepas filter kota atau cari lewat nama barangnya.`}
                   aksi={
                     <Tombol onClick={() => aturParam({ kota: null, cari: null })}>
-                      Hapus saringan, tampilkan semua distributor
+                      Hapus filter, tampilkan semua distributor
                     </Tombol>
                   }
                 />
@@ -907,8 +907,8 @@ export default function Belanja() {
         judul="Filter"
         keterangan={
           adaSaringAktif
-            ? `${saringAktif.length} saringan sedang dipakai.`
-            : 'Belum ada saringan yang dipakai. Pilih yang kamu perlukan.'
+            ? `${saringAktif.length} filter sedang dipakai.`
+            : 'Belum ada filter yang dipakai. Pilih yang kamu perlukan.'
         }
         lebar="sempit"
         kaki={

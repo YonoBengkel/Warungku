@@ -271,7 +271,7 @@ export default function CatatPemakaian() {
       <div className="mt-4 lg:grid lg:grid-cols-12 lg:gap-6 lg:items-start">
         {/* Rail kiri di desktop: penyaring kategori + aturan main + kendali daftar */}
         <div className="lg:col-span-4 space-y-4">
-          <nav aria-label="Saring menurut kategori" className="hidden lg:block">
+          <nav aria-label="Filter menurut kategori" className="hidden lg:block">
             <h2 className="mb-2 text-kartu font-bold text-ink">Kategori</h2>
             <ul className="space-y-1">
               {[

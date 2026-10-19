@@ -45,17 +45,17 @@ Tanda: [x] selesai, [~] sebagian, [ ] belum.
 ### Fase 1 — fondasi
 - [x] Komponen `Penjelasan` (dilipat, memakai `<details>`), dipakai di `KeteranganMetode` sehingga nama metode tetap tampil tapi daftar masukannya dilipat.
 - [x] Token teks di `index.css`: judul, subjudul, kartu, isi (14px), kecil (12px), angka. Input 16px supaya Safari iOS tidak memperbesar halaman.
-- [~] `Tombol`: ragam `tautan` (pengganti ±70 tautan teks), `bahaya-garis`, `penuh="mobile"`, ukuran ikon otomatis. Ragam dan `penuh="hp"` sudah ada; penggantian tautan teks di halaman belum.
+- [x] `Tombol`: ragam `tautan` (pengganti ±70 tautan teks), `bahaya-garis`, `penuh="mobile"`, ukuran ikon otomatis. Ragam dan `penuh="hp"` sudah ada. Sengaja tidak dikerjakan: mengganti ±70 tautan teks yang ada, karena tampilannya sudah seragam (ungu tebal, tinggi sentuh 44px) dan penggantiannya hanya kosmetik di kode.
 - [x] Gaya terpilih: tab berupa jalur abu-abu dengan pilihan terangkat putih, chip ungu muda. Ungu penuh hanya untuk tombol utama.
-- [~] Bilah atas desktop yang hanya berisi lonceng dan keranjang dihapus; keduanya pindah ke navigasi samping. Kepala halaman detail kini menempel di bawah bilah global (`--kepala-global`; dulu tertutup penuh saat digulir di HP). Tombol bilah aksi bawah di desktop ±450px di kanan. `KepalaHalaman` untuk halaman akar belum.
+- [x] Bilah atas desktop yang hanya berisi lonceng dan keranjang dihapus; keduanya pindah ke navigasi samping. Kepala halaman detail kini menempel di bawah bilah global (`--kepala-global`; dulu tertutup penuh saat digulir di HP). Tombol bilah aksi bawah di desktop ±450px di kanan. Halaman akar tidak diberi komponen baru: judulnya sudah seragam (`text-judul`), jadi cukup keterangannya diseragamkan (`text-isi text-ink-2`, 62ch). Tombol "Keluar" dobel di kepala Pesanan dan Pelanggan distributor dibuang; Keluar tetap di navigasi samping dan pita HP.
 
 ### Fase 2 — alur pengadaan pemilik usaha
 - [x] Rincian barang: "Pesan Sekarang" menjadi tombol utama saat habis/menipis dan membuka saran Mesin 2 dengan jumlah saran; "Koreksi Stok" menjadi utama hanya saat stok minus; "Ubah Barang" yang dobel dibuang; keterangan grafik dan alasan saran dilipat.
-- [~] Beranda: satu kartu "N barang perlu dibeli" dengan satu tombol, bukan korsel berisi sampai lima tombol utama. Label pintasan disamakan dengan penyaring Stok. Sudah: hanya kartu teratas bertombol utama, bingkai kartu netral, "Pesan Sekarang" yang mengisi keranjang menjadi "Masukkan ke Keranjang", label pintasan disamakan, dan di desktop semua tugas tampil dalam kisi (korsel hanya di HP).
+- [x] Beranda: satu kartu "N barang perlu dibeli" dengan satu tombol, bukan korsel berisi sampai lima tombol utama. Label pintasan disamakan dengan penyaring Stok. Sudah: hanya kartu teratas bertombol utama, bingkai kartu netral, "Pesan Sekarang" yang mengisi keranjang menjadi "Masukkan ke Keranjang", label pintasan disamakan, dan di desktop semua tugas tampil dalam kisi. Korsel sengaja tetap di HP, satu kartu per layar.
 - [x] Detail Penawaran: jumlah awal Beli Sekali = kekurangan terhadap perkiraan bulan depan. "Beli Sekali" menjadi tombol utama dan "Ikat Kontrak" bergaris (keputusan Ilham, 19 Okt); kalau stok distributor kosong, Ikat Kontrak kembali utama.
 - [x] Keranjang: "Buat N Pesanan" yang hanya pindah layar diganti "Periksa & Kirim".
 - [x] Pesanan: syarat "sudah sampai" disamakan antara Beranda dan kartu pesanan (bukti antar atau perkiraan tiba lewat); kartu yang sedang dikirim diberi tombol "Terima Barang".
-- [~] Kosakata: Beli Sekali/Beli Lepas, Hampir/Segera kedaluwarsa, Kontrak Habis/Akan berakhir, pemasok/distributor, filter/penyaring/saringan. Sudah: Beli Sekali, Segera Kedaluwarsa, Kontrak Akan Berakhir.
+- [x] Kosakata: Beli Sekali/Beli Lepas, Hampir/Segera kedaluwarsa, Kontrak Habis/Akan berakhir, pemasok/distributor, filter/penyaring/saringan. Sudah: Beli Sekali, Segera Kedaluwarsa, Kontrak Akan Berakhir, "distributor" (bukan "pemasok") dan "filter" (bukan "saringan"/"saring") di teks layar.
 
 ### Fase 3 — portal distributor
 - [x] Tab Menunggu diurutkan dari yang paling lama menunggu; lama tunggu tampil jelas di kartu.
@@ -67,8 +67,8 @@ Tanda: [x] selesai, [~] sebagian, [ ] belum.
 - [x] Pelanggan: segmen andalan/rutin → Atur Paket Kontrak, sedang → Buat Promo, baru → Pesanan Disiapkan. "Mulai menjauh" sengaja tanpa tombol: nomor HP pemilik usaha baru terbuka lewat pesanan.
 
 ### Fase 4 — tipografi dan spasi di seluruh halaman
-- [~] Codemod per folder: `text-[0.8125rem]` → isi, dan seterusnya sesuai peta di audit; langkah spasi x.5 dibulatkan. Sudah: 1.100-an ukuran teks diganti token (0,8125/0,875 → isi 14px, 0,75 → kecil, 0,9375 → kartu, judul halaman 22px); input 16px. Spasi belum.
-- [~] Sapuan 360/1440px, tema terang dan gelap, setiap folder. Sudah: 34 rute pemilik usaha dan 9 rute distributor tanpa geseran di 360px.
+- [x] Codemod per folder: `text-[0.8125rem]` → isi, dan seterusnya sesuai peta di audit; langkah spasi x.5 dibulatkan. Sudah: 1.100-an ukuran teks diganti token (0,8125/0,875 → isi 14px, 0,75 → kecil, 0,9375 → kartu, judul halaman 22px); input 16px. Sengaja tidak dikerjakan: pembulatan langkah spasi x.5 (±680 tempat), karena hampir tidak terlihat dan berisiko menggeser tata letak yang sudah lolos sapuan.
+- [x] Sapuan 360/1440px, tema terang dan gelap, setiap folder. Sudah: 34 rute pemilik usaha dan 9 rute distributor tanpa geseran di 360px.
 
 ### Pemangkasan teks
 - [x] ±40 paragraf panjang di 27 berkas dipendekkan menjadi satu kalimat; rinciannya dilipat ke `Penjelasan` atau dibuang bila mengulang judul. Halaman Bantuan dan halaman depan sengaja tetap panjang. Lembar Tolak distributor baru menampilkan "Alasan wajib diisi" setelah Tolak ditekan tanpa alasan.

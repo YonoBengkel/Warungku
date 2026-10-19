@@ -659,7 +659,7 @@ export default function Stok() {
       <Lembar
         terbuka={bukaKategori}
         tutup={() => setBukaKategori(false)}
-        judul="Saring menurut kategori"
+        judul="Filter menurut kategori"
         keterangan="Kategori hanya penyaring, bukan folder. Satu barang tetap punya satu tempat di daftar."
         lebar="sempit"
         kaki={

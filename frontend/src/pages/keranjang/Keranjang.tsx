@@ -389,7 +389,7 @@ export default function Keranjang() {
                   <IkonToko size={20} />
                 </span>
                 <div className="min-w-0">
-                  <h2 className="text-[1rem] font-semibold text-ink leading-snug">Belum ada pemasok tetap</h2>
+                  <h2 className="text-[1rem] font-semibold text-ink leading-snug">Belum ada distributor tetap</h2>
                   <p className="text-isi text-ink-3 leading-snug">
                     Barang ini perlu dibeli, tapi belum ada distributor yang memasoknya di daerah kamu. Barang
                     di bawah ini tidak ikut terkirim.

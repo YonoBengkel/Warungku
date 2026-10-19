@@ -21,7 +21,6 @@ import {
   TAHAP_PESANAN_MASUK,
 } from '@/lib/label'
 import { umkmById } from '@/data/dummy'
-import { TombolPutusDistributor } from '@/components/domain/SambungDistributor'
 import type { PesananMasuk, StatusPesananMasuk } from '@/lib/types'
 import { useAplikasi, usePesananMasukPerStatus } from '@/store/aplikasi'
 
@@ -219,12 +218,11 @@ export default function PesananMasukDaftar() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h1 className="text-judul font-extrabold text-ink tracking-tight">Pesanan</h1>
-          <p className="mt-1 text-isi text-ink-3 leading-snug max-w-[70ch]">
+          <p className="mt-1 text-isi text-ink-2 leading-relaxed max-w-[62ch]">
             Semua pesanan yang masuk ke tokomu, dikelompokkan menurut tahapnya.
             {dariServer ? '' : ' Saat ini memakai data contoh.'}
           </p>
         </div>
-        {dariServer && <TombolPutusDistributor />}
       </div>
       {!dariServer && (
         <p className="mt-3 text-isi text-ink-2">

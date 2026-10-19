@@ -325,7 +325,7 @@ export default function PeriksaKesepakatan() {
                   Kamu sudah punya kontrak untuk {penawaran.nama}
                 </h2>
                 <p className="mt-1 text-isi text-menipis-ink leading-relaxed">
-                  Boleh, banyak usaha memakai dua pemasok. Ingat, kewajiban keduanya berjalan bersamaan.
+                  Boleh, banyak usaha memakai dua distributor. Ingat, kewajiban keduanya berjalan bersamaan.
                 </p>
               </div>
             </div>

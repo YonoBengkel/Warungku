@@ -324,7 +324,7 @@ export default function PromoDistributor() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h1 className="text-judul font-extrabold text-ink tracking-tight">Promo</h1>
-          <p className="mt-1 text-isi text-ink-3 leading-snug max-w-[70ch]">
+          <p className="mt-1 text-isi text-ink-2 leading-relaxed max-w-[62ch]">
             Promo tampil di Beranda pemilik usaha. Potongan hanya untuk beli sekali.
           </p>
         </div>

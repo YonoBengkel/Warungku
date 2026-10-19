@@ -169,7 +169,7 @@ const FAQ: ButirFaq[] = [
         </p>
         <p className="mt-2">
           Kalau kamu punya beberapa kontrak dengan distributor yang sama, halaman Pesanan bisa mengelompokkannya per
-          pemasok dan menawarkan "Pesan sekaligus", jadi kamu tidak perlu memesan satu per satu.
+          distributor dan menawarkan "Pesan sekaligus", jadi kamu tidak perlu memesan satu per satu.
         </p>
       </>
     ),

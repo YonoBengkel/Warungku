@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { JudulBagian, Kartu, Tombol } from '@/components/ui/dasar'
 import { Kolom } from '@/components/ui/formulir'
-import { IkonKeluar } from '@/icons'
 import { GalatApi, ServerTakTerjangkau } from '@/lib/api'
 import { useAplikasi } from '@/store/aplikasi'
 
@@ -86,15 +85,5 @@ export function KartuSambungDistributor({ keterangan, className }: { keterangan:
         Akun simulasi {AKUN_SIMULASI.email} adalah Sumber Tani Nusantara di data simulasi.
       </p>
     </Kartu>
-  )
-}
-
-/** Tombol kecil untuk keluar dari akun distributor; portal kembali ke data contoh. */
-export function TombolPutusDistributor() {
-  const putus = useAplikasi((s) => s.putusDistributor)
-  return (
-    <Tombol ragam="garis" ukuran="kecil" ikonKiri={<IkonKeluar size={15} />} onClick={putus}>
-      Keluar
-    </Tombol>
   )
 }

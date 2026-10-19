@@ -282,7 +282,7 @@ export default function PesananDaftar() {
       </div>
       {/* Baris prosa ditahan sekitar 70 karakter: di layar lebar kalimat yang
           membentang penuh justru lebih sulit dikejar matanya. */}
-      <p className="mt-1 text-isi text-ink-3 leading-snug max-w-[70ch]">
+      <p className="mt-1 text-isi text-ink-2 leading-relaxed max-w-[62ch]">
         Semua pesanan dan kontrak bulananmu, dari yang masih berjalan sampai yang sudah selesai.
       </p>
 
