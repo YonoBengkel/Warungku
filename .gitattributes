@@ -1,2 +1,5 @@
 # Skrip shell dijalankan di dalam kontainer Linux: harus LF, bukan CRLF.
 *.sh text eol=lf
+
+# Berkas batch Windows: CRLF di working copy, supaya cmd membaca labelnya dengan benar.
+*.cmd text eol=crlf

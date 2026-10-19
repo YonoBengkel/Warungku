@@ -43,6 +43,39 @@ Semua perintah untuk **Windows PowerShell** dan dijalankan dari **akar repo**.
 > Pakai branch **`Rombak#3`**. Branch `main` hanya berisi purwarupa antarmuka
 > lama, tanpa backend dan model.
 
+### Paling mudah untuk mencoba: `siapkan.cmd`
+
+Untuk yang hanya ingin melihat aplikasinya jalan, tanpa Python dan tanpa perlu
+mengerti Docker:
+
+1. Buka [halaman `siapkan.cmd` di GitHub](https://github.com/YonoBengkel/Warungku/blob/Rombak%233/siapkan.cmd),
+   tekan tombol **Download raw file**, lalu taruh berkasnya di folder mana saja
+   (misalnya `Documents`). Belum perlu clone apa pun.
+2. Klik dua kali `siapkan.cmd`, lalu tunggu sampai peramban terbuka.
+
+Yang dikerjakan skrip itu:
+- memeriksa Git, Docker Desktop, dan Node.js; yang belum ada ditawarkan untuk
+  dipasang lewat winget (selalu ditanya dulu);
+- clone repo (branch `Rombak#3`) ke folder `turnify-flow` di sebelah berkas itu;
+- menyalakan Docker Desktop, mengunduh image dari Docker Hub (sekitar 400 MB
+  pertama kali), lalu menyalakan kontainer basis data, API, dan layanan model;
+- menyiapkan `deployment/.env` dengan rahasia login acak;
+- memasang paket frontend dan menyalakannya di jendela yang diperkecil ke taskbar;
+- membuka peramban di halaman Masuk.
+
+Hari berikutnya, klik dua kali `siapkan.cmd` **di dalam folder `turnify-flow`**
+untuk menyalakan lagi; kodenya sekalian diperbarui kalau tidak ada perubahan
+yang belum dikomit. Selesai memakai, klik dua kali `matikan.cmd` di folder yang
+sama. Datanya tetap tersimpan.
+
+- **Docker Desktop yang baru dipasang** butuh komputer dinyalakan ulang dan layar
+  sambutannya dibuka sekali. Skrip berhenti dan memberi tahu kapan harus
+  menjalankannya lagi.
+- **Fitur yang tampil mengikuti image Docker**, bukan kode terbaru di branch
+  (lihat [Image yang diunduh](#image-yang-diunduh)).
+- **`siapkan.cmd` dan `nyalakan.cmd` memakai port yang sama.** Kalau sebelumnya
+  memakai yang satu, jalankan `matikan.cmd` dulu sebelum memakai yang lain.
+
 ### Yang harus terpasang
 
 | Kebutuhan | Versi | Cara memastikan | Dibutuhkan jalur |
@@ -84,7 +117,8 @@ dikerjakan sekaligus:
 Menjalankannya lagi aman: layanan yang sudah menyala dipakai apa adanya.
 
 Selesai memakai? Klik dua kali **`matikan.cmd`**. Datanya tetap tersimpan di
-basis data. Isi dan pilihan kedua skrip ada di [`tools/lokal/`](tools/lokal/).
+basis data. `matikan.cmd` juga menghentikan kontainer API dan layanan model dari
+`siapkan.cmd`. Isi dan pilihan kedua skrip ada di [`tools/lokal/`](tools/lokal/).
 
 Yang dibutuhkan hanya Git, Docker Desktop, Node.js, dan Python (tabel di atas).
 Saat pertama kali, image basis data `yonobengkel/turnify-flow-db` diunduh otomatis
@@ -101,6 +135,8 @@ yang gagal, skrip berhenti dan menyebut penyebabnya.
 | Fitur terbaru | Mengikuti versi image Docker (lihat catatan di bawah) | Selalu sama dengan kode di branch |
 
 ### Jalur A: hanya mencoba (tanpa Python)
+
+`siapkan.cmd` (lihat di atas) mengerjakan jalur ini sekaligus. Langkah manualnya:
 
 ```powershell
 docker compose -f deployment/docker-compose.yml --profile layanan up -d
