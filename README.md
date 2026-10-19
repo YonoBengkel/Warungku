@@ -506,17 +506,18 @@ dijadwalkan dari luar. Metode Mesin 1 yang dipakai penjadwal diatur lewat
 Ada dua image di Docker Hub, keduanya publik (tidak perlu `docker login` untuk
 mengunduh). **Unduh tag yang tertulis di tabel ini**: tag inilah yang dipakai
 [`deployment/docker-compose.yml`](deployment/docker-compose.yml). Tag yang lebih
-lama jangan dipakai: backend `0.4.0` belum menggambar garis perkiraan masa lalu di
-grafik bulanan, dan backend `0.3.0` ke bawah serta basis data `0.1.0` belum memuat
+lama jangan dipakai: backend `0.5.0` menganggap semua barang "tidak bergerak" di
+halaman Stok, backend `0.4.0` belum menggambar garis perkiraan masa lalu di grafik
+bulanan, dan backend `0.3.0` ke bawah serta basis data `0.1.0` belum memuat
 perubahan 16 Oktober 2026 (Mesin 1 LightGBM, UMKM produsen, gambar produk).
-Backend `0.5.0` membutuhkan basis data `0.2.0`, karena tabel produksinya baru ada di
+Backend `0.6.0` membutuhkan basis data `0.2.0`, karena tabel produksinya baru ada di
 sana. Saat pertama menyala di atas basis data `0.2.0`, layanan model menjalankan
 Mesin 1 sekali (sekitar 4 menit) untuk mengisi uji balik bulanan.
 
 | Image | Tag yang dipakai | Isi | Halaman Docker Hub |
 | --- | --- | --- | --- |
 | `yonobengkel/turnify-flow-db` | **`0.2.0`** | PostgreSQL 16 yang memulihkan data simulasi (70 UMKM, 1 UMKM produsen, 8 distributor, 400 hari) beserta keluaran ketiga mesin saat pertama kali dinyalakan | https://hub.docker.com/r/yonobengkel/turnify-flow-db/tags |
-| `yonobengkel/turnify-flow-backend` | **`0.5.0`** | Satu image untuk API (port 8000) dan layanan model (port 8001). Isinya hanya model produksi (LightGBM, Beta-Bernoulli + fuzzy, K-Prototypes), lihat [`requirements-produksi.txt`](requirements-produksi.txt); tanpa Chronos atau PyMC | https://hub.docker.com/r/yonobengkel/turnify-flow-backend/tags |
+| `yonobengkel/turnify-flow-backend` | **`0.6.0`** | Satu image untuk API (port 8000) dan layanan model (port 8001). Isinya hanya model produksi (LightGBM, Beta-Bernoulli + fuzzy, K-Prototypes), lihat [`requirements-produksi.txt`](requirements-produksi.txt); tanpa Chronos atau PyMC | https://hub.docker.com/r/yonobengkel/turnify-flow-backend/tags |
 
 **Tidak perlu mengunduh dengan tangan.** Perintah `docker compose ... up -d` di
 jalur A dan B, juga `nyalakan.cmd`, mengunduh image yang dibutuhkan secara
@@ -525,7 +526,7 @@ internet lambat):
 
 ```powershell
 docker pull yonobengkel/turnify-flow-db:0.2.0
-docker pull yonobengkel/turnify-flow-backend:0.5.0
+docker pull yonobengkel/turnify-flow-backend:0.6.0
 ```
 
 `nyalakan.cmd` dan jalur B hanya memakai image basis data. Image backend hanya
