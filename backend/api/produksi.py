@@ -223,6 +223,12 @@ def riwayat_produksi(usaha_id: int = Depends(usaha_saya), hari: int = Query(30, 
         ]
 
 
+def _angka(x) -> str:
+    """Jumlah gaya Indonesia untuk pesan di layar: 20.000 dan 1,5, bukan 20000.000."""
+    teks = f"{float(x):,.2f}".rstrip("0").rstrip(".")
+    return teks.replace(",", "\u2009").replace(".", ",").replace("\u2009", ".")
+
+
 @rute.post("/produksi", response_model=ProduksiRingkas, status_code=201)
 def catat_produksi(badan: ProduksiBaru, usaha_id: int = Depends(usaha_saya)) -> ProduksiRingkas:
     with Session(mesin()) as sesi:
@@ -236,7 +242,7 @@ def catat_produksi(badan: ProduksiBaru, usaha_id: int = Depends(usaha_saya)) -> 
 
         jumlah = Decimal(badan.jumlah)
         kurang = [
-            f"{b.nama} (butuh {jumlah * r.takaran:g} {b.satuan}, ada {Decimal(b.stok):g})"
+            f"{b.nama} (butuh {_angka(jumlah * r.takaran)} {b.satuan}, ada {_angka(b.stok)} {b.satuan})"
             for r, b in bahan
             if Decimal(b.stok) < jumlah * Decimal(r.takaran)
         ]
@@ -307,7 +313,7 @@ def catat_penjualan(badan: PenjualanBaru, usaha_id: int = Depends(usaha_saya)) -
                 raise HTTPException(404, "Produk tidak ditemukan.")
             produk[pid] = pj
             if Decimal(pj.stok) < q:
-                kurang.append(f"{pj.nama} (diminta {q:g}, ada {Decimal(pj.stok):g} {pj.satuan})")
+                kurang.append(f"{pj.nama} (diminta {_angka(q)} {pj.satuan}, ada {_angka(pj.stok)} {pj.satuan})")
         if kurang:
             raise HTTPException(409, "Stok barang jadi tidak cukup: " + "; ".join(kurang) + ".")
 

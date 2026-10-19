@@ -77,6 +77,26 @@ KATALOG: tuple[Produk, ...] = (
 PRODUK_PER_NAMA = {p.nama: p for p in KATALOG}
 
 
+def deskripsi_kemasan(isi: float, satuan_dasar: str, kemasan: str) -> str:
+    """
+    Deskripsi bawaan barang: "1 karung = 20 kg", sama dengan cara layar
+    Distributor menulis isi kemasan (`tulisIsi` di frontend/src/lib/satuan.ts).
+    Dulu "20000 gram per karung": tanpa titik ribuan dan dalam satuan simpan.
+    Kemasan yang hanya mengulang satuannya cukup "per kg".
+    """
+    if satuan_dasar == "gram" and isi >= 1000:
+        n, satuan = isi / 1000, "kg"
+    elif satuan_dasar == "ml" and isi >= 1000:
+        n, satuan = isi / 1000, "liter"
+    else:
+        n, satuan = isi, satuan_dasar
+    teks = f"{n:,.2f}".rstrip("0").rstrip(".")
+    teks = teks.replace(",", "\u2009").replace(".", ",").replace("\u2009", ".")
+    if teks == "1" and satuan == kemasan:
+        return f"per {kemasan}"
+    return f"1 {kemasan} = {teks} {satuan}"
+
+
 # --------------------------------------------------------------------------
 # Barang apa yang disimpan tiap jenis usaha, dan berapa dipakai per hari
 # --------------------------------------------------------------------------

@@ -44,6 +44,7 @@ from warungku.enum import JenisPergerakan, StatusBayar, StatusKontrak, StatusPes
 from warungku.model import Kontrak, KontrakPeriode, Pergerakan, Pesanan, PesananBaris, PesananJejak
 
 from .buat_dataset import AKHIR, _wkt
+from .katalog import deskripsi_kemasan
 
 OLEH = "Variasi demo"
 UMUR_BASI = timedelta(days=3)
@@ -299,7 +300,7 @@ def _barang_baru(kon, usaha_id: int, email: str) -> int:
                 """
             ),
             {
-                "u": usaha_id, "pm": pm["id"], "nama": nama, "desk": f"{float(isi):g} {pm['satuan_dasar']} per {pm['kemasan_nama']}",
+                "u": usaha_id, "pm": pm["id"], "nama": nama, "desk": deskripsi_kemasan(float(isi), pm["satuan_dasar"], pm["kemasan_nama"]),
                 "lain": list(pm["sinonim"] or []), "kat": pm["kategori"], "kode": f"V{urut:02d}",
                 "sat": pm["satuan_dasar"], "stok": stok, "batas": (isi / 2).quantize(Decimal("1")),
                 "harga": pm["harga_satuan"], "pos": pos, "cat": catatan,

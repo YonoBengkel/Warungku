@@ -81,7 +81,7 @@ from warungku.model import (
 )
 
 from .buat_dataset import AKHIR, HARI_SIMULASI, KATA_SANDI_CONTOH, MULAI, _wkt
-from .katalog import DISTRIBUTOR, PRODUK_PER_NAMA, Produk
+from .katalog import DISTRIBUTOR, PRODUK_PER_NAMA, Produk, deskripsi_kemasan
 from .pola import KARAKTER, hari_kirim_asli, hari_libur, musim_hujan, pekan_gajian, sedang_ramadan
 
 BENIH = 20261016
@@ -402,7 +402,7 @@ def bangkitkan(kon) -> dict[str, int]:
             "barang",
             {
                 "usaha_id": usaha_id, "produk_master_id": produk_master[nama], "nama": nama,
-                "deskripsi": f"{p.isi:g} {p.satuan_dasar} per {p.kemasan}", "nama_lain": list(p.sinonim),
+                "deskripsi": deskripsi_kemasan(p.isi, p.satuan_dasar, p.kemasan), "nama_lain": list(p.sinonim),
                 "kategori": p.kategori, "kode_barang": f"B{kode + 1:03d}", "satuan": p.satuan_dasar,
                 "satuan_tampil": None, "stok": 0, "batas_aman": round(batas, 3), "batas_aman_saran": round(batas, 3),
                 "sumber_batas_aman": SumberBatasAman.SISTEM, "hari_kirim": hari_kirim,

@@ -82,7 +82,7 @@ from warungku.model import (
 
 from . import nota as modul_nota
 from .kalender import SEMUA_LIBUR
-from .katalog import DISTRIBUTOR, KATALOG, PRODUK_PER_NAMA, RAK, UMKM
+from .katalog import DISTRIBUTOR, KATALOG, PRODUK_PER_NAMA, RAK, UMKM, deskripsi_kemasan
 from .pola import KARAKTER, faktor_musiman, hari_kirim_asli, hari_libur, musim_hujan, pekan_gajian, sedang_ramadan
 
 # --------------------------------------------------------------------------
@@ -352,7 +352,7 @@ class Pembangkit:
                         "usaha_id": usaha_id,
                         "produk_master_id": produk_id[nama_produk],
                         "nama": nama_produk,
-                        "deskripsi": f"{p.isi:g} {p.satuan_dasar} per {p.kemasan}",
+                        "deskripsi": deskripsi_kemasan(p.isi, p.satuan_dasar, p.kemasan),
                         "nama_lain": list(p.sinonim),
                         "kategori": p.kategori,
                         "kode_barang": f"B{kode + 1:03d}",

@@ -192,6 +192,11 @@ if ($LASTEXITCODE -ne 0) {
     Oke 'Variasi demo (pesanan, kontrak, stok) dipasang ulang dengan tanggal hari ini'
 }
 
+# Deskripsi barang dari pembangkit lama ("20000 gram per karung") ditulis ulang
+# menjadi "1 karung = 20 kg". Hanya pola lama yang disentuh; aman diulang.
+$keluaranDeskripsi = cmd /c "`"$Python`" -m dataset.rapikan_deskripsi 2>&1"
+if ($LASTEXITCODE -eq 0) { Oke ($keluaranDeskripsi | Select-Object -Last 1) }
+
 # --------------------------------------------------------------------------
 Langkah 'Menyalakan API, layanan model, dan frontend'
 # Daftar jendela dari jalan sebelumnya dipertahankan selama jendelanya masih

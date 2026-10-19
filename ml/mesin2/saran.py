@@ -90,6 +90,12 @@ def kandidat_untuk(usaha_id: int) -> pd.DataFrame:
         )
 
 
+def _angka(x: float, desimal: int = 0) -> str:
+    """Angka gaya Indonesia untuk kalimat di layar: 2.029 dan 4,8, bukan 2029 dan 4.8."""
+    teks = f"{x:,.{desimal}f}"
+    return teks.replace(",", "\u2009").replace(".", ",").replace("\u2009", ".")
+
+
 def _alasan(baris: dict) -> str:
     """
     Satu kalimat, bahasa pemilik warung. Layar menuntutnya.
@@ -109,8 +115,8 @@ def _alasan(baris: dict) -> str:
 
     if baris["d_pesanan_selesai"] >= 20:
         bagian.append(
-            "sudah %d pesanan selesai dengan ketepatan waktu %.1f dari 5"
-            % (baris["d_pesanan_selesai"], baris["d_aspek_ketepatan"])
+            "sudah %s pesanan selesai dengan ketepatan waktu %s dari 5"
+            % (_angka(baris["d_pesanan_selesai"]), _angka(baris["d_aspek_ketepatan"], 1))
         )
     elif baris["d_pesanan_selesai"] >= 1:
         bagian.append("riwayatnya masih singkat (%d pesanan)" % baris["d_pesanan_selesai"])
@@ -243,8 +249,8 @@ def jalankan(
                 # "Serupa" hanya benar kalau hitungannya dipisah per kondisi.
                 cakupan = "pesanan serupa" if model.pisah_konteks else "pesanan"
                 catatan_beta[j] = (
-                    " %d dari %d %s sebelumnya ke distributor ini berjalan mulus."
-                    % (int(round(a - 1)), total, cakupan)
+                    " %s dari %s %s sebelumnya ke distributor ini berjalan mulus."
+                    % (_angka(round(a - 1)), _angka(total), cakupan)
                     if total > 0 else " Belum ada %s sebelumnya ke distributor ini." % cakupan
                 )
             urut = np.argsort(-skor)[:SIMPAN_TERATAS]
