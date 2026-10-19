@@ -276,11 +276,11 @@ export default function Stok() {
   const chipAktif = (n: Penyaring): string | null => (filter === n ? null : n)
 
   return (
-    /* Tinggi di layar lebar = layar dikurangi kepala aplikasi (3,5rem + garis
-       bawah 1px) dan jarak atas-bawah <main> (1rem + 2rem). Dengan begitu
-       halaman pas satu layar, dan satu-satunya yang bisa digulir adalah wadah
-       tabel. */
-    <div className="pb-6 lg:pb-0 lg:h-[calc(100dvh-6.5rem-1px)] lg:flex lg:flex-col">
+    /* Tinggi di layar lebar = layar dikurangi jarak atas-bawah <main> (1,5rem
+       + 2rem). Bilah global disembunyikan di desktop, jadi tidak ikut dikurangi.
+       Dengan begitu halaman pas satu layar, dan satu-satunya yang bisa digulir
+       adalah wadah tabel. */
+    <div className="pb-6 lg:pb-0 lg:h-[calc(100dvh-3.5rem)] lg:flex lg:flex-col">
       {/* ---------------- Kepala lengket ---------------- */}
       <div className="sticky top-[var(--kepala-global,0px)] z-20 -mx-4 px-4 sm:-mx-6 sm:px-6 pt-1 pb-3 bg-bg/96 backdrop-blur-sm border-b border-line lg:shrink-0">
         <div className="flex items-center gap-2 flex-wrap mb-3">

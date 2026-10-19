@@ -128,7 +128,9 @@ export default function PenawaranDetail() {
     if (r.arah !== 'tambah') return null
     const isiSaran = barang.kemasan[barang.kemasan.length - 1]?.isi ?? 1
     const isiPenawaran = penawaran.kemasanJual?.isi ?? 1
-    return Math.max(1, Math.ceil((r.jumlah * isiSaran) / isiPenawaran))
+    // Tidak melebihi stok distributor: PengaturJumlah hanya membatasi saat diubah.
+    const maks = Math.max(1, Math.floor(penawaran.stokTersedia))
+    return Math.min(maks, Math.max(1, Math.ceil((r.jumlah * isiSaran) / isiPenawaran)))
   })()
 
   function bukaLembarBeli() {

@@ -90,6 +90,17 @@ Tanda: [x] selesai, [~] sebagian, [ ] belum.
 ### Lain-lain
 - [x] Pemberitahuan stok merah hanya untuk yang genting; tanda wajib `*` tidak lagi merah.
 
+### Telaah adversarial (`a243aa0..baf3150`)
+Agen terpisah menelaah seluruh diff cabang; tujuh cacat dan satu catatan, semuanya diperbaiki:
+- [x] Pemberitahuan server yang memburuk (menipis → habis) tidak muncul lagi sebagai belum dibaca. Kini status dibaca hanya diwarisi bila tingkat dan judulnya sama.
+- [x] "Pesan Sekarang" dari tab Riwayat di rincian barang tidak berbuat apa-apa (kartu saran hanya ada di Ringkasan). Kini pindah ke Ringkasan dulu.
+- [x] Aksi massal menyalin nomor resi, penerima, dan catatan ke pesanan pemesan lain. Kini lembar massal hanya menanyakan jasa kirim dan pengantar (berangkat) atau tanpa isian (sampai).
+- [x] Tinggi halaman Stok dan Sebaran di desktop masih menghitung bilah global yang sudah disembunyikan (pita kosong ±49px).
+- [x] Judul kartu saran tertutup bilah lengket setelah digulir otomatis (`scroll-mt` mengikuti `--kepala-global`).
+- [x] Judul halaman depan rapat di ≥640px karena token angka membawa jarak baris 1.
+- [x] Jumlah awal lembar beli bisa melebihi stok distributor.
+- [x] Lencana tunggu pesanan lebih dari 30 hari terbaca "Menunggu 12 Okt" → "Menunggu sejak 12 Okt".
+
 ## Bukti
 
 Tangkapan layar sebelum kurasi ada di scratchpad sesi; sesudah setiap fase diambil ulang

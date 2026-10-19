@@ -300,6 +300,7 @@ export default function PesananMasukDaftar() {
       {lembarMajuSemua && (tahap === 'disiapkan' || tahap === 'dikirim') && (
         <LembarBukti
           tahap={tahap}
+          massal={daftar.length}
           tutup={() => setLembarMajuSemua(false)}
           kirim={(bukti) => {
             majukanSemuaPesananMasuk(
@@ -376,6 +377,8 @@ function lamaMenunggu(dibuatPada: string): string {
   const w = waktuLalu(dibuatPada)
   if (w === 'baru saja') return 'Baru masuk'
   if (w === 'kemarin') return 'Menunggu sejak kemarin'
+  // Lebih dari sebulan, waktuLalu memberi tanggal ("12 Okt"), bukan "N ... lalu".
+  if (!w.endsWith(' lalu')) return `Menunggu sejak ${w}`
   return `Menunggu ${w.replace(/ lalu$/, '')}`
 }
 
@@ -497,10 +500,14 @@ export function LembarBukti({
   tahap,
   tutup,
   kirim,
+  massal = 0,
 }: {
   tahap: 'disiapkan' | 'dikirim'
   tutup: () => void
   kirim: (bukti: Record<string, string | null>) => void
+  /** Jumlah pesanan pada aksi massal. Isian yang khas per pesanan (resi, penerima,
+      catatan) tidak ditanyakan: satu isian akan tersalin ke pesanan pemesan lain. */
+  massal?: number
 }) {
   const [a, setA] = useState('')
   const [b, setB] = useState('')
@@ -511,11 +518,23 @@ export function LembarBukti({
     <Lembar
       terbuka
       tutup={tutup}
-      judul={berangkat ? 'Catat pengiriman' : 'Catat barang sampai'}
+      judul={
+        massal > 0
+          ? berangkat
+            ? `Kirim ${massal} pesanan`
+            : `Tandai ${massal} pesanan sampai`
+          : berangkat
+            ? 'Catat pengiriman'
+            : 'Catat barang sampai'
+      }
       keterangan={
-        berangkat
-          ? 'Isian ini tampil di rincian pesanan pemilik usaha. Boleh dikosongkan.'
-          : 'Stok pemilik usaha bertambah setelah ia menghitung barangnya sendiri.'
+        massal > 0
+          ? berangkat
+            ? 'Jasa kirim dan pengantar dipakai untuk semua pesanan yang berangkat bersama. Nomor resi diisi per pesanan di rinciannya.'
+            : 'Nama penerima dan catatan bisa diisi per pesanan di rinciannya.'
+          : berangkat
+            ? 'Isian ini tampil di rincian pesanan pemilik usaha. Boleh dikosongkan.'
+            : 'Stok pemilik usaha bertambah setelah ia menghitung barangnya sendiri.'
       }
       kaki={
         <div className="flex gap-2.5">
@@ -526,9 +545,13 @@ export function LembarBukti({
             penuh
             onClick={() =>
               kirim(
-                berangkat
-                  ? { kurir: kosongJadiNull(a), pengantar: kosongJadiNull(b), nomor_resi: kosongJadiNull(c) }
-                  : { diterima_oleh: kosongJadiNull(a), catatan: kosongJadiNull(b) },
+                massal > 0
+                  ? berangkat
+                    ? { kurir: kosongJadiNull(a), pengantar: kosongJadiNull(b) }
+                    : {}
+                  : berangkat
+                    ? { kurir: kosongJadiNull(a), pengantar: kosongJadiNull(b), nomor_resi: kosongJadiNull(c) }
+                    : { diterima_oleh: kosongJadiNull(a), catatan: kosongJadiNull(b) },
               )
             }
           >
@@ -542,14 +565,14 @@ export function LembarBukti({
           <>
             <Kolom label="Jasa kirim" placeholder="Armada sendiri" value={a} onChange={(e) => setA(e.target.value)} />
             <Kolom label="Nama pengantar" value={b} onChange={(e) => setB(e.target.value)} />
-            <Kolom label="Nomor resi" value={c} onChange={(e) => setC(e.target.value)} />
+            {massal === 0 && <Kolom label="Nomor resi" value={c} onChange={(e) => setC(e.target.value)} />}
           </>
-        ) : (
+        ) : massal === 0 ? (
           <>
             <Kolom label="Diterima oleh" value={a} onChange={(e) => setA(e.target.value)} />
             <Kolom label="Catatan" value={b} onChange={(e) => setB(e.target.value)} />
           </>
-        )}
+        ) : null}
       </div>
     </Lembar>
   )

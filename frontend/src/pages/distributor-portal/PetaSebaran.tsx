@@ -133,10 +133,10 @@ export default function PetaSebaranBarang() {
   }
 
   return (
-    // Desktop: tinggi halaman dikunci ke layar (kepala portal 3,5rem dengan
-    // garis bawahnya 1px, plus jarak atas-bawah 3rem), lalu isinya menggulir
-    // di dalam kotaknya sendiri-sendiri.
-    <div className="pb-6 lg:pb-0 lg:h-[calc(100dvh-6.5rem-1px)] lg:flex lg:flex-col">
+    // Desktop: tinggi halaman dikunci ke layar dikurangi jarak atas-bawah
+    // <main> (1,5rem + 2rem; bilah portal disembunyikan di desktop), lalu
+    // isinya menggulir di dalam kotaknya sendiri-sendiri.
+    <div className="pb-6 lg:pb-0 lg:h-[calc(100dvh-3.5rem)] lg:flex lg:flex-col">
       <KepalaHalaman
         judul={penawaran ? penawaran.nama : 'Sebaran pemesan'}
         keterangan={penawaran ? 'Sebaran UMKM yang memesan barang ini' : 'Semua barang yang sedang dipesan'}

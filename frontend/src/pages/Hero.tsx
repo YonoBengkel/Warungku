@@ -112,7 +112,7 @@ export default function Hero() {
           <div className="max-w-[1100px] mx-auto px-4 sm:px-6 py-12">
             <h2
               id="judul-tugas"
-              className="text-[1.375rem] sm:text-angka font-extrabold text-ink tracking-tight"
+              className="text-[1.375rem] sm:text-angka font-extrabold text-ink tracking-tight leading-tight"
             >
               Tiga pekerjaan yang tidak dikerjakan aplikasi kasir
             </h2>
@@ -149,7 +149,7 @@ export default function Hero() {
           <div className="max-w-[1100px] mx-auto px-4 sm:px-6 py-12">
             <h2
               id="judul-cara"
-              className="text-[1.375rem] sm:text-angka font-extrabold text-ink tracking-tight"
+              className="text-[1.375rem] sm:text-angka font-extrabold text-ink tracking-tight leading-tight"
             >
               Cara kerjanya
             </h2>
@@ -205,7 +205,7 @@ export default function Hero() {
           <div className="max-w-[1100px] mx-auto px-4 sm:px-6 py-12">
             <h2
               id="judul-ajakan"
-              className="text-[1.375rem] sm:text-angka font-extrabold text-ink tracking-tight max-w-[24ch]"
+              className="text-[1.375rem] sm:text-angka font-extrabold text-ink tracking-tight leading-tight max-w-[24ch]"
             >
               Kasirmu tetap yang sekarang. Gudangnya yang kami bereskan.
             </h2>

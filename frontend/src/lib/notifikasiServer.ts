@@ -22,8 +22,17 @@ export function notifikasiDariServer(
   const hasil: Notifikasi[] = []
 
   function tambah(n: Omit<Notifikasi, 'waktu' | 'dibaca' | 'dibisukanSampai'>) {
+    // Status dibaca dan waktu hanya diwarisi kalau isinya tidak berubah. Barang
+    // yang memburuk (menipis lalu habis) harus muncul lagi sebagai belum dibaca
+    // dan naik ke atas, sesuai janji di halaman Pemberitahuan.
     const l = lama.get(n.id)
-    hasil.push({ ...n, waktu: l?.waktu ?? sekarang, dibaca: l?.dibaca ?? false, dibisukanSampai: null })
+    const sama = l != null && l.tingkat === n.tingkat && l.judul === n.judul
+    hasil.push({
+      ...n,
+      waktu: sama ? l.waktu : sekarang,
+      dibaca: sama ? l.dibaca : false,
+      dibisukanSampai: null,
+    })
   }
 
   // Jumlah yang sedang dikirim per barang, dari pesanan yang masih berjalan.

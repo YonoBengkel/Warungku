@@ -54,6 +54,12 @@ export default function StokDetail() {
   const pesanan = useAplikasi((s) => s.pesanan)
   const kontrak = useAplikasi((s) => s.kontrak.find((k) => k.barangId === id && k.status !== 'selesai'))
   const [tab, setTab] = useState<TabDetail>('ringkasan')
+  /* ?pesan=1 dibaca kartu saran, yang hanya ada di tab Ringkasan. Dari tab
+     Riwayat, tombol "Pesan" dulu hanya mengubah alamat tanpa membuka apa pun. */
+  const [paramHalaman] = useSearchParams()
+  useEffect(() => {
+    if (paramHalaman.get('pesan') === '1') setTab('ringkasan')
+  }, [paramHalaman])
   const mesin = useDataMesin(barang)
 
   /* Dihitung di sini, bukan lewat pembaca bersama, karena pembaca itu menyusun
@@ -484,7 +490,7 @@ function KartuSaranMesin({
   }
   const lama = saran.some((s) => s.kedaluwarsa)
   return (
-    <section ref={wadahRef} aria-label="Saran distributor" className="scroll-mt-20">
+    <section ref={wadahRef} aria-label="Saran distributor" className="scroll-mt-[calc(var(--kepala-global,0px)_+_4.5rem)]">
     <Kartu>
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="text-kartu font-bold text-ink leading-tight">Saran distributor</h2>
