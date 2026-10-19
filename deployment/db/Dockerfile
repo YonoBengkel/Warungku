@@ -6,7 +6,7 @@
 #
 # Cadangan TIDAK dilacak git (besar). Buat dulu dari basis data lokal, lalu build
 # dari folder ini:
-#   docker build -t yonobengkel/turnify-flow-db:0.1.0 deployment/db
+#   docker build -t yonobengkel/turnify-flow-db:0.2.0 deployment/db
 
 FROM postgres:16-alpine
 

@@ -31,7 +31,7 @@
 name: backend
 
 x-backend: &backend
-  image: yonobengkel/turnify-flow-backend:0.3.0
+  image: yonobengkel/turnify-flow-backend:0.4.0
   build:
     context: ..
     dockerfile: deployment/Dockerfile
@@ -52,7 +52,7 @@ x-backend: &backend
 
 services:
   db:
-    image: yonobengkel/turnify-flow-db:0.1.0
+    image: yonobengkel/turnify-flow-db:0.2.0
     build:
       context: db
     container_name: warungku-db

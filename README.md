@@ -116,10 +116,15 @@ Buka http://localhost:5173, lalu masuk dengan [akun simulasi](#akun-simulasi).
 - **`npm install` dan `npm run dev`** di akar repo diteruskan ke `frontend/`.
 - **Mematikan:** `docker compose -f deployment/docker-compose.yml --profile layanan stop`.
 
-> **Catatan versi image.** Image yang sekarang (`turnify-flow-backend:0.3.0` dan
-> `turnify-flow-db:0.1.0`) belum memuat perubahan 16 Oktober 2026: Mesin 1 masih
-> SARIMA, dan UMKM produsen (tab Produksi, akun `produksi1`) belum ada. Versi
-> barunya menyusul. Sampai itu, pakai jalur B untuk melihat semua fitur terbaru.
+> **Pernah menjalankan jalur A sebelum 16 Oktober 2026?** Basis data hanya
+> dipulihkan dari image ke volume yang masih kosong, jadi volume lamamu tetap
+> berisi data versi lama (tanpa tabel produksi dan tanpa UMKM produsen). Pilih
+> salah satu:
+> - Ganti dengan data baru dari image (data lama di volume **hilang**):
+>   `docker compose -f deployment/docker-compose.yml --profile layanan down -v`,
+>   lalu jalankan lagi perintah jalur A di atas.
+> - Pertahankan data lama: pakai `nyalakan.cmd` (butuh Python), yang menaikkan
+>   skema dan menambahkan UMKM produsen ke basis datamu.
 
 ### Jalur B: mengembangkan
 
@@ -149,8 +154,8 @@ python -m alembic -c backend/alembic.ini upgrade head
 - **Isi `WARUNGKU_RAHASIA`** di `backend/.env` dengan teks acak yang panjang. Tanpanya
   API membuat rahasia baru setiap kali dinyalakan, dan semua orang harus masuk ulang.
 
-**B3. Lengkapi data** bila basis datamu berasal dari image `turnify-flow-db:0.1.0`
-(belum ada UMKM produsen):
+**B3. Lengkapi data** bila basis datamu berasal dari image lama `turnify-flow-db:0.1.0`
+(belum ada UMKM produsen). Volume yang dipulihkan dari `0.2.0` sudah lengkap:
 
 ```powershell
 python -m dataset.umkm_produksi
@@ -288,7 +293,7 @@ pesanan pekan depan di tab Produksi turun.
 | Grafik perkiraan atau saran distributor kosong untuk satu barang | Mesin 1 atau 2 belum dijalankan sesudah data berubah | Jalankan perintah B5 |
 | Harus masuk ulang setiap API dinyalakan ulang | `WARUNGKU_RAHASIA` kosong | Isi di `backend/.env` (jalur B) atau `deployment/.env` (jalur A) |
 | `produksi1@warungku.test` tidak bisa masuk | Basis data belum memuat UMKM produsen | Jalankan B2 (`alembic upgrade head`) lalu B3, kemudian B5 |
-| Galat tentang tabel `produk_jadi` atau `produksi` | Skema basis data tertinggal dari kode | `python -m alembic -c backend/alembic.ini upgrade head` |
+| Galat tentang tabel `produk_jadi` atau `produksi`, atau tab Produksi kosong | Volume basis data masih dari versi lama, skemanya tertinggal dari kode | Jalur B atau `nyalakan.cmd`: `python -m alembic -c backend/alembic.ini upgrade head`. Jalur A: lihat kotak "Pernah menjalankan jalur A sebelum 16 Oktober 2026?" |
 | Basis data menyala tetapi kosong | Volume lama dari versi sebelum data ikut di image | `docker compose -f deployment/docker-compose.yml down -v`, lalu nyalakan lagi. **Ini menghapus isi basis data**; jangan dijalankan kalau ada data yang ingin disimpan |
 | Port 5433, 8000, atau 8001 sudah dipakai | Kontainer dan `uvicorn` dinyalakan bersamaan, atau layanan lain memakai port itu | Pilih satu: jalur A atau `uvicorn`. Hentikan yang lain |
 | `curl -X ...` gagal di PowerShell | `curl` adalah alias `Invoke-WebRequest` | Tulis `curl.exe` |
@@ -487,13 +492,15 @@ dijadwalkan dari luar. Metode Mesin 1 yang dipakai penjadwal diatur lewat
 Ada dua image di Docker Hub, keduanya publik (tidak perlu `docker login` untuk
 mengunduh). **Unduh tag yang tertulis di tabel ini**: tag inilah yang dipakai
 [`deployment/docker-compose.yml`](deployment/docker-compose.yml). Tag yang lebih
-lama jangan dipakai: backend `0.2.0` belum memuat kontrak dan promo dari API, dan
-`0.1.0` juga belum memuat katalog.
+lama jangan dipakai: backend `0.3.0` ke bawah dan basis data `0.1.0` belum memuat
+perubahan 16 Oktober 2026 (Mesin 1 LightGBM, UMKM produsen, gambar produk).
+Backend `0.4.0` membutuhkan basis data `0.2.0`, karena tabel produksinya baru ada di
+sana.
 
 | Image | Tag yang dipakai | Isi | Halaman Docker Hub |
 | --- | --- | --- | --- |
-| `yonobengkel/turnify-flow-db` | **`0.1.0`** | PostgreSQL 16 yang memulihkan data simulasi (70 UMKM, 8 distributor, 400 hari) beserta keluaran ketiga mesin saat pertama kali dinyalakan | https://hub.docker.com/r/yonobengkel/turnify-flow-db/tags |
-| `yonobengkel/turnify-flow-backend` | **`0.3.0`** | Satu image untuk API (port 8000) dan layanan model (port 8001). Isinya hanya model produksi, lihat [`requirements-produksi.txt`](requirements-produksi.txt); tanpa Chronos atau PyMC | https://hub.docker.com/r/yonobengkel/turnify-flow-backend/tags |
+| `yonobengkel/turnify-flow-db` | **`0.2.0`** | PostgreSQL 16 yang memulihkan data simulasi (70 UMKM, 1 UMKM produsen, 8 distributor, 400 hari) beserta keluaran ketiga mesin saat pertama kali dinyalakan | https://hub.docker.com/r/yonobengkel/turnify-flow-db/tags |
+| `yonobengkel/turnify-flow-backend` | **`0.4.0`** | Satu image untuk API (port 8000) dan layanan model (port 8001). Isinya hanya model produksi (LightGBM, Beta-Bernoulli + fuzzy, K-Prototypes), lihat [`requirements-produksi.txt`](requirements-produksi.txt); tanpa Chronos atau PyMC | https://hub.docker.com/r/yonobengkel/turnify-flow-backend/tags |
 
 **Tidak perlu mengunduh dengan tangan.** Perintah `docker compose ... up -d` di
 jalur A dan B, juga `nyalakan.cmd`, mengunduh image yang dibutuhkan secara
@@ -501,16 +508,12 @@ otomatis. Kalau ingin mengunduh lebih dulu (misalnya sebelum ke kampus dengan
 internet lambat):
 
 ```powershell
-docker pull yonobengkel/turnify-flow-db:0.1.0
-docker pull yonobengkel/turnify-flow-backend:0.3.0
+docker pull yonobengkel/turnify-flow-db:0.2.0
+docker pull yonobengkel/turnify-flow-backend:0.4.0
 ```
 
 `nyalakan.cmd` dan jalur B hanya memakai image basis data. Image backend hanya
 dipakai jalur A.
-
-> Kedua tag di atas belum memuat perubahan 16 Oktober 2026 (LightGBM, UMKM
-> produsen, gambar produk). Versi barunya (backend `0.4.0`, basis data `0.2.0`)
-> menyusul; tabel ini dan `docker-compose.yml` akan diperbarui bersamaan.
 
 Hal yang perlu diketahui:
 
@@ -552,8 +555,6 @@ docker push yonobengkel/turnify-flow-backend:<versi>
 
 Daftar ini ada supaya tidak ada yang menyangka bagian ini sudah selesai.
 
-- **Image Docker** belum memuat perubahan 16 Oktober 2026 (LightGBM, gambar produk,
-  UMKM produsen). Lihat catatan di jalur A.
 - **Yang masih data contoh** meski masuk dengan akun simulasi:
   - pemberitahuan;
   - profil usaha dan profil distributor (mengubahnya belum tersimpan);
