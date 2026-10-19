@@ -8,7 +8,8 @@ menarik, tulisan kurang mencolok, penjelasan terlalu panjang, dan alurnya terasa
 Acuan rasa tetap majoo (bedahnya di [Brief-Rebrand-Turnify-Flow.md](Brief-Rebrand-Turnify-Flow.md),
 bagian 2), dan spesifikasi layar pemilik usaha tetap
 [IMPROVEMENT-Interface-Pemilik-Usaha.md](IMPROVEMENT-Interface-Pemilik-Usaha.md). Dokumen ini
-tidak menggantikan keduanya; ia mencatat apa yang dirapikan di atasnya.
+tidak menggantikan keduanya; ia mencatat apa yang dirapikan di atasnya. Aturan yang berlaku
+sesudah kurasi dirangkum di [DESIGN.md](../../DESIGN.md) di akar repo.
 
 ## Prinsip
 
@@ -21,8 +22,9 @@ tidak menggantikan keduanya; ia mencatat apa yang dirapikan di atasnya.
 3. **Teks badan 14px, bukan 13px.** majoo memakai dasar 16px dan label 14px; kita memakai 13px
    di 500 tempat, kebanyakan abu-abu. Keterangan yang perlu dibaca memakai `ink-2`; `ink-3`
    hanya untuk keterangan yang boleh dilewati.
-4. **Satu gaya "terpilih".** Tab (ganti tampilan) dan chip (saring daftar) memakai gaya
-   terpilih yang sama. Ungu penuh dicadangkan untuk tombol utama.
+4. **Terpilih bukan ungu penuh.** Tab (ganti tampilan) memakai jalur abu-abu dengan pilihan
+   terangkat putih; chip (saring daftar) dan tombol pilihan memakai ungu muda. Ungu penuh
+   dicadangkan untuk tombol utama. (Rumusan awal "satu gaya terpilih" diubah saat Fase 1.)
 5. **Satu kata untuk satu aksi.** "Pesan" berarti mengirim pesanan; mengisi keranjang ditulis
    "Masukkan ke Keranjang".
 6. **Angka tidak boleh saling membantah.** Dua widget yang menghitung hal yang sama membaca

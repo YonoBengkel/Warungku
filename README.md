@@ -651,6 +651,7 @@ Daftar ini ada supaya tidak ada yang menyangka bagian ini sudah selesai.
 | --- | --- |
 | [`docs/laporan/`](docs/laporan/) | Laporan progres untuk dosen (Word dan PDF), laporan implementasi lengkap dan ringkas |
 | [`docs/proses-bisnis/`](docs/proses-bisnis/) | Dokumen proses bisnis, flowchart B2B/B2C, Gantt |
+| [`DESIGN.md`](DESIGN.md) | Acuan tampilan untuk kode antarmuka: token warna, skala teks, hierarki tombol, kosakata, larangan |
 | [`docs/desain/`](docs/desain/) | Spesifikasi antarmuka, laporan revisi UI, bahan rebrand |
 | [`backend/README.md`](backend/README.md) | Aturan angka, invarian buku besar, port 5433 |
 | [`ml/README.md`](ml/README.md) | Layanan model dan cara menjalankan percobaan |
