@@ -40,7 +40,7 @@ lihat [Kalau ada yang tidak jalan](#kalau-ada-yang-tidak-jalan).
 
 Semua perintah untuk **Windows PowerShell** dan dijalankan dari **akar repo**.
 
-> Pakai branch **`Rombak#3`**. Branch `main` hanya berisi purwarupa antarmuka
+> Pakai branch **`Rombak#4`**. Branch `main` hanya berisi purwarupa antarmuka
 > lama, tanpa backend dan model.
 
 ### Paling mudah untuk mencoba: `siapkan.cmd`
@@ -48,7 +48,7 @@ Semua perintah untuk **Windows PowerShell** dan dijalankan dari **akar repo**.
 Untuk yang hanya ingin melihat aplikasinya jalan, tanpa Python dan tanpa perlu
 mengerti Docker:
 
-1. Buka [halaman `siapkan.cmd` di GitHub](https://github.com/YonoBengkel/Warungku/blob/Rombak%233/siapkan.cmd),
+1. Buka [halaman `siapkan.cmd` di GitHub](https://github.com/YonoBengkel/Warungku/blob/Rombak%234/siapkan.cmd),
    tekan tombol **Download raw file**, lalu taruh berkasnya di folder mana saja
    (misalnya `Documents`). Belum perlu clone apa pun.
 2. Klik dua kali `siapkan.cmd`, lalu tunggu sampai peramban terbuka.
@@ -56,7 +56,7 @@ mengerti Docker:
 Yang dikerjakan skrip itu:
 - memeriksa Git, Docker Desktop, dan Node.js; yang belum ada ditawarkan untuk
   dipasang lewat winget (selalu ditanya dulu);
-- clone repo (branch `Rombak#3`) ke folder `turnify-flow` di sebelah berkas itu;
+- clone repo (branch `Rombak#4`) ke folder `turnify-flow` di sebelah berkas itu;
 - menyalakan Docker Desktop, mengunduh image dari Docker Hub (sekitar 400 MB
   pertama kali), lalu menyalakan kontainer basis data, API, dan layanan model;
 - menyiapkan `deployment/.env` dengan rahasia login acak;
@@ -90,13 +90,13 @@ sama. Datanya tetap tersimpan.
 ```powershell
 git clone https://github.com/YonoBengkel/Warungku.git turnify-flow
 cd turnify-flow
-git switch "Rombak#3"
+git switch "Rombak#4"
 ```
 
 Sudah pernah clone? Cukup ambil perubahan terbaru:
 
 ```powershell
-git switch "Rombak#3"
+git switch "Rombak#4"
 git pull
 ```
 

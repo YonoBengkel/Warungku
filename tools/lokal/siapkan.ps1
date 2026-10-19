@@ -9,7 +9,7 @@ turnify-flow di sebelahnya.
 Yang dikerjakan, berurutan:
   1. Git, Docker Desktop, dan Node.js diperiksa. Yang belum ada ditawarkan
      untuk dipasang lewat winget (selalu ditanya dulu).
-  2. Repo di-clone (branch Rombak#3), atau diperbarui bila sudah ada dan
+  2. Repo di-clone (branch Rombak#4), atau diperbarui bila sudah ada dan
      tidak ada perubahan yang belum dikomit.
   3. Docker Desktop dinyalakan, image basis data dan backend diunduh dari
      Docker Hub, lalu kontainer basis data (5433), API (8000), dan layanan
@@ -44,7 +44,7 @@ $ErrorActionPreference = 'Continue'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 $RepoUrl = 'https://github.com/YonoBengkel/Warungku.git'
-$Cabang = 'Rombak#3'
+$Cabang = 'Rombak#4'
 $BerkasPid = Join-Path $env:TEMP 'turnify-lokal-pid.txt'
 $Compose = 'docker compose -f deployment/docker-compose.yml --profile layanan'
 
@@ -286,6 +286,16 @@ if (-not (Tampil "$Compose up -d")) { Gagal 'API dan layanan model tidak bisa di
 foreach ($l in @(@{ Nama = 'API'; Url = 'http://localhost:8000/sehat' }, @{ Nama = 'Layanan model'; Url = 'http://localhost:8001/sehat' })) {
     if (-not (Tunggu-Url $l.Url 180)) { Gagal "$($l.Nama) belum menjawab di $($l.Url). Lihat: docker compose -f deployment/docker-compose.yml logs" }
     Oke "$($l.Nama) siap: $($l.Url)"
+}
+
+# Deskripsi barang di basis data 0.2.0 masih ditulis pembangkit lama
+# ("20000 gram per karung"). Skripnya ada di image backend dan menulis ulang
+# hanya pola lama menjadi "1 karung = 20 kg", jadi aman dijalankan berulang.
+$keluaranDeskripsi = cmd /c "docker exec turnify-api python -m dataset.rapikan_deskripsi 2>&1"
+if ($LASTEXITCODE -eq 0) {
+    Oke ($keluaranDeskripsi | Select-Object -Last 1)
+} else {
+    Awas 'Deskripsi barang belum dirapikan; aplikasi tetap bisa dipakai.'
 }
 
 # --------------------------------------------------------------------------

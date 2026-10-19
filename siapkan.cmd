@@ -13,7 +13,7 @@ cd /d "%~dp0"
 if exist "%~dp0tools\lokal\siapkan.ps1" (
     powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0tools\lokal\siapkan.ps1" %*
 ) else (
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; $f = Join-Path $env:TEMP 'turnify-siapkan.ps1'; try { Invoke-WebRequest -UseBasicParsing -Uri 'https://raw.githubusercontent.com/YonoBengkel/Warungku/Rombak%%233/tools/lokal/siapkan.ps1' -OutFile $f } catch { Write-Host 'BELUM BISA: skrip penyiap tidak bisa diunduh dari GitHub. Periksa koneksi internet.' -ForegroundColor Red; exit 1 }; & $f -Folder '%~dp0turnify-flow' %*; exit $LASTEXITCODE"
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; $f = Join-Path $env:TEMP 'turnify-siapkan.ps1'; try { Invoke-WebRequest -UseBasicParsing -Uri 'https://raw.githubusercontent.com/YonoBengkel/Warungku/Rombak%%234/tools/lokal/siapkan.ps1' -OutFile $f } catch { Write-Host 'BELUM BISA: skrip penyiap tidak bisa diunduh dari GitHub. Periksa koneksi internet.' -ForegroundColor Red; exit 1 }; & $f -Folder '%~dp0turnify-flow' %*; exit $LASTEXITCODE"
 )
 echo.
 pause
