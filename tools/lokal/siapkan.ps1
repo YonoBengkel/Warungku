@@ -288,6 +288,28 @@ foreach ($l in @(@{ Nama = 'API'; Url = 'http://localhost:8000/sehat' }, @{ Nama
     Oke "$($l.Nama) siap: $($l.Url)"
 }
 
+# Variasi demo untuk Kopi Kita dan Bu Ratmi: pesanan di setiap tahap, kontrak
+# di setiap status, dan stok habis/menipis/kedaluwarsa. Basis data 0.2.0 belum
+# memuatnya. Tanggalnya relatif terhadap hari ini, jadi disegarkan kalau
+# umurnya lebih dari tiga hari, sama dengan nyalakan.cmd.
+$keluaranVariasi = cmd /c "docker exec turnify-api python -m dataset.variasi_demo --jika-basi 2>&1"
+# Basis data yang pernah dipakai Rombak#4 bisa punya resep menu kasir yang
+# menunjuk barang variasi (kode V..). Variasi versi ini belum mengenal resep,
+# jadi gagal menghapus barang itu. Resep yang menunjuk barang variasi dibuang
+# (variasi Rombak#4 juga membuangnya saat menyegarkan), lalu dicoba sekali lagi.
+if ($LASTEXITCODE -ne 0 -and (($keluaranVariasi -join ' ') -match 'pemetaan_menu_bahan')) {
+    $null = & docker exec warungku-db psql -U warungku -d warungku_dev -q -c "DELETE FROM pemetaan_menu_bahan WHERE barang_id IN (SELECT id FROM barang WHERE kode_barang LIKE 'V%')" 2>&1
+    $keluaranVariasi = cmd /c "docker exec turnify-api python -m dataset.variasi_demo --jika-basi 2>&1"
+}
+if ($LASTEXITCODE -ne 0) {
+    $keluaranVariasi | Select-Object -Last 5 | ForEach-Object { Write-Host "    $_" }
+    Awas 'Variasi demo belum terpasang; aplikasi tetap bisa dipakai.'
+} elseif ($keluaranVariasi -match 'masih segar') {
+    Oke 'Variasi demo (pesanan, kontrak, stok) masih segar'
+} else {
+    Oke 'Variasi demo (pesanan, kontrak, stok) dipasang dengan tanggal hari ini'
+}
+
 # --------------------------------------------------------------------------
 Langkah 'Frontend'
 if (-not (Test-Path (Join-Path $Akar 'frontend\node_modules'))) {

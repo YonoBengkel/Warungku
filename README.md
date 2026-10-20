@@ -60,6 +60,9 @@ Yang dikerjakan skrip itu:
 - menyalakan Docker Desktop, mengunduh image dari Docker Hub (sekitar 400 MB
   pertama kali), lalu menyalakan kontainer basis data, API, dan layanan model;
 - menyiapkan `deployment/.env` dengan rahasia login acak;
+- memasang variasi demo untuk akun Kopi Kita dan Bu Ratmi (pesanan di setiap
+  tahap, kontrak, stok habis dan menipis), bertanggal hari ini dan disegarkan
+  kalau umurnya lebih dari tiga hari;
 - memasang paket frontend dan menyalakannya di jendela yang diperkecil ke taskbar;
 - membuka peramban di halaman Masuk.
 
