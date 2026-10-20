@@ -66,7 +66,12 @@ services:
     volumes:
       - warungku_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U warungku -d warungku_dev"]
+      # Lewat TCP (-h 127.0.0.1), bukan soket. Saat volume masih kosong, image
+      # memulihkan data lewat server sementara yang hanya membuka soket, lalu
+      # menyala ulang. Lewat soket, basis data sudah terbaca sehat selama
+      # pemulihan, sehingga API dan langkah variasi demo siapkan.cmd berjalan
+      # terlalu cepat dan ditolak saat server sementara dimatikan.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U warungku -d warungku_dev"]
       interval: 5s
       timeout: 5s
       retries: 10
