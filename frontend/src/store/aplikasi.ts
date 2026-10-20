@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { create } from 'zustand'
 import type {
   AlasanSelisih,
+  BahanMenu,
   Barang,
   BarisKeranjang,
   BuktiPengiriman,
@@ -17,6 +18,7 @@ import type {
   Pesanan,
   PesananMasuk,
   ProfilUsaha,
+  ResepMenu,
   StatusPesanan,
   StatusPesananMasuk,
   SubKeranjang,
@@ -83,6 +85,8 @@ import {
 } from '@/lib/apiPesanan'
 import type { AksiDistributor } from '@/lib/apiPesanan'
 import { ambilKatalog } from '@/lib/apiKatalog'
+import { ambilMenuKasir, ambilNotaTerbaru, kirimNota, simpanResep } from '@/lib/apiMenu'
+import type { RingkasanMenuKasir } from '@/lib/apiMenu'
 import {
   aksiKontrakServer,
   ajukanKontrakServer,
@@ -125,6 +129,10 @@ interface KeadaanAplikasi {
   pergerakan: Pergerakan[]
   /** Satu database struk untuk seluruh toko. Pergerakan dari kasir merujuk ke sini. */
   transaksi: Transaksi[]
+  /** Resep menu kasir. Mode data server: dari server; mode contoh: yang dipasangkan di sesi ini. */
+  resepMenu: ResepMenu[]
+  /** Nota terbaru dari server untuk tab Riwayat. Null di mode contoh atau sebelum dimuat. */
+  notaTerbaru: Transaksi[] | null
   kontrak: Kontrak[]
   pesanan: Pesanan[]
   notifikasi: Notifikasi[]
@@ -198,7 +206,12 @@ interface KeadaanAplikasi {
   ubahProfil: (p: Partial<ProfilUsaha>) => void
   ubahKasir: (p: Partial<DataKasir>) => void
   hubungkanKasir: () => void
-  pasangkanMenu: (menuId: string, barangId: string) => void
+  /** Simpan resep satu menu, baru atau ubahan. Hasilnya: tersimpan atau tidak. */
+  pasangkanMenu: (menuId: string, bahan: BahanMenu[]) => Promise<boolean>
+  /** Mode data server: muat ulang menu kasir, resep, dan nota terbaru. */
+  muatMenuKasir: () => Promise<void>
+  /** Alat uji purwarupa: kirim satu nota berisi menu yang ada, seperti dari kasir. */
+  kirimNotaContoh: () => Promise<void>
   catatPemakaianHarian: (pemakaian: Record<string, number>) => void
 
   /* Stok */
@@ -470,17 +483,35 @@ interface IsiServer {
   pesanan: Pesanan[]
   kontrak: Kontrak[]
   katalog: Awaited<ReturnType<typeof ambilKatalog>> | null
+  menu: RingkasanMenuKasir | null
+}
+
+/**
+ * Keadaan kasir di mode data server. Satu-satunya kasir yang didukung, Kasir
+ * Open POS, mengirim nota ke server; angka "masuk hari ini" dan menu yang
+ * belum dipasangkan dibaca dari nota itu, bukan dari data contoh.
+ */
+function kasirServer(menu: RingkasanMenuKasir | null): DataKasir {
+  return {
+    sumber: 'kasir-digital',
+    status: 'terhubung',
+    merek: POS_TUNGGAL.nama,
+    terakhirMasuk: menu?.notaTerakhir ?? null,
+    jumlahTransaksiHariIni: menu?.notaHariIni ?? 0,
+    menuBelumDipasangkan: menu?.belum ?? [],
+  }
 }
 
 /** Semua yang dibaca dari server saat masuk: gudang, pesanan, dan katalog. */
 async function muatSemuaServer(sesi: SesiServer): Promise<IsiServer> {
-  const [barang, pesanan, katalog, kontrak] = await Promise.all([
+  const [barang, pesanan, katalog, kontrak, menu] = await Promise.all([
     muatGudangServer(sesi),
     ambilPesanan(sesi).catch(() => [] as Pesanan[]),
     ambilKatalog(sesi).catch(() => null),
     ambilKontrak(sesi).catch(() => [] as Kontrak[]),
+    ambilMenuKasir(sesi).catch(() => null),
   ])
-  return { barang, pesanan, katalog, kontrak }
+  return { barang, pesanan, katalog, kontrak, menu }
 }
 
 /**
@@ -499,6 +530,9 @@ function keadaanServer(s: KeadaanAplikasi, sesi: SesiServer, isi: IsiServer): Pa
     sesiServer: sesi,
     barang: isi.barang,
     pesanan: isi.pesanan,
+    kasir: kasirServer(isi.menu),
+    resepMenu: isi.menu?.resep ?? [],
+    notaTerbaru: null,
     ...(k
       ? {
           katalog: k.penawaran,
@@ -526,6 +560,8 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
   barang: daftarBarang,
   pergerakan: daftarPergerakan,
   transaksi: daftarTransaksi,
+  resepMenu: [],
+  notaTerbaru: null,
   kontrak: daftarKontrak,
   pesanan: daftarPesanan,
   notifikasi: daftarNotifikasi,
@@ -576,6 +612,9 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
       sesiServer: null,
       barang: daftarBarang,
       pesanan: daftarPesanan,
+      kasir: dataKasirAwal,
+      resepMenu: [],
+      notaTerbaru: null,
       profil: profilAwal,
       katalog: daftarPenawaran,
       distributor: daftarDistributor,
@@ -731,15 +770,74 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
     }, 1500)
   },
 
-  pasangkanMenu: (menuId, barangId) => {
-    const nama = get().barang.find((b) => b.id === barangId)?.nama ?? 'bahan'
-    set((s) => ({
-      kasir: {
-        ...s.kasir,
-        menuBelumDipasangkan: s.kasir.menuBelumDipasangkan.filter((m) => m.id !== menuId),
-      },
-    }))
-    get().tampilkanRacun(`Menu dipasangkan ke ${nama}. Penjualan berikutnya akan mengurangi stok.`, 'aman')
+  pasangkanMenu: async (menuId, bahan) => {
+    const s = get()
+    const menu =
+      s.kasir.menuBelumDipasangkan.find((m) => m.id === menuId)?.namaMenu ??
+      s.resepMenu.find((r) => r.id === menuId)?.namaMenu
+    if (!menu || bahan.length === 0) return false
+    const sesi = s.sesiServer
+    if (s.sumberData === 'server' && sesi) {
+      try {
+        await simpanResep(sesi, menu, bahan)
+      } catch (e) {
+        get().tampilkanRacun(e instanceof Error ? e.message : 'Resep belum tersimpan. Coba lagi sebentar lagi.', 'kritis')
+        return false
+      }
+      // Bahan yang dipasangkan kini terhubung ke kasir; daftar stok ikut dimuat ulang.
+      await Promise.all([get().muatMenuKasir(), get().segarkanGudangServer().catch(() => undefined)])
+    } else {
+      const dipakai = new Set(bahan.map((b) => b.barangId))
+      set((x) => ({
+        kasir: { ...x.kasir, menuBelumDipasangkan: x.kasir.menuBelumDipasangkan.filter((m) => m.id !== menuId) },
+        resepMenu: [...x.resepMenu.filter((r) => r.id !== menuId), { id: menuId, namaMenu: menu, bahan, langsung: false }],
+        // Bahan yang dipasangkan berhenti diperingatkan "tidak berkurang otomatis".
+        barang: x.barang.map((b) => (dipakai.has(b.id) ? { ...b, terhubungKasir: true } : b)),
+      }))
+    }
+    get().tampilkanRacun(`Resep ${menu} tersimpan. Setiap porsi berikutnya mengurangi ${bahan.length} bahan.`, 'aman')
+    return true
+  },
+
+  muatMenuKasir: async () => {
+    const sesi = get().sesiServer
+    if (get().sumberData !== 'server' || !sesi) return
+    const [menu, nota] = await Promise.all([
+      ambilMenuKasir(sesi).catch(() => null),
+      ambilNotaTerbaru(sesi).catch(() => null),
+    ])
+    set({
+      ...(menu ? { kasir: kasirServer(menu), resepMenu: menu.resep } : {}),
+      ...(nota ? { notaTerbaru: nota } : {}),
+    })
+  },
+
+  kirimNotaContoh: async () => {
+    const s = get()
+    const sesi = s.sesiServer
+    if (s.sumberData !== 'server' || !sesi) return
+    // Satu porsi tiap menu beresep ditambah menu yang belum dipasangkan: satu
+    // nota memperlihatkan keduanya, bahan yang berkurang dan menu yang dilewati.
+    const baris = [
+      ...s.resepMenu.filter((r) => !r.langsung).map((r) => r.namaMenu),
+      ...s.kasir.menuBelumDipasangkan.map((m) => m.namaMenu),
+    ]
+      .slice(0, 12)
+      .map((namaMenu) => ({ namaMenu, jumlah: 1, satuan: 'porsi', harga: 20000 }))
+    if (baris.length === 0) {
+      get().tampilkanRacun('Belum ada menu kasir untuk dimasukkan ke nota contoh.', 'info')
+      return
+    }
+    try {
+      const h = await kirimNota(sesi, `DEMO-K-${Date.now()}`, baris)
+      await Promise.all([get().muatMenuKasir(), get().segarkanGudangServer().catch(() => undefined)])
+      const bagian = [`Nota contoh masuk: ${baris.length - h.takDikenali.length} menu mengurangi stok bahannya.`]
+      if (h.takDikenali.length > 0) bagian.push(`${h.takDikenali.length} menu belum dipasangkan, jadi dilewati.`)
+      if (h.stokKurang.length > 0) bagian.push(`Catatan stok ${h.stokKurang.join(', ')} sudah habis; hitung rak lalu koreksi.`)
+      get().tampilkanRacun(bagian.join(' '), h.stokKurang.length > 0 ? 'menipis' : 'aman')
+    } catch (e) {
+      get().tampilkanRacun(e instanceof Error ? e.message : 'Nota contoh belum terkirim. Coba lagi sebentar lagi.', 'kritis')
+    }
   },
 
   catatPemakaianHarian: (pemakaian) => {

@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { JudulBagian, Kartu, Lencana, Pemisah, Tombol, TombolTautan } from '@/components/ui/dasar'
 import { Kolom } from '@/components/ui/formulir'
@@ -7,6 +7,7 @@ import { KepalaHalaman, TabSegmen } from '@/components/ui/navigasi'
 import { BilahProgres, KeadaanKosong, Penjelasan, Peringatan } from '@/components/ui/umpanBalik'
 import {
   IkonCentangLingkaran,
+  IkonPanci,
   IkonJam,
   IkonKotak,
   IkonNota,
@@ -33,7 +34,7 @@ import { POS_TUNGGAL, daftarTransaksi, riwayatKasir } from '@/data/dummy'
 import { KartuStruk } from '@/components/domain/KartuStruk'
 import { useAplikasi } from '@/store/aplikasi'
 
-type Tab = 'sambungan' | 'beres' | 'riwayat'
+type Tab = 'sambungan' | 'beres' | 'resep' | 'riwayat'
 /** Tugas yang tidak berasal dari daftar menu, jadi keadaannya dipegang layar ini. */
 type TugasLain = 'salinan' | 'satuan'
 
@@ -52,18 +53,30 @@ export default function AkunKasir() {
   const [params, setParams] = useSearchParams()
   const kasir = useAplikasi((s) => s.kasir)
   const barang = useAplikasi((s) => s.barang)
+  const server = useAplikasi((s) => s.sumberData === 'server')
+  const muatMenuKasir = useAplikasi((s) => s.muatMenuKasir)
 
   /* Dipegang di sini, bukan di dalam tab, supaya tugas yang sudah dibereskan
      tidak muncul lagi setiap pengguna berpindah tab. */
   const [tugasBeres, setTugasBeres] = useState<TugasLain[]>([])
 
+  /* Nota dari kasir bisa masuk kapan saja; tiap kali halaman ini dibuka,
+     menu, resep, dan nota terbaru dibaca ulang. `server` ikut jadi pemicu:
+     halaman yang dimuat ulang terbuka sebelum sesi server selesai dipulihkan. */
+  useEffect(() => {
+    if (server) void muatMenuKasir()
+  }, [muatMenuKasir, server])
+
   const onboarding = params.get('langkah') === 'mulai'
   const tabParam = params.get('tab')
-  const tab: Tab = tabParam === 'beres' || tabParam === 'riwayat' ? tabParam : 'sambungan'
+  const tab: Tab = tabParam === 'beres' || tabParam === 'resep' || tabParam === 'riwayat' ? tabParam : 'sambungan'
 
-  /* Bahan yang satuannya tidak sama dengan cara kasir menghitung porsi. */
-  const bahanPorsi = barang.find((b) => b.satuan === 'gram' && !b.dicatatManual) ?? null
-  const semuaTugasLain: TugasLain[] = bahanPorsi ? ['salinan', 'satuan'] : ['salinan']
+  /* Bahan yang satuannya tidak sama dengan cara kasir menghitung porsi. Tugas
+     penjualan kembar dan satuan porsi hanya ada di data contoh: server belum
+     mencatat keduanya, dan menampilkannya di samping menu sungguhan berarti
+     mencampur kejadian karangan dengan kejadian nyata. */
+  const bahanPorsi = server ? null : (barang.find((b) => b.satuan === 'gram' && !b.dicatatManual) ?? null)
+  const semuaTugasLain: TugasLain[] = server ? [] : bahanPorsi ? ['salinan', 'satuan'] : ['salinan']
   const tugasLain = semuaTugasLain.filter((t) => !tugasBeres.includes(t))
   const jumlahPerluDibereskan = kasir.menuBelumDipasangkan.length + tugasLain.length
 
@@ -126,6 +139,7 @@ export default function AkunKasir() {
             tab={[
               { nilai: 'sambungan', label: 'Sambungan' },
               { nilai: 'beres', label: 'Perlu Dibereskan', jumlah: jumlahPerluDibereskan },
+              { nilai: 'resep', label: 'Resep Menu' },
               { nilai: 'riwayat', label: 'Riwayat' },
             ]}
           />
@@ -144,6 +158,7 @@ export default function AkunKasir() {
             selesaikan={(t) => setTugasBeres((s) => [...s, t])}
           />
         )}
+        {tab === 'resep' && <TabResep />}
         {tab === 'riwayat' && <TabRiwayat />}
       </div>
     </div>
@@ -463,13 +478,33 @@ function KeadaanTersambung({ jumlahPerluDibereskan }: { jumlahPerluDibereskan: n
   const kasir = useAplikasi((s) => s.kasir)
   const ubahKasir = useAplikasi((s) => s.ubahKasir)
   const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
+  const server = useAplikasi((s) => s.sumberData === 'server')
+  const muatMenuKasir = useAplikasi((s) => s.muatMenuKasir)
+  const kirimNotaContoh = useAplikasi((s) => s.kirimNotaContoh)
+  const [memuatServer, setMemuatServer] = useState(false)
+  const [mengirimNota, setMengirimNota] = useState(false)
 
-  const sedangAmbil = kasir.status === 'menyinkron'
+  const sedangAmbil = kasir.status === 'menyinkron' || memuatServer
   const terakhir = kasir.terakhirMasuk ? new Date(kasir.terakhirMasuk) : null
   const jamBerlalu = terakhir ? (Date.now() - +terakhir) / 3_600_000 : 99
   const basi = jamBerlalu > 18
 
+  async function kirimContoh() {
+    setMengirimNota(true)
+    await kirimNotaContoh()
+    setMengirimNota(false)
+  }
+
   function ambilSekarang() {
+    if (server) {
+      // Kasir mengirim nota sendiri ke server; yang perlu hanya membaca ulang.
+      setMemuatServer(true)
+      muatMenuKasir().finally(() => {
+        setMemuatServer(false)
+        tampilkanRacun('Data dari kasir sudah yang terbaru.', 'aman')
+      })
+      return
+    }
     ubahKasir({ status: 'menyinkron' })
     window.setTimeout(() => {
       /* Dibaca ulang dari store, bukan dari nilai render ini: 1,5 detik cukup
@@ -556,6 +591,18 @@ function KeadaanTersambung({ jumlahPerluDibereskan }: { jumlahPerluDibereskan: n
           </TombolTautan>
         )}
       </div>
+
+      {server && (
+        <div className="mt-4 rounded-md bg-sunken p-3.5">
+          <p className="text-isi text-ink-2 leading-relaxed">
+            <span className="font-semibold text-ink">Alat uji purwarupa.</span> Kirim satu nota berisi satu porsi tiap
+            menu, persis seperti dari kasir, lalu lihat bahan mana yang berkurang di daftar Stok.
+          </p>
+          <Tombol ragam="garis" penuh="hp" className="mt-2.5" memuat={mengirimNota} onClick={kirimContoh}>
+            Kirim Nota Contoh
+          </Tombol>
+        </div>
+      )}
     </Kartu>
   )
 }
@@ -644,7 +691,7 @@ function TabPerluDibereskan({
           dan tidak perlu dibaca berurutan, jadi satu pita panjang cuma memaksa
           menggulir tanpa menambah kejelasan. */}
       <ul className="mt-4 grid gap-3 lg:grid-cols-2 lg:items-start">
-        {menu.map((m) => (
+        {menu.map((m, i) => (
           <li key={m.id}>
             <KartuTugas
               nada="menipis"
@@ -657,7 +704,11 @@ function TabPerluDibereskan({
                 </>
               }
               utama={
-                <TombolTautan ke={`/akun/kasir/pasangkan/${m.id}`} penuh>
+                <TombolTautan
+                  ke={`/akun/kasir/pasangkan/${encodeURIComponent(m.id)}`}
+                  penuh
+                  ragam={i === 0 ? 'utama' : 'garis'}
+                >
                   Pasangkan Sekarang
                 </TombolTautan>
               }
@@ -817,6 +868,80 @@ function KartuTugas({
 }
 
 /* ================================================================== */
+/* Tab Resep Menu                                                     */
+/* ================================================================== */
+
+/**
+ * Resep yang sudah dipasangkan: bahan apa saja yang berkurang setiap satu porsi
+ * terjual. Menu yang bernama sama dengan barangnya (dijual apa adanya) tidak
+ * ditampilkan satu per satu; isinya cuma "1 barang = 1 barang".
+ */
+function TabResep() {
+  const resepMenu = useAplikasi((s) => s.resepMenu)
+  const barang = useAplikasi((s) => s.barang)
+  const resep = [...resepMenu.filter((r) => !r.langsung)].sort((a, b) => a.namaMenu.localeCompare(b.namaMenu, 'id'))
+  const langsung = resepMenu.length - resep.length
+
+  if (resep.length === 0) {
+    return (
+      <>
+        <h2 className="sr-only">Resep menu</h2>
+        <KeadaanKosong
+          ikon={<IkonPanci size={26} />}
+          judul="Belum ada resep menu"
+          pesan="Resep dibuat dari tab Perlu Dibereskan: pilih menu dari kasir, lalu tentukan bahan dan takarannya per porsi."
+          aksi={
+            <TombolTautan ke="/akun/kasir?tab=beres" ragam="garis">
+              Lihat yang Perlu Dibereskan
+            </TombolTautan>
+          }
+        />
+      </>
+    )
+  }
+
+  return (
+    <div>
+      <JudulBagian
+        id="resep-menu"
+        judul={`${resep.length} menu dengan resep`}
+        keterangan="Setiap porsi yang terjual di kasir mengurangi bahan di bawahnya."
+      />
+      <ul aria-labelledby="resep-menu" className="grid gap-3 lg:grid-cols-2 lg:items-start">
+        {resep.map((r) => (
+          <li key={r.id} className="bg-surface border border-line rounded-lg p-4 shadow-e1">
+            <div className="flex items-start justify-between gap-3">
+              <h3 className="min-w-0 text-kartu font-bold text-ink leading-snug">{r.namaMenu}</h3>
+              <TombolTautan ke={`/akun/kasir/pasangkan/${encodeURIComponent(r.id)}`} ragam="tautan" ukuran="kecil">
+                Ubah
+              </TombolTautan>
+            </div>
+            <ul className="mt-2 space-y-1">
+              {r.bahan.map((b) => {
+                const brg = barang.find((x) => x.id === b.barangId)
+                return (
+                  <li key={b.barangId} className="flex items-baseline justify-between gap-3 text-isi">
+                    <span className="min-w-0 text-ink-2">{brg?.nama ?? 'Bahan'}</span>
+                    <span className="shrink-0 font-semibold text-ink tabular">
+                      {brg ? jumlahSatuan(b.takaran, brg.satuan) : angka(b.takaran, 3)}
+                    </span>
+                  </li>
+                )
+              })}
+            </ul>
+          </li>
+        ))}
+      </ul>
+      {langsung > 0 && (
+        <p className="mt-4 text-isi text-ink-3 leading-relaxed max-w-[70ch]">
+          {langsung} barang lain dijual apa adanya: satu yang terjual di kasir mengurangi satu barang yang sama.
+        </p>
+      )}
+    </div>
+  )
+}
+
+/* ================================================================== */
 /* Tab Riwayat                                                        */
 /* ================================================================== */
 
@@ -844,6 +969,42 @@ const STRUK_TERBARU = daftarTransaksi.slice(0, 8)
 
 /** Riwayat ditulis sebagai catatan kejadian usaha, bukan catatan teknis. */
 function TabRiwayat() {
+  const notaTerbaru = useAplikasi((s) => s.notaTerbaru)
+  const server = useAplikasi((s) => s.sumberData === 'server')
+
+  /* Mode data server: ringkasan per pengambilan belum dicatat server, jadi yang
+     ditampilkan hanya nota apa adanya. */
+  if (server) {
+    if (!notaTerbaru || notaTerbaru.length === 0) {
+      return (
+        <>
+          <h2 className="sr-only">Riwayat data dari kasir</h2>
+          <KeadaanKosong
+            ikon={<IkonJam size={26} />}
+            judul={notaTerbaru ? 'Belum ada nota masuk' : 'Memuat nota terbaru'}
+            pesan="Nota muncul di sini begitu aplikasi kasir mengirim penjualan."
+          />
+        </>
+      )
+    }
+    return (
+      <div>
+        <JudulBagian
+          id="riwayat-struk"
+          judul="Struk terbaru"
+          keterangan={`Format ${POS_TUNGGAL.nama}, satu-satunya yang kami baca; harga jual tidak ikut ditampilkan.`}
+        />
+        <ul aria-labelledby="riwayat-struk" className="grid gap-2.5 lg:grid-cols-2 lg:items-start">
+          {notaTerbaru.map((t) => (
+            <li key={t.id}>
+              <KartuStruk transaksi={t} />
+            </li>
+          ))}
+        </ul>
+      </div>
+    )
+  }
+
   if (RIWAYAT_HARIAN.length === 0) {
     return (
       <>

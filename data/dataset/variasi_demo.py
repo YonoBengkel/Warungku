@@ -22,6 +22,10 @@ Sambal Bu Ratmi (produksi1):
   `PS-yymmdd-V`.
 * **Kontrak**: berjalan, akan berakhir, menunggu persetujuan, selesai,
   dihentikan, dan ditolak, dengan beberapa distributor.
+* **Menu kasir** (Kopi Kita saja): resep minuman yang memotong beberapa bahan
+  sekaligus, dan nota beberapa hari terakhir untuk menu baru yang belum
+  dipasangkan ke bahan (isi tab "Perlu Dibereskan" di Akun > Data dari Kasir).
+  Nomor notanya berawalan `DEMO-V-` dan tidak ikut data latih omset.
 
 **Tanggal pesanan dan kontrak relatif terhadap HARI INI**, bukan terhadap
 akhir data simulasi: status kontrak "akan berakhir" dan keterangan "perkiraan
@@ -34,7 +38,7 @@ yang dibuat lewat layar pada pesanan itu) dan SEMUA kontrak kedua akun.
 from __future__ import annotations
 
 import argparse
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, time, timedelta, timezone
 from decimal import Decimal
 
 from sqlalchemy import text
@@ -131,6 +135,36 @@ KONTRAK: dict[str, list[tuple]] = {
 }
 
 
+#: Resep menu yang sudah dijual: (menu, ((barang, takaran per porsi dalam satuan dasar), ...)).
+RESEP: dict[str, tuple[tuple[str, tuple[tuple[str, str], ...]], ...]] = {
+    "umkm1@warungku.test": (
+        ("Es Kopi Susu Gula Aren", (
+            ("Biji Kopi Arabika", "18"), ("Susu UHT Full Cream", "150"), ("Gula Aren Cair", "20"),
+            ("Es Batu Kristal", "150"), ("Gelas Plastik 16 oz", "1"), ("Sedotan Kertas", "1"),
+        )),
+        ("Americano", (("Biji Kopi Robusta", "18"), ("Air Mineral Galon", "200"), ("Gelas Plastik 16 oz", "1"))),
+        ("Matcha Latte", (
+            ("Matcha Bubuk", "10"), ("Susu UHT Full Cream", "180"), ("Gula Pasir", "15"), ("Gelas Plastik 16 oz", "1"),
+        )),
+        ("Cokelat Panas", (("Bubuk Cokelat", "25"), ("Susu Kental Manis", "30"), ("Air Mineral Galon", "150"))),
+    ),
+}
+
+#: Menu baru di kasir yang belum dipasangkan: (menu, satuan, harga jual, porsi
+#: terjual, berapa hari lalu nota pertamanya). Bahannya sudah ada di gudang
+#: (Keju Cheddar, Kentang Beku dari BARANG_BARU), jadi bisa dipasangkan saat demo.
+MENU_BARU: dict[str, tuple[tuple[str, str, int, int, int], ...]] = {
+    "umkm1@warungku.test": (
+        ("Kopi Susu Pandan", "gelas", 24000, 41, 6),
+        ("Roti Bakar Keju", "porsi", 18000, 18, 3),
+        ("Kentang Goreng", "porsi", 15000, 12, 2),
+    ),
+}
+
+#: Porsi per nota, diputar supaya notanya tidak seragam.
+POLA_NOTA = (2, 1, 3, 1, 2)
+
+
 def _usaha(kon, email: str) -> int | None:
     return kon.execute(text("SELECT id FROM usaha WHERE email = :e"), {"e": email}).scalar()
 
@@ -169,8 +203,26 @@ def _tambah_bulan(t: datetime, n: int) -> datetime:
 
 
 def hapus(kon, usaha_id: int) -> None:
-    """Buang variasi lama: pesanan berawalan V, semua kontrak usaha ini, dan koreksi stok variasi."""
+    """Buang variasi lama: pesanan berawalan V, semua kontrak usaha ini, koreksi stok, dan menu demo."""
     p = {"u": usaha_id}
+    email = kon.execute(text("SELECT email FROM usaha WHERE id = :u"), p).scalar()
+    # Menu demo dihapus sebelum barang V: resep yang dipasangkan saat demo bisa
+    # menunjuk Keju Cheddar atau Kentang Beku, dan barangnya tidak bisa dihapus
+    # selama masih ditunjuk.
+    kon.execute(
+        text(
+            "DELETE FROM transaksi_baris WHERE transaksi_id IN "
+            "(SELECT id FROM transaksi WHERE usaha_id = :u AND nomor_struk LIKE 'DEMO-V-%')"
+        ),
+        p,
+    )
+    kon.execute(text("DELETE FROM transaksi WHERE usaha_id = :u AND nomor_struk LIKE 'DEMO-V-%'"), p)
+    menu = [m.lower() for m, _ in RESEP.get(email, ())] + [m[0].lower() for m in MENU_BARU.get(email, ())]
+    if menu:
+        q = {"u": usaha_id, "m": menu}
+        dipetakan = "SELECT id FROM pemetaan_menu WHERE usaha_id = :u AND lower(btrim(nama_menu)) = ANY(:m)"
+        kon.execute(text(f"DELETE FROM pemetaan_menu_bahan WHERE pemetaan_id IN ({dipetakan})"), q)
+        kon.execute(text("DELETE FROM pemetaan_menu WHERE usaha_id = :u AND lower(btrim(nama_menu)) = ANY(:m)"), q)
     pesanan = "SELECT id FROM pesanan WHERE usaha_id = :u AND nomor LIKE 'PS-%-V%'"
     for sql in (
         f"UPDATE pergerakan SET pesanan_id = NULL WHERE pesanan_id IN ({pesanan})",
@@ -188,6 +240,7 @@ def hapus(kon, usaha_id: int) -> None:
     for sql in (
         f"UPDATE pesanan_baris SET barang_id = NULL WHERE barang_id IN ({baru})",
         f"UPDATE notifikasi SET barang_id = NULL WHERE barang_id IN ({baru})",
+        f"DELETE FROM pemetaan_menu_bahan WHERE barang_id IN ({baru})",
         f"DELETE FROM rekomendasi_skor WHERE barang_id IN ({baru})",
         f"DELETE FROM prediksi WHERE barang_id IN ({baru})",
         f"DELETE FROM permintaan_harian WHERE barang_id IN ({baru})",
@@ -196,7 +249,6 @@ def hapus(kon, usaha_id: int) -> None:
         "DELETE FROM barang WHERE usaha_id = :u AND kode_barang LIKE 'V%'",
     ):
         kon.execute(text(sql), p)
-    email = kon.execute(text("SELECT email FROM usaha WHERE id = :u"), p).scalar()
     for nama, _ in KEDALUWARSA.get(email, ()):
         kon.execute(
             text("UPDATE barang SET ingatkan_kedaluwarsa = false, kedaluwarsa = NULL WHERE usaha_id = :u AND nama = :n"),
@@ -447,12 +499,73 @@ def _variasi_kontrak(kon, usaha_id: int, email: str, sekarang: datetime) -> int:
     return n
 
 
+def _variasi_menu(kon, usaha_id: int, email: str, sekarang: datetime) -> tuple[int, int]:
+    """Resep menu yang sudah dijual, dan nota menu baru yang belum dipasangkan. Hasil: (resep, nota)."""
+    barang = _barang(kon, usaha_id)
+    n_resep = 0
+    for menu, bahan in RESEP.get(email, ()):
+        pid = kon.execute(
+            text("INSERT INTO pemetaan_menu (usaha_id, nama_menu) VALUES (:u, :n) RETURNING id"),
+            {"u": usaha_id, "n": menu},
+        ).scalar_one()
+        for nama, takaran in bahan:
+            kon.execute(
+                text("INSERT INTO pemetaan_menu_bahan (pemetaan_id, barang_id, takaran) VALUES (:p, :b, :t)"),
+                {"p": pid, "b": barang[nama]["id"], "t": Decimal(takaran)},
+            )
+        n_resep += 1
+
+    # Porsi tiap menu dibagi rata dari hari nota pertamanya sampai hari ini.
+    # Nota hari ini diletakkan sebelum jam sekarang, supaya "Data terakhir
+    # masuk" di halaman kasir terbaca baru.
+    hari_ini = sekarang.astimezone(WIB).date()
+    nota: list[tuple[datetime, str, str, int, int]] = []
+    for urut_menu, (menu, satuan, harga, porsi, hari) in enumerate(MENU_BARU.get(email, ())):
+        n_hari = hari + 1
+        for i in range(n_hari):
+            bagian = round(porsi * (i + 1) / n_hari) - round(porsi * i / n_hari)
+            mundur = hari - i
+            k = 0
+            while bagian > 0:
+                q = min(bagian, POLA_NOTA[(k + i + urut_menu) % len(POLA_NOTA)])
+                if mundur == 0:
+                    waktu = sekarang - timedelta(minutes=20 + 35 * k + 11 * urut_menu)
+                else:
+                    pagi = datetime.combine(hari_ini - timedelta(days=mundur), time(9, 0), WIB)
+                    waktu = pagi + timedelta(minutes=55 * k + 17 * urut_menu)
+                nota.append((waktu.astimezone(timezone.utc), menu, satuan, harga, q))
+                bagian -= q
+                k += 1
+    nota.sort()
+    for urut, (waktu, menu, satuan, harga, q) in enumerate(nota, start=1):
+        tid = kon.execute(
+            text(
+                "INSERT INTO transaksi (usaha_id, nomor_struk, waktu, kasir, sumber) "
+                "VALUES (:u, :n, :w, 'Demo', 'pos') RETURNING id"
+            ),
+            {"u": usaha_id, "n": f"DEMO-V-{urut:04d}", "w": waktu},
+        ).scalar_one()
+        kon.execute(
+            text(
+                "INSERT INTO transaksi_baris (transaksi_id, nama_menu, jumlah, satuan, harga_jual_satuan) "
+                "VALUES (:t, :m, :j, :s, :h)"
+            ),
+            {"t": tid, "m": menu, "j": q, "s": satuan, "h": harga},
+        )
+    return n_resep, len(nota)
+
+
 def basi(kon) -> bool:
     """Belum ada variasi, atau pesanan variasi terbarunya sudah lebih dari tiga hari."""
     terbaru = kon.execute(
         text("SELECT MAX(dibuat_pada) FROM pesanan WHERE nomor LIKE 'PS-%-V%'")
     ).scalar()
-    return terbaru is None or datetime.now(timezone.utc) - terbaru > UMUR_BASI
+    if terbaru is None or datetime.now(timezone.utc) - terbaru > UMUR_BASI:
+        return True
+    # Basis data yang variasinya dipasang sebelum menu demo ada.
+    return any(MENU_BARU.values()) and not kon.execute(
+        text("SELECT EXISTS (SELECT 1 FROM transaksi WHERE nomor_struk LIKE 'DEMO-V-%')")
+    ).scalar()
 
 
 def pasang(jika_basi: bool = False) -> dict | None:
@@ -476,6 +589,7 @@ def pasang(jika_basi: bool = False) -> dict | None:
                 "kontrak": _variasi_kontrak(kon, u, email, sekarang),
             }
             _variasi_atribut(kon, u, email, sekarang)
+            hasil[email]["resep"], hasil[email]["nota_menu"] = _variasi_menu(kon, u, email, sekarang)
             nomor = _variasi_pesanan(kon, u, email, sekarang, nomor)
             hasil[email]["pesanan"] = nomor - awal
     return hasil
@@ -492,7 +606,8 @@ def main() -> None:
         return
     for email, h in hasil.items():
         print(f"  {email}: {h['pesanan']} pesanan, {h['kontrak']} kontrak, {h['koreksi_stok']} koreksi stok, "
-              f"{h['barang_baru']} barang belum terpakai")
+              f"{h['barang_baru']} barang belum terpakai, {h['resep']} resep menu, "
+              f"{h['nota_menu']} nota menu baru")
     if not arg.tanpa_mesin2:
         # Barang yang kini menipis dan habis butuh saran distributor yang segar.
         from ml.mesin2.saran import jalankan

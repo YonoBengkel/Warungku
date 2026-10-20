@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Kartu, Lencana, Pemisah, TombolTautan, Tombol } from '@/components/ui/dasar'
 import { Kolom } from '@/components/ui/formulir'
@@ -12,7 +12,7 @@ import {
   IkonSilang,
   IkonTambah,
 } from '@/icons'
-import { angka, cx, jumlahSatuan, tanggalPendek, waktuLalu } from '@/lib/format'
+import { angka, bacaAngkaIndonesia, cx, jumlahSatuan, tanggalPendek, waktuLalu } from '@/lib/format'
 import { jumlahTampil } from '@/lib/satuan'
 import { useAplikasi } from '@/store/aplikasi'
 
@@ -22,7 +22,8 @@ interface BahanTerpilih {
 }
 
 /**
- * Memasangkan satu menu di kasir ke bahan-bahan yang dipakainya.
+ * Memasangkan satu menu di kasir ke bahan-bahan yang dipakainya, atau mengubah
+ * resep menu yang sudah dipasangkan.
  *
  * Janji yang sengaja dijaga kecil: pemasangan ini hanya berlaku untuk penjualan
  * BERIKUTNYA. Penjualan yang sudah lewat tidak ditarik ulang, dan itu ditulis
@@ -33,15 +34,37 @@ export default function KasirPasangkan() {
   const { idMenu } = useParams<{ idMenu: string }>()
   const navigate = useNavigate()
 
-  const menu = useAplikasi((s) => s.kasir.menuBelumDipasangkan.find((m) => m.id === idMenu))
+  const belum = useAplikasi((s) => s.kasir.menuBelumDipasangkan.find((m) => m.id === idMenu))
+  const resep = useAplikasi((s) => s.resepMenu.find((r) => r.id === idMenu))
   const barang = useAplikasi((s) => s.barang)
   const caraHitung = useAplikasi((s) => s.profil.caraHitung)
   const pasangkanMenu = useAplikasi((s) => s.pasangkanMenu)
-  const ubahBarang = useAplikasi((s) => s.ubahBarang)
+  const muatMenuKasir = useAplikasi((s) => s.muatMenuKasir)
+  const server = useAplikasi((s) => s.sumberData === 'server')
 
   const [cari, setCari] = useState('')
   const [dipilih, setDipilih] = useState<BahanTerpilih[]>([])
   const [sudahDicoba, setSudahDicoba] = useState(false)
+  const [menyimpan, setMenyimpan] = useState(false)
+  const [resepTerbaca, setResepTerbaca] = useState(false)
+
+  /* Menu dan resep bisa berubah dari kasir sejak halaman ini terakhir dimuat.
+     Diulang begitu sesi server pulih, untuk halaman yang dibuka langsung. */
+  useEffect(() => {
+    if (server) void muatMenuKasir()
+  }, [muatMenuKasir, server])
+
+  /* Mengubah resep: bahan yang sekarang dipakai menjadi isian awal. Hanya
+     sekali, supaya resep yang dimuat ulang tidak menimpa isian yang sedang diubah. */
+  useEffect(() => {
+    if (resepTerbaca || !resep) return
+    setDipilih(resep.bahan.map((b) => ({ id: b.barangId, takaran: angka(b.takaran, 3) })))
+    setResepTerbaca(true)
+  }, [resep, resepTerbaca])
+
+  const menu = belum ?? (resep ? { namaMenu: resep.namaMenu } : undefined)
+  const ubahResep = !belum && !!resep
+  const asal = ubahResep ? '/akun/kasir?tab=resep' : '/akun/kasir?tab=beres'
 
   /* Takaran per porsi hanya masuk akal untuk usaha yang meracik. Toko kelontong
      memasangkan menu ke satu barang utuh, jadi kolomnya tidak ditampilkan. */
@@ -50,7 +73,8 @@ export default function KasirPasangkan() {
   const hasilCari = useMemo(() => {
     const kunci = cari.trim().toLowerCase()
     const terpilih = new Set(dipilih.map((d) => d.id))
-    const tersedia = barang.filter((b) => !terpilih.has(b.id))
+    /* Barang yang dicatat manual tidak dikurangi kasir, jadi tidak bisa jadi bahan menu. */
+    const tersedia = barang.filter((b) => !terpilih.has(b.id) && !b.dicatatManual)
     if (!kunci) return tersedia.slice(0, 6)
     return tersedia
       .filter(
@@ -85,7 +109,7 @@ export default function KasirPasangkan() {
   }
 
   const belumDiisi = pakaiTakaran
-    ? dipilih.filter((d) => !(Number(d.takaran.replace(',', '.')) > 0)).map((d) => d.id)
+    ? dipilih.filter((d) => !(bacaAngkaIndonesia(d.takaran) > 0)).map((d) => d.id)
     : []
 
   function tambah(id: string) {
@@ -101,18 +125,21 @@ export default function KasirPasangkan() {
     setDipilih((s) => s.map((d) => (d.id === id ? { ...d, takaran: nilai } : d)))
   }
 
-  function simpan() {
+  async function simpan() {
     setSudahDicoba(true)
-    if (dipilih.length === 0 || belumDiisi.length > 0) return
+    if (dipilih.length === 0 || belumDiisi.length > 0 || menyimpan) return
 
-    /* Bahan yang dipasangkan ditandai terhubung ke menu, supaya daftar Stok
-       berhenti memperingatkan bahwa stoknya tidak berkurang otomatis. */
-    for (const d of dipilih) ubahBarang(d.id, { terhubungKasir: true })
-    /* pasangkanMenu sendiri sudah memunculkan racun konfirmasi. Menambah racun
-       kedua dari sini membuat dua kalimat berisi hal yang sama menumpuk di
-       layar yang sama. */
-    pasangkanMenu(menu!.id, dipilih[0].id)
-    navigate('/akun/kasir?tab=beres')
+    /* Toko kelontong tanpa kolom takaran: satu porsi memotong satu satuan barang.
+       pasangkanMenu sendiri menandai bahannya terhubung ke kasir dan memunculkan
+       racun konfirmasi; racun kedua dari sini hanya mengulang kalimat yang sama. */
+    setMenyimpan(true)
+    const berhasil = await pasangkanMenu(
+      idMenu ?? '',
+      dipilih.map((d) => ({ barangId: d.id, takaran: pakaiTakaran ? bacaAngkaIndonesia(d.takaran) : 1 })),
+    )
+    setMenyimpan(false)
+    // Kembali ke daftar asal: dari Perlu Dibereskan, menu berikutnya biasanya menunggu.
+    if (berhasil) navigate(asal)
   }
 
   const bahanById = (id: string) => barang.find((b) => b.id === id)
@@ -120,9 +147,9 @@ export default function KasirPasangkan() {
   return (
     <div className="pb-8">
       <KepalaHalaman
-        judul="Pasangkan Menu ke Bahan"
+        judul={ubahResep ? 'Ubah Resep Menu' : 'Pasangkan Menu ke Bahan'}
         keterangan={menu.namaMenu}
-        kembaliKe="/akun/kasir?tab=beres"
+        kembaliKe={asal}
       />
 
       {/* Di layar lebar: memilih di kiri, akibatnya di kanan. Daftar bahan yang
@@ -137,11 +164,24 @@ export default function KasirPasangkan() {
                 <p className="text-kecil font-semibold uppercase tracking-wide text-ink-3">Menu di kasir</p>
                 <h2 className="mt-0.5 text-[1.125rem] font-extrabold text-ink leading-snug">{menu.namaMenu}</h2>
               </div>
-              <Lencana nada="menipis">Belum dipasangkan</Lencana>
+              {belum ? (
+                <Lencana nada="menipis">Belum dipasangkan</Lencana>
+              ) : (
+                <Lencana nada="aman" ikon={<IkonCentang size={12} />}>
+                  Sudah dipasangkan
+                </Lencana>
+              )}
             </div>
             <p className="mt-2 text-isi text-ink-2 leading-relaxed">
-              Terjual <strong className="text-ink">{angka(menu.jumlahTerjual)} kali</strong> sejak{' '}
-              {waktuLalu(menu.sejak)} ({tanggalPendek(menu.sejak)}), tapi belum ada bahan yang berkurang karenanya.
+              {belum ? (
+                <>
+                  Terjual <strong className="text-ink">{angka(belum.jumlahTerjual)} kali</strong> sejak{' '}
+                  {waktuLalu(belum.sejak)} ({tanggalPendek(belum.sejak)}), tapi belum ada bahan yang berkurang
+                  karenanya.
+                </>
+              ) : (
+                <>Setiap porsi yang terjual sekarang mengurangi {resep?.bahan.length ?? 0} bahan di bawah.</>
+              )}
             </p>
           </Kartu>
 
@@ -290,14 +330,11 @@ export default function KasirPasangkan() {
                                   : 'Perkiraan kasar sudah cukup. Angka ini yang dikurangi dari stok tiap kali menu ini terjual.'
                               }
                             />
-                            {Number(d.takaran.replace(',', '.')) > 0 && (
+                            {belum && bacaAngkaIndonesia(d.takaran) > 0 && (
                               <p className="mt-1.5 text-isi text-ink-3">
-                                {angka(menu.jumlahTerjual)} penjualan seperti kemarin akan memakai{' '}
+                                {angka(belum.jumlahTerjual)} penjualan seperti kemarin akan memakai{' '}
                                 <strong className="text-ink-2">
-                                  {jumlahSatuan(
-                                    Number(d.takaran.replace(',', '.')) * menu.jumlahTerjual,
-                                    b.satuan,
-                                  )}
+                                  {jumlahSatuan(bacaAngkaIndonesia(d.takaran) * belum.jumlahTerjual, b.satuan)}
                                 </strong>
                                 .
                               </p>
@@ -319,10 +356,10 @@ export default function KasirPasangkan() {
                 Penjualan <strong>berikutnya</strong> langsung mengurangi stok bahan di atas.
               </li>
               <li>
-                {angka(menu.jumlahTerjual)} penjualan yang sudah lewat <strong>tidak</strong> ditarik ulang; luruskan
-                lewat Koreksi Stok bila perlu.
+                {belum ? `${angka(belum.jumlahTerjual)} penjualan` : 'Penjualan'} yang sudah lewat{' '}
+                <strong>tidak</strong> dihitung ulang; luruskan lewat Koreksi Stok bila perlu.
               </li>
-              <li>Kamu bisa mengubah takarannya kapan saja dari detail barang.</li>
+              <li>Kamu bisa mengubah resepnya kapan saja dari tab Resep Menu.</li>
             </ul>
           </Peringatan>
 
@@ -337,8 +374,8 @@ export default function KasirPasangkan() {
 
           <p className="text-isi text-ink-3 leading-relaxed">
             Salah menu?{' '}
-            <Link to="/akun/kasir?tab=beres" className="font-semibold text-brand hover:underline">
-              Kembali ke daftar menu yang perlu dibereskan
+            <Link to={asal} className="font-semibold text-brand hover:underline">
+              {ubahResep ? 'Kembali ke daftar resep menu' : 'Kembali ke daftar menu yang perlu dibereskan'}
             </Link>
             .
           </p>
@@ -360,8 +397,8 @@ export default function KasirPasangkan() {
           )
         }
       >
-        <Tombol penuh ukuran="besar" disabled={dipilih.length === 0} onClick={simpan}>
-          Simpan Pemasangan
+        <Tombol penuh ukuran="besar" disabled={dipilih.length === 0} memuat={menyimpan} onClick={simpan}>
+          {ubahResep ? 'Simpan Resep' : 'Simpan Pemasangan'}
         </Tombol>
       </BilahAksi>
     </div>

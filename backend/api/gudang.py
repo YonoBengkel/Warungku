@@ -15,6 +15,7 @@ kalau ada yang menjaganya. Di sinilah penjaganya, dan
 
 from __future__ import annotations
 
+from datetime import timezone
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
@@ -27,12 +28,19 @@ from warungku.model import Barang, Kemasan, PemetaanMenu, PemetaanMenuBahan, Tra
 
 from .otentikasi import usaha_saya
 from .skema import (
+    BahanMenu,
     BarangRingkas,
+    BarisNota,
     HasilStruk,
     KemasanRingkas,
+    MenuBelumDipasangkan,
+    NotaRingkas,
     PemakaianBulanan,
     PeriodePemakaian,
     PerkiraanRingkas,
+    ResepMasuk,
+    ResepMenu,
+    RingkasanMenuKasir,
     RingkasanSaranDistributor,
     RiwayatHarian,
     SaranDistributor,
@@ -379,13 +387,17 @@ def terima_struk(struk: StrukMasuk, usaha_id: int = Depends(usaha_saya)) -> Hasi
        jawab `sudah_ada=True` — bukan galat.
     2. Tiap baris nota diterjemahkan dari nama menu ke bahan lewat
        `pemetaan_menu`. Yang tidak dikenali dilaporkan, nota tetap diterima.
-    3. Untuk tiap bahan: satu baris `pergerakan` jenis `terjual` ditulis dan
-       `barang.stok` dikurangi. Keduanya atau tidak sama sekali.
+    3. Untuk tiap bahan: satu baris `pergerakan` jenis `terjual` ditulis,
+       `barang.stok` dikurangi, dan `permintaan_harian` hari itu ditambah.
+       Ketiganya atau tidak sama sekali.
 
-    Stok dibiarkan boleh menjadi negatif. Itu bukan kelalaian — nota dari kasir
-    adalah fakta yang sudah terjadi, dan menolaknya karena stok tercatat tidak
-    cukup berarti menolak kenyataan demi menjaga angka. Stok negatif justru
-    tanda yang berguna: ia berarti ada barang masuk yang belum dicatat.
+    Nota dari kasir adalah fakta yang sudah terjadi, jadi stok tercatat yang
+    tidak cukup tidak membuat nota ditolak. Basis data melarang stok negatif
+    (`ck_barang_stok_tak_negatif`), maka stok dipotong sampai nol, bahannya
+    dilaporkan di `stok_kurang`, dan hari itu ditandai `stok_habis`: permintaan
+    yang tidak tercatat utuh diperlakukan model sebagai data tersensor, bukan
+    sebagai penjualan kecil. Stok yang habis padahal masih terjual berarti ada
+    barang masuk yang belum dicatat.
     """
     with Session(mesin()) as sesi:
         _usaha_atau_404(sesi, usaha_id)
@@ -425,7 +437,20 @@ def terima_struk(struk: StrukMasuk, usaha_id: int = Depends(usaha_saya)) -> Hasi
         ).all():
             peta.setdefault(pm.nama_menu.strip().lower(), []).append((pb.barang_id, pb.takaran))
 
+        # Tanggal dan kovariat baris permintaan harian, dengan aturan yang sama
+        # dengan pembangkit data: tanggal UTC (seperti pemeriksaan konsistensi 1)
+        # dan kalender dari dataset.kalender / dataset.pola.
+        from dataset.kalender import hari_libur, sedang_ramadan
+        from dataset.pola import pekan_gajian
+
+        waktu = struk.waktu if struk.waktu.tzinfo else struk.waktu.replace(tzinfo=timezone.utc)
+        tanggal = waktu.astimezone(timezone.utc).date()
+        kalender = {
+            "l": hari_libur(tanggal), "g": pekan_gajian(tanggal), "r": sedang_ramadan(tanggal),
+        }
+
         tak_dikenali: list[str] = []
+        stok_kurang: list[str] = []
         tercatat = 0
         for baris in struk.baris:
             sesi.add(
@@ -454,26 +479,215 @@ def terima_struk(struk: StrukMasuk, usaha_id: int = Depends(usaha_saya)) -> Hasi
                     # dua arah akan menghitungnya dua kali.
                     continue
                 pakai = Decimal(baris.jumlah) * Decimal(takaran)
-                b.stok = Decimal(b.stok) - pakai
-                sesi.add(b)
+                potong = min(pakai, max(Decimal(b.stok), Decimal(0)))
+                habis = potong < pakai
+                if habis and b.nama not in stok_kurang:
+                    stok_kurang.append(b.nama)
+                if potong > 0:
+                    b.stok = Decimal(b.stok) - potong
+                    sesi.add(b)
+                    sesi.exec(
+                        text(
+                            """
+                            INSERT INTO pergerakan
+                                (usaha_id, barang_id, waktu, jenis, jumlah, stok_sesudah,
+                                 keterangan, transaksi_id, oleh)
+                            VALUES (:u, :b, :w, :j, :n, :s, :k, :t, :o)
+                            """
+                        ).bindparams(
+                            u=usaha_id, b=barang_id, w=struk.waktu,
+                            j=JenisPergerakan.TERJUAL.value, n=-potong, s=b.stok,
+                            k="Penjualan dari struk " + struk.nomor_struk,
+                            t=trx.id, o=struk.kasir or "Kasir",
+                        )
+                    )
                 sesi.exec(
                     text(
                         """
-                        INSERT INTO pergerakan
-                            (usaha_id, barang_id, waktu, jenis, jumlah, stok_sesudah,
-                             keterangan, transaksi_id, oleh)
-                        VALUES (:u, :b, :w, :j, :n, :s, :k, :t, :o)
+                        INSERT INTO permintaan_harian
+                            (usaha_id, barang_id, tanggal, jumlah, stok_habis,
+                             hari_libur, pekan_gajian, ramadan, promo_aktif)
+                        VALUES (:u, :b, :t, :n, :h, :l, :g, :r, false)
+                        ON CONFLICT (usaha_id, barang_id, tanggal) DO UPDATE
+                           SET jumlah = permintaan_harian.jumlah + EXCLUDED.jumlah,
+                               stok_habis = permintaan_harian.stok_habis OR EXCLUDED.stok_habis
                         """
-                    ).bindparams(
-                        u=usaha_id, b=barang_id, w=struk.waktu,
-                        j=JenisPergerakan.TERJUAL.value, n=-pakai, s=b.stok,
-                        k="Penjualan dari struk " + struk.nomor_struk,
-                        t=trx.id, o=struk.kasir or "Kasir",
-                    )
+                    ).bindparams(u=usaha_id, b=barang_id, t=tanggal, n=potong, h=habis, **kalender)
                 )
 
         sesi.commit()
         return HasilStruk(
             diterima=True, sudah_ada=False, transaksi_id=trx.id,
-            baris_tercatat=tercatat, tak_dikenali=tak_dikenali,
+            baris_tercatat=tercatat, tak_dikenali=tak_dikenali, stok_kurang=stok_kurang,
         )
+
+
+def _resep_usaha(sesi: Session, usaha_id: int, kunci: str | None = None) -> list[ResepMenu]:
+    """Semua resep usaha ini (atau satu menu, kalau `kunci` diisi), urut nama menu."""
+    baris = sesi.exec(
+        text(
+            """
+            SELECT pm.nama_menu, b.id AS barang_id, b.nama, b.satuan, pb.takaran
+              FROM pemetaan_menu pm
+              JOIN pemetaan_menu_bahan pb ON pb.pemetaan_id = pm.id
+              JOIN barang b ON b.id = pb.barang_id
+             WHERE pm.usaha_id = :u
+               AND (CAST(:k AS text) IS NULL OR lower(btrim(pm.nama_menu)) = :k)
+             ORDER BY lower(pm.nama_menu), pb.id
+            """
+        ).bindparams(u=usaha_id, k=kunci)
+    ).all()
+    per_menu: dict[str, list[BahanMenu]] = {}
+    for r in baris:
+        per_menu.setdefault(r.nama_menu, []).append(
+            BahanMenu(barang_id=r.barang_id, nama=r.nama, satuan=r.satuan, takaran=r.takaran)
+        )
+    return [
+        ResepMenu(
+            nama_menu=nama,
+            bahan=bahan,
+            langsung=len(bahan) == 1
+            and bahan[0].takaran == 1
+            and bahan[0].nama.strip().lower() == nama.strip().lower(),
+        )
+        for nama, bahan in per_menu.items()
+    ]
+
+
+@rute.get("/menu-kasir", response_model=RingkasanMenuKasir)
+def ringkasan_menu_kasir(usaha_id: int = Depends(usaha_saya)) -> RingkasanMenuKasir:
+    """
+    Menu dari nota kasir: yang belum punya bahan, dan resep yang sudah ada.
+
+    Menu dikenali tanpa peduli huruf besar-kecil dan spasi di tepi, sama
+    seperti saat nota diproses (`terima_struk`). Menu yang belum dipasangkan
+    dihitung dari seluruh notanya: tidak satu pun penjualannya memotong stok.
+    """
+    with Session(mesin()) as sesi:
+        _usaha_atau_404(sesi, usaha_id)
+        belum = sesi.exec(
+            text(
+                """
+                WITH baris AS (
+                    SELECT lower(btrim(tb.nama_menu)) AS kunci, tb.nama_menu, tb.jumlah, t.waktu
+                      FROM transaksi_baris tb
+                      JOIN transaksi t ON t.id = tb.transaksi_id
+                     WHERE t.usaha_id = :u AND NOT t.dibatalkan
+                ), dipetakan AS (
+                    SELECT DISTINCT lower(btrim(pm.nama_menu)) AS kunci
+                      FROM pemetaan_menu pm
+                      JOIN pemetaan_menu_bahan pb ON pb.pemetaan_id = pm.id
+                     WHERE pm.usaha_id = :u
+                )
+                SELECT max(b.nama_menu) AS nama_menu, sum(b.jumlah) AS jumlah_terjual,
+                       min(b.waktu) AS sejak, max(b.waktu) AS terakhir
+                  FROM baris b
+                 WHERE NOT EXISTS (SELECT 1 FROM dipetakan d WHERE d.kunci = b.kunci)
+                 GROUP BY b.kunci
+                 ORDER BY sum(b.jumlah) DESC, max(b.nama_menu)
+                """
+            ).bindparams(u=usaha_id)
+        ).all()
+        nota = sesi.exec(
+            text(
+                """
+                SELECT max(waktu) AS terakhir,
+                       count(*) FILTER (
+                           WHERE (waktu AT TIME ZONE 'Asia/Jakarta')::date
+                               = (now() AT TIME ZONE 'Asia/Jakarta')::date
+                       ) AS hari_ini
+                  FROM transaksi
+                 WHERE usaha_id = :u AND NOT dibatalkan
+                """
+            ).bindparams(u=usaha_id)
+        ).one()
+        return RingkasanMenuKasir(
+            belum_dipasangkan=[MenuBelumDipasangkan(**dict(r._mapping)) for r in belum],
+            resep=_resep_usaha(sesi, usaha_id),
+            nota_terakhir=nota.terakhir,
+            nota_hari_ini=int(nota.hari_ini),
+        )
+
+
+@rute.put("/menu-kasir", response_model=ResepMenu)
+def simpan_resep(resep: ResepMasuk, usaha_id: int = Depends(usaha_saya)) -> ResepMenu:
+    """
+    Pasangkan satu menu ke bahan-bahannya, atau ganti resep yang sudah ada.
+
+    Hanya berlaku untuk nota BERIKUTNYA. Penjualan yang sudah lewat tidak
+    ditarik ulang: memotong stok mundur untuk penjualan berminggu-minggu lalu
+    akan menimpa hitungan yang mungkin sudah dikoreksi pemiliknya sendiri.
+    """
+    nama = resep.nama_menu.strip()
+    if not nama:
+        raise HTTPException(422, "Nama menu belum diisi. Tulis persis seperti di nota kasir, misalnya Kopi Susu.")
+    ids = [b.barang_id for b in resep.bahan]
+    if len(set(ids)) != len(ids):
+        raise HTTPException(422, "Ada bahan yang tertulis dua kali. Gabungkan takarannya ke satu baris.")
+
+    with Session(mesin()) as sesi:
+        _usaha_atau_404(sesi, usaha_id)
+        barang = {
+            b.id: b
+            for b in sesi.exec(select(Barang).where(Barang.id.in_(ids), Barang.usaha_id == usaha_id)).all()
+        }
+        if len(barang) != len(ids):
+            raise HTTPException(404, "Sebagian bahan tidak ada di gudang usaha ini. Muat ulang daftar stok, lalu coba lagi.")
+        manual = [b.nama for b in barang.values() if b.dicatat_manual]
+        if manual:
+            raise HTTPException(
+                422,
+                "%s dicatat manual, jadi stoknya tidak dikurangi kasir. Pilih bahan lain, "
+                "atau ubah cara catatnya dulu di rincian barang." % ", ".join(manual),
+            )
+
+        kunci = nama.lower()
+        pm = sesi.exec(
+            select(PemetaanMenu).where(PemetaanMenu.usaha_id == usaha_id).where(
+                text("lower(btrim(pemetaan_menu.nama_menu)) = :k").bindparams(k=kunci)
+            )
+        ).first()
+        if pm is None:
+            pm = PemetaanMenu(usaha_id=usaha_id, nama_menu=nama)
+            sesi.add(pm)
+            sesi.flush()
+        sesi.exec(text("DELETE FROM pemetaan_menu_bahan WHERE pemetaan_id = :p").bindparams(p=pm.id))
+        for b in resep.bahan:
+            sesi.add(PemetaanMenuBahan(pemetaan_id=pm.id, barang_id=b.barang_id, takaran=b.takaran))
+        # Bahan yang kini dipotong kasir berhenti diperingatkan "tidak berkurang otomatis".
+        for b in barang.values():
+            if not b.terhubung_kasir:
+                b.terhubung_kasir = True
+                sesi.add(b)
+        sesi.commit()
+        return _resep_usaha(sesi, usaha_id, kunci)[0]
+
+
+@rute.get("/transaksi", response_model=list[NotaRingkas])
+def nota_terbaru(
+    usaha_id: int = Depends(usaha_saya), batas: int = Query(default=10, ge=1, le=50)
+) -> list[NotaRingkas]:
+    """Nota terbaru apa adanya, untuk dicocokkan pemilik dengan yang tercetak di kasir."""
+    with Session(mesin()) as sesi:
+        _usaha_atau_404(sesi, usaha_id)
+        nota = sesi.exec(
+            select(Transaksi)
+            .where(Transaksi.usaha_id == usaha_id, Transaksi.dibatalkan == False)  # noqa: E712
+            .order_by(Transaksi.waktu.desc(), Transaksi.id.desc())
+            .limit(batas)
+        ).all()
+        if not nota:
+            return []
+        baris: dict[int, list[BarisNota]] = {}
+        for b in sesi.exec(
+            select(TransaksiBaris)
+            .where(TransaksiBaris.transaksi_id.in_([n.id for n in nota]))
+            .order_by(TransaksiBaris.id)
+        ).all():
+            baris.setdefault(b.transaksi_id, []).append(
+                BarisNota(nama_menu=b.nama_menu, jumlah=b.jumlah, satuan=b.satuan)
+            )
+        return [
+            NotaRingkas(id=n.id, nomor_struk=n.nomor_struk, waktu=n.waktu, kasir=n.kasir, baris=baris.get(n.id, []))
+            for n in nota
+        ]

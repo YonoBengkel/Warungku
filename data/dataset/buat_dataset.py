@@ -1195,6 +1195,11 @@ WITH dari_nota AS (
       JOIN transaksi t ON t.id = tb.transaksi_id
       JOIN barang b ON b.usaha_id = t.usaha_id AND b.nama = tb.nama_menu
      WHERE NOT t.dibatalkan
+       -- Nota yang diproses API memotong stok lewat resep (satu menu, banyak
+       -- bahan), jadi tidak cocok dicocokkan per nama. Kebenarannya dijaga
+       -- terima_struk dan diuji di backend/uji (test_struk, test_menu_kasir).
+       -- Yang diperiksa di sini nota pembangkit simulasi: satu baris, satu barang.
+       AND NOT EXISTS (SELECT 1 FROM pergerakan p2 WHERE p2.transaksi_id = t.id)
      GROUP BY 1, 2, 3
 ), dari_ledger AS (
     SELECT pg.usaha_id, pg.barang_id,
@@ -1204,6 +1209,7 @@ WITH dari_nota AS (
       JOIN barang b ON b.id = pg.barang_id
      -- Bahan baku yang terpakai produksi (UMKM produsen) tidak lewat nota kasir.
      WHERE pg.jenis = 'terjual' AND b.dicatat_manual = false AND pg.produksi_id IS NULL
+       AND pg.transaksi_id IS NULL
      GROUP BY 1, 2, 3
 )
 SELECT COUNT(*)

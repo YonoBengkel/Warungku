@@ -80,6 +80,22 @@ export interface MenuBelumDipasangkan {
   sejak: string
 }
 
+/** Satu bahan dalam resep menu: takaran per porsi, dalam satuan dasar barang. */
+export interface BahanMenu {
+  barangId: string
+  takaran: number
+}
+
+/** Bahan-bahan yang berkurang setiap satu porsi menu terjual di kasir. */
+export interface ResepMenu {
+  /** Sama dengan `MenuBelumDipasangkan.id`: nama menu huruf kecil tanpa spasi tepi. */
+  id: string
+  namaMenu: string
+  bahan: BahanMenu[]
+  /** Pemetaan bawaan: menu bernama sama dengan satu barang, takaran 1 (barang dijual apa adanya). */
+  langsung: boolean
+}
+
 export interface RiwayatKasir {
   id: string
   waktu: string

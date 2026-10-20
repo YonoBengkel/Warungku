@@ -55,6 +55,70 @@ class HasilStruk(BaseModel):
     #: menu belum dipetakan akan membuat pemilik warung berhenti memakai
     #: sinkronisasi sama sekali.
     tak_dikenali: list[str]
+    #: Bahan yang stok tercatatnya tidak cukup untuk nota ini. Stoknya dipotong
+    #: sampai nol dan harinya ditandai stok habis; artinya ada barang masuk
+    #: yang belum dicatat.
+    stok_kurang: list[str] = []
+
+
+class MenuBelumDipasangkan(BaseModel):
+    """Menu yang muncul di nota tapi belum punya bahan, jadi penjualannya tidak mengurangi stok."""
+
+    nama_menu: str
+    #: Jumlah porsi yang terjual sejak nota pertamanya, semuanya tanpa memotong stok.
+    jumlah_terjual: Decimal
+    sejak: datetime
+    terakhir: datetime
+
+
+class BahanMenu(BaseModel):
+    barang_id: int
+    nama: str
+    satuan: str
+    #: Dalam satuan dasar barang, untuk satu porsi.
+    takaran: Decimal
+
+
+class ResepMenu(BaseModel):
+    nama_menu: str
+    bahan: list[BahanMenu]
+    #: Pemetaan bawaan 1:1: menu bernama sama dengan satu barang, takaran 1.
+    #: Barang yang dijual apa adanya, bukan resep yang perlu ditampilkan.
+    langsung: bool
+
+
+class RingkasanMenuKasir(BaseModel):
+    belum_dipasangkan: list[MenuBelumDipasangkan]
+    resep: list[ResepMenu]
+    nota_terakhir: datetime | None
+    #: Nota yang masuk hari ini menurut jam WIB.
+    nota_hari_ini: int
+
+
+class BahanMenuMasuk(BaseModel):
+    barang_id: int = Field(ge=1)
+    takaran: Decimal = Field(gt=0)
+
+
+class ResepMasuk(BaseModel):
+    """Resep satu menu. Menyimpan ulang menggantikan seluruh bahan sebelumnya."""
+
+    nama_menu: str = Field(min_length=1, max_length=120)
+    bahan: list[BahanMenuMasuk] = Field(min_length=1, max_length=20)
+
+
+class BarisNota(BaseModel):
+    nama_menu: str
+    jumlah: Decimal
+    satuan: str
+
+
+class NotaRingkas(BaseModel):
+    id: int
+    nomor_struk: str
+    waktu: datetime
+    kasir: str | None
+    baris: list[BarisNota]
 
 
 class KemasanRingkas(BaseModel):

@@ -485,7 +485,9 @@ turnify-flow/
 | GET | `/usaha/{usaha_id}/barang/{barang_id}/saran` | Saran distributor terbaru Mesin 2, dibaca dari tabel |
 | GET | `/usaha/{usaha_id}/saran-distributor` | Saran Mesin 2 dirangkum per distributor: rata-rata skor, peluang lancar, barang yang menempatkannya di urutan pertama |
 | GET | `/usaha/{usaha_id}/pemakaian-bulanan` | Pemakaian per 30 hari beserta uji balik Mesin 1 tiap periode (`uji_balik`), dan perkiraan 30 hari ke depan, semua barang |
-| POST | `/usaha/{usaha_id}/transaksi` | Terima satu nota kasir; aman dikirim ulang |
+| POST | `/usaha/{usaha_id}/transaksi` | Terima satu nota kasir; aman dikirim ulang. Tiap menu memotong bahan sesuai resepnya; stok yang kurang dipotong sampai nol dan dilaporkan di `stok_kurang` |
+| GET | `/usaha/{usaha_id}/transaksi?batas=` | Nota terbaru beserta barisnya |
+| GET, PUT | `/usaha/{usaha_id}/menu-kasir` | Menu dari nota yang belum punya bahan, resep yang sudah ada, nota terakhir dan jumlah hari ini; simpan resep satu menu (hanya berlaku untuk nota berikutnya) |
 | GET | `/usaha/{usaha_id}/produksi/ringkasan` | UMKM produsen: barang jadi, resep, jumlah yang bisa dibuat, perkiraan pesanan 7 hari, saran masak, pembeli, omset bulanan |
 | GET, POST | `/usaha/{usaha_id}/produksi` | Riwayat sesi masak; catat sesi masak (bahan dipotong sesuai resep, ditolak kalau bahan kurang) |
 | GET, POST | `/usaha/{usaha_id}/penjualan` | Riwayat kiriman ke pembeli usaha; catat kiriman (ditolak kalau stok barang jadi kurang) |

@@ -116,6 +116,7 @@ def warung():
 
     with mesin().begin() as kon:
         kon.execute(text("DELETE FROM pergerakan WHERE usaha_id = :u"), {"u": usaha_id})
+        kon.execute(text("DELETE FROM permintaan_harian WHERE usaha_id = :u"), {"u": usaha_id})
         kon.execute(
             text(
                 "DELETE FROM transaksi_baris WHERE transaksi_id IN "

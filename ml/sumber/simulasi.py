@@ -69,6 +69,10 @@ def omset() -> pd.DataFrame:
                   FROM transaksi t
                   JOIN per_nota pn ON pn.transaksi_id = t.id
                  WHERE NOT t.dibatalkan
+                   -- Nota demo (variasi demo dan tombol nota contoh) bertanggal
+                   -- hari ini, jauh sesudah akhir data, dan jumlahnya kecil. Ikut
+                   -- dihitung, ia terbaca seperti omset yang anjlok.
+                   AND t.nomor_struk NOT LIKE 'DEMO-%'
                  GROUP BY 1, 2
                 """
             ),
