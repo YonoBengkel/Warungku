@@ -307,9 +307,9 @@ if ($LASTEXITCODE -ne 0) {
     $keluaranVariasi | Select-Object -Last 5 | ForEach-Object { Write-Host "    $_" }
     Awas 'Variasi demo belum terpasang; aplikasi tetap bisa dipakai.'
 } elseif ($keluaranVariasi -match 'masih segar') {
-    Oke 'Variasi demo (pesanan, kontrak, stok) masih segar'
+    Oke 'Variasi demo (pesanan, kontrak, stok, menu kasir) masih segar'
 } else {
-    Oke 'Variasi demo (pesanan, kontrak, stok) dipasang dengan tanggal hari ini'
+    Oke 'Variasi demo (pesanan, kontrak, stok, menu kasir) dipasang dengan tanggal hari ini'
 }
 
 # --------------------------------------------------------------------------
