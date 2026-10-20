@@ -59,6 +59,11 @@ pernah ditulis langsung di komponen. Setiap token punya pasangan tema gelap di b
   seri lain disaring keluar.
 - `seri-perkiraan` (merah `#e34948`, putus-putus) dan `pita-perkiraan` hanya untuk garis dan
   rentang perkiraan Mesin 1. Token ini bukan warna status kritis.
+- **Di semua layar,** pemakaian aktual memakai `seri-1` dan perkiraan memakai `seri-perkiraan`:
+  grafik Prediksi, grafik rincian barang, dan bar "Terpakai bulan ini / Perkiraan bulan depan"
+  di Beranda.
+- `seri-2` dan `seri-3` belum dipakai. Sebelum `seri-3` dipakai pertama kali, hue-nya harus
+  digeser menjauh dari ungu merek (lihat bagian 10).
 - `grid` dan `sumbu` dibuat redup supaya datanya yang menonjol.
 - Palet baru atau seri tambahan wajib lolos `validate_palette.js` dari skill dataviz di kedua
   tema, termasuk uji pemisahan buta warna.
@@ -289,8 +294,9 @@ Pola di bawah ini pernah menjadi cacat di proyek ini.
 ## 10. Yang masih terbuka
 
 - **`seri-3` terlalu dekat dengan ungu merek:** hue-nya hanya berbeda 9° (249° lawan 258°).
-  Grafik dengan seri ketiga bisa terbaca "berwarna merek". Pilihannya adalah menggeser hue
-  `seri-3` lalu memvalidasi ulang palet. Belum diputuskan.
+  Sejak 20 Oktober 2026 token ini tidak dipakai di layar mana pun, karena satu-satunya
+  pemakainya (bar Beranda) pindah ke `seri-1` dan `seri-perkiraan`. Hue penggantinya diputuskan
+  saat ada grafik yang butuh seri ketiga, lalu palet divalidasi ulang.
 - **Badge kategori berwarna-warni ala majoo** tidak dipakai untuk status. Untuk kategori produk
   belum diputuskan.
 - **Tombol "Login" di halaman depan** tetap berbahasa Inggris, sesuai catatan pemilik proyek

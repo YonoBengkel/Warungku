@@ -622,13 +622,16 @@ export default function Beranda() {
               }[nada]
               const IkonArah = r.arah === 'tambah' ? IkonTrenNaik : IkonTrenTurun
               const maks = Math.max(r.pemakaianBulanIni, r.perkiraanBulanDepan, 1)
+              // Warnanya sama dengan grafik Prediksi: pemakaian aktual seri-1,
+              // perkiraan merah. Dulu aktual memakai seri-3 (nyaris ungu merek)
+              // dan perkiraan seri-1, jadi teal berarti dua hal di dua layar.
               const bar = [
-                { kunci: 'ini', label: 'Terpakai bulan ini', nilai: r.pemakaianBulanIni, warna: 'bg-seri-3' },
+                { kunci: 'ini', label: 'Terpakai bulan ini', nilai: r.pemakaianBulanIni, warna: 'bg-seri-1' },
                 {
                   kunci: 'depan',
                   label: 'Perkiraan bulan depan',
                   nilai: r.perkiraanBulanDepan,
-                  warna: 'bg-seri-1',
+                  warna: 'bg-seri-perkiraan',
                 },
               ]
               const bisaKeranjang = r.arah === 'tambah' && r.penawaranId != null

@@ -1,5 +1,9 @@
 # Dependensi
 node_modules/
+# package.json di akar hanya meneruskan perintah ke frontend/ dan tidak punya
+# dependensi; npm install di akar (dijalankan siapkan.cmd) tetap membuat berkas
+# kunci kosong di sini. Kunci yang sebenarnya ada di frontend/package-lock.json.
+/package-lock.json
 
 # Hasil build frontend
 frontend/dist/
