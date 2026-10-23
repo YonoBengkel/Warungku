@@ -1361,7 +1361,11 @@ export function semuaDistributor(): Distributor[] {
   return distributorBerlaku
 }
 
-/** Kategori barang yang dikenal platform; distributor memilih kategorinya dari sini. */
+/**
+ * Kategori barang yang dikenal platform; distributor memilih kategorinya dari sini.
+ * PUT /distributor/{id}/layanan menerima daftar yang sama, begitu juga
+ * `WILAYAH_KIRIM` (`backend/api/distributor.py`): ubah keduanya bersamaan.
+ */
 export const KATEGORI_BARANG = [
   'Kopi & Teh',
   'Susu & Olahan',

@@ -13,6 +13,8 @@ baru di sini berarti menambah penerjemah di sisi frontend tanpa alasan.
 
 from __future__ import annotations
 
+import re
+
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from sqlalchemy import text
 from sqlmodel import Session
@@ -21,7 +23,15 @@ from warungku.basis_data import mesin
 from warungku.model import Distributor
 
 from .otentikasi import distributor_saya
-from .skema import LokasiGudang, PesananMasuk, PelangganTersegmen, ProfilDistributor, RingkasanSegmen
+from .skema import (
+    InfoUsahaDistributor,
+    LayananDistributor,
+    LokasiGudang,
+    PesananMasuk,
+    PelangganTersegmen,
+    ProfilDistributor,
+    RingkasanSegmen,
+)
 
 rute = APIRouter(prefix="/distributor/{distributor_id}", tags=["distributor"])
 
@@ -37,12 +47,92 @@ def _distributor_atau_404(sesi: Session, distributor_id: int) -> Distributor:
 BATAS_LINTANG = (-11.5, 6.5)
 BATAS_BUJUR = (94.5, 141.5)
 
+#: Panjang kolom `distributor.jam_operasional`.
+PANJANG_JAM_OPERASIONAL = 120
+#: Minimum pesanan di atas Rp 1 miliar hampir pasti salah ketik.
+BATAS_MINIMUM_PESANAN = 1_000_000_000
+
+#: Pilihan chip di formulir "Yang kamu layani" (`KATEGORI_BARANG` dan `WILAYAH_KIRIM`
+#: di `frontend/src/data/dummy.ts`). Daftar tetap, bukan teks bebas: Mesin 2
+#: mencocokkan area kirim dengan kota usaha huruf demi huruf, jadi salah ketik
+#: diam-diam menghapus distributor dari saran untuk kota itu.
+KATEGORI_BARANG = ("Kopi & Teh", "Susu & Olahan", "Pemanis", "Bahan Makanan", "Protein", "Kemasan", "Pendukung")
+WILAYAH_KIRIM = ("Sleman", "Kota Yogyakarta", "Bantul", "Kulon Progo", "Gunungkidul")
+
 
 @rute.get("/profil", response_model=ProfilDistributor)
 def profil(distributor_id: int = Depends(distributor_saya)) -> ProfilDistributor:
     """Profil distributor yang sedang masuk, termasuk titik gudangnya."""
     with Session(mesin()) as sesi:
         return ProfilDistributor.model_validate(_distributor_atau_404(sesi, distributor_id))
+
+
+@rute.put("/profil", response_model=ProfilDistributor)
+def ubah_profil(info: InfoUsahaDistributor, distributor_id: int = Depends(distributor_saya)) -> ProfilDistributor:
+    """
+    Simpan info usaha dari Profil: tentang toko, alamat gudang, nomor HP, jam
+    operasional, dan minimum pesanan. Pemilik usaha membacanya lewat katalog, di
+    halaman toko dan di pengingat minimum keranjang. Aturan dan pesannya sama
+    dengan `FormInfoUsaha` di frontend, jadi isian yang lolos di layar tidak
+    ditolak di sini. Titik gudang tidak ikut berubah; itu urusan PUT /lokasi.
+    """
+    alamat = info.alamat_gudang.strip()
+    # [0-9], bukan \d: \d di Python juga meloloskan angka non-Latin.
+    nomor = re.sub(r"[^0-9]", "", info.nomor_hp)
+    jam = info.jam_operasional.strip()
+    if len(alamat) < 8:
+        raise HTTPException(422, "Alamat gudang belum lengkap. Tulis nama jalan dan nomornya. Contoh: Jl. Magelang KM 7.")
+    if not re.fullmatch(r"08[0-9]{8,11}", nomor):
+        raise HTTPException(422, "Nomor HP harus diawali 08 dan berisi 10-13 angka. Contoh: 081234567890.")
+    if len(jam) < 5:
+        raise HTTPException(422, "Jam operasional belum diisi. Contoh: Senin sampai Sabtu, 07.00 - 16.00.")
+    if len(jam) > PANJANG_JAM_OPERASIONAL:
+        raise HTTPException(
+            422, f"Jam operasional terlalu panjang. Ringkas jadi paling banyak {PANJANG_JAM_OPERASIONAL} huruf."
+        )
+    if info.minimum_pesanan < 0:
+        raise HTTPException(
+            422, "Minimum pesanan harus angka rupiah, atau kosongkan kalau tidak ada minimum. Contoh: 250.000."
+        )
+    if info.minimum_pesanan > BATAS_MINIMUM_PESANAN:
+        raise HTTPException(422, "Minimum pesanan terlalu besar. Tulis paling banyak 1.000.000.000.")
+    with Session(mesin()) as sesi:
+        d = _distributor_atau_404(sesi, distributor_id)
+        d.deskripsi = (info.deskripsi or "").strip() or None
+        d.alamat_gudang, d.nomor_hp, d.jam_operasional = alamat, nomor, jam
+        d.minimum_pesanan = info.minimum_pesanan
+        sesi.add(d)
+        sesi.commit()
+        sesi.refresh(d)
+        return ProfilDistributor.model_validate(d)
+
+
+@rute.put("/layanan", response_model=ProfilDistributor)
+def ubah_layanan(layanan: LayananDistributor, distributor_id: int = Depends(distributor_saya)) -> ProfilDistributor:
+    """
+    Simpan kategori barang dan area kirim dari Profil ("Yang kamu layani").
+    Keduanya saringan lapis 1 rekomendasi: rekomendasi di halaman Belanja pemilik
+    usaha memakainya begitu katalog dimuat ulang, sedangkan skor Mesin 2 baru
+    mengikutinya pada putaran penjadwal berikutnya (tiap 4 jam). Urutan pilihan
+    dipertahankan; pilihan ganda dibuang.
+    """
+    kategori = list(dict.fromkeys(layanan.kategori))
+    area = list(dict.fromkeys(layanan.area_kirim))
+    if not kategori:
+        raise HTTPException(422, "Pilih minimal satu kategori barang yang kamu jual.")
+    if not area:
+        raise HTTPException(422, "Pilih minimal satu wilayah yang kamu kirimi.")
+    if any(k not in KATEGORI_BARANG for k in kategori):
+        raise HTTPException(422, "Kategori barang harus dipilih dari daftar yang tersedia.")
+    if any(a not in WILAYAH_KIRIM for a in area):
+        raise HTTPException(422, "Area kirim harus dipilih dari daftar wilayah yang tersedia.")
+    with Session(mesin()) as sesi:
+        d = _distributor_atau_404(sesi, distributor_id)
+        d.kategori, d.area_kirim = kategori, area
+        sesi.add(d)
+        sesi.commit()
+        sesi.refresh(d)
+        return ProfilDistributor.model_validate(d)
 
 
 @rute.put("/lokasi", response_model=ProfilDistributor)

@@ -561,3 +561,92 @@ def test_ringkasan_penjualan_nota_dan_pesanan_selesai(dunia):
     assert {x["label"]: x["nilai"] for x in d["rincian"]} == {"Nilai barang": nilai, "Ongkos kirim": p1["ongkos_kirim"]}
     # Akun pemilik usaha tidak boleh membaca ringkasan distributor.
     assert klien.get(f"/distributor/{w['distributor']}/ringkasan-penjualan", headers=w["kepala_umkm"]).status_code == 403
+
+
+def test_info_usaha_disimpan_dan_terbaca_pembeli(dunia):
+    """Info usaha dari Profil: disimpan distributor, terbaca di katalog pembeli, isian salah ditolak."""
+    w, klien = dunia, TestClient(app)
+    jalur = f"/distributor/{w['distributor']}"
+    isi = {
+        "deskripsi": "  Biji kopi sangrai dari Temanggung.  ",
+        "alamat_gudang": "Jl. Magelang KM 7 No. 12, Sleman",
+        "nomor_hp": "0812-3456-7890",
+        "jam_operasional": "Senin sampai Sabtu, 07.00 - 16.00",
+        "minimum_pesanan": 250_000,
+    }
+    # Titik gudang dipasang dulu: menyimpan info usaha tidak boleh ikut menghapusnya.
+    r = klien.put(f"{jalur}/lokasi", headers=w["kepala_dist"], json={"lat": -7.7412, "lng": 110.3901})
+    assert r.status_code == 200, r.text
+
+    r = klien.put(f"{jalur}/profil", headers=w["kepala_dist"], json=isi)
+    assert r.status_code == 200, r.text
+    # Disimpan rapi: spasi di tepi dibuang, nomor HP tinggal angkanya.
+    assert r.json()["deskripsi"] == "Biji kopi sangrai dari Temanggung." and r.json()["nomor_hp"] == "081234567890"
+    assert (r.json()["minimum_pesanan"], r.json()["lat"]) == (250_000, -7.7412)
+
+    katalog = klien.get(f"/usaha/{w['usaha']}/katalog", headers=w["kepala_umkm"]).json()
+    [d] = [x for x in katalog["distributor"] if x["id"] == w["distributor"]]
+    assert (d["deskripsi"], d["alamat_gudang"], d["nomor_hp"], d["jam_operasional"], d["minimum_pesanan"]) == (
+        "Biji kopi sangrai dari Temanggung.",
+        "Jl. Magelang KM 7 No. 12, Sleman",
+        "081234567890",
+        "Senin sampai Sabtu, 07.00 - 16.00",
+        250_000,
+    )
+
+    # Aturan FormInfoUsaha berlaku juga di sini. Pesannya satu kalimat, karena layar menampilkannya apa adanya.
+    for salah in (
+        {"alamat_gudang": "  Jl. 7  "},
+        {"nomor_hp": "0712345678"},
+        {"nomor_hp": "0812345"},
+        {"nomor_hp": "0812345678901234"},
+        {"jam_operasional": "pagi"},
+        {"jam_operasional": "x" * 121},
+        {"minimum_pesanan": -1},
+        {"minimum_pesanan": 1_000_000_001},
+    ):
+        r = klien.put(f"{jalur}/profil", headers=w["kepala_dist"], json={**isi, **salah})
+        assert r.status_code == 422 and isinstance(r.json()["detail"], str), (salah, r.text)
+    # Akun pemilik usaha tidak boleh mengubah info distributor.
+    assert klien.put(f"{jalur}/profil", headers=w["kepala_umkm"], json=isi).status_code == 403
+    assert klien.get(f"{jalur}/profil", headers=w["kepala_dist"]).json()["minimum_pesanan"] == 250_000
+
+    # Tentang toko boleh dikosongkan, dan 0 berarti tanpa minimum.
+    r = klien.put(f"{jalur}/profil", headers=w["kepala_dist"], json={**isi, "deskripsi": "   ", "minimum_pesanan": 0})
+    assert r.status_code == 200 and r.json()["deskripsi"] is None and r.json()["minimum_pesanan"] == 0
+
+
+def test_layanan_disimpan_dan_dipakai_saringan_mesin2(dunia):
+    """Kategori dan area kirim dari Profil: disimpan, terbaca pembeli, dan langsung dipakai saringan Mesin 2."""
+    # Diimpor di sini: hanya uji ini yang butuh Mesin 2 (numpy dan pandas).
+    from ml.mesin2.saran import kandidat_untuk
+
+    w, klien = dunia, TestClient(app)
+    jalur = f"/distributor/{w['distributor']}"
+    # Usaha dunia ada di Sleman, dan distributornya mengirim ke Sleman.
+    assert len(kandidat_untuk(w["usaha"])) == 1
+
+    r = klien.put(
+        f"{jalur}/layanan",
+        headers=w["kepala_dist"],
+        json={"kategori": ["Kopi & Teh", "Pemanis", "Kopi & Teh"], "area_kirim": ["Bantul", "Kota Yogyakarta"]},
+    )
+    assert r.status_code == 200, r.text
+    # Pilihan ganda dibuang, urutannya tetap.
+    assert r.json()["kategori"] == ["Kopi & Teh", "Pemanis"]
+    assert r.json()["area_kirim"] == ["Bantul", "Kota Yogyakarta"]
+
+    katalog = klien.get(f"/usaha/{w['usaha']}/katalog", headers=w["kepala_umkm"]).json()
+    [d] = [x for x in katalog["distributor"] if x["id"] == w["distributor"]]
+    assert (d["kategori"], d["area_kirim"]) == (["Kopi & Teh", "Pemanis"], ["Bantul", "Kota Yogyakarta"])
+    # Sleman tidak lagi dikirimi: putaran Mesin 2 berikutnya tidak menilai distributor ini untuk usaha dunia.
+    assert len(kandidat_untuk(w["usaha"])) == 0
+
+    # Kosong atau di luar daftar ditolak; "Yogyakarta" tidak akan pernah cocok dengan kota "Kota Yogyakarta".
+    benar = {"kategori": ["Pemanis"], "area_kirim": ["Sleman"]}
+    for salah in ({"kategori": []}, {"area_kirim": []}, {"kategori": ["Elektronik"]}, {"area_kirim": ["Yogyakarta"]}):
+        r = klien.put(f"{jalur}/layanan", headers=w["kepala_dist"], json={**benar, **salah})
+        assert r.status_code == 422 and isinstance(r.json()["detail"], str), (salah, r.text)
+    # Akun pemilik usaha tidak boleh mengubah layanan distributor.
+    assert klien.put(f"{jalur}/layanan", headers=w["kepala_umkm"], json=benar).status_code == 403
+    assert klien.get(f"{jalur}/profil", headers=w["kepala_dist"]).json()["area_kirim"] == ["Bantul", "Kota Yogyakarta"]

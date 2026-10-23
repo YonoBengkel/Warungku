@@ -511,6 +511,28 @@ class LokasiGudang(BaseModel):
     lng: float | None = None
 
 
+class InfoUsahaDistributor(BaseModel):
+    """
+    Info usaha dari Profil distributor, yang dibaca pemilik usaha di halaman toko
+    dan keranjang. Aturan isinya diperiksa di endpoint, bukan dengan `Field`,
+    supaya penolakannya membawa satu pesan yang bisa ditampilkan apa adanya.
+    """
+
+    deskripsi: str | None = None
+    alamat_gudang: str
+    nomor_hp: str
+    jam_operasional: str
+    #: Rupiah. 0 berarti tanpa minimum.
+    minimum_pesanan: int = 0
+
+
+class LayananDistributor(BaseModel):
+    """Yang dilayani distributor, dari Profil. Seperti info usaha, isinya diperiksa di endpoint."""
+
+    kategori: list[str]
+    area_kirim: list[str]
+
+
 class PenawaranKatalog(BaseModel):
     id: int
     distributor_id: int

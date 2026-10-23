@@ -135,8 +135,14 @@ Catatan tahap 4:
   variasi sejak tahap 1 (KeyError untuk isian distributor); kini memakai `variasi_demo.ringkas`.
   Koordinat pemesan dari data kontrak (titik pengganti) menimpa koordinat dari pesanan di portal
   distributor; urutannya dibalik.
-- Ditemukan, belum diubah (di luar revisi): "Ubah info usaha" di Profil distributor hanya
-  tersimpan di peramban, padahal toast-nya berbunyi "Profil toko tersimpan".
+- Ditemukan di luar revisi, lalu diperbaiki: "Ubah info usaha" di Profil distributor dulu hanya
+  tersimpan di peramban, padahal toast-nya berbunyi "Profil toko tersimpan". Kini PUT
+  `/distributor/{id}/profil` menyimpan tentang toko, alamat gudang, nomor HP, jam operasional, dan
+  minimum pesanan dengan aturan yang sama dengan formulirnya, dan portal memuatnya saat tersambung.
+  Kategori dan area kirim ("Yang kamu layani") ikut disimpan lewat PUT `/distributor/{id}/layanan`,
+  hanya dari daftar chip di formulir (Mesin 2 mencocokkan area kirim dengan kota usaha huruf demi
+  huruf). Rekomendasi di Belanja langsung memakainya; skor Mesin 2 menyusul di putaran penjadwal
+  berikutnya, dan toast-nya menyebut itu.
 
 ## Tahap 5 — Ringkasan Penjualan
 

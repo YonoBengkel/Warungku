@@ -274,6 +274,7 @@ function FormLayanan({ distributor, tutup }: { distributor: Distributor; tutup: 
   const [kategori, setKategori] = useState<string[]>(distributor.kategori)
   const [area, setArea] = useState<string[]>(distributor.areaKirim)
   const [dicoba, setDicoba] = useState(false)
+  const [menyimpan, setMenyimpan] = useState(false)
 
   const galatKategori = kategori.length === 0 ? 'Pilih minimal satu kategori barang yang kamu jual.' : undefined
   const galatArea = area.length === 0 ? 'Pilih minimal satu wilayah yang kamu kirimi.' : undefined
@@ -281,11 +282,14 @@ function FormLayanan({ distributor, tutup }: { distributor: Distributor; tutup: 
   const ganti = (daftar: string[], nilai: string) =>
     daftar.includes(nilai) ? daftar.filter((x) => x !== nilai) : [...daftar, nilai]
 
-  function simpan() {
+  async function simpan() {
     setDicoba(true)
     if (galatKategori || galatArea) return
-    ubahDistributor(distributor.id, { kategori, areaKirim: area })
-    tutup()
+    setMenyimpan(true)
+    const tersimpan = await ubahDistributor(distributor.id, { kategori, areaKirim: area })
+    setMenyimpan(false)
+    // Ditolak atau gagal: lembar tetap terbuka supaya pilihannya tidak hilang.
+    if (tersimpan) tutup()
   }
 
   return (
@@ -301,7 +305,7 @@ function FormLayanan({ distributor, tutup }: { distributor: Distributor; tutup: 
           <Tombol ragam="garis" penuh onClick={tutup}>
             Batal
           </Tombol>
-          <Tombol penuh onClick={simpan}>
+          <Tombol penuh memuat={menyimpan} onClick={simpan}>
             Simpan
           </Tombol>
         </div>
@@ -349,22 +353,33 @@ function FormInfoUsaha({ distributor, tutup }: { distributor: Distributor; tutup
   const [jam, setJam] = useState(awal.jamOperasional)
   const [minimum, setMinimum] = useState(awal.minimumPesanan > 0 ? angka(awal.minimumPesanan) : '')
   const [dicoba, setDicoba] = useState(false)
+  const [menyimpan, setMenyimpan] = useState(false)
 
+  /* Aturan dan pesannya sama dengan PUT /distributor/{id}/profil. Batas jam
+     mengikuti panjang kolomnya; minimum di atas Rp 1 miliar hampir pasti salah ketik. */
   const angkaMinimum = minimum.trim() === '' ? 0 : bacaAngkaIndonesia(minimum)
   const galat = {
     alamat: alamat.trim().length < 8 ? 'Alamat gudang belum lengkap. Tulis nama jalan dan nomornya. Contoh: Jl. Magelang KM 7.' : undefined,
     nomor: !/^08\d{8,11}$/.test(nomor.replace(/\D/g, '')) ? 'Nomor HP harus diawali 08 dan berisi 10-13 angka. Contoh: 081234567890.' : undefined,
-    jam: jam.trim().length < 5 ? 'Jam operasional belum diisi. Contoh: Senin sampai Sabtu, 07.00 - 16.00.' : undefined,
+    jam:
+      jam.trim().length < 5
+        ? 'Jam operasional belum diisi. Contoh: Senin sampai Sabtu, 07.00 - 16.00.'
+        : jam.trim().length > 120
+          ? 'Jam operasional terlalu panjang. Ringkas jadi paling banyak 120 huruf.'
+          : undefined,
     minimum:
       !Number.isFinite(angkaMinimum) || angkaMinimum < 0
         ? 'Minimum pesanan harus angka rupiah, atau kosongkan kalau tidak ada minimum. Contoh: 250.000.'
-        : undefined,
+        : Math.round(angkaMinimum) > 1_000_000_000
+          ? 'Minimum pesanan terlalu besar. Tulis paling banyak 1.000.000.000.'
+          : undefined,
   }
 
-  function simpan() {
+  async function simpan() {
     setDicoba(true)
     if (Object.values(galat).some(Boolean)) return
-    ubahDistributor(distributor.id, {
+    setMenyimpan(true)
+    const tersimpan = await ubahDistributor(distributor.id, {
       deskripsi: deskripsi.trim(),
       info: {
         alamatGudang: alamat.trim(),
@@ -373,7 +388,9 @@ function FormInfoUsaha({ distributor, tutup }: { distributor: Distributor; tutup
         minimumPesanan: Math.round(angkaMinimum),
       },
     })
-    tutup()
+    setMenyimpan(false)
+    // Ditolak atau gagal: lembar tetap terbuka supaya isiannya tidak hilang.
+    if (tersimpan) tutup()
   }
 
   return (
@@ -388,7 +405,7 @@ function FormInfoUsaha({ distributor, tutup }: { distributor: Distributor; tutup
           <Tombol ragam="garis" penuh onClick={tutup}>
             Batal
           </Tombol>
-          <Tombol penuh onClick={simpan}>
+          <Tombol penuh memuat={menyimpan} onClick={simpan}>
             Simpan
           </Tombol>
         </div>

@@ -8,6 +8,7 @@ import type {
   BuktiPengiriman,
   DataKasir,
   Distributor,
+  InfoUsahaDistributor,
   Kontrak,
   KontrakPelanggan,
   Notifikasi,
@@ -75,8 +76,8 @@ import {
   simpanSesiDistributor,
 } from '@/lib/api'
 import type { SesiDistributor, SesiServer } from '@/lib/api'
-import { ambilLokasiGudang, simpanLokasiGudang } from '@/lib/apiDistributor'
-import type { LokasiGudang } from '@/lib/apiDistributor'
+import { ambilProfilDistributor, simpanInfoUsaha, simpanLayanan, simpanLokasiGudang } from '@/lib/apiDistributor'
+import type { ProfilServer } from '@/lib/apiDistributor'
 import {
   aksiPesananMasuk,
   ambilPesanan,
@@ -123,6 +124,11 @@ export interface HasilKirim {
   kodeBelanja: string
   pesanan: Array<{ id: string; nomor: string; distributorId: string; berhasil: boolean }>
 }
+
+/** Isi satu formulir Profil distributor: info usaha, atau yang dilayani. Masing-masing punya endpoint sendiri. */
+type UbahanProfilDistributor =
+  | { deskripsi: string; info: InfoUsahaDistributor }
+  | { kategori: string[]; areaKirim: string[] }
 
 interface KeadaanAplikasi {
   profil: ProfilUsaha
@@ -182,8 +188,11 @@ interface KeadaanAplikasi {
   kontrakMasukServer: KontrakPelanggan[] | null
   /** Penawaran dan paket milik distributor yang tersambung; `null` = data contoh. */
   katalogDistributorServer: { penawaran: Penawaran[]; paket: PaketKontrak[]; promo: Promo[] } | null
-  /** Titik gudang distributor yang tersambung, dibaca dari server; `null` = belum dibaca atau data contoh. */
-  lokasiGudangServer: LokasiGudang | null
+  /**
+   * Profil distributor yang tersambung, dibaca dari server: tentang toko, info
+   * usaha, dan titik gudang. `null` = belum dibaca atau data contoh.
+   */
+  profilDistributorServer: ProfilServer | null
   racun: Racun[]
   hasilKirimTerakhir: HasilKirim | null
   /** Pesanan masuk yang aksinya sedang dikirim ke server. Tombolnya memuat dan tidak bisa ditekan dua kali. */
@@ -292,7 +301,11 @@ interface KeadaanAplikasi {
   // Portal distributor — profil dan katalog
   simpanPenawaran: (penawaran: Penawaran) => void
   aturAktifPenawaran: (id: string, aktif: boolean) => void
-  ubahDistributor: (id: string, ubahan: Partial<Distributor>) => void
+  /**
+   * Ubah profil toko. Bila portal tersambung, info usaha disimpan lewat PUT
+   * /profil, kategori dan area kirim lewat PUT /layanan. Mengembalikan true bila tersimpan.
+   */
+  ubahDistributor: (id: string, ubahan: UbahanProfilDistributor) => Promise<boolean>
   ubahPesananRutin: (kontrakId: string, aktif: boolean) => void
 
   /* Pemberitahuan */
@@ -600,7 +613,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
   pesananMasukServer: null,
   kontrakMasukServer: null,
   katalogDistributorServer: null,
-  lokasiGudangServer: null,
+  profilDistributorServer: null,
   racun: [],
   hasilKirimTerakhir: null,
   pesananDiproses: [],
@@ -731,7 +744,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
       pesananMasukServer: null,
       kontrakMasukServer: null,
       katalogDistributorServer: null,
-      lokasiGudangServer: null,
+      profilDistributorServer: null,
     })
   },
 
@@ -746,12 +759,12 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
     const sesi = get().sesiDistributor ?? sesiDistributorTersimpan()
     if (!sesi) return
     try {
-      const [masuk, kontrak, katalog, lokasi] = await Promise.all([
+      const [masuk, kontrak, katalog, profil] = await Promise.all([
         ambilPesananMasuk(sesi),
         ambilKontrakMasuk(sesi),
         ambilKatalogDistributor(sesi),
-        // Backend lama belum punya /profil: peta memakai titik tengah kota.
-        ambilLokasiGudang(sesi).catch(() => null),
+        // Backend lama belum punya /profil: Profil memakai data contoh, peta titik tengah kota.
+        ambilProfilDistributor(sesi).catch(() => null),
       ])
       // Pemesan dari pesanan dipasang terakhir supaya menang: hanya pesanan yang
       // membawa koordinat tempat usaha, kontrak memakai titik pengganti.
@@ -761,7 +774,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
         pesananMasukServer: masuk.pesanan,
         kontrakMasukServer: kontrak.kontrak,
         katalogDistributorServer: katalog,
-        lokasiGudangServer: lokasi,
+        profilDistributorServer: profil,
       })
     } catch {
       // Token hangus atau server mati: portal kembali ke data contoh.
@@ -782,7 +795,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
     }
     try {
       const baru = await simpanLokasiGudang(sesi, isi)
-      set({ lokasiGudangServer: baru })
+      set({ profilDistributorServer: baru })
       get().tampilkanRacun(
         lokasi ? 'Lokasi gudang tersimpan. Pemilik usaha melihatnya di peta Lacak Pesanan.' : 'Lokasi gudang dikosongkan. Peta memakai titik tengah kotamu.',
         'aman',
@@ -1925,9 +1938,36 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
     )
   },
 
-  ubahDistributor: (id, ubahan) => {
-    set((s) => ({ distributor: s.distributor.map((d) => (d.id === id ? { ...d, ...ubahan } : d)) }))
-    get().tampilkanRacun('Profil toko tersimpan. Pemilik usaha langsung melihat versi yang baru.', 'aman')
+  ubahDistributor: async (id, ubahan) => {
+    const sesi = get().sesiDistributor
+    if (!sesi) {
+      // Data contoh: hanya di peramban ini, dan layar menyebutnya.
+      set((s) => ({ distributor: s.distributor.map((d) => (d.id === id ? { ...d, ...ubahan } : d)) }))
+      get().tampilkanRacun(
+        'Profil toko disimpan di data contoh. Masuk sebagai distributor supaya tersimpan untuk pemilik usaha.',
+        'info',
+      )
+      return true
+    }
+    try {
+      const baru = 'info' in ubahan ? await simpanInfoUsaha(sesi, ubahan) : await simpanLayanan(sesi, ubahan)
+      set({ profilDistributorServer: baru })
+      // Kategori dan area kirim langsung dipakai saringan rekomendasi di Belanja,
+      // tetapi skor Mesin 2 baru mengikutinya di putaran penjadwal berikutnya.
+      get().tampilkanRacun(
+        'info' in ubahan
+          ? 'Info usaha tersimpan. Pemilik usaha melihat versi yang baru di halaman tokomu.'
+          : 'Kategori dan area kirim tersimpan. Saran untuk pemilik usaha ikut berubah pada perhitungan berikutnya, biasanya dalam 4 jam.',
+        'aman',
+      )
+      // Pemilik usaha yang juga masuk di tab ini ikut melihatnya tanpa masuk ulang, seperti promo.
+      const umkm = get().sesiServer
+      if (umkm) void ambilKatalog(umkm).then((k) => set({ distributor: k.distributor }), () => {})
+      return true
+    } catch (e: unknown) {
+      get().tampilkanRacun(e instanceof Error ? e.message : 'Profil toko gagal disimpan.', 'kritis')
+      return false
+    }
   },
 
   ubahPesananRutin: (kontrakId, aktif) => {
@@ -2095,13 +2135,13 @@ useAplikasi.subscribe((s, sebelum) => {
 })
 
 /**
- * Profil distributor yang membuka portal, versi terbaru dari store. Titik
- * gudangnya dari server bila portal tersambung (revisi 23 Okt).
+ * Profil distributor yang membuka portal, versi terbaru dari store. Bila portal
+ * tersambung, tentang toko, info usaha, dan titik gudangnya dari server.
  */
 export function useDistributorAktif(): Distributor {
   const d = useAplikasi((s) => s.distributor.find((x) => x.id === distributorAktif.id) ?? distributorAktif)
-  const lokasi = useAplikasi((s) => s.lokasiGudangServer)
-  return useMemo(() => (lokasi ? { ...d, lat: lokasi.lat, lng: lokasi.lng } : d), [d, lokasi])
+  const profil = useAplikasi((s) => s.profilDistributorServer)
+  return useMemo(() => (profil ? { ...d, ...profil } : d), [d, profil])
 }
 
 /**
