@@ -97,15 +97,46 @@ Catatan tahap 3:
 
 ## Tahap 4 — Lacak Pesanan
 
-- [ ] `/pesanan/lacak` dan `/distributor-portal/lacak`: tampilan daftar dan peta
+- [x] `/pesanan/lacak` dan `/distributor-portal/lacak`: tampilan daftar dan peta
   (Leaflet + OpenStreetMap). Posisi kiriman disimulasikan ("perkiraan posisi").
-- [ ] Kolom lat/lng distributor lewat migrasi; image backend menjalankan
+- [x] Kolom lat/lng distributor lewat migrasi; image backend menjalankan
   `alembic upgrade head` saat kontainer API menyala. Delapan distributor simulasi diberi titik
   gudang rekaan (variasi demo dan pembangkit dataset). Isian "Lokasi gudang" (peta yang bisa
-  diklik) di Profil distributor; boleh kosong, kalau kosong dipakai titik pusat kota.
-- [ ] Jasa kirim, pengantar, dan nomor resi tampil di sisi UMKM sejak barang dikirim; tombol
+  diklik) di Profil distributor; boleh kosong, kalau kosong dipakai titik tengah kota.
+- [x] Jasa kirim, pengantar, dan nomor resi tampil di sisi UMKM sejak barang dikirim; tombol
   "Periksa kabar terbaru" benar-benar memuat ulang.
-- [ ] Pintu masuk: tombol di halaman Pesanan dan menu di navigasi samping desktop.
+- [x] Pintu masuk: tombol di halaman Pesanan dan menu di navigasi samping desktop.
+
+Catatan tahap 4:
+- Migrasi `5e0c7a3d9b21` menambah `distributor.lat` dan `distributor.lng` (boleh kosong). Dump di
+  image basis data 0.2.0 sudah memuat `alembic_version` di revisi sebelumnya, jadi hanya migrasi
+  ini yang dijalankan. Endpoint baru: GET `/distributor/{id}/profil` dan PUT
+  `/distributor/{id}/lokasi` (hanya distributor itu sendiri; titik harus di wilayah Indonesia).
+  Katalog pembeli kini membawa `lat` dan `lng` distributor.
+- Image backend: `alembic` masuk `requirements-produksi.txt`, `alembic.ini` dan `migrations/` ikut
+  disalin, dan CMD menjalankan `alembic upgrade head` sebelum uvicorn. Hanya kontainer API yang
+  bermigrasi; layanan model memakai `command:` sendiri. Berlaku setelah image 0.10.0 dibangun di
+  akhir; sampai itu, jalur `nyalakan.cmd` sudah bermigrasi sendiri.
+- `siapkan.cmd` dan `nyalakan.cmd` kini memasang ulang paket frontend bila
+  `frontend/package-lock.json` lebih baru daripada catatan pemasangan npm terakhir. Dulu
+  `npm install` hanya jalan kalau `node_modules` belum ada, sehingga Leaflet tidak akan terpasang
+  di laptop teman yang menarik cabang ini.
+- Variasi demo menjalankan dua perbaikan setiap kali, juga saat variasinya masih segar: titik
+  gudang rekaan (tidak menimpa titik yang diisi distributor sendiri) dan jasa kirim, pengantar,
+  serta resi untuk 85 kiriman simulasi yang belum punya. Keduanya hanya menyentuh data simulasi
+  (pesanan sebelum 6 Okt 2026), bukan pesanan yang dibuat lewat aplikasi; penanda "kiriman
+  terlambat ditandai sampai" dari tahap 1 dipersempit dengan aturan yang sama.
+- Posisi kiriman ditaruh di garis lurus gudang ke tempat usaha, sejauh bagian waktu antara
+  berangkat (jejak "dikirim" pertama) dan perkiraan tiba, dijepit 5–95%. "Lewat perkiraan tiba"
+  baru disebut sesudah hari perkiraan tibanya berganti.
+- Peta butuh internet untuk ubin OpenStreetMap; tanpa internet peta menyebutnya dan daftar tetap
+  lengkap. Di tema gelap ubinnya dibalik warnanya.
+- Ditemukan dan diperbaiki: pembangkit dataset (`buat_dataset.py`) gagal mencetak ringkasan
+  variasi sejak tahap 1 (KeyError untuk isian distributor); kini memakai `variasi_demo.ringkas`.
+  Koordinat pemesan dari data kontrak (titik pengganti) menimpa koordinat dari pesanan di portal
+  distributor; urutannya dibalik.
+- Ditemukan, belum diubah (di luar revisi): "Ubah info usaha" di Profil distributor hanya
+  tersimpan di peramban, padahal toast-nya berbunyi "Profil toko tersimpan".
 
 ## Tahap 5 — Ringkasan Penjualan
 

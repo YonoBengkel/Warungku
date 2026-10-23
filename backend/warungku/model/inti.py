@@ -171,6 +171,10 @@ class Distributor(SQLModel, table=True):
     jam_operasional: str | None = Field(default=None, max_length=120)
     #: Nilai belanja terkecil per pesanan, rupiah. 0 berarti tanpa minimum.
     minimum_pesanan: int = Field(default=0, sa_column=kolom_uang(nullable=False, server_default="0"))
+    #: Titik gudang untuk peta Lacak Pesanan (revisi 23 Okt 2026). Kosong berarti
+    #: peta memakai titik tengah `kota`; diisi distributor lewat PUT /lokasi.
+    lat: float | None = Field(default=None)
+    lng: float | None = Field(default=None)
     dibuat_pada: datetime | None = Field(default=None, sa_column=kolom_dibuat_pada())
 
 

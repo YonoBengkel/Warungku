@@ -314,9 +314,22 @@ if ($LASTEXITCODE -ne 0) {
 
 # --------------------------------------------------------------------------
 Langkah 'Frontend'
-if (-not (Test-Path (Join-Path $Akar 'frontend\node_modules'))) {
-    Info 'Memasang paket frontend (sekali saja, beberapa menit)...'
+# Paket frontend perlu dipasang (ulang) bila node_modules belum ada, atau bila
+# frontend\package-lock.json lebih baru daripada catatan pemasangan terakhir npm
+# (node_modules\.package-lock.json), mis. sesudah git pull menambah paket baru.
+function Paket-Frontend-Usang {
+    $nm = Join-Path $Akar 'frontend\node_modules'
+    $catatan = Join-Path $nm '.package-lock.json'
+    if (-not (Test-Path $catatan)) { return $true }
+    $kunci = Join-Path $Akar 'frontend\package-lock.json'
+    return ((Get-Item -LiteralPath $kunci).LastWriteTime -gt (Get-Item -LiteralPath $catatan).LastWriteTime)
+}
+
+if (Paket-Frontend-Usang) {
+    Info 'Memasang paket frontend (pertama kali beberapa menit)...'
     if (-not (Tampil 'npm.cmd install')) { Gagal 'npm install gagal. Lihat pesan di atas.' }
+    # Tandai selesai, supaya kunci yang ikut ditulis ulang npm tidak memicu pemasangan lagi.
+    (Get-Item -LiteralPath (Join-Path $Akar 'frontend\node_modules\.package-lock.json')).LastWriteTime = Get-Date
 }
 if (Url-Hidup 'http://localhost:5173') {
     Oke 'Frontend sudah menyala di port 5173, dipakai apa adanya'

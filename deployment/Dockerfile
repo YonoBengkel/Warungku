@@ -29,6 +29,8 @@ RUN pip install --no-cache-dir -r requirements-produksi.txt
 COPY pyproject.toml ./
 COPY backend/warungku ./backend/warungku
 COPY backend/api ./backend/api
+COPY backend/alembic.ini ./backend/alembic.ini
+COPY backend/migrations ./backend/migrations
 COPY ml ./ml
 COPY data/dataset ./data/dataset
 RUN pip install --no-cache-dir --no-deps .
@@ -38,4 +40,8 @@ RUN useradd --create-home --uid 10001 turnify
 USER turnify
 
 EXPOSE 8000 8001
-CMD ["uvicorn", "api.utama:app", "--host", "0.0.0.0", "--port", "8000"]
+# Migrasi skema setiap kali API menyala (revisi 23 Okt 2026), supaya basis data
+# yang sudah ada mendapat kolom baru tanpa langkah manual. Hanya layanan API:
+# layanan model memakai `command:` sendiri di docker-compose, jadi dua kontainer
+# tidak bermigrasi bersamaan. Kalau migrasi gagal, uvicorn tidak dijalankan.
+CMD ["sh", "-c", "python -m alembic -c backend/alembic.ini upgrade head && exec uvicorn api.utama:app --host 0.0.0.0 --port 8000"]

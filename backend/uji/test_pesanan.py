@@ -457,3 +457,31 @@ def test_ringkasan_saran_mesin2_per_distributor(dunia):
             kon.execute(text("DELETE FROM barang WHERE id = :b"), {"b": b2})
             kon.execute(text("DELETE FROM penawaran WHERE id = :p"), {"p": p2})
             kon.execute(text("DELETE FROM distributor WHERE id = :d"), {"d": d2})
+
+
+def test_lokasi_gudang_disimpan_dan_terbaca_pembeli(dunia):
+    """Titik gudang (revisi 23 Okt): disimpan distributor, terbaca di katalog pembeli, bisa dikosongkan."""
+    w, klien = dunia, TestClient(app)
+    jalur = f"/distributor/{w['distributor']}"
+
+    r = klien.get(f"{jalur}/profil", headers=w["kepala_dist"])
+    assert r.status_code == 200, r.text
+    assert r.json()["lat"] is None and r.json()["lng"] is None
+
+    r = klien.put(f"{jalur}/lokasi", headers=w["kepala_dist"], json={"lat": -7.7412, "lng": 110.3901})
+    assert r.status_code == 200, r.text
+    assert (r.json()["lat"], r.json()["lng"]) == (-7.7412, 110.3901)
+
+    katalog = klien.get(f"/usaha/{w['usaha']}/katalog", headers=w["kepala_umkm"]).json()
+    [d] = [x for x in katalog["distributor"] if x["id"] == w["distributor"]]
+    assert (d["lat"], d["lng"]) == (-7.7412, 110.3901)
+
+    # Satu sisi saja, atau titik di luar Indonesia, ditolak tanpa mengubah data.
+    assert klien.put(f"{jalur}/lokasi", headers=w["kepala_dist"], json={"lat": -7.7}).status_code == 422
+    assert klien.put(f"{jalur}/lokasi", headers=w["kepala_dist"], json={"lat": 48.85, "lng": 2.35}).status_code == 422
+    # Akun pemilik usaha tidak boleh mengubah gudang distributor.
+    assert klien.put(f"{jalur}/lokasi", headers=w["kepala_umkm"], json={"lat": -7.7, "lng": 110.4}).status_code == 403
+    assert klien.get(f"{jalur}/profil", headers=w["kepala_dist"]).json()["lat"] == -7.7412
+
+    r = klien.put(f"{jalur}/lokasi", headers=w["kepala_dist"], json={"lat": None, "lng": None})
+    assert r.status_code == 200 and r.json()["lat"] is None and r.json()["lng"] is None

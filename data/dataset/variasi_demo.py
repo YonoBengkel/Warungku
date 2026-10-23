@@ -66,7 +66,7 @@ from warungku.model import (
 )
 
 from .buat_dataset import AKHIR, _wkt
-from .katalog import deskripsi_kemasan
+from .katalog import DISTRIBUTOR, deskripsi_kemasan
 
 OLEH = "Variasi demo"
 UMUR_BASI = timedelta(days=3)
@@ -722,6 +722,72 @@ def hapus_distributor(kon) -> None:
         kon.execute(text(sql), {"j": judul})
 
 
+#: Awal hari sesudah data simulasi berakhir. Pesanan yang dibuat sebelum ini
+#: berasal dari pembangkit dataset; yang sesudahnya dibuat orang lewat aplikasi
+#: dan tidak boleh diubah oleh skrip ini.
+BATAS_SIMULASI = datetime.combine(AKHIR + timedelta(days=1), time(0, 0), tzinfo=timezone(timedelta(hours=7)))
+
+
+def _ada_kolom(kon, tabel: str, kolom: str) -> bool:
+    return bool(
+        kon.execute(
+            text(
+                "SELECT EXISTS (SELECT 1 FROM information_schema.columns"
+                " WHERE table_name = :t AND column_name = :k)"
+            ),
+            {"t": tabel, "k": kolom},
+        ).scalar()
+    )
+
+
+def _titik_gudang(kon) -> int:
+    """
+    Titik gudang rekaan untuk delapan distributor simulasi (revisi 23 Okt 2026),
+    dari `katalog.DISTRIBUTOR`. Titik yang sudah diisi distributor lewat Profil
+    tidak ditimpa. Basis data yang belum dimigrasi (belum ada kolom lat) dilewati.
+    """
+    if not _ada_kolom(kon, "distributor", "lat"):
+        return 0
+    n = 0
+    for d in DISTRIBUTOR:
+        if d.lat is None or d.lng is None:
+            continue
+        n += kon.execute(
+            text("UPDATE distributor SET lat = :lat, lng = :lng WHERE nama = :nama AND lat IS NULL AND lng IS NULL"),
+            {"lat": d.lat, "lng": d.lng, "nama": d.nama},
+        ).rowcount
+    return n
+
+
+def _lengkapi_kiriman(kon) -> int:
+    """
+    Jasa kirim, pengantar, dan resi untuk kiriman simulasi yang belum punya
+    (revisi 23 Okt 2026: pemilik usaha melihatnya sejak barang dikirim). Pembangkit
+    dataset baru mengisinya saat barang sampai, jadi kiriman yang masih di jalan
+    pada akhir simulasi kosong. Pesanan yang dibuat lewat aplikasi tidak disentuh:
+    distributor boleh sengaja mengosongkannya.
+    """
+    return kon.execute(
+        text(
+            """
+            UPDATE pesanan
+               SET kirim_kurir = coalesce(kirim_kurir, 'Armada sendiri'),
+                   kirim_pengantar = coalesce(kirim_pengantar, 'Kurir distributor'),
+                   kirim_nomor_resi = coalesce(kirim_nomor_resi, 'RSI-' || replace(nomor, 'PS-', ''))
+             WHERE status IN ('dikirim', 'selesai', 'selesai-catatan')
+               AND dibuat_pada < :akhir
+               AND (kirim_kurir IS NULL OR kirim_pengantar IS NULL OR kirim_nomor_resi IS NULL)
+            """
+        ),
+        {"akhir": BATAS_SIMULASI},
+    ).rowcount
+
+
+def perbaiki_simulasi(kon) -> dict[str, int]:
+    """Perbaikan kecil data simulasi yang dijalankan setiap kali, juga saat variasinya masih segar."""
+    return {"gudang": _titik_gudang(kon), "kiriman": _lengkapi_kiriman(kon)}
+
+
 def _tandai_terlambat_sampai(kon, sekarang: datetime) -> int:
     """Kiriman simulasi yang perkiraan tibanya lewat jauh: ditandai sampai oleh distributornya."""
     batas = sekarang - TERLAMBAT
@@ -732,10 +798,11 @@ def _tandai_terlambat_sampai(kon, sekarang: datetime) -> int:
                 """
                 SELECT id FROM pesanan
                  WHERE status = 'dikirim' AND kirim_waktu_sampai IS NULL
-                   AND perkiraan_tiba < :b AND nomor NOT LIKE 'PS-%-V%' AND nomor NOT LIKE 'PS-%-W%'
+                   AND perkiraan_tiba < :b AND dibuat_pada < :akhir
+                   AND nomor NOT LIKE 'PS-%-V%' AND nomor NOT LIKE 'PS-%-W%'
                 """
             ),
-            {"b": batas},
+            {"b": batas, "akhir": BATAS_SIMULASI},
         )
     ]
     for pid in ids:
@@ -855,12 +922,18 @@ def basi(kon) -> bool:
 
 
 def pasang(jika_basi: bool = False) -> dict | None:
-    """Pasang ulang variasi untuk kedua akun. None kalau `jika_basi` dan variasinya masih segar."""
+    """
+    Pasang ulang variasi untuk kedua akun. Kalau `jika_basi` dan variasinya
+    masih segar, hanya `perbaiki_simulasi` yang dijalankan: hasilnya None bila
+    tidak ada yang berubah, atau {"perbaikan": ...} bila ada.
+    """
     sekarang = datetime.now(timezone.utc)
     hasil: dict[str, dict] = {}
     with mesin().begin() as kon:
+        perbaikan = perbaiki_simulasi(kon)
         if jika_basi and not basi(kon):
-            return None
+            return {"perbaikan": perbaikan} if any(perbaikan.values()) else None
+        hasil["perbaikan"] = perbaikan
         hapus_distributor(kon)
         nomor = 0
         for email in STOK:
@@ -886,26 +959,38 @@ def pasang(jika_basi: bool = False) -> dict | None:
     return hasil
 
 
+def ringkas(hasil: dict) -> list[str]:
+    """Satu baris ringkasan per isian hasil `pasang`; dipakai juga oleh buat_dataset."""
+    baris = []
+    for kunci, h in hasil.items():
+        if kunci == "perbaikan":
+            baris.append(f"  data simulasi: {h['gudang']} titik gudang diisi, "
+                         f"{h['kiriman']} kiriman dilengkapi jasa kirim dan resi")
+        elif kunci == EMAIL_DISTRIBUTOR:
+            baris.append(f"  {kunci}: {h['pesanan']} pesanan masuk dari {h['pembeli']} kedai, {h['kontrak']} kontrak, "
+                         f"{h['promo']} promo berjalan (termasuk distributor lain)")
+        elif kunci == "terlambat_sampai":
+            baris.append(f"  kiriman simulasi terlambat ditandai sampai: {h['pesanan']}")
+        else:
+            baris.append(f"  {kunci}: {h['pesanan']} pesanan, {h['kontrak']} kontrak, {h['koreksi_stok']} koreksi stok, "
+                         f"{h['barang_baru']} barang belum terpakai, {h['resep']} resep menu, "
+                         f"{h['nota_menu']} nota menu baru")
+    return baris
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="Variasi pesanan, kontrak, dan stok untuk akun demo.")
     ap.add_argument("--jika-basi", action="store_true", help="hanya kalau belum ada atau umurnya lebih dari 3 hari")
     ap.add_argument("--tanpa-mesin2", action="store_true", help="jangan jalankan ulang Mesin 2 sesudahnya")
     arg = ap.parse_args()
     hasil = pasang(jika_basi=arg.jika_basi)
-    if hasil is None:
+    if hasil is None or set(hasil) == {"perbaikan"}:
+        for b in ringkas(hasil or {}):
+            print(b)
         print("Variasi demo masih segar, tidak diubah.")
         return
-    for email, h in hasil.items():
-        if email == EMAIL_DISTRIBUTOR:
-            print(f"  {email}: {h['pesanan']} pesanan masuk dari {h['pembeli']} kedai, {h['kontrak']} kontrak, "
-                  f"{h['promo']} promo berjalan (termasuk distributor lain)")
-            continue
-        if email == "terlambat_sampai":
-            print(f"  kiriman simulasi terlambat ditandai sampai: {h['pesanan']}")
-            continue
-        print(f"  {email}: {h['pesanan']} pesanan, {h['kontrak']} kontrak, {h['koreksi_stok']} koreksi stok, "
-              f"{h['barang_baru']} barang belum terpakai, {h['resep']} resep menu, "
-              f"{h['nota_menu']} nota menu baru")
+    for b in ringkas(hasil):
+        print(b)
     if not arg.tanpa_mesin2:
         # Barang yang kini menipis dan habis butuh saran distributor yang segar.
         from ml.mesin2.saran import jalankan

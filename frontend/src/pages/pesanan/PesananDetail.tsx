@@ -10,6 +10,7 @@ import {
   IkonBintang,
   IkonCentang,
   IkonKontrak,
+  IkonLokasi,
   IkonMata,
   IkonNota,
   IkonPasokan,
@@ -66,6 +67,8 @@ export default function PesananDetail() {
   const unggahBukti = useAplikasi((s) => s.unggahBukti)
   const tandaiBayarTunai = useAplikasi((s) => s.tandaiBayarTunai)
   const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
+  const periksaKabarPesanan = useAplikasi((s) => s.periksaKabarPesanan)
+  const [memeriksa, setMemeriksa] = useState(false)
   const { promoById } = usePenentuHarga()
 
   const berkasRef = useRef<HTMLInputElement>(null)
@@ -157,8 +160,15 @@ export default function PesananDetail() {
         keterangan={`${LABEL_PESANAN[pesanan.status]} · dibuat ${tanggalPendek(pesanan.dibuatPada)}`}
         kembaliKe="/pesanan"
         aksi={
-          <TombolIkon label="Periksa kabar terbaru" onClick={() => tampilkanRacun('Belum ada kabar baru dari distributor.', 'info')}>
-            <IkonSinkron size={20} />
+          <TombolIkon
+            label="Periksa kabar terbaru"
+            disabled={memeriksa}
+            onClick={() => {
+              setMemeriksa(true)
+              periksaKabarPesanan(pesanan.id).finally(() => setMemeriksa(false))
+            }}
+          >
+            <IkonSinkron size={20} className={cx(memeriksa && 'animate-spin')} />
           </TombolIkon>
         }
       />
@@ -235,6 +245,39 @@ export default function PesananDetail() {
                 </span>
               )}
             </div>
+
+            {/* Jasa kirim dan resi sejak barang berangkat (revisi 23 Okt); dulu
+                baru terbaca setelah barang sampai. Setelah sampai, kartu bukti
+                antar di bawah yang memuatnya, jadi di sini tidak diulang. */}
+            {pesanan.kiriman && !pesanan.pengiriman && (
+              <dl className="mb-4 grid gap-x-4 gap-y-2.5 rounded-md bg-sunken p-3.5 sm:grid-cols-3">
+                {(
+                  [
+                    ['Jasa kirim', pesanan.kiriman.kurir],
+                    ['Pengantar', pesanan.kiriman.pengantar],
+                    ['Nomor resi', pesanan.kiriman.nomorResi],
+                  ] as const
+                ).map(([label, nilai]) => (
+                  <div key={label} className="min-w-0">
+                    <dt className="text-kecil text-ink-3">{label}</dt>
+                    <dd className={cx('text-isi break-words', nilai ? 'font-semibold text-ink' : 'text-ink-3')}>
+                      {nilai ?? 'Belum dicatat distributor'}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+            {['menunggu-konfirmasi', 'disiapkan', 'dikirim'].includes(pesanan.status) && !pesanan.pengiriman && (
+              <TombolTautan
+                ke={`/pesanan/lacak?pesanan=${pesanan.id}`}
+                ragam="garis"
+                ukuran="kecil"
+                ikonKiri={<IkonLokasi size={15} />}
+                className="mb-4"
+              >
+                Lacak di peta
+              </TombolTautan>
+            )}
 
             {pesanan.status === 'draf' ? (
               <p className="text-isi text-ink-2 leading-relaxed bg-sunken rounded-md p-3.5 max-w-[68ch]">

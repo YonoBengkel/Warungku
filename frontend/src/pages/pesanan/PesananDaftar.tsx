@@ -14,6 +14,7 @@ import {
   IkonCentangLingkaran,
   IkonKeranjang,
   IkonKontrak,
+  IkonLokasi,
   IkonPanahKanan,
   IkonPasokan,
   IkonToko,
@@ -285,6 +286,15 @@ export default function PesananDaftar() {
       <p className="mt-1 text-isi text-ink-2 leading-relaxed max-w-[62ch]">
         Semua pesanan dan kontrak bulananmu, dari yang masih berjalan sampai yang sudah selesai.
       </p>
+      <TombolTautan
+        ke="/pesanan/lacak"
+        ragam="garis"
+        ukuran="kecil"
+        ikonKiri={<IkonLokasi size={15} />}
+        className="mt-3"
+      >
+        Lacak Pesanan
+      </TombolTautan>
 
       <TabSegmen<Tab>
         className="mt-4"

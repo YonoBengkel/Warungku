@@ -1187,6 +1187,8 @@ export const daftarDistributor: Distributor[] = [
     id: 'd-01',
     nama: 'Sumber Tani Nusantara',
     kota: 'Sleman',
+    lat: -7.7383,
+    lng: 110.3612,
     deskripsi:
       'Pemasok biji kopi single origin dan teh dari petani binaan di Gayo, Toraja, dan Temanggung. Sangrai sesuai pesanan.',
     warna: '#0f766e',
@@ -1211,6 +1213,8 @@ export const daftarDistributor: Distributor[] = [
     id: 'd-02',
     nama: 'Dairy Prima Jaya',
     kota: 'Kota Yogyakarta',
+    lat: -7.7998,
+    lng: 110.3825,
     deskripsi: 'Distributor susu UHT, keju, dan olahan susu dengan rantai dingin terjaga sampai lokasi.',
     warna: '#1d4ed8',
     rating: 4.5,
@@ -1228,6 +1232,8 @@ export const daftarDistributor: Distributor[] = [
     id: 'd-03',
     nama: 'Manis Sejahtera',
     kota: 'Bantul',
+    lat: -7.869,
+    lng: 110.3412,
     deskripsi: 'Gula aren cair, sirup, dan minyak goreng kemasan untuk usaha makanan dan minuman.',
     warna: '#b45309',
     rating: 4.2,
@@ -1245,6 +1251,8 @@ export const daftarDistributor: Distributor[] = [
     id: 'd-04',
     nama: 'Kemasan Andalan',
     kota: 'Sleman',
+    lat: -7.757,
+    lng: 110.3352,
     deskripsi: 'Gelas plastik, sedotan, dan film sealer. Bisa cetak logo mulai 5 dus.',
     warna: '#4a3aa7',
     rating: 4.8,
@@ -1262,6 +1270,8 @@ export const daftarDistributor: Distributor[] = [
     id: 'd-05',
     nama: 'Es Segar Mandiri',
     kota: 'Sleman',
+    lat: -7.7556,
+    lng: 110.4078,
     deskripsi: 'Es batu kristal dan air mineral galon. Pengiriman harian pagi dan sore.',
     warna: '#0e7490',
     rating: 4.0,
@@ -1279,6 +1289,8 @@ export const daftarDistributor: Distributor[] = [
     id: 'd-06',
     nama: 'Pangan Harian Sejati',
     kota: 'Kota Yogyakarta',
+    lat: -7.8152,
+    lng: 110.3668,
     deskripsi: 'Telur, roti, kentang beku, dan bahan makanan harian untuk kafe dan resto.',
     warna: '#9a3412',
     rating: 4.4,
@@ -1296,6 +1308,8 @@ export const daftarDistributor: Distributor[] = [
     id: 'd-07',
     nama: 'Kopi Rakyat Merapi',
     kota: 'Sleman',
+    lat: -7.6684,
+    lng: 110.4166,
     deskripsi: 'Koperasi petani kopi lereng Merapi. Harga lebih murah, stok terbatas mengikuti musim panen.',
     warna: '#166534',
     rating: null,
@@ -1313,6 +1327,8 @@ export const daftarDistributor: Distributor[] = [
     id: 'd-08',
     nama: 'Matcha House Supply',
     kota: 'Kota Yogyakarta',
+    lat: -7.7826,
+    lng: 110.3929,
     deskripsi: 'Bubuk matcha, hojicha, dan bahan minuman Jepang untuk kedai kopi.',
     warna: '#15803d',
     rating: null,
@@ -2395,6 +2411,7 @@ export const daftarPesanan: Pesanan[] = [
     ],
     ongkosKirim: 15000,
     perkiraanTiba: hariKe(0),
+    kiriman: { kurir: 'Armada sendiri', pengantar: 'Pak Slamet', nomorResi: 'RSI-260001' },
     jejak: [
       { waktu: hariKe(-1, 16, 40), status: 'menunggu-konfirmasi', keterangan: 'Pesanan dikirim ke distributor.' },
       { waktu: hariKe(-1, 17, 5), status: 'disiapkan', keterangan: 'Distributor menyiapkan barang.' },
@@ -2443,6 +2460,7 @@ export const daftarPesanan: Pesanan[] = [
     ],
     ongkosKirim: 0,
     perkiraanTiba: hariKe(-1),
+    kiriman: { kurir: 'Kirim Cepat Jogja', pengantar: 'Mas Danu', nomorResi: 'RSI-260002' },
     jejak: [
       { waktu: hariKe(-3, 10, 15), status: 'menunggu-konfirmasi', keterangan: 'Pesanan dikirim ke distributor.' },
       { waktu: hariKe(-3, 11, 0), status: 'disiapkan', keterangan: 'Distributor menyiapkan barang.' },
@@ -2603,6 +2621,7 @@ export const daftarPesanan: Pesanan[] = [
     baris: [barisPS('pw-03', 4)],
     ongkosKirim: 20000,
     perkiraanTiba: hariKe(0, 15, 0),
+    kiriman: { kurir: 'Armada sendiri', pengantar: 'Pak Wiyono', nomorResi: 'RSI-260003' },
     jejak: [
       { waktu: hariKe(-2, 7, 45), status: 'menunggu-konfirmasi', keterangan: 'Pesanan dikirim ke distributor.' },
       { waktu: hariKe(-2, 8, 30), status: 'disiapkan', keterangan: 'Distributor menerima pesanan dan menyiapkan barang.' },
@@ -3362,6 +3381,7 @@ export const daftarPesananMasuk: PesananMasuk[] = [
     baris: [barisPM('pw-02', 6)],
     ongkosKirim: 28000,
     perkiraanTiba: hariKe(0, 17, 30),
+    kiriman: { kurir: 'Kirim Cepat Jogja', pengantar: 'Mbak Ratna', nomorResi: 'RSI-260004' },
     jejak: [
       { waktu: hariKe(-2, 13, 10), status: 'menunggu-konfirmasi', keterangan: 'Pesanan masuk.' },
       { waktu: hariKe(-2, 14, 0), status: 'disiapkan', keterangan: 'Kamu terima. Barang disiapkan di gudang.' },
@@ -3382,6 +3402,7 @@ export const daftarPesananMasuk: PesananMasuk[] = [
     baris: [barisPM('pw-01', 6), barisPM('pw-02', 3)],
     ongkosKirim: 18000,
     perkiraanTiba: hariKe(1, 10, 0),
+    kiriman: { kurir: 'Armada sendiri', pengantar: 'Pak Slamet', nomorResi: 'RSI-260005' },
     jejak: [
       { waktu: hariKe(-3, 9, 0), status: 'menunggu-konfirmasi', keterangan: 'Pesanan masuk.' },
       { waktu: hariKe(-3, 10, 20), status: 'disiapkan', keterangan: 'Kamu terima. Menunggu giliran sangrai.' },
@@ -3402,6 +3423,7 @@ export const daftarPesananMasuk: PesananMasuk[] = [
     baris: [barisPM('pw-02', 8)],
     ongkosKirim: 30000,
     perkiraanTiba: hariKe(1, 13, 0),
+    kiriman: { kurir: 'Kirim Cepat Jogja', pengantar: 'Mas Danu', nomorResi: 'RSI-260006' },
     jejak: [
       { waktu: hariKe(-3, 15, 25), status: 'menunggu-konfirmasi', keterangan: 'Pesanan masuk.' },
       { waktu: hariKe(-3, 16, 5), status: 'disiapkan', keterangan: 'Kamu terima. Barang disiapkan di gudang.' },
@@ -3422,6 +3444,7 @@ export const daftarPesananMasuk: PesananMasuk[] = [
     baris: [barisPM('pw-01', 11)],
     ongkosKirim: 20000,
     perkiraanTiba: hariKe(0, 11, 0),
+    kiriman: { kurir: 'Armada sendiri', pengantar: 'Pak Wiyono', nomorResi: 'RSI-260007' },
     jejak: [
       { waktu: hariKe(-4, 8, 30), status: 'menunggu-konfirmasi', keterangan: 'Pesanan masuk.' },
       { waktu: hariKe(-4, 9, 15), status: 'disiapkan', keterangan: 'Kamu terima. Barang disiapkan di gudang.' },
@@ -3822,6 +3845,7 @@ export function cerminPesanan(p: Pesanan): PesananMasuk | null {
     catatanDariUmkm: p.catatanUntukDistributor,
     pengiriman: p.pengiriman ?? null,
     ulasan: p.ulasan ?? null,
+    kiriman: p.kiriman ?? null,
   }
 }
 

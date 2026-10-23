@@ -11,12 +11,14 @@ import {
   IkonPasokan,
   IkonLonceng,
   IkonKeranjang,
+  IkonLokasi,
 } from '@/icons'
 import { useAplikasi, useJumlahKeranjang, useJumlahPerluTindakan } from '@/store/aplikasi'
 import { Toast } from '@/components/ui/umpanBalik'
 import { TandaMerek } from '@/components/ui/Merek'
 import { Avatar } from '@/components/ui/dasar'
 import { MenuPemberitahuan, butirDariNotifikasi } from '@/components/domain/Pemberitahuan'
+import { TautanSamping } from '@/components/ui/navigasi'
 
 /**
  * Kerangka lima tab.
@@ -78,6 +80,7 @@ export default function KerangkaAplikasi() {
   const bacaSemuaNotifikasi = useAplikasi((s) => s.bacaSemuaNotifikasi)
   const butirNotif = useMemo(() => butirDariNotifikasi(notifikasi), [notifikasi])
   const isiKeranjang = useJumlahKeranjang()
+  const sedangDiJalan = useAplikasi((s) => s.pesanan.filter((p) => p.status === 'dikirim' && !p.pengiriman).length)
   const aktif = tabInduk(pathname)
   const tab = profil.jenisUsaha === 'produksi-makanan' ? TAB_PRODUKSI : TAB
 
@@ -115,7 +118,9 @@ export default function KerangkaAplikasi() {
               to={ke}
               className={cx(
                 'flex items-center gap-3 h-12 px-3 rounded-md font-semibold text-kartu transition-colors',
-                aktif === ke ? 'bg-brand-soft text-brand-soft-ink' : 'text-ink-2 hover:bg-sunken hover:text-ink',
+                aktif === ke && !pathname.startsWith('/pesanan/lacak')
+                  ? 'bg-brand-soft text-brand-soft-ink'
+                  : 'text-ink-2 hover:bg-sunken hover:text-ink',
               )}
             >
               <Ikon size={22} />
@@ -144,6 +149,13 @@ export default function KerangkaAplikasi() {
             label="Keranjang"
             jumlah={isiKeranjang}
             nadaJumlah="merek"
+          />
+          <TautanSamping
+            ke="/pesanan/lacak"
+            aktif={pathname.startsWith('/pesanan/lacak')}
+            Ikon={IkonLokasi}
+            label="Lacak Pesanan"
+            jumlah={sedangDiJalan}
           />
         </div>
 
@@ -283,46 +295,5 @@ export default function KerangkaAplikasi() {
         ))}
       </div>
     </div>
-  )
-}
-
-/** Tautan di navigasi samping desktop dengan angka (keranjang). */
-function TautanSamping({
-  ke,
-  aktif,
-  Ikon,
-  label,
-  jumlah,
-  nadaJumlah,
-}: {
-  ke: string
-  aktif: boolean
-  Ikon: typeof IkonLonceng
-  label: string
-  jumlah: number
-  nadaJumlah: 'kritis' | 'merek'
-}) {
-  return (
-    <Link
-      to={ke}
-      aria-label={jumlah > 0 ? `${label}, ${jumlah}` : label}
-      className={cx(
-        'flex items-center gap-3 h-11 px-3 rounded-md font-semibold text-isi transition-colors',
-        aktif ? 'bg-brand-soft text-brand-soft-ink' : 'text-ink-2 hover:bg-sunken hover:text-ink',
-      )}
-    >
-      <Ikon size={20} />
-      <span className="grow">{label}</span>
-      {jumlah > 0 && (
-        <span
-          className={cx(
-            'min-w-[1.25rem] h-5 px-1.5 rounded-full text-[0.6875rem] font-bold grid place-items-center tabular text-ink-inverse',
-            nadaJumlah === 'kritis' ? 'bg-kritis' : 'bg-brand',
-          )}
-        >
-          {jumlah}
-        </span>
-      )}
-    </Link>
   )
 }

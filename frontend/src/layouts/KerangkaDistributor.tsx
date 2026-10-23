@@ -7,16 +7,18 @@ import {
   IkonBintang,
   IkonKembali,
   IkonKontrak,
+  IkonLokasi,
   IkonLonceng,
   IkonPasokan,
   IkonProfil,
   IkonToko,
 } from '@/icons'
 import { distributorAktif } from '@/data/dummy'
-import { useAplikasi, useJumlahPerluKonfirmasi } from '@/store/aplikasi'
+import { useAplikasi, useJumlahPerluKonfirmasi, usePesananMasuk } from '@/store/aplikasi'
 import { Toast } from '@/components/ui/umpanBalik'
 import { Avatar } from '@/components/ui/dasar'
 import { MenuPemberitahuan, usePemberitahuanDistributor } from '@/components/domain/Pemberitahuan'
+import { TautanSamping } from '@/components/ui/navigasi'
 
 /**
  * Kerangka Portal Distributor: empat item, sistem desain yang sama dengan
@@ -99,6 +101,7 @@ export default function KerangkaDistributor() {
   const tema = useAplikasi((s) => s.tema)
   const perluKonfirmasi = useJumlahPerluKonfirmasi()
   const pemberitahuan = usePemberitahuanDistributor()
+  const sedangDiJalan = usePesananMasuk().filter((p) => p.status === 'dikirim').length
   const jumlahTindakan = pemberitahuan.filter((b) => b.perluTindakan).length
 
   // Portal ini layout terpisah: kalau pengguna membuka rutenya langsung, kelas
@@ -166,13 +169,20 @@ export default function KerangkaDistributor() {
           })}
         </div>
 
-        {/* Pemberitahuan: panel kecil di samping menu (revisi 23 Okt). */}
-        <div className="mt-3 mx-3 pt-3 border-t border-line">
+        {/* Pemberitahuan (panel kecil) dan Lacak Pesanan (revisi 23 Okt). */}
+        <div className="mt-3 mx-3 pt-3 border-t border-line flex flex-col gap-1">
           <MenuPemberitahuan
             butir={pemberitahuan}
             semuaKe="/distributor-portal/pemberitahuan"
             aktif={pathname.startsWith('/distributor-portal/pemberitahuan')}
             jumlah={jumlahTindakan}
+          />
+          <TautanSamping
+            ke="/distributor-portal/lacak"
+            aktif={pathname.startsWith('/distributor-portal/lacak')}
+            Ikon={IkonLokasi}
+            label="Lacak Pesanan"
+            jumlah={sedangDiJalan}
           />
         </div>
 

@@ -281,6 +281,9 @@ export interface Distributor {
   baru: boolean
   /** Diisi distributor sendiri di portalnya; kosong berarti belum dilengkapi. */
   info?: InfoUsahaDistributor
+  /** Titik gudang (revisi 23 Okt). Kosong berarti peta memakai titik tengah kotanya. */
+  lat?: number | null
+  lng?: number | null
 }
 
 export interface InfoUsahaDistributor {
@@ -476,6 +479,17 @@ export interface Pesanan {
   pengiriman?: BuktiPengiriman | null
   /** Penilaian yang dikirim pemilik usaha setelah pesanan selesai. */
   ulasan?: UlasanPelanggan | null
+  /** Jasa kirim, pengantar, dan resi; terisi sejak distributor menandai barang dikirim. */
+  kiriman?: InfoKiriman | null
+  /** Koordinat tempat usaha pemesan, untuk peta Lacak Pesanan. */
+  tujuan?: { lat: number; lng: number } | null
+}
+
+/** Isian yang dicatat distributor saat barang berangkat (revisi 23 Okt). */
+export interface InfoKiriman {
+  kurir: string | null
+  pengantar: string | null
+  nomorResi: string | null
 }
 
 /* ------------------------------------------------------------------ */
@@ -748,6 +762,8 @@ export interface PesananMasuk {
   /** Terisi saat status 'selesai'. */
   pengiriman: BuktiPengiriman | null
   ulasan: UlasanPelanggan | null
+  /** Jasa kirim, pengantar, dan resi sejak barang berangkat. */
+  kiriman?: InfoKiriman | null
 }
 
 /**

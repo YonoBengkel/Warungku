@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { ComponentType, ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { cx } from '@/lib/format'
 import { IkonKembali } from '@/icons'
@@ -181,5 +181,54 @@ export function BilahAksi({ children, ringkasan }: { children: ReactNode; ringka
         <div className="lg:w-full lg:max-w-md">{children}</div>
       </div>
     </div>
+  )
+}
+
+/* ================================================================== */
+/* Tautan samping                                                     */
+/* ================================================================== */
+
+/**
+ * Tautan kecil di navigasi samping desktop, di bawah menu utama (keranjang,
+ * Lacak Pesanan), dengan angka opsional. Dipakai kedua portal.
+ */
+export function TautanSamping({
+  ke,
+  aktif,
+  Ikon,
+  label,
+  jumlah = 0,
+  nadaJumlah = 'merek',
+}: {
+  ke: string
+  aktif: boolean
+  Ikon: ComponentType<{ size?: number }>
+  label: string
+  jumlah?: number
+  nadaJumlah?: 'kritis' | 'merek'
+}) {
+  return (
+    <Link
+      to={ke}
+      aria-label={jumlah > 0 ? `${label}, ${jumlah}` : label}
+      aria-current={aktif ? 'page' : undefined}
+      className={cx(
+        'flex items-center gap-3 h-11 px-3 rounded-md font-semibold text-isi transition-colors',
+        aktif ? 'bg-brand-soft text-brand-soft-ink' : 'text-ink-2 hover:bg-sunken hover:text-ink',
+      )}
+    >
+      <Ikon size={20} />
+      <span className="grow">{label}</span>
+      {jumlah > 0 && (
+        <span
+          className={cx(
+            'min-w-[1.25rem] h-5 px-1.5 rounded-full text-[0.6875rem] font-bold grid place-items-center tabular text-ink-inverse',
+            nadaJumlah === 'kritis' ? 'bg-kritis' : 'bg-brand',
+          )}
+        >
+          {jumlah}
+        </span>
+      )}
+    </Link>
   )
 }

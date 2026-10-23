@@ -21,7 +21,7 @@ from warungku.basis_data import mesin
 from warungku.model import Distributor
 
 from .otentikasi import distributor_saya
-from .skema import PesananMasuk, PelangganTersegmen, RingkasanSegmen
+from .skema import LokasiGudang, PesananMasuk, PelangganTersegmen, ProfilDistributor, RingkasanSegmen
 
 rute = APIRouter(prefix="/distributor/{distributor_id}", tags=["distributor"])
 
@@ -31,6 +31,39 @@ def _distributor_atau_404(sesi: Session, distributor_id: int) -> Distributor:
     if d is None:
         raise HTTPException(404, "Distributor tidak ditemukan.")
     return d
+
+
+#: Kotak kasar wilayah Indonesia. Titik di luarnya hampir pasti salah ketuk.
+BATAS_LINTANG = (-11.5, 6.5)
+BATAS_BUJUR = (94.5, 141.5)
+
+
+@rute.get("/profil", response_model=ProfilDistributor)
+def profil(distributor_id: int = Depends(distributor_saya)) -> ProfilDistributor:
+    """Profil distributor yang sedang masuk, termasuk titik gudangnya."""
+    with Session(mesin()) as sesi:
+        return ProfilDistributor.model_validate(_distributor_atau_404(sesi, distributor_id))
+
+
+@rute.put("/lokasi", response_model=ProfilDistributor)
+def ubah_lokasi(lokasi: LokasiGudang, distributor_id: int = Depends(distributor_saya)) -> ProfilDistributor:
+    """
+    Simpan titik gudang dari peta di Profil (revisi 23 Okt 2026). Titik ini
+    dilihat pemilik usaha yang memesan, di peta Lacak Pesanan. Kirim keduanya
+    kosong untuk kembali memakai titik tengah kota.
+    """
+    if (lokasi.lat is None) != (lokasi.lng is None):
+        raise HTTPException(422, "Isi lintang dan bujur bersamaan, atau kosongkan keduanya.")
+    if lokasi.lat is not None and lokasi.lng is not None:
+        if not (BATAS_LINTANG[0] <= lokasi.lat <= BATAS_LINTANG[1] and BATAS_BUJUR[0] <= lokasi.lng <= BATAS_BUJUR[1]):
+            raise HTTPException(422, "Titik gudang harus berada di wilayah Indonesia.")
+    with Session(mesin()) as sesi:
+        d = _distributor_atau_404(sesi, distributor_id)
+        d.lat, d.lng = lokasi.lat, lokasi.lng
+        sesi.add(d)
+        sesi.commit()
+        sesi.refresh(d)
+        return ProfilDistributor.model_validate(d)
 
 
 @rute.get("/pesanan", response_model=list[PesananMasuk])

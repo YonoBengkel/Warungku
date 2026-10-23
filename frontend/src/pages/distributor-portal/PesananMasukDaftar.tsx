@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { HanyaPembacaLayar, Lencana, Tombol } from '@/components/ui/dasar'
+import { HanyaPembacaLayar, Lencana, Tombol, TombolTautan } from '@/components/ui/dasar'
 import { AreaTeks, Kolom } from '@/components/ui/formulir'
 import { Konfirmasi, Lembar } from '@/components/ui/lembar'
 import { BarisChip, Chip, TabSegmen } from '@/components/ui/navigasi'
@@ -12,6 +12,7 @@ import {
   IkonGudang,
   IkonJam,
   IkonKirim,
+  IkonLokasi,
   IkonSilang,
 } from '@/icons'
 import { bintang, cx, rupiah, waktuLalu } from '@/lib/format'
@@ -223,6 +224,14 @@ export default function PesananMasukDaftar() {
             {dariServer ? '' : ' Saat ini memakai data contoh.'}
           </p>
         </div>
+        <TombolTautan
+          ke="/distributor-portal/lacak"
+          ragam="garis"
+          ukuran="kecil"
+          ikonKiri={<IkonLokasi size={15} />}
+        >
+          Lacak Pesanan
+        </TombolTautan>
       </div>
       {!dariServer && (
         <p className="mt-3 text-isi text-ink-2">

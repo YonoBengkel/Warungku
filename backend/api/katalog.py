@@ -41,7 +41,7 @@ def katalog(usaha_id: int = Depends(usaha_saya)) -> Katalog:
                 """
                 SELECT d.id, d.nama, d.kota, d.deskripsi, d.warna, d.kategori, d.area_kirim,
                        d.terverifikasi, d.baru, d.sejak, d.alamat_gudang, d.nomor_hp,
-                       d.jam_operasional, d.minimum_pesanan,
+                       d.jam_operasional, d.minimum_pesanan, d.lat, d.lng,
                        round(avg(ul.rating)::numeric, 2)::float               AS rating,
                        count(ul.id)                                           AS jumlah_ulasan,
                        count(DISTINCT ul.usaha_id)                            AS jumlah_umkm_pengulas,

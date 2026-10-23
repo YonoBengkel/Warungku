@@ -231,6 +231,9 @@ Cari komponen yang sudah ada sebelum menulis yang baru. Komponen dasar ada di
 | Nama metode analitik | `LabelMetode` di atas halaman atau kartu: nama metode saja, penjelasan 2–3 kalimat di gelembung (hover, ketuk, atau fokus). LightGBM di Prediksi, Thompson Sampling + fuzzy di saran distributor dan halaman Distributor, K-Prototypes di Pelanggan |
 | Logo toko dan gambar produk | `Avatar`, yang mencari gambar lewat `gambarUntuk(nama)` dengan huruf awal sebagai cadangan |
 | Tanda merek Turnify Flow | `TandaMerek`: `logo-mark.png` di tema terang, `logo-mark-gelap.png` (ungu terang) di tema gelap |
+| Peta Lacak Pesanan | `TampilanLacak` (daftar + peta), `PetaLacak`, `KeteranganPeta`: Leaflet dengan ubin OpenStreetMap, dimuat malas. Posisi kiriman selalu disebut "perkiraan posisi", dan daftar teks di sebelahnya memuat informasi yang sama |
+| Memilih satu titik di peta | `PetaPilihTitik`: ketuk peta, atau geser dengan tombol panah lalu "Pakai titik tengah peta" |
+| Tautan kecil di navigasi samping desktop | `TautanSamping` (keranjang, Lacak Pesanan), dengan angka opsional |
 
 **Ikon** dibuat sendiri di `frontend/src/icons/`: garis 1,75px, kotak 24px, dan selalu
 `aria-hidden`. Maknanya dibawa oleh teks di sebelahnya. Pustaka ikon tidak dipakai, demi

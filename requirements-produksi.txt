@@ -23,6 +23,8 @@ python-dotenv>=1.0
 argon2-cffi>=23.1
 pyjwt>=2.8
 email-validator>=2.0
+# Migrasi skema saat kontainer API menyala (lihat CMD di deployment/Dockerfile).
+alembic>=1.13
 
 # --- Layanan model ------------------------------------------------------
 apscheduler>=3.10

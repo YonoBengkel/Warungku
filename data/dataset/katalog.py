@@ -293,23 +293,27 @@ class ProfilDistributor:
     area_kirim: tuple[str, ...]
     minimum_pesanan: int
     baru: bool = False
+    #: Titik gudang rekaan di dalam kotanya, untuk peta Lacak Pesanan (revisi
+    #: 23 Okt 2026). Bukan alamat sungguhan.
+    lat: float | None = None
+    lng: float | None = None
 
 
 DISTRIBUTOR: tuple[ProfilDistributor, ...] = (
     ProfilDistributor("Sumber Tani Nusantara", "Sleman", ("Kopi & Teh", "Pemanis"),
-                      ("Sleman", "Kota Yogyakarta", "Bantul"), 250_000),
+                      ("Sleman", "Kota Yogyakarta", "Bantul"), 250_000, lat=-7.7383, lng=110.3612),
     ProfilDistributor("Dairy Prima Jaya", "Kota Yogyakarta", ("Susu & Olahan",),
-                      ("Kota Yogyakarta", "Sleman"), 300_000),
+                      ("Kota Yogyakarta", "Sleman"), 300_000, lat=-7.7998, lng=110.3825),
     ProfilDistributor("Manis Sejahtera", "Bantul", ("Pemanis", "Bahan Makanan"),
-                      ("Bantul", "Kota Yogyakarta", "Sleman"), 200_000),
+                      ("Bantul", "Kota Yogyakarta", "Sleman"), 200_000, lat=-7.8690, lng=110.3412),
     ProfilDistributor("Kemasan Andalan", "Sleman", ("Kemasan",),
-                      ("Sleman", "Kota Yogyakarta", "Bantul", "Kulon Progo"), 150_000),
+                      ("Sleman", "Kota Yogyakarta", "Bantul", "Kulon Progo"), 150_000, lat=-7.7570, lng=110.3352),
     ProfilDistributor("Es Segar Mandiri", "Sleman", ("Pendukung",),
-                      ("Sleman", "Kota Yogyakarta"), 0),
+                      ("Sleman", "Kota Yogyakarta"), 0, lat=-7.7556, lng=110.4078),
     ProfilDistributor("Pangan Harian Sejati", "Kota Yogyakarta", ("Bahan Makanan", "Protein"),
-                      ("Kota Yogyakarta", "Sleman", "Bantul"), 250_000),
+                      ("Kota Yogyakarta", "Sleman", "Bantul"), 250_000, lat=-7.8152, lng=110.3668),
     ProfilDistributor("Kopi Rakyat Merapi", "Sleman", ("Kopi & Teh",),
-                      ("Sleman",), 100_000, baru=True),
+                      ("Sleman",), 100_000, baru=True, lat=-7.6684, lng=110.4166),
     ProfilDistributor("Matcha House Supply", "Kota Yogyakarta", ("Kopi & Teh", "Susu & Olahan"),
-                      ("Kota Yogyakarta", "Sleman"), 200_000, baru=True),
+                      ("Kota Yogyakarta", "Sleman"), 200_000, baru=True, lat=-7.7826, lng=110.3929),
 )

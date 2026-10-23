@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { lazy, Suspense, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Avatar, BarisData, JudulBagian, Kartu, Lencana, Metrik, Pemisah, Tombol } from '@/components/ui/dasar'
 import { AreaTeks, Kolom, Pilihan } from '@/components/ui/formulir'
@@ -20,6 +20,7 @@ import {
 import { angka, bacaAngkaIndonesia, bintang, cx, nomorHp, rupiah, tanggalPendek } from '@/lib/format'
 import { kalimatIsiKemasan } from '@/lib/satuan'
 import type { Distributor, InfoUsahaDistributor, Penawaran } from '@/lib/types'
+import { koordinatSah, pusatKota, type Koordinat } from '@/lib/lacak'
 import { KATEGORI_BARANG, WILAYAH_KIRIM, umkmById } from '@/data/dummy'
 import { useAplikasi, useDistributorAktif, usePesananMasuk } from '@/store/aplikasi'
 
@@ -432,6 +433,96 @@ function FormInfoUsaha({ distributor, tutup }: { distributor: Distributor; tutup
   )
 }
 
+/* Leaflet hanya diunduh saat lembar lokasi dibuka. */
+const PetaPilihTitik = lazy(() =>
+  import('@/components/domain/PetaLacak').then((m) => ({ default: m.PetaPilihTitik })),
+)
+
+/**
+ * Lokasi gudang (revisi 23 Okt 2026): titik yang dilihat pemilik usaha di peta
+ * Lacak Pesanan. Boleh kosong; peta lalu memakai titik tengah kota distributor.
+ * Titik dipilih dengan mengetuk peta, atau, tanpa tetikus, dengan menggeser
+ * peta memakai tombol panah lalu "Pakai titik tengah peta".
+ */
+function FormLokasiGudang({ distributor, tutup }: { distributor: Distributor; tutup: () => void }) {
+  const simpanLokasiGudang = useAplikasi((s) => s.simpanLokasiGudang)
+  const awal: Koordinat | null = koordinatSah(distributor.lat, distributor.lng)
+    ? { lat: distributor.lat, lng: distributor.lng as number }
+    : null
+  const [titik, setTitik] = useState<Koordinat | null>(awal)
+  const [menyimpan, setMenyimpan] = useState(false)
+  const tengahRef = useRef<(() => Koordinat | null) | null>(null)
+
+  async function simpan(nilai: Koordinat | null) {
+    setMenyimpan(true)
+    const tersimpan = await simpanLokasiGudang(nilai)
+    setMenyimpan(false)
+    if (tersimpan) tutup()
+  }
+
+  return (
+    <Lembar
+      terbuka
+      tutup={tutup}
+      judul="Lokasi gudang"
+      keterangan="Ketuk peta di titik gudangmu. Pemilik usaha yang memesan darimu melihatnya di peta Lacak Pesanan."
+      kunciLatar
+      kaki={
+        <div className="flex gap-2.5">
+          <Tombol ragam="garis" penuh onClick={tutup}>
+            Batal
+          </Tombol>
+          <Tombol penuh memuat={menyimpan} disabled={!titik} onClick={() => simpan(titik)}>
+            Simpan
+          </Tombol>
+        </div>
+      }
+    >
+      <div className="pb-4 space-y-3">
+        <Suspense fallback={<div className="h-72 sm:h-80 rounded-lg skeleton" />}>
+          <PetaPilihTitik
+            nilai={titik}
+            ubah={setTitik}
+            pusat={pusatKota(distributor.kota)}
+            label="Peta untuk memilih titik gudang"
+            className="h-72 sm:h-80"
+            pakaiTengahRef={tengahRef}
+          />
+        </Suspense>
+        <p className="text-isi text-ink-2">
+          {titik ? (
+            <>
+              Titik terpilih:{' '}
+              <span className="tabular font-semibold text-ink">
+                lintang {angka(titik.lat, 5)} &middot; bujur {angka(titik.lng, 5)}
+              </span>
+            </>
+          ) : (
+            'Belum ada titik. Ketuk peta, atau geser peta lalu pakai titik tengahnya.'
+          )}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <Tombol
+            ragam="garis"
+            ukuran="kecil"
+            onClick={() => {
+              const tengah = tengahRef.current?.()
+              if (tengah) setTitik(tengah)
+            }}
+          >
+            Pakai titik tengah peta
+          </Tombol>
+          {awal && (
+            <Tombol ragam="sunyi" ukuran="kecil" disabled={menyimpan} onClick={() => simpan(null)}>
+              Kosongkan titik
+            </Tombol>
+          )}
+        </div>
+      </div>
+    </Lembar>
+  )
+}
+
 /* ================================================================== */
 /* Halaman                                                            */
 /* ================================================================== */
@@ -449,6 +540,7 @@ export default function ProfilDistributor() {
   const [formBarang, setFormBarang] = useState<{ penawaran: Penawaran | null } | null>(null)
   const [formLayanan, setFormLayanan] = useState(false)
   const [formInfo, setFormInfo] = useState(false)
+  const [formLokasi, setFormLokasi] = useState(false)
 
   const penawaranSaya = useMemo(
     () => katalog.filter((p) => p.distributorId === distributor.id),
@@ -697,6 +789,34 @@ export default function ProfilDistributor() {
             </Kartu>
           </section>
 
+          {/* 5b. Lokasi gudang: titik di peta Lacak Pesanan (revisi 23 Okt) */}
+          <section aria-labelledby="judul-lokasi">
+            <JudulBagian
+              id="judul-lokasi"
+              judul="Lokasi gudang"
+              keterangan="Pemilik usaha yang memesan darimu melihat titik ini di peta Lacak Pesanan."
+              aksi={
+                <Tombol ragam="sunyi" ukuran="kecil" ikonKiri={<IkonPena size={14} />} onClick={() => setFormLokasi(true)}>
+                  Ubah
+                </Tombol>
+              }
+            />
+            <Kartu>
+              {koordinatSah(distributor.lat, distributor.lng) ? (
+                <p className="text-isi text-ink-2">
+                  Titik dipilih di peta:{' '}
+                  <span className="tabular font-semibold text-ink">
+                    lintang {angka(distributor.lat, 5)} &middot; bujur {angka(distributor.lng as number, 5)}
+                  </span>
+                </p>
+              ) : (
+                <p className="text-isi text-ink-2 leading-relaxed">
+                  Belum diisi. Peta memakai titik tengah {distributor.kota} sampai kamu memilih titik gudangmu.
+                </p>
+              )}
+            </Kartu>
+          </section>
+
           {/* 6. Ulasan terbaru */}
           <section aria-labelledby="judul-ulasan">
             <JudulBagian
@@ -780,6 +900,7 @@ export default function ProfilDistributor() {
       )}
       {formLayanan && <FormLayanan distributor={distributor} tutup={() => setFormLayanan(false)} />}
       {formInfo && <FormInfoUsaha distributor={distributor} tutup={() => setFormInfo(false)} />}
+      {formLokasi && <FormLokasiGudang distributor={distributor} tutup={() => setFormLokasi(false)} />}
     </div>
   )
 }

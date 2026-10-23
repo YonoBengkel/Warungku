@@ -341,6 +341,47 @@ body {
 }
 
 /* ============================================================
+   Peta Lacak Pesanan (Leaflet + OpenStreetMap)
+   Pemilih ganda (.peta-lacak.leaflet-container) karena leaflet.css dimuat
+   belakangan bersama halamannya dan akan menang pada kekhususan yang sama.
+   ============================================================ */
+
+.peta-lacak.leaflet-container {
+  font-family: inherit;
+  background: var(--c-surface-sunken);
+}
+/* CSS mengalahkan atribut stroke bawaan Leaflet, jadi garisnya ikut token. */
+.peta-lacak .garis-lacak {
+  stroke: var(--c-brand);
+  stroke-width: 3;
+  stroke-dasharray: 2 8;
+  stroke-linecap: round;
+  stroke-opacity: 0.85;
+  fill: none;
+}
+.peta-lacak .titik-lacak {
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+}
+/* Tema gelap: ubin dibalik warnanya supaya peta tidak menyilaukan. */
+.dark .peta-lacak .leaflet-tile-pane {
+  filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9);
+}
+.dark .peta-lacak .leaflet-bar a {
+  background: var(--c-surface);
+  color: var(--c-ink);
+  border-bottom-color: var(--c-border);
+}
+.dark .peta-lacak .leaflet-control-attribution {
+  background: rgb(19 28 36 / 0.85);
+  color: var(--c-ink-2);
+}
+.dark .peta-lacak .leaflet-control-attribution a {
+  color: var(--c-brand);
+}
+
+/* ============================================================
    Animasi — ringan, aman untuk Android kelas menengah
    ============================================================ */
 

@@ -240,6 +240,8 @@ class Pembangkit:
                     "nomor_hp": f"0812733{i:04d}",
                     "jam_operasional": "Senin sampai Sabtu, 07.00 - 16.00",
                     "minimum_pesanan": d.minimum_pesanan,
+                    "lat": d.lat,
+                    "lng": d.lng,
                 },
             )
 
@@ -1341,11 +1343,10 @@ def main() -> None:
             tambahan["persen_terpenuhi"],
         ))
         # Variasi pesanan, kontrak, dan stok untuk dua akun demo (lihat variasi_demo.py).
-        from .variasi_demo import pasang as pasang_variasi
+        from .variasi_demo import pasang as pasang_variasi, ringkas as ringkas_variasi
 
-        for email, v in (pasang_variasi() or {}).items():
-            print("Variasi demo     : %s, %d pesanan, %d kontrak, %d koreksi stok" % (
-                email, v["pesanan"], v["kontrak"], v["koreksi_stok"]))
+        for baris in ringkas_variasi(pasang_variasi() or {}):
+            print("Variasi demo     :" + baris)
         print()
         print("Pemeriksaan konsistensi:")
         for c in periksa_turunan():

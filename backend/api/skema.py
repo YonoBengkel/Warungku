@@ -479,6 +479,36 @@ class DistributorKatalog(BaseModel):
     aspek_ketepatan: float | None
     aspek_jumlah: float | None
     aspek_kondisi: float | None
+    #: Titik gudang; kosong berarti peta memakai titik tengah `kota`.
+    lat: float | None = None
+    lng: float | None = None
+
+
+class ProfilDistributor(BaseModel):
+    """Profil distributor dibaca dari portalnya sendiri (revisi 23 Okt 2026)."""
+
+    model_config = {"from_attributes": True}
+
+    id: int
+    nama: str
+    kota: str
+    deskripsi: str | None
+    warna: str
+    kategori: list[str]
+    area_kirim: list[str]
+    alamat_gudang: str | None
+    nomor_hp: str | None
+    jam_operasional: str | None
+    minimum_pesanan: int
+    lat: float | None
+    lng: float | None
+
+
+class LokasiGudang(BaseModel):
+    """Titik gudang dari peta di Profil. Keduanya kosong: kembali ke titik tengah kota."""
+
+    lat: float | None = None
+    lng: float | None = None
 
 
 class PenawaranKatalog(BaseModel):

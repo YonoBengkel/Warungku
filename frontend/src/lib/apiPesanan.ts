@@ -1,6 +1,7 @@
 import type {
   AlasanSelisih,
   BuktiPengiriman,
+  InfoKiriman,
   JenisUsaha,
   Pesanan,
   PesananMasuk,
@@ -86,6 +87,16 @@ function buktiDari(p: PesananApi): BuktiPengiriman | null {
   }
 }
 
+/**
+ * Jasa kirim, pengantar, dan resi sejak distributor menandai barang dikirim
+ * (revisi 23 Okt): dulu hanya terbaca setelah barang sampai, lewat `buktiDari`.
+ */
+function kirimanDari(p: PesananApi): InfoKiriman | null {
+  const ada = p.kirim_kurir || p.kirim_pengantar || p.kirim_nomor_resi
+  if (!ada && p.status !== 'dikirim') return null
+  return { kurir: p.kirim_kurir, pengantar: p.kirim_pengantar, nomorResi: p.kirim_nomor_resi }
+}
+
 /** Pesanan dari sisi pemilik usaha. `barisId` dibawa untuk mengirim penerimaan. */
 export function kePesanan(p: PesananApi): Pesanan {
   return {
@@ -123,6 +134,8 @@ export function kePesanan(p: PesananApi): Pesanan {
     alasanTolak: p.alasan_tolak,
     pengiriman: buktiDari(p),
     ulasan: null,
+    kiriman: kirimanDari(p),
+    tujuan: p.usaha_lat != null && p.usaha_lng != null ? { lat: p.usaha_lat, lng: p.usaha_lng } : null,
   }
 }
 
@@ -167,6 +180,7 @@ export function kePesananMasuk(p: PesananApi): PesananMasuk {
     catatanDariUmkm: p.catatan_untuk_distributor ?? '',
     pengiriman: buktiDari(p),
     ulasan: null,
+    kiriman: kirimanDari(p),
   }
 }
 

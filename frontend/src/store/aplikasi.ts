@@ -75,6 +75,8 @@ import {
   simpanSesiDistributor,
 } from '@/lib/api'
 import type { SesiDistributor, SesiServer } from '@/lib/api'
+import { ambilLokasiGudang, simpanLokasiGudang } from '@/lib/apiDistributor'
+import type { LokasiGudang } from '@/lib/apiDistributor'
 import {
   aksiPesananMasuk,
   ambilPesanan,
@@ -180,6 +182,8 @@ interface KeadaanAplikasi {
   kontrakMasukServer: KontrakPelanggan[] | null
   /** Penawaran dan paket milik distributor yang tersambung; `null` = data contoh. */
   katalogDistributorServer: { penawaran: Penawaran[]; paket: PaketKontrak[]; promo: Promo[] } | null
+  /** Titik gudang distributor yang tersambung, dibaca dari server; `null` = belum dibaca atau data contoh. */
+  lokasiGudangServer: LokasiGudang | null
   racun: Racun[]
   hasilKirimTerakhir: HasilKirim | null
   /** Pesanan masuk yang aksinya sedang dikirim ke server. Tombolnya memuat dan tidak bisa ditekan dua kali. */
@@ -198,6 +202,16 @@ interface KeadaanAplikasi {
   sambungDistributor: (email: string, kataSandi: string) => Promise<void>
   putusDistributor: () => void
   muatPesananMasuk: () => Promise<void>
+  /**
+   * Simpan titik gudang dari Profil (revisi 23 Okt). `null` mengosongkannya:
+   * peta lalu memakai titik tengah kota. Mengembalikan true bila tersimpan.
+   */
+  simpanLokasiGudang: (lokasi: { lat: number; lng: number } | null) => Promise<boolean>
+  /**
+   * Tombol "Periksa kabar terbaru": muat ulang pesanan dari server lalu kabari
+   * apakah ada yang berubah (satu pesanan bila `id` diisi, semua bila tidak).
+   */
+  periksaKabarPesanan: (id?: string) => Promise<void>
   /** Muat ulang stok gudang dari server, mis. sesudah produksi memotong bahan baku. */
   segarkanGudangServer: () => Promise<void>
   aturPeran: (p: 'umkm' | 'distributor') => void
@@ -586,6 +600,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
   pesananMasukServer: null,
   kontrakMasukServer: null,
   katalogDistributorServer: null,
+  lokasiGudangServer: null,
   racun: [],
   hasilKirimTerakhir: null,
   pesananDiproses: [],
@@ -711,7 +726,13 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
   putusDistributor: () => {
     simpanSesiDistributor(null)
     pasangUmkmServer([])
-    set({ sesiDistributor: null, pesananMasukServer: null, kontrakMasukServer: null, katalogDistributorServer: null })
+    set({
+      sesiDistributor: null,
+      pesananMasukServer: null,
+      kontrakMasukServer: null,
+      katalogDistributorServer: null,
+      lokasiGudangServer: null,
+    })
   },
 
   segarkanGudangServer: async () => {
@@ -725,21 +746,79 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
     const sesi = get().sesiDistributor ?? sesiDistributorTersimpan()
     if (!sesi) return
     try {
-      const [masuk, kontrak, katalog] = await Promise.all([
+      const [masuk, kontrak, katalog, lokasi] = await Promise.all([
         ambilPesananMasuk(sesi),
         ambilKontrakMasuk(sesi),
         ambilKatalogDistributor(sesi),
+        // Backend lama belum punya /profil: peta memakai titik tengah kota.
+        ambilLokasiGudang(sesi).catch(() => null),
       ])
-      pasangUmkmServer([...masuk.umkm, ...kontrak.umkm])
+      // Pemesan dari pesanan dipasang terakhir supaya menang: hanya pesanan yang
+      // membawa koordinat tempat usaha, kontrak memakai titik pengganti.
+      pasangUmkmServer([...kontrak.umkm, ...masuk.umkm])
       set({
         sesiDistributor: sesi,
         pesananMasukServer: masuk.pesanan,
         kontrakMasukServer: kontrak.kontrak,
         katalogDistributorServer: katalog,
+        lokasiGudangServer: lokasi,
       })
     } catch {
       // Token hangus atau server mati: portal kembali ke data contoh.
       get().putusDistributor()
+    }
+  },
+
+  simpanLokasiGudang: async (lokasi) => {
+    const sesi = get().sesiDistributor
+    const isi = lokasi ?? { lat: null, lng: null }
+    if (!sesi) {
+      // Data contoh: hanya di peramban ini, dan layar menyebutnya.
+      set((s) => ({
+        distributor: s.distributor.map((d) => (d.id === distributorAktif.id ? { ...d, lat: isi.lat, lng: isi.lng } : d)),
+      }))
+      get().tampilkanRacun('Lokasi gudang disimpan di data contoh. Masuk sebagai distributor supaya tersimpan untuk pemilik usaha.', 'info')
+      return true
+    }
+    try {
+      const baru = await simpanLokasiGudang(sesi, isi)
+      set({ lokasiGudangServer: baru })
+      get().tampilkanRacun(
+        lokasi ? 'Lokasi gudang tersimpan. Pemilik usaha melihatnya di peta Lacak Pesanan.' : 'Lokasi gudang dikosongkan. Peta memakai titik tengah kotamu.',
+        'aman',
+      )
+      return true
+    } catch (e: unknown) {
+      get().tampilkanRacun(e instanceof Error ? e.message : 'Lokasi gudang gagal disimpan.', 'kritis')
+      return false
+    }
+  },
+
+  periksaKabarPesanan: async (id) => {
+    const sesi = get().sesiServer
+    // Data contoh tidak punya distributor sungguhan yang bisa mengabari.
+    if (!sesi) {
+      get().tampilkanRacun('Belum ada kabar baru dari distributor.', 'info')
+      return
+    }
+    const lama = get().pesanan
+    const pesanan = await ambilPesanan(sesi).catch(() => null)
+    if (!pesanan) {
+      get().tampilkanRacun('Kabar terbaru belum bisa diambil. Coba lagi sebentar lagi.', 'kritis')
+      return
+    }
+    set({ pesanan })
+    const sidik = (p: Pesanan | undefined) =>
+      p ? `${p.status}|${p.jejak.length}|${p.kiriman?.nomorResi ?? ''}|${p.pengiriman?.waktuSampai ?? ''}` : ''
+    const berubah = pesanan.filter((p) => (!id || p.id === id) && sidik(p) !== sidik(lama.find((x) => x.id === p.id)))
+    if (berubah.length === 0) {
+      get().tampilkanRacun('Belum ada kabar baru dari distributor.', 'info')
+    } else if (id || berubah.length === 1) {
+      const p = berubah[0]
+      const kabar = p.jejak[p.jejak.length - 1]?.keterangan || 'Statusnya berubah.'
+      get().tampilkanRacun(`Ada kabar baru untuk ${p.nomor}: ${kabar}`, 'aman')
+    } else {
+      get().tampilkanRacun(`Ada kabar baru untuk ${berubah.length} pesanan.`, 'aman')
     }
   },
 
@@ -2015,9 +2094,14 @@ useAplikasi.subscribe((s, sebelum) => {
   }
 })
 
-/** Profil distributor yang membuka portal, versi terbaru dari store. */
+/**
+ * Profil distributor yang membuka portal, versi terbaru dari store. Titik
+ * gudangnya dari server bila portal tersambung (revisi 23 Okt).
+ */
 export function useDistributorAktif(): Distributor {
-  return useAplikasi((s) => s.distributor.find((d) => d.id === distributorAktif.id) ?? distributorAktif)
+  const d = useAplikasi((s) => s.distributor.find((x) => x.id === distributorAktif.id) ?? distributorAktif)
+  const lokasi = useAplikasi((s) => s.lokasiGudangServer)
+  return useMemo(() => (lokasi ? { ...d, lat: lokasi.lat, lng: lokasi.lng } : d), [d, lokasi])
 }
 
 /**

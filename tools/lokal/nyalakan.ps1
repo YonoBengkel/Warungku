@@ -219,9 +219,22 @@ $layanan = @(
        Perintah = 'npm.cmd run dev' }
 )
 
-if (-not (Test-Path (Join-Path $Akar 'frontend\node_modules'))) {
-    Info 'Memasang paket frontend (sekali saja)...'
+# Paket frontend perlu dipasang (ulang) bila node_modules belum ada, atau bila
+# frontend\package-lock.json lebih baru daripada catatan pemasangan terakhir npm
+# (node_modules\.package-lock.json), mis. sesudah git pull menambah paket baru.
+function Paket-Frontend-Usang {
+    $nm = Join-Path $Akar 'frontend\node_modules'
+    $catatan = Join-Path $nm '.package-lock.json'
+    if (-not (Test-Path $catatan)) { return $true }
+    $kunci = Join-Path $Akar 'frontend\package-lock.json'
+    return ((Get-Item -LiteralPath $kunci).LastWriteTime -gt (Get-Item -LiteralPath $catatan).LastWriteTime)
+}
+
+if (Paket-Frontend-Usang) {
+    Info 'Memasang paket frontend...'
     if (-not (Tampil 'npm.cmd install')) { Gagal 'npm install gagal.' }
+    # Tandai selesai, supaya kunci yang ikut ditulis ulang npm tidak memicu pemasangan lagi.
+    (Get-Item -LiteralPath (Join-Path $Akar 'frontend\node_modules\.package-lock.json')).LastWriteTime = Get-Date
 }
 
 foreach ($l in $layanan) {

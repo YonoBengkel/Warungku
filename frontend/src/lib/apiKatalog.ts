@@ -36,6 +36,9 @@ interface DistributorApi {
   aspek_ketepatan: number | null
   aspek_jumlah: number | null
   aspek_kondisi: number | null
+  /** Titik gudang (revisi 23 Okt); tidak ada di backend lama. */
+  lat?: number | null
+  lng?: number | null
 }
 
 interface PenawaranApi {
@@ -97,6 +100,8 @@ function keDistributor(d: DistributorApi): Distributor {
       jamOperasional: d.jam_operasional ?? '',
       minimumPesanan: d.minimum_pesanan,
     },
+    lat: d.lat ?? null,
+    lng: d.lng ?? null,
   }
 }
 
