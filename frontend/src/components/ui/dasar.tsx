@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode, HTMLAttributes } from 'react'
+import type { ButtonHTMLAttributes, ReactNode, HTMLAttributes, Ref } from 'react'
 import { Link } from 'react-router-dom'
 import { cx } from '@/lib/format'
 import { gambarUntuk } from '@/lib/gambar'
@@ -264,6 +264,60 @@ export function JudulBagian({
       </div>
       {aksi && <div className="shrink-0">{aksi}</div>}
     </div>
+  )
+}
+
+/** Rupa kotak Bagian, untuk kotak tanpa judul yang harus serupa. */
+export const KELAS_BAGIAN =
+  'bg-surface border-y border-line -mx-4 px-4 py-4 sm:mx-0 sm:p-5 sm:border-x sm:rounded-xl sm:shadow-e1'
+
+/**
+ * Bagian halaman dalam kotak putih bersudut bulat beserta judulnya (revisi
+ * 23 Okt, pola referensi UI: satu kotak per bagian di atas latar abu-abu).
+ *
+ * Di HP kotaknya menjadi pita putih selebar layar tanpa sudut, supaya lebar isi
+ * tidak berkurang dua kali oleh jarak tepi; mulai 640px ia kotak bersudut.
+ * Korsel dan baris geser di dalamnya tetap memakai tarikan `-mx-4 px-4`, yang
+ * kini berhenti tepat di tepi pita. Hanya untuk anak langsung isi halaman:
+ * tarikan `-mx-4` mengandaikan jarak tepi halaman 16px.
+ *
+ * Dengan `id` + `judul` ia `<section>` berjudul `JudulBagian`; dengan `id` +
+ * `kepala` judulnya dibuat sendiri (wajib memuat elemen ber-`id` itu); tanpa
+ * `id` ia sekadar kotak.
+ */
+export function Bagian({
+  id,
+  judul,
+  keterangan,
+  aksi,
+  kepala,
+  className,
+  children,
+  ref,
+  ...rest
+}: {
+  id?: string
+  judul?: string
+  keterangan?: string
+  aksi?: ReactNode
+  kepala?: ReactNode
+  className?: string
+  children: ReactNode
+  ref?: Ref<HTMLElement>
+} & Omit<HTMLAttributes<HTMLElement>, 'id' | 'className' | 'children'>) {
+  const kelas = cx(KELAS_BAGIAN, className)
+  if (!id) {
+    return (
+      <div ref={ref as Ref<HTMLDivElement>} className={kelas} {...rest}>
+        {children}
+      </div>
+    )
+  }
+  return (
+    <section ref={ref} aria-labelledby={id} className={kelas} {...rest}>
+      {kepala ?? (judul && <JudulBagian id={id} judul={judul} keterangan={keterangan} aksi={aksi} />)}
+      {children}
+    </section>
   )
 }
 

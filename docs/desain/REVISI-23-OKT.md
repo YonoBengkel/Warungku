@@ -39,15 +39,35 @@ Catatan tahap 1:
 
 ## Tahap 2 — tata letak
 
-- [ ] Komponen **Bagian** (kotak putih besar bersudut bulat) di Beranda, Dashboard
+- [x] Komponen **Bagian** (kotak putih besar bersudut bulat) di Beranda, Dashboard
   distributor, rincian barang, dan Prediksi.
-- [ ] **Wadah promo** berwarna coral berisi kartu putih, tombol ‹ › di pojok.
-- [ ] **Slider:** geser per halaman (3 kartu di desktop, 1 di HP), titik penanda per halaman,
+- [x] **Wadah promo** berwarna coral berisi kartu putih, tombol ‹ › di pojok.
+- [x] **Slider:** geser per halaman (3 kartu di desktop, 1 di HP), titik penanda per halaman,
   panah kiri yang macet diperbaiki, bisa ditarik tetikus, putar otomatis 3 detik, animasi
   300 ms.
-- [ ] **Pemberitahuan kecil:** panel dari menu samping desktop di kedua portal; distributor
+- [x] **Pemberitahuan kecil:** panel dari menu samping desktop di kedua portal; distributor
   mendapat menu dan halaman pemberitahuan baru, isinya diturunkan dari data yang dimuat.
   HP tetap halaman penuh.
+
+Catatan tahap 2:
+- Di HP, Bagian menjadi pita putih selebar layar tanpa sudut (pola aplikasi belanja di HP),
+  supaya lebar isi tidak terpotong dua kali; mulai 640px ia kotak bersudut. Wadah promo coral
+  mengikuti pola yang sama.
+- Kartu promo kini putih untuk semua jenis; jenisnya tetap dikenali dari medali ikon dan
+  lencana berwarna penuh, dan latar lembut jenisnya pindah ke lencana potongan. Pratinjau di
+  halaman Promo distributor ikut putih, sama dengan yang dilihat pemilik usaha.
+- Token `aksen` (coral) sudah masuk sekarang karena dibutuhkan wadah promo, beserta aturannya
+  di DESIGN.md. Kuning dan ungu baru tetap di tahap 3.
+- Slider di tablet berisi 2 kartu per halaman. Geseran jari juga berhenti per halaman, karena
+  titik jangkar gulir hanya dipasang di kartu pertama tiap halaman.
+- Isi pemberitahuan distributor: pesanan menunggu jawaban, kiriman lewat perkiraan tiba,
+  pengajuan kontrak, permintaan berhenti kontrak (empat ini "perlu tindakan"), kontrak yang
+  berakhir dalam 30 hari, dan promo yang berakhir dalam 7 hari. Lonceng HP distributor kini
+  membuka halaman ini, bukan Pesanan.
+- Di kartu Tren pemakaian (rincian barang), "perkiraan lightgbm, pita p10–p90" diganti
+  LabelMetode, sejalan dengan keputusan label metode di tahap 1.
+- Ditemukan, belum diubah (di luar revisi): kartu perkiraan menulis "Stok cukup untuk ±0 hari"
+  bila perkiraan hari pertama sudah melebihi sisa stok.
 
 ## Tahap 3 — warna
 

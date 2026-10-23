@@ -71,11 +71,12 @@ export function KartuPromo({
   const sisaHari = promo.berakhir
     ? Math.ceil((+new Date(promo.berakhir) - Date.now()) / 86_400_000)
     : null
+  // Kartu putih (revisi 23 Okt, pola wadah promo coral). Jenis promo tetap
+  // dikenali dari medali ikon dan lencana berwarna penuh, yang sama untuk semua
+  // toko; latar lembut jenisnya pindah ke lencana potongan.
   const kelas = cx(
-    'group flex flex-col gap-2.5 rounded-lg p-4 min-h-[9.5rem]',
-    !pratinjau && 'transition-[filter,box-shadow] duration-150 hover:brightness-97 hover:shadow-e2',
-    template.latar,
-    template.teks,
+    'group flex flex-col gap-2.5 rounded-lg p-4 min-h-[9.5rem] bg-surface text-ink border border-line',
+    !pratinjau && 'transition-[border-color,box-shadow] duration-150 hover:border-line-strong hover:shadow-e2',
     lebar ? 'w-full' : 'snap-start shrink-0 w-[85%] sm:w-[20rem] lg:w-full',
   )
 
@@ -97,19 +98,19 @@ export function KartuPromo({
 
       <p className="text-subjudul font-extrabold leading-snug line-clamp-2">{promo.judul}</p>
 
-      <p className="flex items-center gap-1.5 text-isi font-semibold min-w-0">
+      <p className="flex items-center gap-1.5 text-isi font-semibold text-ink-2 min-w-0">
         <IkonToko size={15} className="shrink-0" />
         <span className="truncate">{namaToko}</span>
       </p>
 
       <div className="mt-auto flex flex-wrap items-center gap-2">
         {promo.potonganPersen != null && (
-          <span className="inline-flex items-center rounded-sm bg-surface text-ink px-2 py-[3px] text-kecil font-bold">
+          <span className={cx('inline-flex items-center rounded-sm px-2 py-[3px] text-kecil font-bold', template.latar, template.teks)}>
             Potongan {persen(promo.potonganPersen)}
           </span>
         )}
         {promo.berakhir && sisaHari != null && (
-          <span className="inline-flex items-center gap-1 text-kecil font-semibold">
+          <span className="inline-flex items-center gap-1 text-kecil font-semibold text-ink-2">
             <IkonJam size={13} className="shrink-0" />
             Sampai {tanggalRingkas(promo.berakhir)} · {hariLagi(sisaHari)}
           </span>

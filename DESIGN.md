@@ -41,6 +41,7 @@ pernah ditulis langsung di komponen. Setiap token punya pasangan tema gelap di b
 | Teks pembalik | `text-ink-inverse` | `#ffffff` | `#08121a` | Teks di atas warna penuh |
 | Merek | `bg-brand`, `text-brand` | `#52329f` | `#947bd1` | Tombol utama, tautan, cincin fokus |
 | Merek lembut | `bg-brand-soft` + `text-brand-soft-ink` | `#f0edf8` / `#331579` | `#1a1132` / `#ae96e9` | Keadaan terpilih, tombol sekunder |
+| Aksen coral | `bg-aksen` + `text-aksen-ink` | `#ff7f50` / `#111a23` | `#e9744b` / `#0b1116` | Isian wadah sorotan, mis. wadah promo Beranda |
 
 **Status.** Ada empat warna status beserta satu netral. Masing-masing punya tiga tingkat: penuh
 (`bg-aman`), lembut (`bg-aman-soft`), dan tinta (`text-aman-ink`).
@@ -78,6 +79,9 @@ pernah ditulis langsung di komponen. Setiap token punya pasangan tema gelap di b
 4. **Merah hanya untuk yang genting.** Tanda wajib `*` dan pemberitahuan biasa tidak merah.
 5. **Kontras minimal AA:** 4,5:1 untuk teks dan 3:1 untuk garis grafik dan bingkai isian, di
    kedua tema. Ukur hasil campurannya, jangan menaksir dari hex.
+6. **Coral hanya isian sorotan** (revisi 23 Okt). `bg-aksen` selalu berpasangan dengan
+   `text-aksen-ink` (6,97:1 terang, 6,4:1 gelap). Coral tidak pernah menjadi warna teks di atas
+   putih (2,5:1) dan tidak pernah menjadi warna status.
 
 ## 3. Tipografi
 
@@ -161,6 +165,9 @@ terpisah dari angkanya di 360px.
   - Tabel dan grafik lebar menggulir di dalam wadahnya sendiri.
   - Setiap grid berisi kartu diberi `[&>*]:min-w-0`.
   - Lencana panjang dibiarkan membungkus.
+- **Satu kotak per bagian** (revisi 23 Okt): `Bagian` di Beranda, Dashboard distributor, rincian
+  barang, dan Prediksi. Kotak putih `rounded-xl` di atas latar abu-abu mulai 640px; di HP pita
+  putih selebar layar tanpa sudut, supaya lebar isinya tidak terpotong dua kali.
 - **Kisi di desktop, korsel di HP:** daftar tugas Beranda tampil dalam kisi mulai `lg` dan korsel
   satu kartu per layar di HP. Ubin pintasan berangka muncul mulai `sm`.
 - **Tombol selebar wadah hanya di HP:** `penuh="hp"` membuat tombol selebar wadah di HP dan
@@ -207,6 +214,9 @@ Cari komponen yang sudah ada sebelum menulis yang baru. Komponen dasar ada di
 |---|---|
 | Kartu biasa / kartu yang seluruhnya bisa ditekan | `Kartu`, `KartuTautan` |
 | Judul bagian dengan aksi di kanan | `JudulBagian` |
+| Kotak satu bagian halaman, dengan atau tanpa judul | `Bagian` (`KELAS_BAGIAN` untuk kotak serupa) |
+| Deretan kartu yang digeser | `Korsel`; dengan `judul` panahnya di pojok kanan atas, `nada="aksen"` di wadah coral |
+| Pemberitahuan di navigasi samping desktop | `MenuPemberitahuan`: panel kecil, halaman penuh lewat "Lihat semua" |
 | Status pendek | `Lencana nada=...` dengan ikon, atau `Titik` yang selalu disertai teks |
 | Kotak peringatan dan informasi | `Peringatan` (ikon dan warna mengikuti nada) |
 | Rincian yang boleh tidak dibaca | `Penjelasan` (`<details>`, label bawaan "Selengkapnya") |
@@ -229,12 +239,16 @@ ukuran bundel.
 | Lembar naik | 260ms `cubic-bezier(0.22, 1, 0.36, 1)` |
 | Muncul halus | 220ms dengan kurva yang sama |
 | Latar memudar | 180ms |
+| Geser korsel satu halaman | 300ms, kurva keluar |
 
 - **Gerak dikurangi:** dengan `prefers-reduced-motion`, semua animasi dan transisi dimatikan.
 - **Fokus keyboard:** garis 2px warna merek, berjarak 2px.
-- **Korsel Beranda di HP:** tanpa tombol jeda. Ia berhenti selamanya begitu pengguna mengambil
-  alih, dan juga berhenti saat disorot, difokus, atau tabnya tersembunyi. Ini longgar terhadap
-  WCAG 2.2.2 (keputusan tim, 2 Oktober 2026).
+- **Korsel:** bergeser per halaman, yaitu sebanyak kartu yang muat sekaligus (promo Beranda: 3 di
+  desktop, 2 di tablet, 1 di HP). Panah, titik penanda, geseran jari, dan tarikan tetikus
+  semuanya per halaman. Promo berputar sendiri tiap 3 detik.
+- **Korsel promo tanpa tombol jeda.** Ia berhenti selamanya begitu pengguna mengambil alih, dan
+  juga berhenti saat disorot, difokus, atau tabnya tersembunyi. Ini longgar terhadap WCAG 2.2.2
+  (keputusan tim, 2 Oktober 2026).
 - **Kerangka pemuatan** (`.skeleton`, `Kerangka`, `KerangkaBaris`) dipakai selama data dimuat
   di koneksi lambat.
 

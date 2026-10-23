@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import type { Barang, RekomendasiPrediksi } from '@/lib/types'
-import { BarisData, Kartu, Tombol, TombolTautan } from '@/components/ui/dasar'
+import { Bagian, BarisData, Kartu, Tombol, TombolTautan } from '@/components/ui/dasar'
 import { BarisChip, BilahAksi, Chip } from '@/components/ui/navigasi'
 import { PengaturJumlah } from '@/components/ui/formulir'
 import { BilahProgres, KeadaanKosong, Penjelasan, Peringatan } from '@/components/ui/umpanBalik'
@@ -223,44 +223,40 @@ function GrafikKategori({ kategori, daftar }: { kategori: string; daftar: Barang
   const arah = arahPerubahan(bulanIni, bulanDepan)
 
   return (
-    <section aria-labelledby="judul-tren-kategori">
-      <Kartu>
-        <h2 id="judul-tren-kategori" className="text-kartu font-bold text-ink leading-tight">
-          Nilai pemakaian {kategori}
-        </h2>
-        <p className="mt-0.5 text-isi text-ink-3 leading-snug">
-          Setahun terakhir dan perkiraan bulan depan, dalam Rupiah harga beli.
-        </p>
-        {adaData ? (
-          <>
-            <div className="mt-3 min-w-0">
-              <GrafikTren
-                data={tren}
-                satuan="Rupiah"
-                tinggi={200}
-                bulanan
-                labelAktual="Nilai pemakaian"
-                format={rupiah}
-                formatSumbu={rupiahSumbu}
-                lebarSumbu={LEBAR_SUMBU_RUPIAH}
-              />
-            </div>
-            <p className="mt-3 text-isi text-ink-2 leading-relaxed">
-              Bulan depan diperkirakan <strong className="text-ink tabular">{rupiah(bulanDepan)}</strong>,{' '}
-              <TandaArah arah={arah} /> dari bulan ini.
-            </p>
-          </>
-        ) : (
-          <KeadaanKosong
-            padat
-            tingkat="h3"
-            ikon={<IkonKotak size={26} />}
-            judul="Datanya belum cukup untuk digambar"
-            pesan="Grafik muncul setelah ada barang dengan riwayat pemakaian 14 hari."
-          />
-        )}
-      </Kartu>
-    </section>
+    <Bagian
+      id="judul-tren-kategori"
+      judul={`Nilai pemakaian ${kategori}`}
+      keterangan="Setahun terakhir dan perkiraan bulan depan, dalam Rupiah harga beli."
+    >
+      {adaData ? (
+        <>
+          <div className="min-w-0">
+            <GrafikTren
+              data={tren}
+              satuan="Rupiah"
+              tinggi={200}
+              bulanan
+              labelAktual="Nilai pemakaian"
+              format={rupiah}
+              formatSumbu={rupiahSumbu}
+              lebarSumbu={LEBAR_SUMBU_RUPIAH}
+            />
+          </div>
+          <p className="mt-3 text-isi text-ink-2 leading-relaxed">
+            Bulan depan diperkirakan <strong className="text-ink tabular">{rupiah(bulanDepan)}</strong>,{' '}
+            <TandaArah arah={arah} /> dari bulan ini.
+          </p>
+        </>
+      ) : (
+        <KeadaanKosong
+          padat
+          tingkat="h3"
+          ikon={<IkonKotak size={26} />}
+          judul="Datanya belum cukup untuk digambar"
+          pesan="Grafik muncul setelah ada barang dengan riwayat pemakaian 14 hari."
+        />
+      )}
+    </Bagian>
   )
 }
 
@@ -274,16 +270,13 @@ function DaftarBarangKategori({
   alamat: (ubahan: Record<string, string | null>) => string
 }) {
   return (
-    <section aria-labelledby="judul-isi-kategori">
-      <h2 id="judul-isi-kategori" className="text-kartu font-bold text-ink leading-tight">
-        Barang di {kategori}
-      </h2>
-      <p className="mt-0.5 text-isi text-ink-3 leading-snug">
-        {daftar.length} barang. Tekan salah satu untuk melihat grafiknya dan memesan.
-      </p>
-
+    <Bagian
+      id="judul-isi-kategori"
+      judul={`Barang di ${kategori}`}
+      keterangan={`${daftar.length} barang. Tekan salah satu untuk melihat grafiknya dan memesan.`}
+    >
       {daftar.length === 0 ? (
-        <Kartu className="mt-3">
+        <Kartu>
           <KeadaanKosong
             padat
             tingkat="h3"
@@ -294,7 +287,7 @@ function DaftarBarangKategori({
           />
         </Kartu>
       ) : (
-        <ul className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 [&>*]:min-w-0">
+        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 [&>*]:min-w-0">
           {daftar.map((b) => (
             <li key={b.id}>
               <KartuBarangPrediksi barang={b} ke={alamat({ barang: b.id })} />
@@ -302,7 +295,7 @@ function DaftarBarangKategori({
           ))}
         </ul>
       )}
-    </section>
+    </Bagian>
   )
 }
 
@@ -385,53 +378,49 @@ function PerbandinganBarang({
   if (baris.length === 0) return null
 
   return (
-    <section aria-labelledby="judul-perbandingan">
-      <Kartu>
-        <h2 id="judul-perbandingan" className="text-kartu font-bold text-ink leading-tight">
-          Perkiraan bulan depan per barang
-        </h2>
-        <p className="mt-0.5 text-isi text-ink-3 leading-snug">
-          Dalam Rupiah harga beli, supaya barang bersatuan berbeda bisa dibandingkan.
-        </p>
-        {/* Batang yang banyak tidak muat di layar 360px. Yang digulir wadah
-            grafiknya, bukan badan halaman. */}
-        <div className="mt-3 overflow-x-auto no-scrollbar">
-          <div className={cx(baris.length > 5 && 'min-w-[28rem]')}>
-            <GrafikBatang
-              data={baris.map((x) => ({ label: labelPendek(x.barang.nama), nilai: x.nilaiDepan }))}
-              satuan="Rupiah"
-              tinggi={170}
-              format={rupiahSumbu}
-              formatSumbu={rupiahSumbu}
-              lebarSumbu={LEBAR_SUMBU_RUPIAH}
-            />
-          </div>
+    <Bagian
+      id="judul-perbandingan"
+      judul="Perkiraan bulan depan per barang"
+      keterangan="Dalam Rupiah harga beli, supaya barang bersatuan berbeda bisa dibandingkan."
+    >
+      {/* Batang yang banyak tidak muat di layar 360px. Yang digulir wadah
+          grafiknya, bukan badan halaman. */}
+      <div className="overflow-x-auto no-scrollbar">
+        <div className={cx(baris.length > 5 && 'min-w-[28rem]')}>
+          <GrafikBatang
+            data={baris.map((x) => ({ label: labelPendek(x.barang.nama), nilai: x.nilaiDepan }))}
+            satuan="Rupiah"
+            tinggi={170}
+            format={rupiahSumbu}
+            formatSumbu={rupiahSumbu}
+            lebarSumbu={LEBAR_SUMBU_RUPIAH}
+          />
         </div>
+      </div>
 
-        <ul className="mt-3 space-y-1">
-          {baris.map((x) => (
-            <li key={x.barang.id}>
-              <Link
-                to={alamat({ barang: x.barang.id })}
-                className="flex items-center gap-3 min-h-11 -mx-2 px-2 py-1.5 rounded-md hover:bg-sunken transition-colors"
-              >
-                <span className="min-w-0 grow">
-                  <span className="block text-isi font-semibold text-ink truncate">{x.barang.nama}</span>
-                  <span className="block text-kecil text-ink-3">
-                    <TandaArah arah={x.arah} /> dari bulan ini
-                  </span>
+      <ul className="mt-3 space-y-1">
+        {baris.map((x) => (
+          <li key={x.barang.id}>
+            <Link
+              to={alamat({ barang: x.barang.id })}
+              className="flex items-center gap-3 min-h-11 -mx-2 px-2 py-1.5 rounded-md hover:bg-sunken transition-colors"
+            >
+              <span className="min-w-0 grow">
+                <span className="block text-isi font-semibold text-ink truncate">{x.barang.nama}</span>
+                <span className="block text-kecil text-ink-3">
+                  <TandaArah arah={x.arah} /> dari bulan ini
                 </span>
-                <span className="shrink-0 text-right">
-                  <span className="block text-isi font-bold text-ink tabular">{rupiah(x.nilaiDepan)}</span>
-                  <span className="block text-kecil text-ink-3 tabular">dari {rupiah(x.nilaiIni)}</span>
-                </span>
-                <IkonPanahKanan size={18} className="shrink-0 text-ink-3" />
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </Kartu>
-    </section>
+              </span>
+              <span className="shrink-0 text-right">
+                <span className="block text-isi font-bold text-ink tabular">{rupiah(x.nilaiDepan)}</span>
+                <span className="block text-kecil text-ink-3 tabular">dari {rupiah(x.nilaiIni)}</span>
+              </span>
+              <IkonPanahKanan size={18} className="shrink-0 text-ink-3" />
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </Bagian>
   )
 }
 
@@ -521,107 +510,105 @@ function DetailBarang({
 
       <div className="mt-3 lg:grid lg:grid-cols-12 lg:gap-6 lg:items-start">
         {/* ---------------- Grafik barang ini ---------------- */}
-        <section aria-labelledby="judul-barang" className="lg:col-span-8 min-w-0">
-          <Kartu>
-            <h2 id="judul-barang" className="text-subjudul font-extrabold text-ink leading-tight">
-              {barang.nama}
-            </h2>
-            <p className="mt-0.5 text-isi text-ink-3">{barang.kategori}</p>
+        <Bagian
+          id="judul-barang"
+          kepala={
+            <>
+              <h2 id="judul-barang" className="text-subjudul font-extrabold text-ink leading-tight">
+                {barang.nama}
+              </h2>
+              <p className="mt-0.5 text-isi text-ink-3">{barang.kategori}</p>
+            </>
+          }
+          className="lg:col-span-8 min-w-0"
+        >
+          <div className="mt-3.5">
+            <p className="text-kecil font-semibold uppercase tracking-wide text-ink-3">Sisa tercatat</p>
+            {/* Angka besar yang berdiri sendiri memakai lebar digit proporsional,
+                bukan tabular-nums: tidak ada kolom angka yang perlu disejajarkan. */}
+            <p className="mt-1 text-[2rem] font-extrabold leading-none tracking-tight text-ink">
+              {angkaTampil(barang, sisa)}
+              <span className="ml-1.5 text-[1rem] font-semibold text-ink-3">{satuanTampil(barang).nama}</span>
+            </p>
+          </div>
 
-            <div className="mt-3.5">
-              <p className="text-kecil font-semibold uppercase tracking-wide text-ink-3">Sisa tercatat</p>
-              {/* Angka besar yang berdiri sendiri memakai lebar digit proporsional,
-                  bukan tabular-nums: tidak ada kolom angka yang perlu disejajarkan. */}
-              <p className="mt-1 text-[2rem] font-extrabold leading-none tracking-tight text-ink">
-                {angkaTampil(barang, sisa)}
-                <span className="ml-1.5 text-[1rem] font-semibold text-ink-3">{satuanTampil(barang).nama}</span>
-              </p>
-            </div>
-
-            {tren.length > 0 ? (
-              <div className="mt-4 min-w-0">
-                <h3 className="text-isi font-bold text-ink leading-tight">
-                  Pemakaian setahun terakhir dan perkiraan bulan depan
-                </h3>
-                <div className="mt-2 min-w-0">
-                  <GrafikTren
-                    data={trenTampil(barang, tren)}
-                    satuan={satuanTampil(barang).nama}
-                    tinggi={200}
-                    bulanan
-                  />
-                </div>
-                {/* Nama garis pembatas sama dengan yang tertulis di grafik. */}
-                <Penjelasan label="Cara membaca grafik" className="mt-1">
-                  Sebelum garis &ldquo;{sumberServer ? 'data terakhir' : 'hari ini'}&rdquo;, garis merah adalah perkiraan
-                  tiap bulan yang dibuat sebelum bulan itu dimulai; bandingkan dengan pemakaian tercatat. Sesudahnya, garis
-                  merah dan bayangannya adalah perkiraan bulan depan, yang bisa meleset ke atas maupun ke bawah.
-                </Penjelasan>
-              </div>
-            ) : (
-              <p className="mt-4 text-isi text-ink-3 leading-relaxed">
-                Riwayat bulanan barang ini belum terkumpul, jadi grafiknya belum bisa digambar.
-              </p>
-            )}
-          </Kartu>
-        </section>
-
-        {/* ---------------- Bulan ini dan bulan depan ---------------- */}
-        <section aria-labelledby="judul-angka" className="lg:col-span-4 min-w-0 mt-4 lg:mt-0">
-          <Kartu>
-            <h2 id="judul-angka" className="text-kartu font-bold text-ink leading-tight">
-              Bulan ini dan bulan depan
-            </h2>
-
-            {rekomendasi ? (
-              <div className="mt-2">
-                <BarisData label="Terpakai bulan ini" nilai={jumlahTampil(barang, rekomendasi.pemakaianBulanIni)} />
-                <BarisData
-                  label="Perkiraan bulan depan"
-                  nilai={jumlahTampil(barang, rekomendasi.perkiraanBulanDepan)}
-                  tebal
+          {tren.length > 0 ? (
+            <div className="mt-4 min-w-0">
+              <h3 className="text-isi font-bold text-ink leading-tight">
+                Pemakaian setahun terakhir dan perkiraan bulan depan
+              </h3>
+              <div className="mt-2 min-w-0">
+                <GrafikTren
+                  data={trenTampil(barang, tren)}
+                  satuan={satuanTampil(barang).nama}
+                  tinggi={200}
+                  bulanan
                 />
               </div>
-            ) : (
-              /* Data belum cukup. Layar menyebutkan berapa yang sudah terkumpul
-                 dan berhenti di situ, tanpa menampilkan angka karangan. */
-              <div className="mt-3">
-                {barang.dicatatManual ? (
+              {/* Nama garis pembatas sama dengan yang tertulis di grafik. */}
+              <Penjelasan label="Cara membaca grafik" className="mt-1">
+                Sebelum garis &ldquo;{sumberServer ? 'data terakhir' : 'hari ini'}&rdquo;, garis merah adalah perkiraan
+                tiap bulan yang dibuat sebelum bulan itu dimulai; bandingkan dengan pemakaian tercatat. Sesudahnya, garis
+                merah dan bayangannya adalah perkiraan bulan depan, yang bisa meleset ke atas maupun ke bawah.
+              </Penjelasan>
+            </div>
+          ) : (
+            <p className="mt-4 text-isi text-ink-3 leading-relaxed">
+              Riwayat bulanan barang ini belum terkumpul, jadi grafiknya belum bisa digambar.
+            </p>
+          )}
+        </Bagian>
+
+        {/* ---------------- Bulan ini dan bulan depan ---------------- */}
+        <Bagian id="judul-angka" judul="Bulan ini dan bulan depan" className="lg:col-span-4 min-w-0 mt-4 lg:mt-0">
+          {rekomendasi ? (
+            <div className="-mt-1">
+              <BarisData label="Terpakai bulan ini" nilai={jumlahTampil(barang, rekomendasi.pemakaianBulanIni)} />
+              <BarisData
+                label="Perkiraan bulan depan"
+                nilai={jumlahTampil(barang, rekomendasi.perkiraanBulanDepan)}
+                tebal
+              />
+            </div>
+          ) : (
+            /* Data belum cukup. Layar menyebutkan berapa yang sudah terkumpul
+               dan berhenti di situ, tanpa menampilkan angka karangan. */
+            <div>
+              {barang.dicatatManual ? (
+                <p className="text-isi text-ink-2 leading-relaxed">
+                  Barang ini dicatat manual, jadi tidak diperkirakan; jumlah belinya kamu yang tentukan.
+                </p>
+              ) : (
+                <>
                   <p className="text-isi text-ink-2 leading-relaxed">
-                    Barang ini dicatat manual, jadi tidak diperkirakan; jumlah belinya kamu yang tentukan.
+                    Perkiraan muncul setelah riwayat pemakaiannya terkumpul 14 hari.
                   </p>
-                ) : (
-                  <>
-                    <p className="text-isi text-ink-2 leading-relaxed">
-                      Perkiraan muncul setelah riwayat pemakaiannya terkumpul 14 hari.
-                    </p>
-                    <div className="mt-3">
-                      <BilahProgres
-                        nilai={Math.min(barang.hariDataTerkumpul, 14)}
-                        maks={14}
-                        label="Hari data terkumpul"
-                        tampilkanAngka
-                      />
-                    </div>
-                  </>
-                )}
-                <div className="mt-4 flex flex-wrap gap-2.5">
-                  <TombolTautan ke={`/stok/${barang.id}`} ragam="garis" ukuran="kecil">
-                    Buka detail barang
-                  </TombolTautan>
-                  <TombolTautan
-                    ke={`/belanja?cari=${encodeURIComponent(barang.nama)}`}
-                    ragam="sunyi"
-                    ukuran="kecil"
-                    ikonKiri={<IkonToko size={15} />}
-                  >
-                    Cari di Distributor
-                  </TombolTautan>
-                </div>
+                  <div className="mt-3">
+                    <BilahProgres
+                      nilai={Math.min(barang.hariDataTerkumpul, 14)}
+                      maks={14}
+                      label="Hari data terkumpul"
+                      tampilkanAngka
+                    />
+                  </div>
+                </>
+              )}
+              <div className="mt-4 flex flex-wrap gap-2.5">
+                <TombolTautan ke={`/stok/${barang.id}`} ragam="garis" ukuran="kecil">
+                  Buka detail barang
+                </TombolTautan>
+                <TombolTautan
+                  ke={`/belanja?cari=${encodeURIComponent(barang.nama)}`}
+                  ragam="sunyi"
+                  ukuran="kecil"
+                  ikonKiri={<IkonToko size={15} />}
+                >
+                  Cari di Distributor
+                </TombolTautan>
               </div>
-            )}
-          </Kartu>
-        </section>
+            </div>
+          )}
+        </Bagian>
       </div>
 
       {/* ---------------- Pesan sesuai perkiraan ---------------- */}

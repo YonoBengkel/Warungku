@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { JudulBagian, Kartu, Lencana, TombolTautan, type NadaLencana } from '@/components/ui/dasar'
+import { Bagian, Kartu, Lencana, TombolTautan, type NadaLencana } from '@/components/ui/dasar'
 import { KartuTindakan } from '@/components/domain'
 import {
   IkonCentangLingkaran,
@@ -139,12 +139,12 @@ export default function Dashboard() {
       </section>
 
       {/* 3. Rekap tahap: tiap kartu adalah pintu ke tab yang sama di halaman Pesanan */}
-      <section aria-labelledby="judul-rekap" className="mt-6">
-        <JudulBagian
-          id="judul-rekap"
-          judul="Rekap pesanan"
-          keterangan="Ketuk salah satu untuk membuka daftarnya."
-        />
+      <Bagian
+        id="judul-rekap"
+        judul="Rekap pesanan"
+        keterangan="Ketuk salah satu untuk membuka daftarnya."
+        className="mt-3 sm:mt-4"
+      >
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
           {REKAP.map((status) => {
             const Ikon = IKON_TAHAP[status]
@@ -179,61 +179,59 @@ export default function Dashboard() {
             )
           })}
         </div>
-      </section>
+      </Bagian>
 
       {/* 4. Sebaran titik: warna dulu, angka di dalamnya, keterangan di bawah */}
-      <section aria-labelledby="judul-sebaran" className="mt-6">
-        <JudulBagian
-          id="judul-sebaran"
-          judul="Sebaran pemesan"
-          keterangan="Jumlah titik di peta. Satu pemilik usaha dihitung satu titik."
-          aksi={
-            <TombolTautan
-              ke="/distributor-portal/sebaran"
-              ragam="garis"
-              ukuran="kecil"
-              ikonKiri={<IkonLokasi size={15} />}
-            >
-              Buka Peta
-            </TombolTautan>
-          }
-        />
-        <Kartu>
-          {/* Titik kecil berwarna sama dengan titik di peta, angkanya besar.
-              Dulu tiga lingkaran penuh berwarna: berat untuk tiga angka saja. */}
-          <div className="grid grid-cols-3 gap-3">
-            {URUT_TITIK.map((warna) => (
-              <div key={warna} className="min-w-0">
-                <p className="flex items-center gap-2">
-                  <span
-                    aria-hidden="true"
-                    className="size-3 shrink-0 rounded-full"
-                    style={{ background: WARNA_TITIK_TOKEN[warna] }}
-                  />
-                  <span className="text-angka font-extrabold text-ink tabular">{jumlahPerWarna[warna]}</span>
-                </p>
-                <p className="mt-1.5 text-kecil font-semibold text-ink-2 leading-snug">{LABEL_TITIK[warna]}</p>
-              </div>
-            ))}
-          </div>
-        </Kartu>
-      </section>
+      <Bagian
+        id="judul-sebaran"
+        judul="Sebaran pemesan"
+        keterangan="Jumlah titik di peta. Satu pemilik usaha dihitung satu titik."
+        aksi={
+          <TombolTautan
+            ke="/distributor-portal/sebaran"
+            ragam="garis"
+            ukuran="kecil"
+            ikonKiri={<IkonLokasi size={15} />}
+          >
+            Buka Peta
+          </TombolTautan>
+        }
+        className="mt-3 sm:mt-4"
+      >
+        {/* Titik kecil berwarna sama dengan titik di peta, angkanya besar.
+            Dulu tiga lingkaran penuh berwarna: berat untuk tiga angka saja. */}
+        <div className="grid grid-cols-3 gap-3">
+          {URUT_TITIK.map((warna) => (
+            <div key={warna} className="min-w-0">
+              <p className="flex items-center gap-2">
+                <span
+                  aria-hidden="true"
+                  className="size-3 shrink-0 rounded-full"
+                  style={{ background: WARNA_TITIK_TOKEN[warna] }}
+                />
+                <span className="text-angka font-extrabold text-ink tabular">{jumlahPerWarna[warna]}</span>
+              </p>
+              <p className="mt-1.5 text-kecil font-semibold text-ink-2 leading-snug">{LABEL_TITIK[warna]}</p>
+            </div>
+          ))}
+        </div>
+      </Bagian>
 
       {/* 5. Lima pesanan terbaru */}
-      <section aria-labelledby="judul-terbaru" className="mt-6">
-        <JudulBagian
-          id="judul-terbaru"
-          judul="Pesanan terbaru"
-          aksi={
-            <Link
-              to="/distributor-portal/pesanan"
-              className="inline-flex items-center gap-1 min-h-11 text-isi font-bold text-brand hover:underline"
-            >
-              Lihat semua
-              <IkonPanahKanan size={15} />
-            </Link>
-          }
-        />
+      <Bagian
+        id="judul-terbaru"
+        judul="Pesanan terbaru"
+        aksi={
+          <Link
+            to="/distributor-portal/pesanan"
+            className="inline-flex items-center gap-1 min-h-11 text-isi font-bold text-brand hover:underline"
+          >
+            Lihat semua
+            <IkonPanahKanan size={15} />
+          </Link>
+        }
+        className="mt-3 sm:mt-4"
+      >
         <div className="space-y-2.5 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-2.5 lg:space-y-0">
           {terbaru.map((p) => {
             const umkm = umkmById(p.umkmId)
@@ -266,7 +264,7 @@ export default function Dashboard() {
             )
           })}
         </div>
-      </section>
+      </Bagian>
     </div>
   )
 }

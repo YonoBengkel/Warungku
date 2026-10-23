@@ -37,6 +37,12 @@
   --c-brand-soft-ink: #331579;
   --c-brand-ring: #52329f33;
 
+  /* Aksen coral (revisi 23 Okt): HANYA isian wadah sorotan, mis. wadah promo
+     Beranda, dengan teks gelap di atasnya. Tidak pernah teks di atas putih
+     (2,5:1) dan tidak pernah warna status. aksen-ink vs aksen 6,97:1. */
+  --c-aksen: #ff7f50;
+  --c-aksen-ink: #111a23;
+
   /* Status stok & sistem — selalu dipasangkan dengan ikon + label,
      tidak pernah mengandalkan warna saja (WCAG 1.4.1). */
   --c-aman: #15803d;
@@ -116,6 +122,11 @@
   --c-brand-soft-ink: #ae96e9;
   --c-brand-ring: #947bd140;
 
+  /* Coral sedikit diredam supaya tidak menyilaukan di permukaan gelap;
+     aksen-ink vs aksen 6,4:1. */
+  --c-aksen: #e9744b;
+  --c-aksen-ink: #0b1116;
+
   --c-aman: #4ade80;
   --c-aman-soft: #102a1a;
   --c-aman-ink: #86efac;
@@ -169,6 +180,9 @@
   --color-brand-hover: var(--c-brand-hover);
   --color-brand-soft: var(--c-brand-soft);
   --color-brand-soft-ink: var(--c-brand-soft-ink);
+
+  --color-aksen: var(--c-aksen);
+  --color-aksen-ink: var(--c-aksen-ink);
 
   --color-aman: var(--c-aman);
   --color-aman-soft: var(--c-aman-soft);

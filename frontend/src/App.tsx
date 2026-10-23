@@ -104,6 +104,7 @@ const PromoDistributor = lazy(() => import('@/pages/distributor-portal/PromoDist
 const PetaSebaran = lazy(() => import('@/pages/distributor-portal/PetaSebaran'))
 const ProfilDistributor = lazy(() => import('@/pages/distributor-portal/ProfilDistributor'))
 const SegmenPelanggan = lazy(() => import('@/pages/distributor-portal/SegmenPelanggan'))
+const PemberitahuanDistributor = lazy(() => import('@/pages/distributor-portal/PemberitahuanDistributor'))
 
 const TidakDitemukan = lazy(() => import('@/pages/TidakDitemukan'))
 
@@ -205,6 +206,7 @@ export default function App() {
           <Route path="kontrak" element={<KontrakDistributor />} />
           <Route path="promo" element={<PromoDistributor />} />
           <Route path="pelanggan" element={<SegmenPelanggan />} />
+          <Route path="pemberitahuan" element={<PemberitahuanDistributor />} />
           <Route path="sebaran" element={<PetaSebaran />} />
           <Route path="sebaran/:penawaranId" element={<PetaSebaran />} />
           {/* Menu Lacak Pesanan sudah dilebur ke Pesanan dan Sebaran (catatan

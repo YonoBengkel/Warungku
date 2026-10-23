@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import type { Barang, Pergerakan } from '@/lib/types'
 import { ChipKedaluwarsa, ChipStok, KartuPerkiraan } from '@/components/domain'
 import { KartuStruk } from '@/components/domain/KartuStruk'
-import { Kartu, Lencana, Tombol, TombolTautan } from '@/components/ui/dasar'
+import { Bagian, Kartu, Lencana, Tombol, TombolTautan } from '@/components/ui/dasar'
 import { PengaturJumlah } from '@/components/ui/formulir'
 import { KepalaHalaman, TabSegmen } from '@/components/ui/navigasi'
 import { KeadaanKosong, Penjelasan } from '@/components/ui/umpanBalik'
@@ -30,7 +30,7 @@ import {
   transaksiById,
 } from '@/data/dummy'
 import { useDataMesin } from '@/lib/dataMesin'
-import { LabelMetode, METODE_SARAN } from '@/components/domain/LabelMetode'
+import { LabelMetode, METODE_SARAN, metodePrediksi } from '@/components/domain/LabelMetode'
 import type { SaranServer } from '@/lib/api'
 import { PESANAN_BERJALAN } from '@/lib/label'
 import { useAplikasi } from '@/store/aplikasi'
@@ -149,7 +149,7 @@ export default function StokDetail() {
         {/* ============ Kolom kiri: angka dan keputusan ============ */}
         <div className="lg:col-span-5 xl:col-span-4 space-y-4">
           {/* ---- Angka sisa ---- */}
-          <Kartu>
+          <Bagian>
             <div className="flex items-end justify-between gap-4">
               <div className="min-w-0">
                 <p className="text-kecil font-semibold uppercase tracking-wide text-ink-3">Sisa tercatat</p>
@@ -254,7 +254,7 @@ export default function StokDetail() {
                 {barang.catatan}
               </p>
             )}
-          </Kartu>
+          </Bagian>
 
           {/* ---- Sedang dikirim: angka kedua yang tidak pernah dijumlahkan ---- */}
           {dikirim.jumlah > 0 && (
@@ -358,23 +358,21 @@ export default function StokDetail() {
               )}
 
               {tren.length > 0 && (
-                <Kartu>
-                  <div className="flex items-start justify-between gap-3 mb-3">
-                    <div className="min-w-0">
-                      <h2 className="text-kartu font-bold text-ink leading-tight">Tren pemakaian</h2>
-                      <p className="text-isi text-ink-3 mt-0.5 leading-snug">
-                        14 hari terakhir dan 7 hari ke depan
-                        {mesin.model && <> &middot; perkiraan {mesin.model}, pita p10&ndash;p90</>}
-                      </p>
-                    </div>
+                <Bagian
+                  id="judul-tren"
+                  judul="Tren pemakaian"
+                  keterangan="14 hari terakhir dan 7 hari ke depan"
+                  aksi={
                     <Link
                       to={`/stok/${barang.id}/rapor`}
-                      className="shrink-0 inline-flex items-center gap-1 text-isi font-bold text-brand hover:underline"
+                      className="inline-flex items-center gap-1 text-isi font-bold text-brand hover:underline"
                     >
                       <IkonGrafik size={15} />
                       Rapor perkiraan
                     </Link>
-                  </div>
+                  }
+                >
+                  {mesin.model && <LabelMetode className="-mt-1 mb-2" {...metodePrediksi(mesin.model)} />}
                   <GrafikTren
                     data={trenTampil(barang, tren)}
                     satuan={satuanTampil(barang).nama}
@@ -386,7 +384,7 @@ export default function StokDetail() {
                     Sesudah garis &ldquo;{mesin.status === 'contoh' ? 'hari ini' : 'data terakhir'}&rdquo;, bayangan merah
                     adalah rentang perkiraan: sekitar 8 dari 10 hari jatuh di dalamnya.
                   </Penjelasan>
-                </Kartu>
+                </Bagian>
               )}
 
             </div>
@@ -479,27 +477,29 @@ function KartuSaranMesin({
 
   if (saran.length === 0) {
     return (
-      <Kartu padat>
-        <h2 className="text-kartu font-bold text-ink leading-tight">Saran distributor</h2>
-        <LabelMetode className="mt-1" {...METODE_SARAN} />
-        <p className="mt-1 text-isi text-ink-3 leading-relaxed">
+      <Bagian id="judul-saran" judul="Saran distributor">
+        <LabelMetode className="-mt-1" {...METODE_SARAN} />
+        <p className="mt-2 text-isi text-ink-3 leading-relaxed">
           Belum ada saran untuk barang ini. Bisa jadi belum ada distributor di daerahmu yang menawarkannya.
         </p>
-      </Kartu>
+      </Bagian>
     )
   }
   const lama = saran.some((s) => s.kedaluwarsa)
   return (
-    <section ref={wadahRef} aria-label="Saran distributor" className="scroll-mt-[calc(var(--kepala-global,0px)_+_4.5rem)]">
-    <Kartu>
-      <div className="flex items-baseline justify-between gap-3">
-        <h2 className="text-kartu font-bold text-ink leading-tight">Saran distributor</h2>
-        <p className="shrink-0 text-kecil text-ink-3">
+    <Bagian
+      ref={wadahRef}
+      id="judul-saran"
+      judul="Saran distributor"
+      aksi={
+        <p className="text-kecil text-ink-3">
           Dihitung {waktuLalu(saran[0].dijalankanPada)}
           {lama && ' · akan diperbarui'}
         </p>
-      </div>
-      <LabelMetode className="mt-1" {...METODE_SARAN} />
+      }
+      className="scroll-mt-[calc(var(--kepala-global,0px)_+_4.5rem)]"
+    >
+      <LabelMetode className="-mt-1" {...METODE_SARAN} />
       <ul className="mt-3 space-y-3">
         {saran.map((s, i) => {
           const seg = SEGMEN_SARAN[s.segmen ?? ''] ?? { label: s.segmen ?? '–', nada: 'info' as const }
@@ -549,8 +549,7 @@ function KartuSaranMesin({
           )
         })}
       </ul>
-    </Kartu>
-    </section>
+    </Bagian>
   )
 }
 

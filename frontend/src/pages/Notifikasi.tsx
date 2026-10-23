@@ -1,19 +1,11 @@
-import { useMemo, type ReactNode } from 'react'
+import { useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import type { KategoriNotifikasi, Notifikasi as TipeNotifikasi } from '@/lib/types'
+import type { Notifikasi as TipeNotifikasi } from '@/lib/types'
+import { IKON_NOTIF, WARNA_NADA, nadaNotif } from '@/components/domain/Pemberitahuan'
 import { HanyaPembacaLayar, Lencana, Tombol, TombolTautan } from '@/components/ui/dasar'
 import { KeadaanKosong } from '@/components/ui/umpanBalik'
 import { BarisChip, Chip, KepalaHalaman } from '@/components/ui/navigasi'
-import {
-  IkonCentangLingkaran,
-  IkonInfo,
-  IkonKeranjang,
-  IkonKontrak,
-  IkonKotak,
-  IkonLonceng,
-  IkonPanahKanan,
-  IkonPasokan,
-} from '@/icons'
+import { IkonCentangLingkaran, IkonLonceng, IkonPanahKanan, IkonPasokan } from '@/icons'
 import { cx, waktuLalu, waktuNanti } from '@/lib/format'
 import { JUDUL, LABEL_KATEGORI_NOTIF, PESANAN_BERJALAN } from '@/lib/label'
 import { useAplikasi } from '@/store/aplikasi'
@@ -42,31 +34,11 @@ const PENYARING: Array<{ nilai: Penyaring; label: string }> = [
   { nilai: 'kontrak', label: LABEL_KATEGORI_NOTIF.kontrak },
 ]
 
-const IKON: Record<KategoriNotifikasi, ReactNode> = {
-  stok: <IkonKotak size={18} />,
-  'saran-belanja': <IkonKeranjang size={18} />,
-  pesanan: <IkonPasokan size={18} />,
-  kontrak: <IkonKontrak size={18} />,
-  sistem: <IkonInfo size={18} />,
-}
-
-/** Warna ikon mengikuti kategori, tapi status tidak pernah hanya warna:
-    judul, detail, dan tombolnya selalu menyebutkan sendiri apa yang terjadi. */
-const WARNA: Record<KategoriNotifikasi, string> = {
-  stok: 'bg-kritis-soft text-kritis-ink',
-  'saran-belanja': 'bg-brand-soft text-brand-soft-ink',
-  pesanan: 'bg-info-soft text-info-ink',
-  kontrak: 'bg-menipis-soft text-menipis-ink',
-  sistem: 'bg-netral-soft text-netral-ink',
-}
-
-/* Merah hanya untuk yang genting. Dulu semua pemberitahuan stok merah,
-   termasuk yang baru menipis, sehingga merahnya kehilangan arti. */
+/** Ikon dan warna per kategori dipakai bersama panel pemberitahuan desktop.
+    Status tidak pernah hanya warna: judul, detail, dan tombolnya selalu
+    menyebutkan sendiri apa yang terjadi. */
 function warnaIkon(n: TipeNotifikasi): string {
-  if (n.kategori === 'stok') {
-    return n.tingkat === 'genting' ? 'bg-kritis-soft text-kritis-ink' : 'bg-menipis-soft text-menipis-ink'
-  }
-  return WARNA[n.kategori]
+  return WARNA_NADA[nadaNotif(n)]
 }
 
 const KEPALA = ['Hari Ini', 'Kemarin', 'Minggu Ini', 'Lebih Lama'] as const
@@ -345,11 +317,12 @@ function BarisNotifikasi({
   const tautan = pasif ? `/pesanan/${dipesan.pesananId}` : notif.tautan
   const aksiLabel = pasif ? 'Lihat pesanan' : notif.aksiLabel
   const bisaDilewati = notif.kategori === 'saran-belanja' && notif.butuhTindakan
+  const IkonKategori = IKON_NOTIF[notif.kategori]
 
   const isi = (
     <div className="flex items-start gap-3 min-h-[72px]">
       <span className={cx('shrink-0 size-10 rounded-md grid place-items-center', warnaIkon(notif))}>
-        {IKON[notif.kategori]}
+        <IkonKategori size={18} />
       </span>
 
       <div className="min-w-0 grow">

@@ -10,7 +10,7 @@ import {
 } from '@/components/domain'
 import { KartuPromo } from '@/components/domain/KartuPromo'
 import { Korsel } from '@/components/ui/korsel'
-import { JudulBagian, Kartu, Kerangka, Lencana, Tombol, TombolTautan } from '@/components/ui/dasar'
+import { Bagian, Kartu, Kerangka, Lencana, Tombol, TombolTautan } from '@/components/ui/dasar'
 import { PengaturJumlah } from '@/components/ui/formulir'
 import { Lembar } from '@/components/ui/lembar'
 import {
@@ -470,15 +470,22 @@ export default function Beranda() {
       </div>
 
       {/* Promo distributor */}
+      {/* Wadah coral berisi kartu putih, panah di pojok (revisi 23 Okt). Coral
+          hanya sebagai isian; judulnya tinta gelap, bukan putih (2,5:1). */}
       {promoTampil.length > 0 && (
-        <section aria-labelledby="judul-promo" className="mt-6">
-          <JudulBagian
-            id="judul-promo"
-            judul="Promo dari Distributor"
-          />
+        <section
+          aria-labelledby="judul-promo"
+          className="mt-4 bg-aksen -mx-4 px-4 py-4 sm:mx-0 sm:p-5 sm:rounded-xl sm:shadow-e1"
+        >
           <Korsel
             label="Promo dari distributor"
             otomatis
+            nada="aksen"
+            judul={
+              <h2 id="judul-promo" className="text-subjudul font-extrabold text-aksen-ink leading-tight">
+                Promo dari Distributor
+              </h2>
+            }
             kelasItem="w-[85%] sm:w-[20rem] lg:w-[calc((100%-1.5rem)/3)]"
             isi={promoTampil.map((p) => ({ kunci: p.id, elemen: <KartuPromo promo={p} lebar /> }))}
           />
@@ -486,11 +493,11 @@ export default function Beranda() {
       )}
 
       {/* Perlu Tindakan: pintasan penyaring, bukan tindakan itu sendiri */}
-      <section aria-labelledby="judul-perlu-tindakan" className="mt-6">
-        <JudulBagian
-          id="judul-perlu-tindakan"
-          judul="Perlu Tindakan"
-        />
+      <Bagian
+        id="judul-perlu-tindakan"
+        judul="Perlu Tindakan"
+        className="mt-3 sm:mt-4"
+      >
         <div
           aria-label="Pintasan ke daftar stok dan kontrak yang perlu ditindak"
           className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-4 sm:gap-3 sm:overflow-visible"
@@ -542,7 +549,7 @@ export default function Beranda() {
             </Link>
           ))}
         </div>
-      </section>
+      </Bagian>
 
       {/* Kartu tindakan konkret.
           Sengaja hidup berdampingan dengan baris ikon di atas dan bukan
@@ -550,12 +557,12 @@ export default function Beranda() {
           tersaring, sedangkan kartu di bawah ini adalah satu tindakan yang
           sudah jelas - termasuk satu-satunya jalan cepat ke "Barang Sudah
           Sampai" dan ke Lembar Pesan Cepat. */}
-      <section aria-labelledby="judul-perlu-diurus" className="mt-6">
-        <JudulBagian
-          id="judul-perlu-diurus"
-          judul="Yang perlu kamu urus hari ini"
-          keterangan={tugas.length > 0 ? `${tugas.length} hal menunggu keputusan kamu.` : undefined}
-        />
+      <Bagian
+        id="judul-perlu-diurus"
+        judul="Yang perlu kamu urus hari ini"
+        keterangan={tugas.length > 0 ? `${tugas.length} hal menunggu keputusan kamu.` : undefined}
+        className="mt-3 sm:mt-4"
+      >
         {tugas.length === 0 ? (
           <p className="flex items-center gap-2 text-kartu font-semibold text-aman-ink bg-aman-soft rounded-md px-3.5 py-3">
             <IkonCentangLingkaran size={18} />
@@ -583,20 +590,20 @@ export default function Beranda() {
             </ul>
           </>
         )}
-      </section>
+      </Bagian>
 
       {/* Prediksi Stok */}
-      <section aria-labelledby="judul-prediksi" className="mt-6">
-        <JudulBagian
-          id="judul-prediksi"
-          judul="Prediksi Stok"
-          keterangan="Perkiraan bisa meleset. Angka di bawah adalah saran, bukan jaminan."
-          aksi={
-            <Link to="/prediksi" className="text-isi font-bold text-brand hover:underline">
-              Lihat semua
-            </Link>
-          }
-        />
+      <Bagian
+        id="judul-prediksi"
+        judul="Prediksi Stok"
+        keterangan="Perkiraan bisa meleset. Angka di bawah adalah saran, bukan jaminan."
+        aksi={
+          <Link to="/prediksi" className="text-isi font-bold text-brand hover:underline">
+            Lihat semua
+          </Link>
+        }
+        className="mt-3 sm:mt-4"
+      >
 
         {!perkiraanSiap ? (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 [&>*]:min-w-0">
@@ -708,22 +715,22 @@ export default function Beranda() {
             })}
           </div>
         )}
-      </section>
+      </Bagian>
 
       {/* Pesanan berjalan */}
-      <section aria-labelledby="judul-pesanan-berjalan" className="mt-6">
-        <JudulBagian
-          id="judul-pesanan-berjalan"
-          judul="Pesanan Berjalan"
-          keterangan={berjalan.length === 0 ? undefined : `${berjalan.length} pesanan sedang diproses`}
-          aksi={
-            berjalan.length > 3 ? (
-              <Link to="/pesanan" className="text-isi font-bold text-brand hover:underline">
-                Lihat semua
-              </Link>
-            ) : undefined
-          }
-        />
+      <Bagian
+        id="judul-pesanan-berjalan"
+        judul="Pesanan Berjalan"
+        keterangan={berjalan.length === 0 ? undefined : `${berjalan.length} pesanan sedang diproses`}
+        aksi={
+          berjalan.length > 3 ? (
+            <Link to="/pesanan" className="text-isi font-bold text-brand hover:underline">
+              Lihat semua
+            </Link>
+          ) : undefined
+        }
+        className="mt-3 sm:mt-4"
+      >
         {berjalan.length === 0 ? (
           <Kartu padat>
             <p className="text-isi text-ink-3">
@@ -741,7 +748,7 @@ export default function Beranda() {
             ))}
           </div>
         )}
-      </section>
+      </Bagian>
 
       {/* Pita belanja yang belum dikirim */}
       {isiKeranjang > 0 && (
@@ -757,17 +764,17 @@ export default function Beranda() {
 
       {/* Ringkasan kontrak: cermin dari tab Pesanan, bukan data baru */}
       {kontrak.length > 0 && (
-        <section aria-labelledby="judul-kontrak" className="mt-6 hidden lg:block">
-          <JudulBagian
-            id="judul-kontrak"
-            judul="Kuota Kontrak Bulan Ini"
-            keterangan={`${kontrak.length} kontrak berjalan. Setiap barang punya kontrak sendiri.`}
-            aksi={
-              <Link to="/pesanan?tab=kontrak" className="text-isi font-bold text-brand hover:underline">
-                Lihat semua
-              </Link>
-            }
-          />
+        <Bagian
+          id="judul-kontrak"
+          judul="Kuota Kontrak Bulan Ini"
+          keterangan={`${kontrak.length} kontrak berjalan. Setiap barang punya kontrak sendiri.`}
+          aksi={
+            <Link to="/pesanan?tab=kontrak" className="text-isi font-bold text-brand hover:underline">
+              Lihat semua
+            </Link>
+          }
+          className="mt-3 sm:mt-4 hidden lg:block"
+        >
           <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-3 [&>*]:min-w-0">
             {kontrak.slice(0, 4).map((k) => (
               <Kartu key={k.id} padat>
@@ -783,7 +790,7 @@ export default function Beranda() {
               </Kartu>
             ))}
           </div>
-        </section>
+        </Bagian>
       )}
 
       {/* Jalan keluar yang selalu ada, supaya Beranda tidak pernah jadi buntu */}

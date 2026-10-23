@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { cx } from '@/lib/format'
 import { NAV } from '@/lib/label'
@@ -16,6 +16,7 @@ import { useAplikasi, useJumlahKeranjang, useJumlahPerluTindakan } from '@/store
 import { Toast } from '@/components/ui/umpanBalik'
 import { TandaMerek } from '@/components/ui/Merek'
 import { Avatar } from '@/components/ui/dasar'
+import { MenuPemberitahuan, butirDariNotifikasi } from '@/components/domain/Pemberitahuan'
 
 /**
  * Kerangka lima tab.
@@ -72,6 +73,10 @@ export default function KerangkaAplikasi() {
   const navigate = useNavigate()
   const tema = useAplikasi((s) => s.tema)
   const perluTindakan = useJumlahPerluTindakan()
+  const notifikasi = useAplikasi((s) => s.notifikasi)
+  const bacaNotifikasi = useAplikasi((s) => s.bacaNotifikasi)
+  const bacaSemuaNotifikasi = useAplikasi((s) => s.bacaSemuaNotifikasi)
+  const butirNotif = useMemo(() => butirDariNotifikasi(notifikasi), [notifikasi])
   const isiKeranjang = useJumlahKeranjang()
   const aktif = tabInduk(pathname)
   const tab = profil.jenisUsaha === 'produksi-makanan' ? TAB_PRODUKSI : TAB
@@ -122,13 +127,15 @@ export default function KerangkaAplikasi() {
         {/* Di desktop lonceng dan keranjang ada di sini, bukan di bilah atas
             selebar layar yang isinya hanya dua ikon. */}
         <div className="mt-3 mx-3 pt-3 border-t border-line flex flex-col gap-1">
-          <TautanSamping
-            ke="/notifikasi"
+          {/* Panel kecil, bukan pindah halaman (revisi 23 Okt); halaman penuhnya
+              lewat "Lihat semua" di panel dan lonceng bilah atas di HP. */}
+          <MenuPemberitahuan
+            butir={butirNotif}
+            semuaKe="/notifikasi"
             aktif={pathname.startsWith('/notifikasi')}
-            Ikon={IkonLonceng}
-            label="Pemberitahuan"
             jumlah={perluTindakan}
-            nadaJumlah="kritis"
+            bacaButir={bacaNotifikasi}
+            tandaiSemuaDibaca={bacaSemuaNotifikasi}
           />
           <TautanSamping
             ke="/keranjang"
@@ -279,7 +286,7 @@ export default function KerangkaAplikasi() {
   )
 }
 
-/** Tautan di navigasi samping desktop dengan angka (pemberitahuan, keranjang). */
+/** Tautan di navigasi samping desktop dengan angka (keranjang). */
 function TautanSamping({
   ke,
   aktif,

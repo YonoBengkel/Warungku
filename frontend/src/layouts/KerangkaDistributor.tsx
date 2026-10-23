@@ -16,6 +16,7 @@ import { distributorAktif } from '@/data/dummy'
 import { useAplikasi, useJumlahPerluKonfirmasi } from '@/store/aplikasi'
 import { Toast } from '@/components/ui/umpanBalik'
 import { Avatar } from '@/components/ui/dasar'
+import { MenuPemberitahuan, usePemberitahuanDistributor } from '@/components/domain/Pemberitahuan'
 
 /**
  * Kerangka Portal Distributor: empat item, sistem desain yang sama dengan
@@ -97,6 +98,8 @@ export default function KerangkaDistributor() {
   const tutupRacun = useAplikasi((s) => s.tutupRacun)
   const tema = useAplikasi((s) => s.tema)
   const perluKonfirmasi = useJumlahPerluKonfirmasi()
+  const pemberitahuan = usePemberitahuanDistributor()
+  const jumlahTindakan = pemberitahuan.filter((b) => b.perluTindakan).length
 
   // Portal ini layout terpisah: kalau pengguna membuka rutenya langsung, kelas
   // tema harus tetap terpasang tanpa menumpang pada kerangka sisi UMKM.
@@ -149,8 +152,7 @@ export default function KerangkaDistributor() {
               >
                 <Ikon size={22} />
                 <span className="grow">{label}</span>
-                {/* Di desktop angka lonceng pindah ke sini: lonceng di bilah atas
-                    hanya membuka Pesanan, dan bilah itu disembunyikan. */}
+                {/* Angka pesanan yang menunggu dijawab, langsung di menunya. */}
                 {ke === '/distributor-portal/pesanan' && perluKonfirmasi > 0 && (
                   <span
                     aria-label={`${perluKonfirmasi} menunggu konfirmasi`}
@@ -162,6 +164,16 @@ export default function KerangkaDistributor() {
               </NavLink>
             )
           })}
+        </div>
+
+        {/* Pemberitahuan: panel kecil di samping menu (revisi 23 Okt). */}
+        <div className="mt-3 mx-3 pt-3 border-t border-line">
+          <MenuPemberitahuan
+            butir={pemberitahuan}
+            semuaKe="/distributor-portal/pemberitahuan"
+            aktif={pathname.startsWith('/distributor-portal/pemberitahuan')}
+            jumlah={jumlahTindakan}
+          />
         </div>
 
         <PitaAlatUji kelas="mt-auto border-t" />
@@ -182,18 +194,14 @@ export default function KerangkaDistributor() {
             </Link>
 
             <Link
-              to="/distributor-portal/pesanan"
-              aria-label={
-                perluKonfirmasi > 0
-                  ? `Pemberitahuan, ${perluKonfirmasi} pesanan menunggu konfirmasi`
-                  : 'Pemberitahuan'
-              }
+              to="/distributor-portal/pemberitahuan"
+              aria-label={jumlahTindakan > 0 ? `Pemberitahuan, ${jumlahTindakan} butuh tindakan` : 'Pemberitahuan'}
               className="relative size-11 grid place-items-center rounded-md text-ink-2 hover:bg-sunken hover:text-ink"
             >
               <IkonLonceng size={22} />
-              {perluKonfirmasi > 0 && (
+              {jumlahTindakan > 0 && (
                 <span className="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-kritis text-ink-inverse text-[0.6875rem] font-bold grid place-items-center tabular">
-                  {perluKonfirmasi}
+                  {jumlahTindakan}
                 </span>
               )}
             </Link>
