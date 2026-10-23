@@ -245,7 +245,7 @@ export default function PenawaranDetail() {
                       <IkonBintangIsi size={14} className="text-menipis" />
                       <strong className="text-ink">{bintang(distributor.rating)}</strong>
                       <HanyaPembacaLayar>dari 5 bintang &middot;</HanyaPembacaLayar>
-                      {distributor.jumlahUlasan} ulasan dari {distributor.jumlahUmkmPengulas} UMKM &middot;{' '}
+                      {angka(distributor.jumlahUlasan)} ulasan dari {angka(distributor.jumlahUmkmPengulas)} UMKM &middot;{' '}
                       {angka(distributor.jumlahPesananSelesai)} pesanan selesai
                     </span>
                   )}

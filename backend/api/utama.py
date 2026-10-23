@@ -6,6 +6,8 @@ Titik masuk layanan API.
 
 from __future__ import annotations
 
+import os
+
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -30,8 +32,11 @@ app.add_middleware(
     # Port pengembangan Vite. Daftar diperketat saat dipasang sungguhan —
     # `allow_origins=["*"]` bersama `allow_credentials=True` ditolak browser,
     # dan menaruh "*" di sini sekarang berarti menemukannya nanti saat
-    # login mulai dipasang, dengan gejala yang membingungkan.
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    # login mulai dipasang, dengan gejala yang membingungkan. Asal lain (domain
+    # saat dipasang, atau frontend uji di port lain) ditambahkan lewat
+    # WARUNGKU_ASAL_TAMBAHAN, dipisah koma; tetap daftar persis, bukan "*".
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"]
+    + [a.strip() for a in os.getenv("WARUNGKU_ASAL_TAMBAHAN", "").split(",") if a.strip()],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

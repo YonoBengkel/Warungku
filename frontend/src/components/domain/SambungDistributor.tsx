@@ -3,9 +3,8 @@ import { JudulBagian, Kartu, Tombol } from '@/components/ui/dasar'
 import { Kolom } from '@/components/ui/formulir'
 import { GalatApi, ServerTakTerjangkau } from '@/lib/api'
 import { useAplikasi } from '@/store/aplikasi'
+import { AKUN_DISTRIBUTOR } from '@/lib/akunSimulasi'
 
-/** Akun contoh dari pembangkit dataset (KATA_SANDI_CONTOH). Nilai uji untuk basis data lokal. */
-const AKUN_SIMULASI = { email: 'distributor1@warungku.test', kataSandi: 'warungku123' }
 
 /**
  * Menyambungkan portal distributor ke server.
@@ -72,8 +71,8 @@ export function KartuSambungDistributor({ keterangan, className }: { keterangan:
           <Tombol
             ragam="garis"
             onClick={() => {
-              setEmail(AKUN_SIMULASI.email)
-              setSandi(AKUN_SIMULASI.kataSandi)
+              setEmail(AKUN_DISTRIBUTOR.email)
+              setSandi(AKUN_DISTRIBUTOR.kataSandi)
               setGalat(null)
             }}
           >
@@ -82,7 +81,7 @@ export function KartuSambungDistributor({ keterangan, className }: { keterangan:
         </div>
       </form>
       <p className="mt-3 text-kecil text-ink-3">
-        Akun simulasi {AKUN_SIMULASI.email} adalah Sumber Tani Nusantara di data simulasi.
+        Akun simulasi {AKUN_DISTRIBUTOR.email} adalah Sumber Tani Nusantara di data simulasi.
       </p>
     </Kartu>
   )

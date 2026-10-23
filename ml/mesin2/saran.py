@@ -204,9 +204,12 @@ def jalankan(
 
     baris_keluar: list[dict] = []
     for barang_id, g in kandidat.groupby("barang_id", sort=True):
-        butuh = max(0.0, float(g["batas_aman"].iloc[0]) * 2 - float(g["stok"].iloc[0]))
-        if butuh <= 0:
-            continue
+        # Semua barang dinilai, tidak hanya yang stoknya rendah, supaya rincian
+        # barang selalu bisa menunjukkan distributor terbaiknya. Barang yang
+        # stoknya masih cukup dinilai untuk pembelian sebesar batas amannya;
+        # jumlah ini hanya masuk fitur nilai pesanan (memenuhi minimum atau tidak).
+        batas = float(g["batas_aman"].iloc[0])
+        butuh = max(batas * 2 - float(g["stok"].iloc[0]), batas)
 
         g = g.copy()
         g["jumlah_kemasan"] = np.maximum(1.0, np.ceil(butuh / g["kemasan_isi"].clip(lower=1e-6)))
@@ -230,7 +233,6 @@ def jalankan(
         X = np.array([[f[k] for k in FITUR] for f in fitur], dtype=float)
         rasio = g["rasio_harga"].to_numpy(dtype=float)
         segmen: list[str | None] = [None] * len(g)
-        catatan_beta: list[str] = [""] * len(g)
 
         if isinstance(model, BetaBernoulli):
             # Jalur utama: keandalan Beta per distributor dan kondisi, satu
@@ -243,16 +245,9 @@ def jalankan(
             # label yang dibaca pemilik warung tidak berganti tiap penyegaran.
             # Urutan tetap memakai cuplikan; itulah yang memberi eksplorasi.
             segmen = ATURAN_BAWAAN.segmen(ATURAN_BAWAAN.skor(p, rasio))
-            for j, k in enumerate(kunci):
-                a, b = model.parameter(k)
-                total = int(round(a + b - 2))
-                # "Serupa" hanya benar kalau hitungannya dipisah per kondisi.
-                cakupan = "pesanan serupa" if model.pisah_konteks else "pesanan"
-                catatan_beta[j] = (
-                    " %s dari %s %s sebelumnya ke distributor ini berjalan mulus."
-                    % (_angka(round(a - 1)), _angka(total), cakupan)
-                    if total > 0 else " Belum ada %s sebelumnya ke distributor ini." % cakupan
-                )
+            # Hitungan Beta ("A dari B pesanan berjalan mulus") dulu ditempel di
+            # alasan. Sejak revisi 23 Okt 2026 alasan di layar berbahasa awam
+            # saja; jumlah pesanan selesai sudah disebut di `_alasan`.
             urut = np.argsort(-skor)[:SIMPAN_TERATAS]
             nama_tulis = "beta+thompson+fuzzy" if thompson else "beta+fuzzy"
         else:
@@ -279,7 +274,7 @@ def jalankan(
                     "distributor_id": int(r["distributor_id"]),
                     "p_sukses": float(round(p[int(i)], 4)),
                     "skor": float(round(skor[int(i)], 4)),
-                    "alasan": _alasan(fitur[int(i)] | {"nama": r["nama_distributor"]}) + catatan_beta[int(i)],
+                    "alasan": _alasan(fitur[int(i)] | {"nama": r["nama_distributor"]}),
                     "segmen": segmen[int(i)],
                     "model_nama": nama_tulis,
                     "model_versi": "0.1",

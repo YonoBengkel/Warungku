@@ -214,7 +214,7 @@ Cari komponen yang sudah ada sebelum menulis yang baru. Komponen dasar ada di
 | Hasil aksi | Toast lewat `tampilkanRacun(teks, nada)`; aksi massal cukup satu toast ringkasan |
 | Lembar bawah dan konfirmasi | `Lembar`, `Konfirmasi` |
 | Kolom isian | `Kolom`, `AreaTeks`, `Pilihan`, `PengaturJumlah`; bingkai galat lewat `kelasBingkai(galat)` |
-| Nama metode analitik | `KeteranganMetode`, sekali per halaman (Mesin 1 di Prediksi, Mesin 2 di saran distributor dan Belanja, Mesin 3 di Pelanggan) |
+| Nama metode analitik | `LabelMetode` di atas halaman atau kartu: nama metode saja, penjelasan 2–3 kalimat di gelembung (hover, ketuk, atau fokus). LightGBM di Prediksi, Thompson Sampling + fuzzy di saran distributor dan halaman Distributor, K-Prototypes di Pelanggan |
 | Logo toko dan gambar produk | `Avatar`, yang mencari gambar lewat `gambarUntuk(nama)` dengan huruf awal sebagai cadangan |
 
 **Ikon** dibuat sendiri di `frontend/src/icons/`: garis 1,75px, kotak 24px, dan selalu
@@ -264,8 +264,9 @@ ukuran bundel.
 | distributor | pemasok | |
 | filter | saringan, saring | |
 
-- **Nama metode** tampil apa adanya ("Mesin 1 · LightGBM"), tetapi kalimat penjelasnya memakai
-  bahasa pemilik usaha.
+- **Nama metode** tampil apa adanya lewat `LabelMetode` ("LightGBM"), tanpa "Mesin 1/2/3" dan
+  tanpa diulang di kalimat deskripsi halaman. Penjelasannya di gelembung, berbahasa pemilik usaha,
+  tanpa angka peluang, skor, atau nama rumus.
 
 ## 9. Larangan
 

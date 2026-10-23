@@ -26,6 +26,14 @@ Sambal Bu Ratmi (produksi1):
   sekaligus, dan nota beberapa hari terakhir untuk menu baru yang belum
   dipasangkan ke bahan (isi tab "Perlu Dibereskan" di Akun > Data dari Kasir).
   Nomor notanya berawalan `DEMO-V-` dan tidak ikut data latih omset.
+* **Portal distributor** (Sumber Tani Nusantara, distributor1): pesanan masuk dari
+  lima kedai simulasi di setiap tahap (nomor `PS-yymmdd-W`), kontrak dengan beberapa
+  kedai di setiap status, dan promo berjalan yang beragam, ditambah promo dari
+  distributor lain supaya Beranda Kopi Kita punya promo. Diminta Ilham 23 Okt 2026.
+* **Kiriman simulasi yang terlambat** (masih "dikirim" padahal perkiraan tibanya
+  sudah lewat lebih dari dua hari) ditandai sudah sampai oleh distributornya, sama
+  seperti tombol "Tandai Sudah Sampai". Stok pemiliknya tidak berubah sampai ia
+  menghitung barangnya sendiri. Perubahan ini tidak dibatalkan saat dipasang ulang.
 
 **Tanggal pesanan dan kontrak relatif terhadap HARI INI**, bukan terhadap
 akhir data simulasi: status kontrak "akan berakhir" dan keterangan "perkiraan
@@ -45,7 +53,17 @@ from sqlalchemy import text
 
 from warungku.basis_data import mesin
 from warungku.enum import JenisPergerakan, StatusBayar, StatusKontrak, StatusPesanan
-from warungku.model import Kontrak, KontrakPeriode, Pergerakan, Pesanan, PesananBaris, PesananJejak
+from warungku.model import (
+    Kontrak,
+    KontrakPeriode,
+    Pergerakan,
+    Pesanan,
+    PesananBaris,
+    PesananJejak,
+    Promo,
+    PromoPenawaran,
+    TingkatKeanggotaan,
+)
 
 from .buat_dataset import AKHIR, _wkt
 from .katalog import deskripsi_kemasan
@@ -160,6 +178,80 @@ MENU_BARU: dict[str, tuple[tuple[str, str, int, int, int], ...]] = {
         ("Kentang Goreng", "porsi", 15000, 12, 2),
     ),
 }
+
+#: Akun distributor yang portalnya dibuka saat demo.
+EMAIL_DISTRIBUTOR = "distributor1@warungku.test"
+
+#: Banyaknya kedai simulasi yang memesan ke distributor demo.
+JUMLAH_PEMBELI = 5
+
+#: Pesanan masuk ke distributor demo: (status, urutan pembeli 0..4, [(produk, kemasan)], hari lalu, alasan tolak).
+#: "sampai" = dikirim dan sudah ditandai sampai; di portal distributor terbaca selesai.
+PESANAN_DISTRIBUTOR: list[tuple] = [
+    ("menunggu", 0, [("Biji Kopi Arabika", 3), ("Gula Aren Cair", 2)], 0, None),
+    ("menunggu", 1, [("Teh Hitam", 2)], 0, None),
+    ("menunggu", 2, [("Gula Pasir", 1), ("Sirup Vanila", 4)], 1, None),
+    ("disiapkan", 3, [("Biji Kopi Robusta", 5)], 0, None),
+    ("disiapkan", 4, [("Bubuk Cokelat", 2), ("Matcha Bubuk", 1)], 1, None),
+    ("dikirim", 0, [("Biji Kopi Robusta", 4)], 0, None),
+    ("dikirim", 2, [("Biji Kopi Arabika", 2), ("Teh Hitam", 1)], 1, None),
+    ("dikirim", 4, [("Gula Aren Cair", 3)], 1, None),
+    ("sampai", 1, [("Gula Pasir", 2)], 2, None),
+    ("sampai", 3, [("Matcha Bubuk", 2)], 3, None),
+    ("batal", 2, [("Bubuk Cokelat", 6)], 3, "Bubuk cokelat sedang kosong sampai kiriman pekan depan."),
+]
+
+#: Kontrak dengan distributor demo: (status, urutan pembeli, produk, paket, berapa hari lalu mulai).
+KONTRAK_DISTRIBUTOR: list[tuple] = [
+    ("aktif", 0, "Biji Kopi Arabika", "Kontrak C", 30),
+    ("aktif-rutin", 3, "Biji Kopi Robusta", "Kontrak B", 15),
+    ("akan-berakhir", 1, "Teh Hitam", "Kontrak B", 40),
+    ("menunggu-persetujuan", 2, "Gula Pasir", "Kontrak C", 1),
+    ("menunggu-persetujuan", 4, "Sirup Vanila", "Kontrak A", 0),
+    ("selesai", 4, "Bubuk Cokelat", "Kontrak A", 80),
+    ("dihentikan", 2, "Gula Aren Cair", "Kontrak C", 95),
+    ("ditolak", 1, "Matcha Bubuk", "Kontrak A", 5),
+]
+
+#: Promo berjalan: (distributor, jenis, judul, keterangan, [produk], potongan %, berakhir dalam hari | None,
+#: dibuat berapa hari lalu, tingkat). Judulnya dipakai untuk membuangnya lagi saat dipasang ulang.
+PROMO: list[tuple] = [
+    ("Sumber Tani Nusantara", "produk-baru", "Panen Baru Arabika Gayo",
+     "Biji panen terbaru baru masuk gudang. Sangrai menyusul sesuai pesanan.",
+     ["Biji Kopi Arabika", "Biji Kopi Robusta"], 8, 21, 0, None),
+    ("Sumber Tani Nusantara", "cuci-gudang", "Cuci Gudang Gula Pasir",
+     "Stok gula kiriman bulan lalu dilepas lebih murah sebelum karung baru datang.",
+     ["Gula Pasir"], 15, 2, 6, None),
+    ("Sumber Tani Nusantara", "cuci-gudang", "Diskon Teh Akhir Bulan",
+     "Teh hitam dan teh melati turun harga sampai akhir bulan.",
+     ["Teh Hitam", "Teh Melati"], 10, 9, 3, None),
+    ("Sumber Tani Nusantara", "cuci-gudang", "Sisa Kiriman Sirup & Gula Aren",
+     "Sirup vanila dan gula aren cair sisa kiriman, masa simpan masih panjang.",
+     ["Sirup Vanila", "Gula Aren Cair"], 20, 5, 1, None),
+    ("Sumber Tani Nusantara", "produk-baru", "Matcha Ceremonial Baru",
+     "Matcha giling halus untuk latte dan minuman dingin, stok perdana.",
+     ["Matcha Bubuk"], None, None, 0, None),
+    ("Sumber Tani Nusantara", "membership", "Langganan Kopi Bulanan",
+     "Daftar sekali, biji kopi dan cokelat datang tiap pekan dengan harga tetap sebulan.",
+     ["Biji Kopi Arabika", "Biji Kopi Robusta", "Bubuk Cokelat"], 6, None, 10,
+     [("Perunggu", "Langganan kirim sekali seminggu", "Potongan 6% dan harga tetap sebulan"),
+      ("Perak", "Belanja minimal Rp 2 jt per bulan", "Semua di Perunggu, plus sangrai sesuai pesanan"),
+      ("Emas", "Belanja minimal Rp 4 jt per bulan", "Semua di Perak, plus gratis ongkos kirim")]),
+    ("Dairy Prima Jaya", "cuci-gudang", "Cuci Gudang Susu UHT",
+     "Susu UHT tanggal kedaluwarsa awal tahun depan dilepas lebih murah.",
+     ["Susu UHT Full Cream"], 12, 6, 2, None),
+    ("Kemasan Andalan", "cuci-gudang", "Cuci Gudang Kemasan",
+     "Gelas dan sedotan menumpuk sebelum kiriman baru datang. Harga turun sampai gudang lega.",
+     ["Gelas Plastik 16 oz", "Sedotan Kertas"], 15, 10, 4, None),
+    ("Es Segar Mandiri", "membership", "Langganan Es Harian",
+     "Es batu datang tiap pagi tanpa perlu pesan ulang. Bisa dihentikan kapan saja.",
+     ["Es Batu Kristal"], 5, None, 20,
+     [("Perunggu", "Langganan kirim harian 1 bulan", "Potongan 5% untuk es batu"),
+      ("Perak", "Langganan 3 bulan", "Semua di Perunggu, plus kirim dua kali sehari saat ramai")]),
+]
+
+#: Kiriman simulasi dianggap terlambat kalau perkiraan tibanya sudah lewat sebanyak ini.
+TERLAMBAT = timedelta(days=2)
 
 #: Porsi per nota, diputar supaya notanya tidak seragam.
 POLA_NOTA = (2, 1, 3, 1, 2)
@@ -379,124 +471,141 @@ def _variasi_pesanan(kon, usaha_id: int, email: str, sekarang: datetime, nomor_a
     nomor = nomor_awal
     for status, distributor, isi, hari_lalu, alasan in PESANAN[email]:
         nomor += 1
-        dibuat = sekarang - timedelta(days=hari_lalu, hours=2 + nomor % 3)
-        baris = []
-        for nama, jumlah in isi:
-            b = barang[nama]
-            baris.append((b, _penawaran(kon, distributor, b["produk_master_id"]), jumlah))
-        dist_id = baris[0][1]["distributor_id"]
-        kode = {
-            "menunggu": StatusPesanan.MENUNGGU_KONFIRMASI, "disiapkan": StatusPesanan.DISIAPKAN,
-            "dikirim": StatusPesanan.DIKIRIM, "sampai": StatusPesanan.DIKIRIM, "batal": StatusPesanan.BATAL,
-        }[status]
-        dibayar = status in ("disiapkan", "dikirim", "sampai")
-        dikirim = status in ("dikirim", "sampai")
-        pid = kon.execute(
-            Pesanan.__table__.insert().returning(Pesanan.__table__.c.id),
-            {
-                "nomor": f"PS-{dibuat.astimezone(WIB):%y%m%d}-V{nomor:04d}", "usaha_id": usaha_id,
-                "distributor_id": dist_id, "kontrak_id": None, "dibuat_pada": dibuat, "status": kode,
-                "ongkos_kirim": 20_000 if nomor % 2 else 25_000, "perkiraan_tiba": dibuat + timedelta(days=2, hours=5),
-                "status_bayar": StatusBayar.BUKTI_TERKIRIM if dibayar else StatusBayar.BELUM_DIBAYAR,
-                "jumlah_bukti": 1 if dibayar else 0, "dari_saran": nomor % 2 == 0, "dari_rutin": False,
-                "sudah_diulas": False, "alasan_tolak": alasan,
-                "kirim_kurir": "Armada sendiri" if dikirim else None,
-                "kirim_pengantar": "Kurir distributor" if dikirim else None,
-                "kirim_nomor_resi": f"RSI-V{nomor:04d}" if dikirim else None,
-                "kirim_waktu_sampai": dibuat + timedelta(days=1, hours=4) if status == "sampai" else None,
-                "kirim_diterima_oleh": "Karyawan toko" if status == "sampai" else None,
-                "kirim_catatan": "Diturunkan di depan gudang." if status == "sampai" else None,
-            },
-        ).scalar_one()
-        for b, pw, jumlah in baris:
-            kon.execute(
-                PesananBaris.__table__.insert(),
-                {
-                    "pesanan_id": pid, "penawaran_id": pw["id"], "barang_id": b["id"], "nama": b["nama"],
-                    "jumlah": float(jumlah), "satuan": pw["satuan"], "harga_satuan": pw["harga_satuan"],
-                    "harga_normal": pw["harga_satuan"], "promo_id": None, "isi_per_satuan": pw["kemasan_isi"],
-                    "jumlah_diterima": None,
-                },
-            )
-        jejak = [(StatusPesanan.MENUNGGU_KONFIRMASI, dibuat, "Pesanan dikirim ke distributor.")]
-        if status == "batal":
-            jejak.append((StatusPesanan.BATAL, dibuat + timedelta(hours=3), "Distributor menolak pesanan: " + alasan))
-        if status in ("disiapkan", "dikirim", "sampai"):
-            jejak.append((StatusPesanan.DISIAPKAN, dibuat + timedelta(hours=2), "Distributor menerima pesanan dan menyiapkan barang."))
-        if dikirim:
-            jejak.append((StatusPesanan.DIKIRIM, dibuat + timedelta(hours=20), "Barang berangkat dari gudang distributor."))
-        if status == "sampai":
-            jejak.append((StatusPesanan.DIKIRIM, dibuat + timedelta(days=1, hours=4),
-                          "Distributor menandai barang sudah sampai. Menunggu dihitung pemilik usaha."))
-        for st, waktu, ket in jejak:
-            kon.execute(PesananJejak.__table__.insert(), {"pesanan_id": pid, "waktu": waktu, "status": st, "keterangan": ket})
+        _satu_pesanan(kon, usaha_id, barang, status, distributor, isi, hari_lalu, alasan, nomor, sekarang, "V")
     return nomor
+
+
+def _satu_pesanan(
+    kon, usaha_id: int, barang: dict[str, dict], status: str, distributor: str, isi, hari_lalu: int,
+    alasan: str | None, nomor: int, sekarang: datetime, awalan: str,
+) -> None:
+    """Satu pesanan beserta baris dan jejaknya. `awalan` membedakan pemiliknya: V akun UMKM, W distributor."""
+    dibuat = sekarang - timedelta(days=hari_lalu, hours=2 + nomor % 3)
+    baris = []
+    for nama, jumlah in isi:
+        b = barang[nama]
+        baris.append((b, _penawaran(kon, distributor, b["produk_master_id"]), jumlah))
+    dist_id = baris[0][1]["distributor_id"]
+    kode = {
+        "menunggu": StatusPesanan.MENUNGGU_KONFIRMASI, "disiapkan": StatusPesanan.DISIAPKAN,
+        "dikirim": StatusPesanan.DIKIRIM, "sampai": StatusPesanan.DIKIRIM, "batal": StatusPesanan.BATAL,
+    }[status]
+    dibayar = status in ("disiapkan", "dikirim", "sampai")
+    dikirim = status in ("dikirim", "sampai")
+    pid = kon.execute(
+        Pesanan.__table__.insert().returning(Pesanan.__table__.c.id),
+        {
+            "nomor": f"PS-{dibuat.astimezone(WIB):%y%m%d}-{awalan}{nomor:04d}", "usaha_id": usaha_id,
+            "distributor_id": dist_id, "kontrak_id": None, "dibuat_pada": dibuat, "status": kode,
+            "ongkos_kirim": 20_000 if nomor % 2 else 25_000, "perkiraan_tiba": dibuat + timedelta(days=2, hours=5),
+            "status_bayar": StatusBayar.BUKTI_TERKIRIM if dibayar else StatusBayar.BELUM_DIBAYAR,
+            "jumlah_bukti": 1 if dibayar else 0, "dari_saran": nomor % 2 == 0, "dari_rutin": False,
+            "sudah_diulas": False, "alasan_tolak": alasan,
+            "kirim_kurir": "Armada sendiri" if dikirim else None,
+            "kirim_pengantar": "Kurir distributor" if dikirim else None,
+            "kirim_nomor_resi": f"RSI-{awalan}{nomor:04d}" if dikirim else None,
+            "kirim_waktu_sampai": dibuat + timedelta(days=1, hours=4) if status == "sampai" else None,
+            "kirim_diterima_oleh": "Karyawan toko" if status == "sampai" else None,
+            "kirim_catatan": "Diturunkan di depan gudang." if status == "sampai" else None,
+        },
+    ).scalar_one()
+    for b, pw, jumlah in baris:
+        kon.execute(
+            PesananBaris.__table__.insert(),
+            {
+                "pesanan_id": pid, "penawaran_id": pw["id"], "barang_id": b["id"], "nama": b["nama"],
+                "jumlah": float(jumlah), "satuan": pw["satuan"], "harga_satuan": pw["harga_satuan"],
+                "harga_normal": pw["harga_satuan"], "promo_id": None, "isi_per_satuan": pw["kemasan_isi"],
+                "jumlah_diterima": None,
+            },
+        )
+    jejak = [(StatusPesanan.MENUNGGU_KONFIRMASI, dibuat, "Pesanan dikirim ke distributor.")]
+    if status == "batal":
+        jejak.append((StatusPesanan.BATAL, dibuat + timedelta(hours=3), "Distributor menolak pesanan: " + alasan))
+    if status in ("disiapkan", "dikirim", "sampai"):
+        jejak.append((StatusPesanan.DISIAPKAN, dibuat + timedelta(hours=2), "Distributor menerima pesanan dan menyiapkan barang."))
+    if dikirim:
+        jejak.append((StatusPesanan.DIKIRIM, dibuat + timedelta(hours=20), "Barang berangkat dari gudang distributor."))
+    if status == "sampai":
+        jejak.append((StatusPesanan.DIKIRIM, dibuat + timedelta(days=1, hours=4),
+                      "Distributor menandai barang sudah sampai. Menunggu dihitung pemilik usaha."))
+    for st, waktu, ket in jejak:
+        kon.execute(PesananJejak.__table__.insert(), {"pesanan_id": pid, "waktu": waktu, "status": st, "keterangan": ket})
 
 
 def _variasi_kontrak(kon, usaha_id: int, email: str, sekarang: datetime) -> int:
     barang = _barang(kon, usaha_id)
-    hari_ini = sekarang.astimezone(WIB).replace(hour=9, minute=0, second=0, microsecond=0).astimezone(timezone.utc)
     n = 0
     for status, distributor, nama, kode, hari_mulai in KONTRAK[email]:
-        b = barang[nama]
-        pw = _penawaran(kon, distributor, b["produk_master_id"])
-        paket = kon.execute(
-            text("SELECT * FROM paket_kontrak WHERE penawaran_id = :p AND kode = :k"), {"p": pw["id"], "k": kode}
-        ).mappings().one()
-        mulai = hari_ini - timedelta(days=hari_mulai)
-        berakhir = _tambah_bulan(mulai, paket["durasi_bulan"])
-        data = {
-            "usaha_id": usaha_id, "distributor_id": pw["distributor_id"], "penawaran_id": pw["id"], "paket_id": paket["id"],
-            "barang_id": b["id"], "nama_barang": nama, "durasi_bulan": paket["durasi_bulan"],
-            "kuota_min_per_bulan": paket["kuota_min_per_bulan"], "harga_satuan": paket["harga_satuan"],
-            "satuan": pw["satuan"], "mulai": mulai, "berakhir": berakhir, "status": StatusKontrak.AKTIF,
-            "dalam_perjalanan": 0, "ketentuan_kuota_kurang": paket["ketentuan_kuota_kurang"],
-            "pesanan_rutin_aktif": status == "aktif-rutin",
-            "pesanan_rutin_berikutnya": (hari_ini + timedelta(days=5)).date() if status == "aktif-rutin" else None,
-        }
-        if status == "akan-berakhir":
-            # Sisa 20 hari: tetap "akan berakhir" selama sekitar tiga pekan.
-            data["mulai"] = _tambah_bulan(hari_ini + timedelta(days=20), -paket["durasi_bulan"])
-            data["berakhir"] = hari_ini + timedelta(days=20)
-        elif status == "menunggu-persetujuan":
-            data["status"] = StatusKontrak.MENUNGGU_PERSETUJUAN
-        elif status == "selesai":
-            data["status"] = StatusKontrak.SELESAI
-        elif status == "dihentikan":
-            henti = hari_ini - timedelta(days=30)
-            data.update(
-                status=StatusKontrak.DIHENTIKAN, berakhir=henti,
-                pengajuan_berhenti_waktu=henti - timedelta(days=4),
-                pengajuan_berhenti_alasan="Pemakaian es batu turun sejak musim hujan.",
-                jawaban_berhenti_waktu=henti, jawaban_berhenti_disetujui=True,
-                jawaban_berhenti_alasan="Disetujui, kuota bulan berjalan dianggap lunas.",
-            )
-        elif status == "ditolak":
-            data.update(
-                status=StatusKontrak.DITOLAK,
-                alasan_ditolak="Kuota minimum terlalu kecil untuk ongkos kirim ke Kalasan.",
-            )
-        kid = kon.execute(Kontrak.__table__.insert().returning(Kontrak.__table__.c.id), data).scalar_one()
+        _satu_kontrak(kon, usaha_id, barang, status, distributor, nama, kode, hari_mulai, sekarang)
         n += 1
-
-        # Pemenuhan kuota per bulan untuk kontrak yang pernah berjalan.
-        if data["status"] in (StatusKontrak.AKTIF, StatusKontrak.SELESAI, StatusKontrak.DIHENTIKAN):
-            kini = sekarang.astimezone(WIB)
-            akhir = min(kini, data["berakhir"].astimezone(WIB))
-            t = data["mulai"].astimezone(WIB).replace(day=1)
-            kuota = Decimal(paket["kuota_min_per_bulan"])
-            urut = 0
-            while (t.year, t.month) <= (akhir.year, akhir.month):
-                bulan_ini = (t.year, t.month) == (kini.year, kini.month)
-                urut += 1
-                diterima = kuota * (Decimal("0.6") if bulan_ini else Decimal("1.1") if urut % 3 else Decimal("0.8"))
-                kon.execute(
-                    KontrakPeriode.__table__.insert(),
-                    {"kontrak_id": kid, "periode": f"{t.year}-{t.month:02d}", "kuota": kuota,
-                     "diterima": diterima.quantize(Decimal("1")), "selesai": not bulan_ini},
-                )
-                t = (t.replace(day=28) + timedelta(days=4)).replace(day=1)
     return n
+
+
+def _satu_kontrak(
+    kon, usaha_id: int, barang: dict[str, dict], status: str, distributor: str, nama: str, kode: str,
+    hari_mulai: int, sekarang: datetime,
+) -> None:
+    """Satu kontrak di status yang diminta, beserta pemenuhan kuota per bulannya."""
+    hari_ini = sekarang.astimezone(WIB).replace(hour=9, minute=0, second=0, microsecond=0).astimezone(timezone.utc)
+    kota = kon.execute(text("SELECT kota FROM usaha WHERE id = :u"), {"u": usaha_id}).scalar_one()
+    b = barang[nama]
+    pw = _penawaran(kon, distributor, b["produk_master_id"])
+    paket = kon.execute(
+        text("SELECT * FROM paket_kontrak WHERE penawaran_id = :p AND kode = :k"), {"p": pw["id"], "k": kode}
+    ).mappings().one()
+    mulai = hari_ini - timedelta(days=hari_mulai)
+    berakhir = _tambah_bulan(mulai, paket["durasi_bulan"])
+    data = {
+        "usaha_id": usaha_id, "distributor_id": pw["distributor_id"], "penawaran_id": pw["id"], "paket_id": paket["id"],
+        "barang_id": b["id"], "nama_barang": nama, "durasi_bulan": paket["durasi_bulan"],
+        "kuota_min_per_bulan": paket["kuota_min_per_bulan"], "harga_satuan": paket["harga_satuan"],
+        "satuan": pw["satuan"], "mulai": mulai, "berakhir": berakhir, "status": StatusKontrak.AKTIF,
+        "dalam_perjalanan": 0, "ketentuan_kuota_kurang": paket["ketentuan_kuota_kurang"],
+        "pesanan_rutin_aktif": status == "aktif-rutin",
+        "pesanan_rutin_berikutnya": (hari_ini + timedelta(days=5)).date() if status == "aktif-rutin" else None,
+    }
+    if status == "akan-berakhir":
+        # Sisa 20 hari: tetap "akan berakhir" selama sekitar tiga pekan.
+        data["mulai"] = _tambah_bulan(hari_ini + timedelta(days=20), -paket["durasi_bulan"])
+        data["berakhir"] = hari_ini + timedelta(days=20)
+    elif status == "menunggu-persetujuan":
+        data["status"] = StatusKontrak.MENUNGGU_PERSETUJUAN
+    elif status == "selesai":
+        data["status"] = StatusKontrak.SELESAI
+    elif status == "dihentikan":
+        henti = hari_ini - timedelta(days=30)
+        data.update(
+            status=StatusKontrak.DIHENTIKAN, berakhir=henti,
+            pengajuan_berhenti_waktu=henti - timedelta(days=4),
+            pengajuan_berhenti_alasan=f"Pemakaian {nama.lower()} turun, kuota bulanan tidak lagi terpakai.",
+            jawaban_berhenti_waktu=henti, jawaban_berhenti_disetujui=True,
+            jawaban_berhenti_alasan="Disetujui, kuota bulan berjalan dianggap lunas.",
+        )
+    elif status == "ditolak":
+        data.update(
+            status=StatusKontrak.DITOLAK,
+            alasan_ditolak=f"Kuota minimum terlalu kecil untuk ongkos kirim ke {kota}.",
+        )
+    kid = kon.execute(Kontrak.__table__.insert().returning(Kontrak.__table__.c.id), data).scalar_one()
+
+    # Pemenuhan kuota per bulan untuk kontrak yang pernah berjalan.
+    if data["status"] in (StatusKontrak.AKTIF, StatusKontrak.SELESAI, StatusKontrak.DIHENTIKAN):
+        kini = sekarang.astimezone(WIB)
+        akhir = min(kini, data["berakhir"].astimezone(WIB))
+        t = data["mulai"].astimezone(WIB).replace(day=1)
+        kuota = Decimal(paket["kuota_min_per_bulan"])
+        urut = 0
+        while (t.year, t.month) <= (akhir.year, akhir.month):
+            bulan_ini = (t.year, t.month) == (kini.year, kini.month)
+            urut += 1
+            diterima = kuota * (Decimal("0.6") if bulan_ini else Decimal("1.1") if urut % 3 else Decimal("0.8"))
+            kon.execute(
+                KontrakPeriode.__table__.insert(),
+                {"kontrak_id": kid, "periode": f"{t.year}-{t.month:02d}", "kuota": kuota,
+                 "diterima": diterima.quantize(Decimal("1")), "selesai": not bulan_ini},
+            )
+            t = (t.replace(day=28) + timedelta(days=4)).replace(day=1)
 
 
 def _variasi_menu(kon, usaha_id: int, email: str, sekarang: datetime) -> tuple[int, int]:
@@ -555,6 +664,180 @@ def _variasi_menu(kon, usaha_id: int, email: str, sekarang: datetime) -> tuple[i
     return n_resep, len(nota)
 
 
+def _demo_usaha(kon) -> list[int]:
+    return [u for u in (_usaha(kon, e) for e in STOK) if u is not None]
+
+
+def _pembeli_distributor(kon, distributor_id: int, demo: list[int]) -> list[int]:
+    """Kedai simulasi di area kirim distributor yang barangnya paling banyak cocok dengan penawarannya."""
+    return [
+        r[0]
+        for r in kon.execute(
+            text(
+                """
+                SELECT u.id
+                  FROM usaha u
+                  JOIN distributor d ON d.id = :d
+                  JOIN barang b ON b.usaha_id = u.id AND NOT b.dicatat_manual
+                  JOIN penawaran p ON p.produk_master_id = b.produk_master_id
+                                  AND p.distributor_id = d.id AND p.aktif
+                 WHERE u.kota = ANY(d.area_kirim) AND u.id <> ALL(:demo)
+                 GROUP BY u.id
+                 ORDER BY count(*) DESC, u.id
+                 LIMIT :n
+                """
+            ),
+            {"d": distributor_id, "demo": demo, "n": JUMLAH_PEMBELI},
+        )
+    ]
+
+
+def hapus_distributor(kon) -> None:
+    """Buang variasi portal distributor: pesanan W, kontrak kedai non-demo, dan promo variasi."""
+    pesanan = "SELECT id FROM pesanan WHERE nomor LIKE 'PS-%-W%'"
+    demo = _demo_usaha(kon)
+    # Data dasar tidak punya kontrak sama sekali; kontrak kedai di luar akun
+    # demo hanya bisa berasal dari variasi ini.
+    kontrak = "SELECT id FROM kontrak WHERE usaha_id <> ALL(:demo)"
+    for sql in (
+        f"UPDATE pergerakan SET pesanan_id = NULL WHERE pesanan_id IN ({pesanan})",
+        f"DELETE FROM ulasan WHERE pesanan_id IN ({pesanan})",
+        f"DELETE FROM fitur_pesanan WHERE pesanan_id IN ({pesanan})",
+        f"DELETE FROM pesanan_jejak WHERE pesanan_id IN ({pesanan})",
+        f"DELETE FROM pesanan_baris WHERE pesanan_id IN ({pesanan})",
+        "DELETE FROM pesanan WHERE nomor LIKE 'PS-%-W%'",
+        f"UPDATE pesanan SET kontrak_id = NULL WHERE kontrak_id IN ({kontrak})",
+        f"DELETE FROM kontrak_periode WHERE kontrak_id IN ({kontrak})",
+        "DELETE FROM kontrak WHERE usaha_id <> ALL(:demo)",
+    ):
+        kon.execute(text(sql), {"demo": demo})
+    judul = [x[2] for x in PROMO]
+    promo = "SELECT id FROM promo WHERE judul = ANY(:j)"
+    for sql in (
+        f"UPDATE pesanan_baris SET promo_id = NULL WHERE promo_id IN ({promo})",
+        f"DELETE FROM tingkat_keanggotaan WHERE promo_id IN ({promo})",
+        f"DELETE FROM promo_penawaran WHERE promo_id IN ({promo})",
+        "DELETE FROM promo WHERE judul = ANY(:j)",
+    ):
+        kon.execute(text(sql), {"j": judul})
+
+
+def _tandai_terlambat_sampai(kon, sekarang: datetime) -> int:
+    """Kiriman simulasi yang perkiraan tibanya lewat jauh: ditandai sampai oleh distributornya."""
+    batas = sekarang - TERLAMBAT
+    ids = [
+        r[0]
+        for r in kon.execute(
+            text(
+                """
+                SELECT id FROM pesanan
+                 WHERE status = 'dikirim' AND kirim_waktu_sampai IS NULL
+                   AND perkiraan_tiba < :b AND nomor NOT LIKE 'PS-%-V%' AND nomor NOT LIKE 'PS-%-W%'
+                """
+            ),
+            {"b": batas},
+        )
+    ]
+    for pid in ids:
+        sampai = kon.execute(
+            text(
+                """
+                UPDATE pesanan
+                   SET kirim_waktu_sampai = perkiraan_tiba,
+                       kirim_diterima_oleh = coalesce(kirim_diterima_oleh, 'Karyawan toko')
+                 WHERE id = :p
+             RETURNING kirim_waktu_sampai
+                """
+            ),
+            {"p": pid},
+        ).scalar_one()
+        kon.execute(
+            PesananJejak.__table__.insert(),
+            {"pesanan_id": pid, "waktu": sampai, "status": StatusPesanan.DIKIRIM,
+             "keterangan": "Distributor menandai barang sudah sampai. Menunggu dihitung pemilik usaha."},
+        )
+    return len(ids)
+
+
+def _variasi_distributor(kon, sekarang: datetime) -> dict | None:
+    """Pesanan masuk, kontrak, dan promo untuk portal distributor demo."""
+    did = kon.execute(
+        text("SELECT d.id FROM distributor d JOIN pengguna p ON p.id = d.pengguna_id WHERE p.email = :e"),
+        {"e": EMAIL_DISTRIBUTOR},
+    ).scalar()
+    if did is None:
+        return None
+    nama_dist = kon.execute(text("SELECT nama FROM distributor WHERE id = :d"), {"d": did}).scalar_one()
+    pembeli = _pembeli_distributor(kon, did, _demo_usaha(kon))
+    if len(pembeli) < JUMLAH_PEMBELI:
+        return None
+    # Barang tiap pembeli dicari lewat nama produk katalog, karena nama barang
+    # di gudang kedai bisa berbeda dari nama kanonik.
+    barang_pembeli: list[dict[str, dict]] = []
+    for u in pembeli:
+        barang_pembeli.append({
+            r["nama_kanonik"]: dict(r)
+            for r in kon.execute(
+                text(
+                    """
+                    SELECT b.id, b.nama, b.produk_master_id, b.stok, b.batas_aman, b.satuan, pm.nama_kanonik
+                      FROM barang b JOIN produk_master pm ON pm.id = b.produk_master_id
+                     WHERE b.usaha_id = :u AND NOT b.dicatat_manual
+                    """
+                ),
+                {"u": u},
+            ).mappings()
+        })
+
+    nomor = 0
+    for status, i, isi, hari_lalu, alasan in PESANAN_DISTRIBUTOR:
+        nomor += 1
+        _satu_pesanan(kon, pembeli[i], barang_pembeli[i], status, nama_dist, isi, hari_lalu, alasan, nomor, sekarang, "W")
+    for status, i, nama, kode, hari_mulai in KONTRAK_DISTRIBUTOR:
+        _satu_kontrak(kon, pembeli[i], barang_pembeli[i], status, nama_dist, nama, kode, hari_mulai, sekarang)
+
+    n_promo = 0
+    for distributor, jenis, judul, keterangan, produk, potongan, berakhir_hari, dibuat_hari, tingkat in PROMO:
+        d = kon.execute(text("SELECT id FROM distributor WHERE nama = :n"), {"n": distributor}).scalar()
+        if d is None:
+            continue
+        penawaran = [
+            r[0]
+            for r in kon.execute(
+                text(
+                    """
+                    SELECT p.id FROM penawaran p JOIN produk_master pm ON pm.id = p.produk_master_id
+                     WHERE p.distributor_id = :d AND p.aktif AND pm.nama_kanonik = ANY(:n)
+                     ORDER BY p.id
+                    """
+                ),
+                {"d": d, "n": produk},
+            )
+        ]
+        if not penawaran:
+            continue
+        pid = kon.execute(
+            Promo.__table__.insert().returning(Promo.__table__.c.id),
+            {
+                "distributor_id": d, "jenis": jenis, "judul": judul, "keterangan": keterangan,
+                "berakhir": sekarang + timedelta(days=berakhir_hari) if berakhir_hari is not None else None,
+                "potongan_persen": potongan, "dibuat_pada": sekarang - timedelta(days=dibuat_hari),
+            },
+        ).scalar_one()
+        for pw in penawaran:
+            kon.execute(PromoPenawaran.__table__.insert(), {"promo_id": pid, "penawaran_id": pw})
+        for urutan, (nama_t, syarat, manfaat) in enumerate(tingkat or (), start=1):
+            kon.execute(
+                TingkatKeanggotaan.__table__.insert(),
+                {"promo_id": pid, "urutan": urutan, "nama": nama_t, "syarat": syarat, "manfaat": manfaat},
+            )
+        n_promo += 1
+    return {
+        "distributor_id": did, "pembeli": len(pembeli), "pesanan": len(PESANAN_DISTRIBUTOR),
+        "kontrak": len(KONTRAK_DISTRIBUTOR), "promo": n_promo,
+    }
+
+
 def basi(kon) -> bool:
     """Belum ada variasi, atau pesanan variasi terbarunya sudah lebih dari tiga hari."""
     terbaru = kon.execute(
@@ -562,10 +845,13 @@ def basi(kon) -> bool:
     ).scalar()
     if terbaru is None or datetime.now(timezone.utc) - terbaru > UMUR_BASI:
         return True
-    # Basis data yang variasinya dipasang sebelum menu demo ada.
-    return any(MENU_BARU.values()) and not kon.execute(
+    # Basis data yang variasinya dipasang sebelum menu demo atau variasi
+    # portal distributor ada.
+    if any(MENU_BARU.values()) and not kon.execute(
         text("SELECT EXISTS (SELECT 1 FROM transaksi WHERE nomor_struk LIKE 'DEMO-V-%')")
-    ).scalar()
+    ).scalar():
+        return True
+    return not kon.execute(text("SELECT EXISTS (SELECT 1 FROM pesanan WHERE nomor LIKE 'PS-%-W%')")).scalar()
 
 
 def pasang(jika_basi: bool = False) -> dict | None:
@@ -575,6 +861,7 @@ def pasang(jika_basi: bool = False) -> dict | None:
     with mesin().begin() as kon:
         if jika_basi and not basi(kon):
             return None
+        hapus_distributor(kon)
         nomor = 0
         for email in STOK:
             u = _usaha(kon, email)
@@ -592,6 +879,10 @@ def pasang(jika_basi: bool = False) -> dict | None:
             hasil[email]["resep"], hasil[email]["nota_menu"] = _variasi_menu(kon, u, email, sekarang)
             nomor = _variasi_pesanan(kon, u, email, sekarang, nomor)
             hasil[email]["pesanan"] = nomor - awal
+        dist = _variasi_distributor(kon, sekarang)
+        if dist is not None:
+            hasil[EMAIL_DISTRIBUTOR] = dist
+        hasil["terlambat_sampai"] = {"pesanan": _tandai_terlambat_sampai(kon, sekarang)}
     return hasil
 
 
@@ -605,6 +896,13 @@ def main() -> None:
         print("Variasi demo masih segar, tidak diubah.")
         return
     for email, h in hasil.items():
+        if email == EMAIL_DISTRIBUTOR:
+            print(f"  {email}: {h['pesanan']} pesanan masuk dari {h['pembeli']} kedai, {h['kontrak']} kontrak, "
+                  f"{h['promo']} promo berjalan (termasuk distributor lain)")
+            continue
+        if email == "terlambat_sampai":
+            print(f"  kiriman simulasi terlambat ditandai sampai: {h['pesanan']}")
+            continue
         print(f"  {email}: {h['pesanan']} pesanan, {h['kontrak']} kontrak, {h['koreksi_stok']} koreksi stok, "
               f"{h['barang_baru']} barang belum terpakai, {h['resep']} resep menu, "
               f"{h['nota_menu']} nota menu baru")
@@ -613,7 +911,8 @@ def main() -> None:
         from ml.mesin2.saran import jalankan
 
         for h in hasil.values():
-            jalankan(h["usaha_id"], thompson=True, nama_model="beta")
+            if "usaha_id" in h:
+                jalankan(h["usaha_id"], thompson=True, nama_model="beta")
         print("  Mesin 2 dijalankan ulang untuk kedua akun.")
     print("Selesai: variasi demo terpasang.")
 

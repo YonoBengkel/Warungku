@@ -344,6 +344,11 @@ def ringkasan_saran_distributor(usaha_id: int = Depends(usaha_saya)):
     mengikuti rata-rata skor. Seperti `/barang/{id}/saran`, yang dibaca hanya
     tabel; layanan model tidak dipanggil, dan saran yang sudah lewat masa
     berlakunya tetap dikirim dengan tanda `kedaluwarsa`.
+
+    Sejak 23 Okt 2026 Mesin 2 menilai semua barang (rincian barang selalu punya
+    saran), jadi yang dirangkum di sini hanya barang yang memang perlu dibeli:
+    stoknya di bawah dua kali batas aman, aturan yang dulu dipakai Mesin 2
+    sendiri. Layar menyebut rangkuman ini "barang yang perlu kamu beli".
     """
     with Session(mesin()) as sesi:
         _usaha_atau_404(sesi, usaha_id)
@@ -353,7 +358,9 @@ def ringkasan_saran_distributor(usaha_id: int = Depends(usaha_saya)):
                 WITH r AS (
                     SELECT r.*, rank() OVER (PARTITION BY r.barang_id ORDER BY r.skor DESC) AS urut
                       FROM rekomendasi_skor r
+                      JOIN barang bb ON bb.id = r.barang_id
                      WHERE r.usaha_id = :u AND r.barang_id IS NOT NULL
+                       AND bb.stok < bb.batas_aman * 2
                 )
                 SELECT r.distributor_id, d.nama AS nama_distributor,
                        count(*) AS jumlah_barang,

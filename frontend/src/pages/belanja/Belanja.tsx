@@ -14,7 +14,7 @@ import { Lembar } from '@/components/ui/lembar'
 import { Chip, TabSegmen } from '@/components/ui/navigasi'
 import { KeadaanKosong } from '@/components/ui/umpanBalik'
 import { HargaBeli, LencanaPromo } from '@/components/domain/KartuPromo'
-import { KeteranganMetode, METODE_MESIN2 } from '@/components/domain/KeteranganMetode'
+import { LabelMetode, METODE_SARAN } from '@/components/domain/LabelMetode'
 import {
   IkonBintangIsi,
   IkonCari,
@@ -25,7 +25,7 @@ import {
   IkonSilang,
   IkonToko,
 } from '@/icons'
-import { angka, bintang, cx, persen, waktuLalu } from '@/lib/format'
+import { angka, bintang, cx, waktuLalu } from '@/lib/format'
 import { isiKemasan, kalimatIsiKemasan } from '@/lib/satuan'
 import { JUDUL, LABEL_JENIS_USAHA } from '@/lib/label'
 import type { Barang, Distributor, PaketKontrak, Penawaran } from '@/lib/types'
@@ -206,7 +206,7 @@ function KartuDistributor({ distributor, jumlahPenawaran }: { distributor: Distr
               {bintang(distributor.rating)}
               <HanyaPembacaLayar> dari 5 bintang</HanyaPembacaLayar>
               <span className="font-normal text-ink-3">
-                &middot; {distributor.jumlahUlasan} ulasan dari {distributor.jumlahUmkmPengulas} UMKM
+                &middot; {angka(distributor.jumlahUlasan)} ulasan dari {angka(distributor.jumlahUmkmPengulas)} UMKM
               </span>
             </span>
           )}
@@ -256,8 +256,8 @@ function KartuRekomendasi({
      pemilik usaha lagi. */
   const alasan = mesin2
     ? mesin2.barangTeratas.length > 0
-      ? `Pilihan pertama Mesin 2 untuk ${daftarNama(mesin2.barangTeratas)}`
-      : `Dinilai Mesin 2 untuk ${mesin2.jumlahBarang} barang yang perlu kamu beli`
+      ? `Pilihan pertama untuk ${daftarNama(mesin2.barangTeratas)}`
+      : `Dinilai untuk ${mesin2.jumlahBarang} barang yang perlu kamu beli`
     : rekomendasi.termurah.length > 0
       ? `Harga termurah: ${rekomendasi.termurah.join(', ')}`
       : belumDiulas
@@ -289,16 +289,11 @@ function KartuRekomendasi({
               <IkonBintangIsi size={14} className="text-menipis" />
               {bintang(d.rating ?? 0)}
               <HanyaPembacaLayar> dari 5 bintang</HanyaPembacaLayar>
-              <span className="font-normal text-ink-3">&middot; {d.jumlahUlasan} ulasan</span>
+              <span className="font-normal text-ink-3">&middot; {angka(d.jumlahUlasan)} ulasan</span>
             </span>
           )}
         </div>
         <p className="mt-1.5 text-isi text-ink-2 leading-snug">{alasan}</p>
-        {mesin2 && (
-          <p className="mt-0.5 text-isi text-ink-3 leading-snug">
-            Peluang pesanan lancar {persen(mesin2.peluangSuksesRata * 100)}
-          </p>
-        )}
         {mitra && (
           <div className="mt-2">
             <Lencana nada="merek" ikon={<IkonKontrak size={13} />}>
@@ -468,8 +463,8 @@ export default function Belanja() {
   const adaBelumDinilai = rekomendasiTeratas.some((r) => !saranMesin2.has(r.distributor.id))
   const dasarUrutan =
     pakaiMesin2 && dihitungMesin2
-      ? `Diurutkan dari skor Mesin 2 untuk barang yang perlu kamu beli, dihitung ${waktuLalu(dihitungMesin2)}.` +
-        (adaBelumDinilai ? ' Yang belum dinilai Mesin 2 menyusul, diurutkan dari penilaian UMKM lain dan harga.' : '')
+      ? `Diurutkan dari distributor yang paling sering tepat waktu dengan harga bersaing, dihitung ${waktuLalu(dihitungMesin2)}.` +
+        (adaBelumDinilai ? ' Yang belum dinilai menyusul, diurutkan dari penilaian UMKM lain dan harga.' : '')
       : 'Diurutkan dari penilaian UMKM lain dan harga.'
   /* Seperti "Perlu kamu isi ulang": distributor yang sudah naik ke atas tidak
      diulang di daftar di bawahnya. */
@@ -775,16 +770,9 @@ export default function Belanja() {
           </>
         ) : (
           <div className="space-y-6">
-            {/* Seperti Mesin 1 di Prediksi: nama metode di atas bagian yang
-                memakai keluarannya. Hanya bila urutannya memang dari Mesin 2. */}
-            {tampilkanRekomendasi && pakaiMesin2 && (
-              <KeteranganMetode
-                className="max-w-[62ch]"
-                mesin="Mesin 2"
-                metode={METODE_MESIN2.metode}
-                masukan={`${METODE_MESIN2.masukan} Di halaman ini skor tiap barang dirata-rata per distributor.`}
-              />
-            )}
+            {/* Seperti di Prediksi: nama metode di atas bagian yang memakai
+                keluarannya. Hanya bila urutannya memang dari saran distributor. */}
+            {tampilkanRekomendasi && pakaiMesin2 && <LabelMetode {...METODE_SARAN} />}
             {tampilkanRekomendasi && (
               <section aria-labelledby="judul-rekomendasi">
                 <JudulBagian

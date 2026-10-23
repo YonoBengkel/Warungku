@@ -29,7 +29,7 @@ import {
   trenKategoriRupiah,
 } from '@/data/dummy'
 import { useAplikasi, usePenentuHarga } from '@/store/aplikasi'
-import { KeteranganMetode, metodeMesin1 } from '@/components/domain/KeteranganMetode'
+import { LabelMetode, metodePrediksi } from '@/components/domain/LabelMetode'
 
 /**
  * Halaman Prediksi: dua keadaan, dibedakan oleh query string.
@@ -154,11 +154,7 @@ export default function Prediksi() {
         <p className="text-isi text-ink-3">Perkiraan untuk bulan depan</p>
       </div>
       <p className="mt-1 text-isi text-ink-2 leading-relaxed max-w-[62ch]">{KALIMAT_MELESET}</p>
-      <KeteranganMetode
-        className="mt-3 max-w-[62ch]"
-        mesin="Mesin 1"
-        {...metodeMesin1(modelBulananServer())}
-      />
+      <LabelMetode className="mt-2" {...metodePrediksi(modelBulananServer())} />
 
       {barangMentah && !barangTerpilih ? (
         /* Tautan lama atau id yang salah salin. Halaman tidak boleh jadi buntu. */

@@ -19,7 +19,7 @@ import {
   IkonPena,
   IkonPeringatan,
 } from '@/icons'
-import { cx, hariLagi, jam, persen, tanggalRingkas, waktuLalu, waktuNanti } from '@/lib/format'
+import { cx, hariLagi, jam, tanggalRingkas, waktuLalu, waktuNanti } from '@/lib/format'
 import { angkaTampil, jumlahTampil, satuanTampil, trenTampil } from '@/lib/satuan'
 import { BANTUAN } from '@/lib/label'
 import {
@@ -30,7 +30,7 @@ import {
   transaksiById,
 } from '@/data/dummy'
 import { useDataMesin } from '@/lib/dataMesin'
-import { KeteranganMetode, METODE_MESIN2 } from '@/components/domain/KeteranganMetode'
+import { LabelMetode, METODE_SARAN } from '@/components/domain/LabelMetode'
 import type { SaranServer } from '@/lib/api'
 import { PESANAN_BERJALAN } from '@/lib/label'
 import { useAplikasi } from '@/store/aplikasi'
@@ -54,12 +54,6 @@ export default function StokDetail() {
   const pesanan = useAplikasi((s) => s.pesanan)
   const kontrak = useAplikasi((s) => s.kontrak.find((k) => k.barangId === id && k.status !== 'selesai'))
   const [tab, setTab] = useState<TabDetail>('ringkasan')
-  /* ?pesan=1 dibaca kartu saran, yang hanya ada di tab Ringkasan. Dari tab
-     Riwayat, tombol "Pesan" dulu hanya mengubah alamat tanpa membuka apa pun. */
-  const [paramHalaman] = useSearchParams()
-  useEffect(() => {
-    if (paramHalaman.get('pesan') === '1') setTab('ringkasan')
-  }, [paramHalaman])
   const mesin = useDataMesin(barang)
 
   /* Dihitung di sini, bukan lewat pembaca bersama, karena pembaca itu menyusun
@@ -306,7 +300,7 @@ export default function StokDetail() {
           {/* ---- Tombol aksi ----
               Satu tombol utama menurut keadaan barang: stok minus berarti
               angkanya salah (koreksi dulu); habis atau menipis berarti pesan.
-              "Pesan" membuka saran Mesin 2 di halaman ini bila ada, dengan
+              "Pesan" membuka saran distributor di halaman ini bila ada, dengan
               jumlah saran sudah terisi. Data barang diubah lewat ikon pena di kepala. */}
           <div className="grid grid-cols-2 gap-2.5">
             <TombolTautan
@@ -328,6 +322,17 @@ export default function StokDetail() {
               Koreksi Stok
             </TombolTautan>
           </div>
+
+          {/* Saran distributor tepat di bawah ringkasan stok (revisi 23 Okt 2026):
+              dulu di bawah grafik di kolom kanan dan mudah terlewat, terutama di HP.
+              Di luar tab, jadi tombol "Pesan" selalu menemukannya. */}
+          {mesin.status === 'siap' && (
+            <KartuSaranMesin
+              saran={mesin.saran}
+              jumlahAwal={Math.max(1, perkiraan.saranBeli)}
+              satuan={barang.kemasan[barang.kemasan.length - 1]?.nama ?? barang.satuan}
+            />
+          )}
         </div>
 
         {/* ============ Kolom kanan: penjelasan ============ */}
@@ -384,14 +389,6 @@ export default function StokDetail() {
                 </Kartu>
               )}
 
-              {mesin.status === 'siap' && (
-                <KartuSaranMesin
-                  saran={mesin.saran}
-                  jumlahAwal={Math.max(1, perkiraan.saranBeli)}
-                  satuan={barang.kemasan[barang.kemasan.length - 1]?.nama ?? barang.satuan}
-                />
-              )}
-
             </div>
           ) : (
             <div role="tabpanel" aria-label="Riwayat pergerakan" className="mt-4">
@@ -431,11 +428,14 @@ const SEGMEN_SARAN: Record<string, { label: string; nada: 'aman' | 'info' | 'men
 }
 
 /**
- * Saran distributor dari Mesin 2 (Beta-Bernoulli + Thompson sampling + fuzzy).
+ * Saran distributor (Thompson Sampling + fuzzy).
  *
- * Mesin 2 hanya menilai barang yang sedang perlu dipesan, jadi daftar kosong
- * bukan galat. Saran yang sudah lewat masa berlakunya tetap ditampilkan,
- * dengan umurnya, karena saran beberapa jam lalu lebih berguna daripada tidak ada.
+ * Sejak 23 Okt 2026 semua barang dinilai, jadi daftar kosong berarti belum ada
+ * distributor di daerah ini yang menawarkan barangnya, atau sarannya belum
+ * dihitung. Saran yang sudah lewat masa berlakunya tetap ditampilkan, dengan
+ * umurnya, karena saran beberapa jam lalu lebih berguna daripada tidak ada.
+ * Penjelasan di layar tanpa angka peluang atau skor: cukup label kelayakan dan
+ * satu kalimat alasan berbahasa awam.
  */
 function KartuSaranMesin({
   saran,
@@ -481,9 +481,9 @@ function KartuSaranMesin({
     return (
       <Kartu padat>
         <h2 className="text-kartu font-bold text-ink leading-tight">Saran distributor</h2>
-        <KeteranganMetode className="mt-2" mesin="Mesin 2" metode={METODE_MESIN2.metode} masukan={METODE_MESIN2.masukan} />
+        <LabelMetode className="mt-1" {...METODE_SARAN} />
         <p className="mt-1 text-isi text-ink-3 leading-relaxed">
-          Belum ada saran untuk barang ini. Saran muncul saat barang mendekati batas aman dan perlu dipesan.
+          Belum ada saran untuk barang ini. Bisa jadi belum ada distributor di daerahmu yang menawarkannya.
         </p>
       </Kartu>
     )
@@ -499,7 +499,7 @@ function KartuSaranMesin({
           {lama && ' · akan diperbarui'}
         </p>
       </div>
-      <KeteranganMetode className="mt-2" mesin="Mesin 2" metode={METODE_MESIN2.metode} masukan={METODE_MESIN2.masukan} />
+      <LabelMetode className="mt-1" {...METODE_SARAN} />
       <ul className="mt-3 space-y-3">
         {saran.map((s, i) => {
           const seg = SEGMEN_SARAN[s.segmen ?? ''] ?? { label: s.segmen ?? '–', nada: 'info' as const }
@@ -512,14 +512,7 @@ function KartuSaranMesin({
                 </p>
                 <Lencana nada={seg.nada}>{seg.label}</Lencana>
               </div>
-              <p className="mt-0.5 text-isi text-ink-2">
-                Peluang pesanan lancar <strong className="text-ink tabular">{persen(s.peluangSukses * 100)}</strong>
-              </p>
-              {s.alasan && (
-                <Penjelasan label="Kenapa disarankan?">
-                  {s.alasan} Skor gabungan {s.skor.toFixed(2).replace('.', ',')}.
-                </Penjelasan>
-              )}
+              {s.alasan && <p className="mt-1 text-isi text-ink-2 leading-relaxed">{s.alasan}</p>}
               {dibuka === s.penawaranId ? (
                 <div className="mt-2.5 p-3 rounded-md bg-sunken space-y-2.5">
                   <PengaturJumlah

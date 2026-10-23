@@ -176,7 +176,7 @@ function TabProduksi({
       </div>
       <div className="max-w-[62ch]">
         <p className="text-kecil text-ink-3 leading-relaxed">
-          Kebutuhan bahan baku diramal Mesin 1 di halaman Prediksi.
+          Kebutuhan bahan baku diramal di halaman Prediksi.
         </p>
         <Penjelasan label="Cara menghitung perkiraan pesanan">
           Perkiraan pesanan 7 hari adalah rata-rata pesanan pada hari yang sama dalam 4 pekan terakhir, karena

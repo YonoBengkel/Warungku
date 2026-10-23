@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { JudulBagian, Kartu, Lencana, TombolTautan } from '@/components/ui/dasar'
-import { KeadaanKosong, Penjelasan, Peringatan } from '@/components/ui/umpanBalik'
+import { KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
 import { IkonProfil } from '@/icons'
 import { angka, cx, rupiah, rupiahRingkas, tanggalRingkas, waktuLalu } from '@/lib/format'
 import { GalatApi, ambilAnggotaSegmen, ambilSegmen } from '@/lib/api'
 import { useAplikasi } from '@/store/aplikasi'
-import { KeteranganMetode, METODE_MESIN3 } from '@/components/domain/KeteranganMetode'
+import { LabelMetode, METODE_SEGMEN } from '@/components/domain/LabelMetode'
 import type { AnggotaSegmen, RingkasanSegmen, SesiDistributor } from '@/lib/api'
 import { LABEL_JENIS_USAHA } from '@/lib/label'
 import type { JenisUsaha } from '@/lib/types'
@@ -84,16 +84,9 @@ export default function SegmenPelanggan() {
           <p className="mt-1 text-isi text-ink-2 leading-relaxed max-w-[62ch]">
             Dipakai untuk memutuskan siapa ditawari kontrak dan siapa perlu dihubungi.
           </p>
-          <Penjelasan label="Cara dikelompokkan" className="max-w-[70ch]">
-            Pelanggan kamu dikelompokkan menurut kapan terakhir memesan, seberapa sering, dan seberapa besar
-            belanjanya.
-          </Penjelasan>
-          <KeteranganMetode
-            className="mt-3 max-w-[70ch]"
-            mesin="Mesin 3"
-            metode={METODE_MESIN3.metode}
-            masukan={METODE_MESIN3.masukan}
-          />
+          {/* Cara mengelompokkan dijelaskan di gelembung label metode; dulu juga
+              ada lipatan "Cara dikelompokkan" yang isinya sama. */}
+          <LabelMetode className="mt-2" {...METODE_SEGMEN} />
         </div>
       </div>
 
@@ -118,7 +111,7 @@ export default function SegmenPelanggan() {
         <KeadaanKosong
           ikon={<IkonProfil size={26} />}
           judul="Segmen belum dihitung"
-          pesan="Mesin analitik belum mengelompokkan pelanggan kamu. Segmen dihitung ulang otomatis setiap empat jam."
+          pesan="Pelanggan kamu belum dikelompokkan. Kelompoknya dihitung ulang otomatis setiap empat jam."
         />
       ) : (
         <>

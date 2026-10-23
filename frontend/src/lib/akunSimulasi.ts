@@ -5,8 +5,10 @@
  * - Dapur Sambal Bu Ratmi, UMKM produsen: `data/dataset/umkm_produksi.py`;
  *   kata sandinya sama dengan akun contoh lain.
  *
- * Dipakai tombol isi otomatis di halaman Masuk dan tombol pindah akun di kotak
- * Alat uji purwarupa (halaman Akun).
+ * - Sumber Tani Nusantara, distributor: `data/dataset/buat_dataset.py` (distributor1).
+ *
+ * Dipakai tombol isi otomatis di halaman Masuk, tombol pindah akun di kotak
+ * Alat uji purwarupa (halaman Akun), dan tombol Buka Portal Distributor.
  */
 export interface AkunSimulasi {
   namaUsaha: string
@@ -23,3 +25,6 @@ export const AKUN_BU_RATMI: AkunSimulasi = {
 
 /** Dua akun UMKM yang bisa saling berpindah lewat Alat uji purwarupa. */
 export const AKUN_SIMULASI_UMKM: readonly AkunSimulasi[] = [AKUN_KOPI_KITA, AKUN_BU_RATMI]
+
+/** Distributor simulasi yang portalnya dibuka saat demo (Sumber Tani Nusantara). */
+export const AKUN_DISTRIBUTOR: { email: string; kataSandi: string } = { email: 'distributor1@warungku.test', kataSandi: 'warungku123' }

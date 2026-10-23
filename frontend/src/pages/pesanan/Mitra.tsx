@@ -141,7 +141,7 @@ export default function Mitra() {
                       <span className="inline-flex items-center gap-1 text-ink-2">
                         <IkonBintangIsi size={14} className="text-menipis" />
                         <strong className="text-ink">{bintang(distributor.rating)}</strong>
-                        <span>dari {distributor.jumlahUlasan} ulasan</span>
+                        <span>dari {angka(distributor.jumlahUlasan)} ulasan</span>
                       </span>
                     )
                   )}

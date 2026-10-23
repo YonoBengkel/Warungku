@@ -207,7 +207,7 @@ export default function DistributorProfil() {
                     <HanyaPembacaLayar> dari 5 bintang</HanyaPembacaLayar>
                   </span>
                   <span className="text-isi text-ink-2">
-                    {distributor.jumlahUlasan} ulasan dari {distributor.jumlahUmkmPengulas} UMKM &middot;{' '}
+                    {angka(distributor.jumlahUlasan)} ulasan dari {angka(distributor.jumlahUmkmPengulas)} UMKM &middot;{' '}
                     {angka(distributor.jumlahPesananSelesai)} pesanan selesai
                   </span>
                 </p>

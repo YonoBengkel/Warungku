@@ -217,7 +217,7 @@ export default function DistributorUlasan() {
                 <p className="text-isi text-ink-2 leading-relaxed">
                   Rata-rata dari {semua.length} ulasan yang bisa ditampilkan
                   {distributor.jumlahUlasan > semua.length && (
-                    <>, dari total {distributor.jumlahUlasan} ulasan yang tercatat</>
+                    <>, dari total {angka(distributor.jumlahUlasan)} ulasan yang tercatat</>
                   )}
                   .
                 </p>

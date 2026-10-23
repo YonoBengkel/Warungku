@@ -19,7 +19,7 @@ import {
   IkonSinkron,
   IkonToko,
 } from '@/icons'
-import { AKUN_SIMULASI_UMKM, type AkunSimulasi } from '@/lib/akunSimulasi'
+import { AKUN_DISTRIBUTOR, AKUN_SIMULASI_UMKM, type AkunSimulasi } from '@/lib/akunSimulasi'
 import { cx, tanggalPanjang } from '@/lib/format'
 import { JUDUL, LABEL_JENIS_USAHA } from '@/lib/label'
 import { useAplikasi } from '@/store/aplikasi'
@@ -49,6 +49,11 @@ export default function Akun() {
   const [tanyaKeluar, setTanyaKeluar] = useState(false)
   const [berpindah, setBerpindah] = useState(false)
   const [galatPindah, setGalatPindah] = useState<string | null>(null)
+  const sumberData = useAplikasi((s) => s.sumberData)
+  const sesiDistributor = useAplikasi((s) => s.sesiDistributor)
+  const sambungDistributor = useAplikasi((s) => s.sambungDistributor)
+  const [membukaPortal, setMembukaPortal] = useState(false)
+  const [galatPortal, setGalatPortal] = useState<string | null>(null)
 
   // Pindah akun hanya untuk dua akun simulasi UMKM. Sesi yang tersimpan sebelum
   // email ikut disimpan dikenali dari nama usahanya.
@@ -71,6 +76,26 @@ export default function Akun() {
         setGalatPindah(`Akun ${akun.namaUsaha} belum bisa dibuka. Pastikan data simulasinya sudah dibuat, lalu coba lagi.`)
       })
       .finally(() => setBerpindah(false))
+  }
+
+  /* Di mode data server, portal distributor dibuka dengan data server memakai
+     akun distributor simulasi. Dulu hanya perannya yang berpindah, sehingga
+     portal menampilkan pesanan dan kontrak karangan di samping data sungguhan. */
+  async function bukaPortalDistributor() {
+    setGalatPortal(null)
+    if (sumberData === 'server' && !sesiDistributor) {
+      setMembukaPortal(true)
+      try {
+        await sambungDistributor(AKUN_DISTRIBUTOR.email, AKUN_DISTRIBUTOR.kataSandi)
+      } catch {
+        setGalatPortal('Portal distributor belum bisa dibuka. Pastikan data simulasinya sudah dibuat, lalu coba lagi.')
+        return
+      } finally {
+        setMembukaPortal(false)
+      }
+    }
+    aturPeran('distributor')
+    navigate('/distributor-portal')
   }
 
   const belumDipasangkan = kasir.menuBelumDipasangkan.length
@@ -290,13 +315,16 @@ export default function Akun() {
                 ragam="garis"
                 ikonKiri={<IkonGudang size={17} />}
                 className="mt-3"
-                onClick={() => {
-                  aturPeran('distributor')
-                  navigate('/distributor-portal')
-                }}
+                memuat={membukaPortal}
+                onClick={bukaPortalDistributor}
               >
                 Buka Portal Distributor
               </Tombol>
+              {galatPortal && (
+                <p role="alert" className="mt-2 text-isi text-kritis-ink leading-relaxed">
+                  {galatPortal}
+                </p>
+              )}
             </div>
           </section>
 
