@@ -270,7 +270,7 @@ export default function PenawaranDetail() {
               <p className="mt-2 text-isi text-ink-2">
                 Sisa <strong className="text-ink">{jumlahTampil(barang, barang.stok)}</strong>
                 {barang.pemakaianHarian > 0 && hariCukup(barang) != null && (
-                  <> &middot; cukup &plusmn;{hariCukup(barang)} hari</>
+                  <> &middot; {hariCukup(barang) === 0 ? 'stok tidak cukup' : <>cukup &plusmn;{hariCukup(barang)} hari</>}</>
                 )}
               </p>
               <Link

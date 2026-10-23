@@ -28,20 +28,26 @@
   --c-ink-3: #5a6773;
   --c-ink-inverse: #ffffff;
 
-  /* Merek — ungu dari Logo.jpeg (#52329f, disampel langsung dari piksel logo).
-     Kontras diverifikasi: brand vs ink-inverse 9,07:1, soft-ink vs soft 11,92:1
-     (ambang WCAG AA teks 4,5:1). Lihat docs/desain/Brief-Rebrand-Turnify-Flow.md §3. */
-  --c-brand: #52329f;
-  --c-brand-hover: #4b3384;
-  --c-brand-soft: #f0edf8;
-  --c-brand-soft-ink: #331579;
-  --c-brand-ring: #52329f33;
+  /* Merek — ungu #4A148C (revisi 23 Okt 2026; dulu #52329f yang disampel dari
+     logo, logonya ikut diwarnai ulang). Kontras diverifikasi: brand vs
+     ink-inverse 11,86:1, hover 13,93:1, soft-ink vs soft 12,37:1 (ambang WCAG AA
+     teks 4,5:1). */
+  --c-brand: #4a148c;
+  --c-brand-hover: #3c0f73;
+  --c-brand-soft: #f3ecfb;
+  --c-brand-soft-ink: #3a0a73;
+  --c-brand-ring: #4a148c33;
 
   /* Aksen coral (revisi 23 Okt): HANYA isian wadah sorotan, mis. wadah promo
      Beranda, dengan teks gelap di atasnya. Tidak pernah teks di atas putih
      (2,5:1) dan tidak pernah warna status. aksen-ink vs aksen 6,97:1. */
   --c-aksen: #ff7f50;
   --c-aksen-ink: #111a23;
+  /* Aksen kuning: aturannya sama dengan coral (isian sorotan, teks gelap di
+     atasnya, tidak pernah teks atau status). kuning-ink vs kuning 11,61:1;
+     kuning di atas putih hanya 1,51:1. */
+  --c-kuning: #ffcc00;
+  --c-kuning-ink: #111a23;
 
   /* Status stok & sistem — selalu dipasangkan dengan ikon + label,
      tidak pernah mengandalkan warna saja (WCAG 1.4.1). */
@@ -116,11 +122,14 @@
   --c-ink-3: #7d8c99;
   --c-ink-inverse: #08121a;
 
-  --c-brand: #947bd1;
-  --c-brand-hover: #b9a6e7;
-  --c-brand-soft: #1a1132;
-  --c-brand-soft-ink: #ae96e9;
-  --c-brand-ring: #947bd140;
+  /* Ungu #4A148C dicerahkan untuk permukaan gelap (rona 267° yang sama):
+     vs ink-inverse 5,23:1, sebagai teks di surface 4,77:1 dan di bg 5,26:1;
+     soft-ink vs soft 8,45:1. */
+  --c-brand: #a26ce5;
+  --c-brand-hover: #bb93ec;
+  --c-brand-soft: #1d0f33;
+  --c-brand-soft-ink: #c4a3f2;
+  --c-brand-ring: #a26ce540;
 
   /* Coral sedikit diredam supaya tidak menyilaukan di permukaan gelap;
      aksen-ink vs aksen 6,4:1. */
@@ -183,6 +192,8 @@
 
   --color-aksen: var(--c-aksen);
   --color-aksen-ink: var(--c-aksen-ink);
+  --color-kuning: var(--c-kuning);
+  --color-kuning-ink: var(--c-kuning-ink);
 
   --color-aman: var(--c-aman);
   --color-aman-soft: var(--c-aman-soft);

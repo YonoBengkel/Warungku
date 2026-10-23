@@ -71,11 +71,29 @@ Catatan tahap 2:
 
 ## Tahap 3 — warna
 
-- [ ] Ungu merek #4A148C (versi tema gelap divalidasi). Coral #FF7F50 dan kuning #FFCC00
+- [x] Ungu merek #4A148C (versi tema gelap divalidasi). Coral #FF7F50 dan kuning #FFCC00
   hanya untuk sorotan, tidak pernah teks di atas putih dan tidak pernah warna status;
   aturannya di DESIGN.md.
-- [ ] Logo diganti warnanya (ungu menjadi #4A148C, panah tetap) di semua ukuran; perbandingan
-  sebelum-sesudah ditunjukkan dulu.
+- [x] Logo diganti warnanya (ungu menjadi #4A148C, panah tetap) di semua ukuran; perbandingan
+  sebelum-sesudah ditunjukkan dulu dan disetujui Ilham.
+
+Catatan tahap 3:
+- Tema gelap: merek #A26CE5 (rona 267° yang sama): 5,23:1 dengan teks gelap di atasnya,
+  4,77:1 sebagai teks di kartu gelap. Ungu lembut #F3ECFB / tinta #3A0A73 (terang) dan
+  #1D0F33 / #C4A3F2 (gelap).
+- Logo diwarnai ulang secara raster: piksel ungu digeser ronanya ke 267°, saturasinya
+  dinaikkan, dan kecerahannya dipetakan sehingga tepi halusnya tetap halus. Tulisan "Turnify
+  Flow" yang lebih gelap ikut menggelap dengan perbandingan yang sama. Berkas yang diganti:
+  `docs/aset/logo-turnify-flow.jpeg`, `docs/aset/logo-mark.png`, `frontend/public/logo-mark.png`,
+  `apple-touch-icon.png`, `favicon.ico`.
+- Ungu #4A148C hanya 1,4:1 di permukaan gelap, jadi ada versi ungu terang untuk tema gelap
+  (`logo-mark-gelap.png`, disetujui Ilham bersama perbandingannya). `TandaMerek` memilih
+  otomatis.
+- Kuning belum dipakai di layar; pemakaian pertamanya di landing page (tahap 6). Bintang
+  penilaian tetap jingga: kuning di atas putih hanya 1,5:1, terlalu pudar untuk membedakan
+  bintang terisi di isian penilaian.
+- Permintaan Ilham: "Stok cukup untuk ±0 hari" diganti "Stok tidak cukup" (kartu perkiraan,
+  hitungan sederhana, dan rincian penawaran).
 
 ## Tahap 4 — Lacak Pesanan
 

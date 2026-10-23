@@ -19,8 +19,9 @@ aplikasi.
   kelas menengah. Distributor lebih sering memakai laptop.
 - **Rasa:** aplikasi kerja yang tenang. Padat tapi terbaca, satu langkah jelas per layar, dan
   angka yang bisa dipercaya. majoo menjadi acuan rasa, bukan cetakan untuk ditiru 1:1.
-- **Merek:** ungu `#52329f`, disampel dari piksel `Logo.jpeg`. Ungu adalah sinyal "langkah
-  berikutnya". Ia bukan hiasan.
+- **Merek:** ungu `#4a148c` (revisi 23 Okt 2026; dulu `#52329f` dari piksel logo, dan logonya
+  ikut diwarnai ulang). Ungu adalah sinyal "langkah berikutnya". Ia bukan hiasan. Coral dan
+  kuning hanya sorotan.
 - **Mulai dari HP:** semua layar dirancang untuk lebar 360px dulu, lalu dilebarkan ke desktop.
 
 ## 2. Warna
@@ -39,9 +40,10 @@ pernah ditulis langsung di komponen. Setiap token punya pasangan tema gelap di b
 | Teks kedua | `text-ink-2` | `#48545f` | `#a8b6c2` | Keterangan yang **perlu dibaca** |
 | Teks ketiga | `text-ink-3` | `#5a6773` | `#7d8c99` | Keterangan yang **boleh dilewati** |
 | Teks pembalik | `text-ink-inverse` | `#ffffff` | `#08121a` | Teks di atas warna penuh |
-| Merek | `bg-brand`, `text-brand` | `#52329f` | `#947bd1` | Tombol utama, tautan, cincin fokus |
-| Merek lembut | `bg-brand-soft` + `text-brand-soft-ink` | `#f0edf8` / `#331579` | `#1a1132` / `#ae96e9` | Keadaan terpilih, tombol sekunder |
+| Merek | `bg-brand`, `text-brand` | `#4a148c` | `#a26ce5` | Tombol utama, tautan, cincin fokus |
+| Merek lembut | `bg-brand-soft` + `text-brand-soft-ink` | `#f3ecfb` / `#3a0a73` | `#1d0f33` / `#c4a3f2` | Keadaan terpilih, tombol sekunder |
 | Aksen coral | `bg-aksen` + `text-aksen-ink` | `#ff7f50` / `#111a23` | `#e9744b` / `#0b1116` | Isian wadah sorotan, mis. wadah promo Beranda |
+| Aksen kuning | `bg-kuning` + `text-kuning-ink` | `#ffcc00` / `#111a23` | sama | Isian sorotan kecil (landing page) |
 
 **Status.** Ada empat warna status beserta satu netral. Masing-masing punya tiga tingkat: penuh
 (`bg-aman`), lembut (`bg-aman-soft`), dan tinta (`text-aman-ink`).
@@ -74,14 +76,16 @@ pernah ditulis langsung di komponen. Setiap token punya pasangan tema gelap di b
    ungu lembut atau putih terangkat (lihat bagian 6).
 2. **Teks di atas warna penuh** (`bg-brand`, `bg-kritis`, `bg-menipis`, `bg-info`) memakai
    `text-ink-inverse`, bukan `text-white`. Di tema gelap `text-white` di atas ungu muda hanya
-   1,9:1.
+   3,6:1, di bawah ambang 4,5:1.
 3. **Status tidak pernah hanya warna.** Selalu ikon + teks + warna (WCAG 1.4.1).
 4. **Merah hanya untuk yang genting.** Tanda wajib `*` dan pemberitahuan biasa tidak merah.
 5. **Kontras minimal AA:** 4,5:1 untuk teks dan 3:1 untuk garis grafik dan bingkai isian, di
    kedua tema. Ukur hasil campurannya, jangan menaksir dari hex.
-6. **Coral hanya isian sorotan** (revisi 23 Okt). `bg-aksen` selalu berpasangan dengan
-   `text-aksen-ink` (6,97:1 terang, 6,4:1 gelap). Coral tidak pernah menjadi warna teks di atas
-   putih (2,5:1) dan tidak pernah menjadi warna status.
+6. **Coral dan kuning hanya isian sorotan** (revisi 23 Okt). `bg-aksen` selalu berpasangan dengan
+   `text-aksen-ink` (6,97:1 terang, 6,4:1 gelap), `bg-kuning` dengan `text-kuning-ink` (11,6:1).
+   Keduanya tidak pernah menjadi warna teks di atas putih (coral 2,5:1, kuning 1,5:1) dan tidak
+   pernah menjadi warna status. Bintang penilaian tetap `text-menipis`: kuning di atas putih
+   terlalu pudar untuk membedakan bintang terisi di isian penilaian.
 
 ## 3. Tipografi
 
@@ -226,6 +230,7 @@ Cari komponen yang sudah ada sebelum menulis yang baru. Komponen dasar ada di
 | Kolom isian | `Kolom`, `AreaTeks`, `Pilihan`, `PengaturJumlah`; bingkai galat lewat `kelasBingkai(galat)` |
 | Nama metode analitik | `LabelMetode` di atas halaman atau kartu: nama metode saja, penjelasan 2–3 kalimat di gelembung (hover, ketuk, atau fokus). LightGBM di Prediksi, Thompson Sampling + fuzzy di saran distributor dan halaman Distributor, K-Prototypes di Pelanggan |
 | Logo toko dan gambar produk | `Avatar`, yang mencari gambar lewat `gambarUntuk(nama)` dengan huruf awal sebagai cadangan |
+| Tanda merek Turnify Flow | `TandaMerek`: `logo-mark.png` di tema terang, `logo-mark-gelap.png` (ungu terang) di tema gelap |
 
 **Ikon** dibuat sendiri di `frontend/src/icons/`: garis 1,75px, kotak 24px, dan selalu
 `aria-hidden`. Maknanya dibawa oleh teks di sebelahnya. Pustaka ikon tidak dipakai, demi

@@ -543,7 +543,13 @@ export function KartuPerkiraan({ barang, perkiraan }: { barang: Barang; perkiraa
           <Lencana nada="netral">Hitungan sederhana</Lencana>
         </div>
         <p className="mt-1.5 text-subjudul font-extrabold text-ink">
-          Stok {barang.nama.split(' ')[0].toLowerCase()} cukup untuk &plusmn;{cukup ?? '?'} hari
+          {cukup === 0 ? (
+            <>Stok {barang.nama.split(' ')[0].toLowerCase()} tidak cukup</>
+          ) : (
+            <>
+              Stok {barang.nama.split(' ')[0].toLowerCase()} cukup untuk &plusmn;{cukup ?? '?'} hari
+            </>
+          )}
         </p>
         <p className="mt-1 text-kecil text-ink-3">
           Bukan perkiraan pintar &mdash; dihitung dari rata-rata 7 hari terakhir.
@@ -589,7 +595,9 @@ export function KartuPerkiraan({ barang, perkiraan }: { barang: Barang; perkiraa
         to={`/stok/${barang.id}`}
         className="mt-1.5 block text-[1.125rem] font-extrabold text-ink hover:text-brand transition-colors"
       >
-        Stok cukup untuk &plusmn;{perkiraan.hariCukup} hari
+        {/* Nol hari berarti perkiraan pemakaian hari pertama saja sudah melebihi
+            sisa stok; "cukup untuk ±0 hari" dulu terbaca janggal (revisi 23 Okt). */}
+        {perkiraan.hariCukup === 0 ? 'Stok tidak cukup' : <>Stok cukup untuk &plusmn;{perkiraan.hariCukup} hari</>}
       </Link>
       <p className="mt-1 text-isi text-ink-3">
         Perkiraan pakai 3 hari ke depan: {angkaTampil(barang, perkiraan.pakaiTigaHariMin ?? 0)}&ndash;
