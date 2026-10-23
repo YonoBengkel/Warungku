@@ -28,6 +28,8 @@ aplikasi.
 
 Komponen hanya memakai kelas token (`bg-surface`, `text-ink-2`, `border-line`, ...). Hex tidak
 pernah ditulis langsung di komponen. Setiap token punya pasangan tema gelap di blok `.dark`.
+Kelas `dark` dipasang sekali di `App.tsx` untuk semua rute, termasuk halaman depan, Masuk, dan
+Daftar; kerangka halaman tidak memasangnya sendiri.
 
 | Peran | Token (kelas Tailwind) | Terang | Gelap | Dipakai untuk |
 |---|---|---|---|---|
@@ -176,6 +178,8 @@ terpisah dari angkanya di 360px.
   satu kartu per layar di HP. Ubin pintasan berangka muncul mulai `sm`.
 - **Tombol selebar wadah hanya di HP:** `penuh="hp"` membuat tombol selebar wadah di HP dan
   selebar isinya mulai 640px. Tombol selebar 1.000px terbaca seperti spanduk.
+- **Foto tidak dibentangkan** lebih dari sekitar 1,1 kali ukuran aslinya. Foto kecil diberi
+  bentuk (kapsul, bingkai) alih-alih diperbesar, seperti kedua foto halaman depan (390 × 260).
 
 ## 6. Komponen
 
@@ -286,6 +290,7 @@ ukuran bundel.
 | Kontrak Akan Berakhir | Kontrak Habis | |
 | distributor | pemasok | |
 | filter | saringan, saring | |
+| Masuk | Login | Termasuk tombol di halaman depan (revisi 23 Okt 2026) |
 
 - **Nama metode** tampil apa adanya lewat `LabelMetode` ("LightGBM"), tanpa "Mesin 1/2/3" dan
   tanpa diulang di kalimat deskripsi halaman. Penjelasannya di gelembung, berbahasa pemilik usaha,
@@ -317,14 +322,13 @@ Pola di bawah ini pernah menjadi cacat di proyek ini.
 
 ## 10. Yang masih terbuka
 
-- **`seri-3` terlalu dekat dengan ungu merek:** hue-nya hanya berbeda 9° (249° lawan 258°).
+- **`seri-3` terlalu dekat dengan ungu merek:** hue-nya hanya berbeda 18° (249° lawan 267°
+  sejak ungu `#4a148c`; dulu 9° dari `#52329f`).
   Sejak 20 Oktober 2026 token ini tidak dipakai di layar mana pun, karena satu-satunya
   pemakainya (bar Beranda) pindah ke `seri-1` dan `seri-perkiraan`. Hue penggantinya diputuskan
   saat ada grafik yang butuh seri ketiga, lalu palet divalidasi ulang.
 - **Badge kategori berwarna-warni ala majoo** tidak dipakai untuk status. Untuk kategori produk
   belum diputuskan.
-- **Tombol "Login" di halaman depan** tetap berbahasa Inggris, sesuai catatan pemilik proyek
-  di kode.
 
 ## Cara memeriksa
 

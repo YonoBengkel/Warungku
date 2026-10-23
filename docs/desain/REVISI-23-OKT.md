@@ -202,4 +202,27 @@ Catatan tahap 6:
 
 ## Akhir
 
-- [ ] Image backend 0.10.0 (migrasi otomatis), README dan DESIGN.md diperbarui.
+- [x] Image backend 0.10.0 (migrasi otomatis), README dan DESIGN.md diperbarui.
+
+Catatan akhir:
+- `yonobengkel/turnify-flow-backend:0.10.0` dibangun dari `Rombak#4` (termasuk komit `f53a6cb`,
+  profil distributor tersimpan) dan di-push ke Docker Hub; `deployment/docker-compose.yml` kini
+  memakainya. Kontainer API menjalankan `alembic upgrade head` sebelum uvicorn; kontainer model
+  tidak, supaya dua kontainer tidak mengubah skema bersamaan.
+- Diuji di atas basis data `0.2.0` yang masih baru (revisi `a650ed7218eb`), seperti di laptop
+  teman:
+  - migrasi `5e0c7a3d9b21` berjalan saat API menyala, dan menyala ulang tidak memigrasi lagi;
+  - langkah data `siapkan.cmd` (rapikan deskripsi, variasi demo) berhasil di dalam kontainer:
+    8 titik gudang, 85 kiriman dilengkapi resi, variasi ketiga akun;
+  - ketiga mesin jalan: Mesin 1 jalan awal (898 barang, sekitar 5 menit), Mesin 2 (71 usaha),
+    Mesin 3 (8 distributor);
+  - angka Ringkasan Penjualan sama persis dengan basis data coba (Kopi Kita Rp 88.290.080 dari
+    2.265 nota, Bu Ratmi Rp 18.295.000, Sumber Tani Rp 217.099.000 dari 168 pesanan).
+- Versi paket ikut naik karena `requirements-produksi.txt` tidak mengunci versi: FastAPI 0.143 →
+  0.161, pandas 3.0 → 3.1, python-dateutil 2.9 → 3.0. LightGBM, numpy, dan scikit-learn tetap.
+- README: tag baru dan migrasi otomatis, endpoint PUT profil dan layanan distributor, akun
+  simulasi, dan daftar "Yang belum selesai" (pemberitahuan, profil distributor, posisi kiriman,
+  laba kotor, halaman depan). DESIGN.md: kelas tema di `App.tsx`, aturan foto, "Masuk" alih-alih
+  "Login", dan selisih hue `seri-3` dengan ungu baru.
+- Basis data coba `uji-db-rev` beserta volumenya dihapus, begitu pula dua entri server uji di
+  `.claude/launch.json` (tidak dilacak git).
