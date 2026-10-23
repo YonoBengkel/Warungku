@@ -99,17 +99,10 @@ export default function KerangkaDistributor() {
   const { pathname } = useLocation()
   const racun = useAplikasi((s) => s.racun)
   const tutupRacun = useAplikasi((s) => s.tutupRacun)
-  const tema = useAplikasi((s) => s.tema)
   const perluKonfirmasi = useJumlahPerluKonfirmasi()
   const pemberitahuan = usePemberitahuanDistributor()
   const sedangDiJalan = usePesananMasuk().filter((p) => p.status === 'dikirim').length
   const jumlahTindakan = pemberitahuan.filter((b) => b.perluTindakan).length
-
-  // Portal ini layout terpisah: kalau pengguna membuka rutenya langsung, kelas
-  // tema harus tetap terpasang tanpa menumpang pada kerangka sisi UMKM.
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', tema === 'gelap')
-  }, [tema])
 
   useEffect(() => {
     window.scrollTo(0, 0)

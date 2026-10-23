@@ -176,10 +176,29 @@ Catatan tahap 5:
 
 ## Tahap 6 — Landing page
 
-- [ ] Susunan "Technology Landing Page": bilah atas (logo, Beranda · Fitur · Untuk
+- [x] Susunan "Technology Landing Page": bilah atas (logo, Beranda · Fitur · Untuk
   Distributor · Kontak, tombol Masuk), hero teks kiri dan foto kanan berpotongan lengkung,
   tiga blok fitur, satu blok distributor, kaki halaman. Foto dari `referensi/Home-Page`
   (keputusan Ilham, repo publik). Kontak: 08xxx-xxxx-xxxx.
+
+Catatan tahap 6:
+- `Hero.tsx` disusun ulang: bilah atas menempel dengan empat tautan bagian (di HP turun ke baris
+  kedua yang bisa digeser) dan tombol Masuk; hero ungu dengan paragraf add-on, garis kuning
+  (pemakaian pertama token kuning) dan dua tombol terbalik; tiga blok fitur (Stok, Perkiraan,
+  Belanja ke distributor) yang hanya menyebut fitur yang memang ada; blok "Untuk distributor"
+  dengan tombol "Masuk sebagai Distributor"; kontak 08xxx-xxxx-xxxx dan kaki halaman. Kotak
+  "Yang sengaja tidak ada di sini" dipertahankan; daftar "Cara kerjanya" empat langkah dilebur
+  ke uraian blok fitur supaya halamannya tetap sederhana.
+- Foto Downpic disalin ke `frontend/public/gambar/landing/` (`kasir-swalayan.jpg` di hero,
+  `kasir-topi-merah.jpg` di blok distributor). Ukurannya hanya 390 × 260, jadi keduanya tidak
+  dibentangkan: di hero foto berbentuk kapsul yang muncul dari tepi kanan (lengkung kirinya
+  menjadi potongan lengkung acuan, sekitar 1,1 kali ukuran asli), di blok distributor foto
+  berbingkai 3:2 seukuran aslinya. Ganti dengan foto berlisensi beresolusi lebih tinggi
+  sebelum proyek dikomersialkan.
+- Tombol header "Masuk" mengikuti susunan yang disepakati di Q5 (dulu "Login").
+- Ditemukan dan diperbaiki: landing page, Masuk, dan Daftar selalu terang walau tema yang dipilih
+  atau tema sistem gelap, karena kelas tema hanya dipasang oleh kedua kerangka portal. Kelas tema
+  kini dipasang sekali di `App.tsx` untuk semua rute.
 
 ## Akhir
 

@@ -74,7 +74,6 @@ export default function KerangkaAplikasi() {
   const racun = useAplikasi((s) => s.racun)
   const tutupRacun = useAplikasi((s) => s.tutupRacun)
   const navigate = useNavigate()
-  const tema = useAplikasi((s) => s.tema)
   const perluTindakan = useJumlahPerluTindakan()
   const notifikasi = useAplikasi((s) => s.notifikasi)
   const bacaNotifikasi = useAplikasi((s) => s.bacaNotifikasi)
@@ -84,10 +83,6 @@ export default function KerangkaAplikasi() {
   const sedangDiJalan = useAplikasi((s) => s.pesanan.filter((p) => p.status === 'dikirim' && !p.pengiriman).length)
   const aktif = tabInduk(pathname)
   const tab = profil.jenisUsaha === 'produksi-makanan' ? TAB_PRODUKSI : TAB
-
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', tema === 'gelap')
-  }, [tema])
 
   useEffect(() => {
     window.scrollTo(0, 0)

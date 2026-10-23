@@ -1,9 +1,10 @@
-import { Suspense, lazy } from 'react'
+import { Suspense, lazy, useEffect } from 'react'
 import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom'
 import KerangkaAplikasi from '@/layouts/KerangkaAplikasi'
 import KerangkaDistributor from '@/layouts/KerangkaDistributor'
 import { KerangkaBaris } from '@/components/ui/dasar'
 import { BatasGalat } from '@/components/BatasGalat'
+import { useAplikasi } from '@/store/aplikasi'
 
 /**
  * Peta rute.
@@ -129,6 +130,14 @@ export default function App() {
   // Batas galat dipasang ulang tiap kali rute berubah, sehingga berpindah
   // halaman selalu memulihkan keadaan tanpa perlu memuat ulang aplikasi.
   const { pathname } = useLocation()
+  const tema = useAplikasi((s) => s.tema)
+
+  // Kelas tema dipasang di sini, satu kali untuk semua rute. Dulu ia hidup di
+  // kedua kerangka portal, sehingga landing page, Masuk, dan Daftar (di luar
+  // kerangka) selalu terang walau pengguna memilih atau sistemnya gelap.
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', tema === 'gelap')
+  }, [tema])
 
   return (
     <BatasGalat key={pathname}>
