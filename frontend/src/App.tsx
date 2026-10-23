@@ -73,6 +73,7 @@ const KontrakDetail = lazy(() => import('@/pages/pesanan/KontrakDetail'))
 const KontrakRutin = lazy(() => import('@/pages/pesanan/KontrakRutin'))
 const Mitra = lazy(() => import('@/pages/pesanan/Mitra'))
 const LacakPesanan = lazy(() => import('@/pages/pesanan/LacakPesanan'))
+const RingkasanPenjualan = lazy(() => import('@/pages/penjualan/RingkasanPenjualan'))
 
 /* Kepala halaman */
 const Notifikasi = lazy(() => import('@/pages/Notifikasi'))
@@ -107,6 +108,7 @@ const ProfilDistributor = lazy(() => import('@/pages/distributor-portal/ProfilDi
 const SegmenPelanggan = lazy(() => import('@/pages/distributor-portal/SegmenPelanggan'))
 const PemberitahuanDistributor = lazy(() => import('@/pages/distributor-portal/PemberitahuanDistributor'))
 const LacakPesananDistributor = lazy(() => import('@/pages/distributor-portal/LacakPesananDistributor'))
+const RingkasanPenjualanDistributor = lazy(() => import('@/pages/distributor-portal/RingkasanPenjualanDistributor'))
 
 const TidakDitemukan = lazy(() => import('@/pages/TidakDitemukan'))
 
@@ -170,6 +172,7 @@ export default function App() {
 
           <Route path="/pesanan" element={<PesananDaftar />} />
           <Route path="/pesanan/lacak" element={<LacakPesanan />} />
+          <Route path="/penjualan" element={<RingkasanPenjualan />} />
           <Route path="/pesanan/:id" element={<PesananDetail />} />
           <Route path="/pesanan/:id/terima" element={<TerimaBarang />} />
           <Route path="/pesanan/:id/ulasan" element={<BeriPenilaian />} />
@@ -215,6 +218,7 @@ export default function App() {
           {/* Lacak Pesanan kembali sebagai halaman sendiri (revisi 23 Okt 2026),
               dengan peta. Tautan lama per toko diarahkan ke sana. */}
           <Route path="lacak" element={<LacakPesananDistributor />} />
+          <Route path="penjualan" element={<RingkasanPenjualanDistributor />} />
           <Route path="lacak/toko/:umkmId" element={<Navigate to="/distributor-portal/lacak" replace />} />
           <Route path="lacak/barang/:penawaranId" element={<AlihKeSebaran />} />
           <Route path="profil" element={<ProfilDistributor />} />

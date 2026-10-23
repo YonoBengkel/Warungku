@@ -492,6 +492,7 @@ turnify-flow/
 | GET | `/usaha/{usaha_id}/produksi/ringkasan` | UMKM produsen: barang jadi, resep, jumlah yang bisa dibuat, perkiraan pesanan 7 hari, saran masak, pembeli, omset bulanan |
 | GET, POST | `/usaha/{usaha_id}/produksi` | Riwayat sesi masak; catat sesi masak (bahan dipotong sesuai resep, ditolak kalau bahan kurang) |
 | GET, POST | `/usaha/{usaha_id}/penjualan` | Riwayat kiriman ke pembeli usaha; catat kiriman (ditolak kalau stok barang jadi kurang) |
+| GET | `/usaha/{usaha_id}/ringkasan-penjualan?dari=&sampai=` | Ringkasan penjualan: dari nota kasir, atau dari kiriman ke pembeli untuk UMKM produsen. Total, jumlah, per hari, terlaris, pembanding periode sebelumnya; tanpa nota demo. Rentang bawaan 30 hari sampai data terakhir |
 | GET | `/usaha/{usaha_id}/pesanan` | Pesanan usaha ini beserta baris dan jejaknya |
 | POST | `/usaha/{usaha_id}/pesanan` | Kirim keranjang; satu pesanan per distributor, harga disalin saat itu |
 | GET | `/usaha/{usaha_id}/pesanan/{pesanan_id}` | Rincian satu pesanan |
@@ -511,6 +512,9 @@ turnify-flow/
 | POST | `/distributor/{distributor_id}/pesanan/{pesanan_id}/kirim` | Barang berangkat; status menjadi dikirim |
 | POST | `/distributor/{distributor_id}/pesanan/{pesanan_id}/sampai` | Bukti antar; stok baru naik setelah pemilik usaha menerima |
 | GET | `/distributor/{distributor_id}/katalog` | Penawaran, paket kontrak, dan promo milik sendiri |
+| GET | `/distributor/{distributor_id}/profil` | Profil distributor sendiri, termasuk titik gudang |
+| PUT | `/distributor/{distributor_id}/lokasi` | Simpan titik gudang untuk peta Lacak Pesanan (kosongkan keduanya untuk kembali ke titik tengah kota) |
+| GET | `/distributor/{distributor_id}/ringkasan-penjualan?dari=&sampai=` | Ringkasan penjualan dari pesanan selesai: pendapatan (nilai barang + ongkos kirim), pesanan, pelanggan, terlaris; tanpa pesanan variasi demo |
 | POST, PUT, DELETE | `/distributor/{distributor_id}/paket[/{paket_id}]` | Kelola paket kontrak; kontrak berjalan tidak ikut berubah |
 | GET | `/distributor/{distributor_id}/kontrak` | Kontrak pelanggan |
 | POST | `/distributor/{distributor_id}/kontrak/{kontrak_id}/setujui` | Masa kontrak dihitung sejak disetujui |

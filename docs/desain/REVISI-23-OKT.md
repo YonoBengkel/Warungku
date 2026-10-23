@@ -140,11 +140,33 @@ Catatan tahap 4:
 
 ## Tahap 5 — Ringkasan Penjualan
 
-- [ ] UMKM dari nota kasir; Bu Ratmi dari penjualan ke pembeli; distributor dari pesanan
+- [x] UMKM dari nota kasir; Bu Ratmi dari penjualan ke pembeli; distributor dari pesanan
   selesai. Tanpa laba kotor. Rentang awal 30 hari yang berakhir di data simulasi terakhir
   (5 Okt 2026) dengan keterangan; data demo tidak dihitung; nama di nota apa adanya.
-- [ ] Kalimat lama "tidak ada omzet" di landing page dan Bantuan diubah.
-- [ ] Pintu masuk: kartu di Beranda/Dashboard dan menu di navigasi samping desktop.
+- [x] Kalimat lama "tidak ada omzet" di landing page dan Bantuan diubah.
+- [x] Pintu masuk: kartu di Beranda/Dashboard dan menu di navigasi samping desktop.
+
+Catatan tahap 5:
+- Endpoint `GET /usaha/{id}/ringkasan-penjualan` dan `GET /distributor/{id}/ringkasan-penjualan`
+  (`backend/api/penjualan.py`), dengan `dari` dan `sampai` opsional. Isinya total, jumlah
+  transaksi, rata-rata, pembeli atau pelanggan berbeda, per hari (hari kosong ikut, bernilai 0),
+  sepuluh terlaris, lima pembeli atau pelanggan teratas, rincian, dan pembanding periode
+  sebelumnya yang sama panjang.
+- Nota: nilai = jumlah × harga jual di struk; nota batal dan nota `DEMO-` tidak dihitung.
+  UMKM produsen (jenis `produksi-makanan`) memakai kiriman ke pembeli usaha. Distributor:
+  pesanan selesai, selesai-catatan, atau dikirim yang sudah ditandai sampai (sama dengan tab
+  "Selesai" portalnya), menurut tanggal pesanan; pendapatan = nilai barang + ongkos kirim;
+  pesanan variasi demo (`V`, `W`) tidak dihitung.
+- Tanggal memakai `(waktu AT TIME ZONE 'UTC')::date`, sama dengan Mesin 1 dan halaman Produksi:
+  data simulasi menyimpan jam setempat sebagai UTC. Dengan itu nota terakhir jatuh di 5 Okt.
+- Rentang: pilihan 7, 30, dan 90 hari dihitung mundur dari tanggal data terakhir, ditambah
+  pilihan tanggal sendiri. Di data contoh (tanpa masuk) halamannya menyebut bahwa ringkasan
+  butuh data server, bukan mengarang angka; kartu di Beranda dan Dashboard tidak tampil.
+- Angka per 30 hari sampai 5 Okt di basis data coba: Kopi Kita Rp 88,29 jt dari 2.265 nota,
+  Bu Ratmi Rp 18,3 jt dari 25 kiriman ke 4 pembeli, Sumber Tani Rp 217,1 jt dari 168 pesanan
+  oleh 54 pelanggan.
+- Untung dan margin tetap tidak ditampilkan (harga pokok per menu tidak ada); kalimat di
+  landing page dan Bantuan kini menyebut itu, bukan "tidak ada omzet".
 
 ## Tahap 6 — Landing page
 

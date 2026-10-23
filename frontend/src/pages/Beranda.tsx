@@ -9,6 +9,8 @@ import {
   PitaDataKasir,
 } from '@/components/domain'
 import { KartuPromo } from '@/components/domain/KartuPromo'
+import { KartuRingkasanPenjualan } from '@/components/domain/RingkasanPenjualan'
+import { ambilRingkasanUsaha } from '@/lib/apiPenjualan'
 import { Korsel } from '@/components/ui/korsel'
 import { Bagian, Kartu, Kerangka, Lencana, Tombol, TombolTautan } from '@/components/ui/dasar'
 import { PengaturJumlah } from '@/components/ui/formulir'
@@ -55,9 +57,9 @@ import { useAplikasi } from '@/store/aplikasi'
  * menautkan balik ke sumber aslinya. Tidak ada fitur yang hanya bisa dicapai
  * dari sini.
  *
- * Yang sengaja tidak ada di sini: kartu omzet, untung, margin, dan nilai
- * rupiah penjualan. Harga jual dikelola di aplikasi kasir, jadi angka apa pun
- * yang kami tampilkan soal itu pasti salah.
+ * Sejak revisi 23 Okt 2026 ada kartu Ringkasan Penjualan, dibaca dari nota
+ * kasir apa adanya (harga seperti tercetak di struk). Untung dan margin tetap
+ * tidak ada: harga pokok per menu tidak diketahui aplikasi ini.
  */
 
 /** Ambang "hampir kedaluwarsa". Sama persis dengan penyaring di layar Stok,
@@ -65,6 +67,11 @@ import { useAplikasi } from '@/store/aplikasi'
 const HARI_KEDALUWARSA_DEKAT = 14
 
 export default function Beranda() {
+  const sesiServer = useAplikasi((s) => s.sesiServer)
+  const ambilRingkasan = useMemo(
+    () => (sesiServer ? () => ambilRingkasanUsaha(sesiServer) : null),
+    [sesiServer],
+  )
   const barang = useAplikasi((s) => s.barang)
   const kontrak = useAplikasi((s) => s.kontrak)
   const pesanan = useAplikasi((s) => s.pesanan)
@@ -591,6 +598,11 @@ export default function Beranda() {
           </>
         )}
       </Bagian>
+
+      {/* Ringkasan penjualan dari nota kasir (revisi 23 Okt), hanya untuk data server. */}
+      {ambilRingkasan && (
+        <KartuRingkasanPenjualan ambil={ambilRingkasan} ke="/penjualan" className="mt-3 sm:mt-4" />
+      )}
 
       {/* Prediksi Stok */}
       <Bagian

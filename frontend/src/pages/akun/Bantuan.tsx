@@ -184,8 +184,8 @@ const FAQ: ButirFaq[] = [
           angka untuk satu barang, dan cepat atau lambat keduanya berbeda.
         </p>
         <p className="mt-2">
-          Akibatnya kami juga tidak menampilkan omzet, untung, dan margin. Angka apa pun yang kami tampilkan soal itu
-          pasti salah, karena kami hanya tahu harga beli dari distributor, bukan harga yang kamu pasang di etalase.
+          Total penjualanmu tetap terlihat di Ringkasan Penjualan, dihitung dari nota kasir apa adanya: harga seperti
+          yang tercetak di struk. Untung dan margin tidak kami tampilkan, karena kami tidak tahu harga pokok tiap menu.
         </p>
         <p className="mt-2">
           Yang kami kerjakan adalah sisi belanjanya: berapa sisa stokmu, kapan habis, berapa perlu dibeli, dan berapa

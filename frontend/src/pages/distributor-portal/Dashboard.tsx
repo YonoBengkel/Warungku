@@ -21,7 +21,9 @@ import {
 } from '@/lib/label'
 import { distributorAktif, umkmById } from '@/data/dummy'
 import type { StatusPesananMasuk, WarnaTitik } from '@/lib/types'
-import { useJumlahPerluKonfirmasi, usePesananMasuk, useTitikPeta } from '@/store/aplikasi'
+import { useAplikasi, useJumlahPerluKonfirmasi, usePesananMasuk, useTitikPeta } from '@/store/aplikasi'
+import { KartuRingkasanPenjualan } from '@/components/domain/RingkasanPenjualan'
+import { ambilRingkasanDistributor } from '@/lib/apiPenjualan'
 
 /**
  * Halaman pertama portal distributor.
@@ -61,6 +63,11 @@ const REKAP: StatusPesananMasuk[] = [...TAHAP_PESANAN_MASUK, 'ditolak']
 const URUT_TITIK: WarnaTitik[] = ['merah', 'oren', 'biru']
 
 export default function Dashboard() {
+  const sesiDistributor = useAplikasi((s) => s.sesiDistributor)
+  const ambilRingkasan = useMemo(
+    () => (sesiDistributor ? () => ambilRingkasanDistributor(sesiDistributor) : null),
+    [sesiDistributor],
+  )
   const pesananMasuk = usePesananMasuk()
   const perluKonfirmasi = useJumlahPerluKonfirmasi()
   const titik = useTitikPeta()
@@ -180,6 +187,15 @@ export default function Dashboard() {
           })}
         </div>
       </Bagian>
+
+      {/* Ringkasan penjualan dari pesanan selesai (revisi 23 Okt), hanya untuk portal tersambung. */}
+      {ambilRingkasan && (
+        <KartuRingkasanPenjualan
+          ambil={ambilRingkasan}
+          ke="/distributor-portal/penjualan"
+          className="mt-3 sm:mt-4"
+        />
+      )}
 
       {/* 4. Sebaran titik: warna dulu, angka di dalamnya, keterangan di bawah */}
       <Bagian

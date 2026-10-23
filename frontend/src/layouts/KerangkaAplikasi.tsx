@@ -12,6 +12,7 @@ import {
   IkonLonceng,
   IkonKeranjang,
   IkonLokasi,
+  IkonGrafik,
 } from '@/icons'
 import { useAplikasi, useJumlahKeranjang, useJumlahPerluTindakan } from '@/store/aplikasi'
 import { Toast } from '@/components/ui/umpanBalik'
@@ -156,6 +157,12 @@ export default function KerangkaAplikasi() {
             Ikon={IkonLokasi}
             label="Lacak Pesanan"
             jumlah={sedangDiJalan}
+          />
+          <TautanSamping
+            ke="/penjualan"
+            aktif={pathname.startsWith('/penjualan')}
+            Ikon={IkonGrafik}
+            label="Ringkasan Penjualan"
           />
         </div>
 

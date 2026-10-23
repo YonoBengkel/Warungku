@@ -1158,8 +1158,8 @@ export function trenBulanan(barangId: string): TitikTren[] {
 
 /**
  * Nilai pemakaian dalam Rupiah: jumlah dikali harga beli terakhir per satuan
- * simpan. Ini HARGA BELI dari distributor, bukan harga jual — aplikasi ini
- * tidak pernah menampilkan omzet.
+ * simpan. Ini HARGA BELI dari distributor, bukan harga jual; penjualan
+ * dirangkum terpisah dari nota kasir di Ringkasan Penjualan.
  */
 export function nilaiPemakaian(b: Barang, jumlah: number): number {
   return Math.round(jumlah * b.hargaBeliTerakhir)

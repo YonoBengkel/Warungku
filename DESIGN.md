@@ -233,7 +233,8 @@ Cari komponen yang sudah ada sebelum menulis yang baru. Komponen dasar ada di
 | Tanda merek Turnify Flow | `TandaMerek`: `logo-mark.png` di tema terang, `logo-mark-gelap.png` (ungu terang) di tema gelap |
 | Peta Lacak Pesanan | `TampilanLacak` (daftar + peta), `PetaLacak`, `KeteranganPeta`: Leaflet dengan ubin OpenStreetMap, dimuat malas. Posisi kiriman selalu disebut "perkiraan posisi", dan daftar teks di sebelahnya memuat informasi yang sama |
 | Memilih satu titik di peta | `PetaPilihTitik`: ketuk peta, atau geser dengan tombol panah lalu "Pakai titik tengah peta" |
-| Tautan kecil di navigasi samping desktop | `TautanSamping` (keranjang, Lacak Pesanan), dengan angka opsional |
+| Tautan kecil di navigasi samping desktop | `TautanSamping` (keranjang, Lacak Pesanan, Ringkasan Penjualan), dengan angka opsional |
+| Ringkasan penjualan | `TampilanRingkasan` (halaman) dan `KartuRingkasanPenjualan` (Beranda, Dashboard). Tanpa laba kotor; angka utama dibandingkan dengan periode sebelumnya yang sama panjang, dengan ikon dan kata |
 
 **Ikon** dibuat sendiri di `frontend/src/icons/`: garis 1,75px, kotak 24px, dan selalu
 `aria-hidden`. Maknanya dibawa oleh teks di sebelahnya. Pustaka ikon tidak dipakai, demi

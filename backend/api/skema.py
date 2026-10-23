@@ -796,3 +796,55 @@ class PenjualanRingkas(BaseModel):
     total: int
     catatan: str | None
     baris: list[BarisPenjualanRingkas]
+
+
+# --------------------------------------------------------------------------
+# Ringkasan Penjualan (revisi 23 Okt 2026)
+# --------------------------------------------------------------------------
+class PenjualanHarian(BaseModel):
+    tanggal: date
+    total: int
+    #: Nota, kiriman, atau pesanan pada hari itu.
+    jumlah: int
+
+
+class BarisTerlaris(BaseModel):
+    #: Nama apa adanya dari nota, produk jadi, atau baris pesanan.
+    nama: str
+    satuan: str
+    jumlah: float
+    total: int
+
+
+class PihakTeratas(BaseModel):
+    """Pembeli (UMKM produsen) atau pelanggan (distributor) dengan nilai terbesar."""
+
+    nama: str
+    jumlah: int
+    total: int
+
+
+class RincianNilai(BaseModel):
+    label: str
+    nilai: int
+
+
+class RingkasanPenjualan(BaseModel):
+    #: 'nota' | 'penjualan-usaha' | 'pesanan-selesai'
+    sumber: str
+    dari: date
+    sampai: date
+    #: Tanggal terakhir yang punya data (tanpa data demo). Rentang bawaan berakhir di sini.
+    data_terakhir: date | None
+    total: int
+    jumlah_transaksi: int
+    #: Banyaknya pembeli atau pelanggan berbeda; kosong untuk nota kasir.
+    jumlah_pihak: int | None
+    rata_rata: int
+    #: Periode sebelumnya yang sama panjang, untuk naik atau turun.
+    pembanding_total: int
+    pembanding_jumlah: int
+    rincian: list[RincianNilai]
+    per_hari: list[PenjualanHarian]
+    terlaris: list[BarisTerlaris]
+    pihak_teratas: list[PihakTeratas]

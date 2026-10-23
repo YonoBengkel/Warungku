@@ -485,3 +485,79 @@ def test_lokasi_gudang_disimpan_dan_terbaca_pembeli(dunia):
 
     r = klien.put(f"{jalur}/lokasi", headers=w["kepala_dist"], json={"lat": None, "lng": None})
     assert r.status_code == 200 and r.json()["lat"] is None and r.json()["lng"] is None
+
+
+def test_ringkasan_penjualan_nota_dan_pesanan_selesai(dunia):
+    """Ringkasan penjualan (revisi 23 Okt): nota demo, nota batal, dan pesanan variasi demo tidak dihitung."""
+    from datetime import timedelta
+
+    w, klien = dunia, TestClient(app)
+    hari = datetime(2026, 9, 10, 10, 0, tzinfo=timezone.utc)
+    nota = [
+        ("UJI-1", hari, False, [("Kopi Susu", "3", 18_000), ("Roti Bakar", "1", 15_000)]),
+        ("UJI-2", hari + timedelta(days=1), False, [("Kopi Susu", "2", 18_000)]),
+        ("DEMO-V-UJI", hari, False, [("Kopi Susu", "9", 18_000)]),
+        ("UJI-BATAL", hari, True, [("Kopi Susu", "5", 18_000)]),
+    ]
+    try:
+        with mesin().begin() as kon:
+            for nomor, waktu, batal, baris in nota:
+                tid = kon.execute(
+                    text(
+                        "INSERT INTO transaksi (usaha_id, nomor_struk, waktu, sumber, dibatalkan)"
+                        " VALUES (:u, :n, :w, 'pos', :b) RETURNING id"
+                    ),
+                    {"u": w["usaha"], "n": nomor, "w": waktu, "b": batal},
+                ).scalar_one()
+                for nama, jumlah, harga in baris:
+                    kon.execute(
+                        text(
+                            "INSERT INTO transaksi_baris (transaksi_id, nama_menu, jumlah, satuan, harga_jual_satuan)"
+                            " VALUES (:t, :n, :j, 'porsi', :h)"
+                        ),
+                        {"t": tid, "n": nama, "j": Decimal(jumlah), "h": harga},
+                    )
+
+        r = klien.get(
+            f"/usaha/{w['usaha']}/ringkasan-penjualan?dari=2026-09-10&sampai=2026-09-11", headers=w["kepala_umkm"]
+        )
+        assert r.status_code == 200, r.text
+        d = r.json()
+        assert d["sumber"] == "nota" and d["data_terakhir"] == "2026-09-11"
+        assert (d["total"], d["jumlah_transaksi"]) == (3 * 18_000 + 15_000 + 2 * 18_000, 2)
+        assert [h["total"] for h in d["per_hari"]] == [69_000, 36_000]
+        assert d["terlaris"][0] == {"nama": "Kopi Susu", "satuan": "porsi", "jumlah": 5.0, "total": 90_000}
+        # Tanpa tanggal: 30 hari yang berakhir di nota terakhir, bukan hari ini.
+        d = klien.get(f"/usaha/{w['usaha']}/ringkasan-penjualan", headers=w["kepala_umkm"]).json()
+        assert (d["dari"], d["sampai"], len(d["per_hari"])) == ("2026-08-13", "2026-09-11", 30)
+        assert klien.get(
+            f"/usaha/{w['usaha']}/ringkasan-penjualan?dari=2026-09-11&sampai=2026-09-10", headers=w["kepala_umkm"]
+        ).status_code == 422
+    finally:
+        with mesin().begin() as kon:
+            kon.execute(
+                text("DELETE FROM transaksi_baris WHERE transaksi_id IN (SELECT id FROM transaksi WHERE usaha_id = :u)"),
+                {"u": w["usaha"]},
+            )
+            kon.execute(text("DELETE FROM transaksi WHERE usaha_id = :u"), {"u": w["usaha"]})
+
+    # Distributor: satu pesanan selesai dihitung, satu pesanan bernomor variasi demo tidak.
+    p1, p2 = _buat(klien, w, "2"), _buat(klien, w, "1")
+    _majukan_sampai_dikirim(klien, w, p1["id"])
+    _majukan_sampai_dikirim(klien, w, p2["id"])
+    with mesin().begin() as kon:
+        kon.execute(text("UPDATE pesanan SET nomor = 'PS-260101-W9999' WHERE id = :p"), {"p": p2["id"]})
+        tanggal = kon.execute(
+            text("SELECT (dibuat_pada AT TIME ZONE 'UTC')::date FROM pesanan WHERE id = :p"), {"p": p1["id"]}
+        ).scalar_one()
+    r = klien.get(
+        f"/distributor/{w['distributor']}/ringkasan-penjualan?dari={tanggal}&sampai={tanggal}", headers=w["kepala_dist"]
+    )
+    assert r.status_code == 200, r.text
+    d = r.json()
+    nilai = 2 * 150_000
+    assert (d["jumlah_transaksi"], d["jumlah_pihak"]) == (1, 1)
+    assert d["total"] == nilai + p1["ongkos_kirim"]
+    assert {x["label"]: x["nilai"] for x in d["rincian"]} == {"Nilai barang": nilai, "Ongkos kirim": p1["ongkos_kirim"]}
+    # Akun pemilik usaha tidak boleh membaca ringkasan distributor.
+    assert klien.get(f"/distributor/{w['distributor']}/ringkasan-penjualan", headers=w["kepala_umkm"]).status_code == 403

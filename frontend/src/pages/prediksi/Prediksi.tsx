@@ -50,8 +50,8 @@ import { LabelMetode, metodePrediksi } from '@/components/domain/LabelMetode'
  *
  * Grafik yang menjumlahkan beberapa barang memakai Rupiah HARGA BELI, satu-
  * satunya ukuran yang sama untuk barang bersatuan berbeda. Itu biaya beli ke
- * distributor, bukan omzet: harga jual tetap tidak pernah muncul di aplikasi
- * ini.
+ * distributor, bukan omzet; penjualan dirangkum terpisah dari nota kasir di
+ * Ringkasan Penjualan.
  */
 
 const KALIMAT_MELESET =

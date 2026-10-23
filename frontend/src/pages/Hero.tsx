@@ -185,7 +185,7 @@ export default function Hero() {
               <ul className="mt-3 space-y-2">
                 {[
                   'Tidak ada kasir, tidak ada struk pelanggan, tidak ada laci uang. Itu tetap milik aplikasi kasirmu.',
-                  'Tidak ada harga jual, omzet, untung, atau margin. Angka itu dikelola di kasir, jadi apa pun yang kami tampilkan pasti keliru.',
+                  'Tidak ada untung atau margin. Ringkasan penjualan dibaca dari nota kasirmu apa adanya; harga jualnya tetap diatur di kasir.',
                   'Tidak ada pembayaran di dalam aplikasi. Pembayaran ke distributor dicatat di luar, seperti yang sudah kamu lakukan sekarang.',
                 ].map((baris) => (
                   <li key={baris} className="flex items-start gap-2.5">

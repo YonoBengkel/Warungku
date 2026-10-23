@@ -6,6 +6,7 @@ import {
   IkonBeranda,
   IkonBintang,
   IkonKembali,
+  IkonGrafik,
   IkonKontrak,
   IkonLokasi,
   IkonLonceng,
@@ -183,6 +184,12 @@ export default function KerangkaDistributor() {
             Ikon={IkonLokasi}
             label="Lacak Pesanan"
             jumlah={sedangDiJalan}
+          />
+          <TautanSamping
+            ke="/distributor-portal/penjualan"
+            aktif={pathname.startsWith('/distributor-portal/penjualan')}
+            Ikon={IkonGrafik}
+            label="Ringkasan Penjualan"
           />
         </div>
 
