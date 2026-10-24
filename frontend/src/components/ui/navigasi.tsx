@@ -1,7 +1,15 @@
-import type { ComponentType, ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useState, type ComponentType, type ReactNode } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { cx } from '@/lib/format'
 import { IkonKembali } from '@/icons'
+
+/**
+ * Ruang kanan baris judul halaman di desktop, selebar lonceng pemberitahuan yang
+ * melayang di pojok kanan atas ditambah jaraknya (revisi V2, Q53). Dipasang di
+ * baris judul yang punya isi di kanan; baris di bawahnya boleh lewat di bawah
+ * lonceng karena lonceng hanya setinggi baris pertama.
+ */
+export const RUANG_LONCENG = 'lg:pr-14'
 
 /* ================================================================== */
 /* Tab segmen                                                         */
@@ -123,26 +131,45 @@ export function KepalaHalaman({
   judul,
   keterangan,
   kembaliKe,
+  kembaliRiwayat = false,
   aksi,
   bawah,
 }: {
   judul: string
   keterangan?: ReactNode
   kembaliKe?: string
+  /**
+   * Tombol kembali menuju halaman sebelumnya, bukan `kembaliKe`. `kembaliKe`
+   * tetap dipakai bila halaman ini dibuka langsung (belum ada riwayat di
+   * aplikasi). Dipakai halaman pemberitahuan yang tampil tanpa menu samping.
+   */
+  kembaliRiwayat?: boolean
   aksi?: ReactNode
   bawah?: ReactNode
 }) {
+  const navigate = useNavigate()
+  const { key } = useLocation()
+  const kelasKembali = '-ml-2 size-11 grid place-items-center rounded-md text-ink-2 hover:bg-sunken shrink-0'
   return (
     <header className="sticky top-[var(--kepala-global,0px)] z-30 bg-bg/95 backdrop-blur-sm border-b border-line -mx-4 px-4 sm:-mx-6 sm:px-6">
-      <div className="flex items-center gap-2 min-h-14 py-2">
-        {kembaliKe && (
-          <Link
-            to={kembaliKe}
+      <div className={cx('flex items-center gap-2 min-h-14 py-2', RUANG_LONCENG)}>
+        {kembaliRiwayat ? (
+          <button
+            type="button"
             aria-label="Kembali"
-            className="-ml-2 size-11 grid place-items-center rounded-md text-ink-2 hover:bg-sunken shrink-0"
+            // Entri pertama riwayat React Router berkunci 'default': tidak ada
+            // halaman aplikasi sebelumnya, jadi mundur akan keluar dari aplikasi.
+            onClick={() => (key !== 'default' ? navigate(-1) : navigate(kembaliKe ?? '/beranda'))}
+            className={kelasKembali}
           >
             <IkonKembali size={22} />
-          </Link>
+          </button>
+        ) : (
+          kembaliKe && (
+            <Link to={kembaliKe} aria-label="Kembali" className={kelasKembali}>
+              <IkonKembali size={22} />
+            </Link>
+          )
         )}
         <div className="min-w-0 grow">
           {/* Nama layar dikunci spesifikasi, jadi ia dibungkus dua baris di layar
@@ -157,6 +184,52 @@ export function KepalaHalaman({
       </div>
       {bawah && <div className="pb-3">{bawah}</div>}
     </header>
+  )
+}
+
+/** Halaman sudah digulir sedikit: bagian atas yang beku sedang menempel. */
+function useSudahDigulir(): boolean {
+  const [digulir, setDigulir] = useState(false)
+  useEffect(() => {
+    const baca = () => setDigulir(window.scrollY > 8)
+    baca()
+    window.addEventListener('scroll', baca, { passive: true })
+    return () => window.removeEventListener('scroll', baca)
+  }, [])
+  return digulir
+}
+
+/**
+ * Bagian atas halaman daftar yang tetap terlihat saat isinya digulir (revisi V2,
+ * Q52). Di desktop seluruhnya menempel: `atas` (judul, keterangan) dan `inti`
+ * (kotak cari, tab, chip). Di HP hanya `inti`, karena judul dan keterangan akan
+ * memakan hampir sepertiga layar; pembungkus luarnya `display: contents` supaya
+ * `inti` menempel terhadap halaman, bukan terhadap pembungkus yang pendek ini.
+ * Begitu menempel, latarnya penuh dan bergaris bawah supaya isi yang lewat di
+ * bawahnya tidak tembus.
+ */
+export function BagianAtasBeku({ atas, inti }: { atas: ReactNode; inti: ReactNode }) {
+  const menempel = useSudahDigulir()
+  return (
+    <div
+      className={cx(
+        'max-lg:contents lg:sticky lg:top-0 lg:z-20 lg:-mx-6 lg:px-6 lg:-mt-6 lg:pt-6 lg:pb-3 lg:bg-bg',
+        menempel && 'lg:border-b lg:border-line',
+      )}
+    >
+      {atas}
+      {/* Jarak ke `atas` berupa padding, bukan margin elemen pertama: margin itu
+          ikut keluar dari kotak yang menempel, sehingga di HP kotak cari akan
+          menempel rapat ke bilah atas. */}
+      <div
+        className={cx(
+          'pt-3 max-lg:sticky max-lg:top-[var(--kepala-global,0px)] max-lg:z-20 max-lg:bg-bg max-lg:-mx-4 max-lg:px-4 sm:max-lg:-mx-6 sm:max-lg:px-6 max-lg:pb-3',
+          menempel && 'max-lg:border-b max-lg:border-line',
+        )}
+      >
+        {inti}
+      </div>
+    </div>
   )
 }
 

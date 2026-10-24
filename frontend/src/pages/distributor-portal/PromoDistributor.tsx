@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { KartuPromo } from '@/components/domain/KartuPromo'
 import { JudulBagian, Kartu, Tombol } from '@/components/ui/dasar'
+import { RUANG_LONCENG } from '@/components/ui/navigasi'
 import { AreaTeks, Kolom, KotakCentang, PilihanKartu } from '@/components/ui/formulir'
 import { Konfirmasi, Lembar } from '@/components/ui/lembar'
 import { KeadaanKosong } from '@/components/ui/umpanBalik'
@@ -321,7 +322,7 @@ export default function PromoDistributor() {
 
   return (
     <div className="pb-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className={`flex flex-wrap items-start justify-between gap-3 ${RUANG_LONCENG}`}>
         <div className="min-w-0">
           <h1 className="text-judul font-extrabold text-ink tracking-tight">Promo</h1>
           <p className="mt-1 text-isi text-ink-2 leading-relaxed max-w-[62ch]">

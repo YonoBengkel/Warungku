@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { ChipStok } from '@/components/domain'
 import { Avatar, Kartu, Lencana, Tombol, TombolTautan } from '@/components/ui/dasar'
 import { PengaturJumlah } from '@/components/ui/formulir'
-import { TabSegmen } from '@/components/ui/navigasi'
+import { RUANG_LONCENG, TabSegmen } from '@/components/ui/navigasi'
 import { KeadaanKosong, Penjelasan, Peringatan } from '@/components/ui/umpanBalik'
 import { GrafikBatang } from '@/components/grafik/GrafikBatang'
 import { IkonPanci, IkonPeringatan, IkonKirim } from '@/icons'
@@ -112,7 +112,7 @@ export default function Produksi() {
 
   return (
     <div className="pb-8">
-      <div className="flex items-baseline justify-between gap-3 flex-wrap">
+      <div className={`flex items-baseline justify-between gap-3 flex-wrap ${RUANG_LONCENG}`}>
         <h1 className="text-judul font-extrabold text-ink tracking-tight">{NAV.produksi}</h1>
         {data && (
           <p className="text-isi text-ink-3">Data sampai {tanggalPanjang(data.ringkasan.tanggalAcuan)}</p>

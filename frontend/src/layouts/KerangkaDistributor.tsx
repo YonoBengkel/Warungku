@@ -18,7 +18,7 @@ import { distributorAktif } from '@/data/dummy'
 import { useAplikasi, useJumlahPerluKonfirmasi, usePesananMasuk } from '@/store/aplikasi'
 import { Toast } from '@/components/ui/umpanBalik'
 import { Avatar } from '@/components/ui/dasar'
-import { MenuPemberitahuan, usePemberitahuanDistributor } from '@/components/domain/Pemberitahuan'
+import { LoncengMelayang, usePemberitahuanDistributor } from '@/components/domain/Pemberitahuan'
 import { TautanSamping } from '@/components/ui/navigasi'
 
 /**
@@ -103,6 +103,9 @@ export default function KerangkaDistributor() {
   const pemberitahuan = usePemberitahuanDistributor()
   const sedangDiJalan = usePesananMasuk().filter((p) => p.status === 'dikirim').length
   const jumlahTindakan = pemberitahuan.filter((b) => b.perluTindakan).length
+  /* Sama dengan portal usaha (revisi V2, Q58): halaman pemberitahuan tanpa menu
+     samping di desktop, dan lonceng melayang disembunyikan di sana. */
+  const fokus = pathname.startsWith('/distributor-portal/pemberitahuan')
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -117,7 +120,10 @@ export default function KerangkaDistributor() {
       {/* Navigasi samping: hanya muncul di layar lebar, isinya sama persis */}
       <nav
         aria-label="Menu portal distributor"
-        className="hidden lg:flex lg:flex-col lg:shrink-0 lg:border-r lg:border-line lg:bg-surface lg:h-dvh lg:sticky lg:top-0"
+        className={cx(
+          'hidden',
+          !fokus && 'lg:flex lg:flex-col lg:shrink-0 lg:border-r lg:border-line lg:bg-surface lg:h-dvh lg:sticky lg:top-0',
+        )}
         style={{ width: 'var(--rail-w)' }}
       >
         <div className="px-5 py-5">
@@ -163,14 +169,9 @@ export default function KerangkaDistributor() {
           })}
         </div>
 
-        {/* Pemberitahuan (panel kecil) dan Lacak Pesanan (revisi 23 Okt). */}
+        {/* Lacak Pesanan dan Ringkasan Penjualan (revisi 23 Okt). Pemberitahuan
+            tidak lagi di sini: lonceng melayang di pojok kanan atas (revisi V2). */}
         <div className="mt-3 mx-3 pt-3 border-t border-line flex flex-col gap-1">
-          <MenuPemberitahuan
-            butir={pemberitahuan}
-            semuaKe="/distributor-portal/pemberitahuan"
-            aktif={pathname.startsWith('/distributor-portal/pemberitahuan')}
-            jumlah={jumlahTindakan}
-          />
           <TautanSamping
             ke="/distributor-portal/lacak"
             aktif={pathname.startsWith('/distributor-portal/lacak')}
@@ -229,6 +230,8 @@ export default function KerangkaDistributor() {
           <Outlet />
         </main>
       </div>
+
+      {!fokus && <LoncengMelayang ke="/distributor-portal/pemberitahuan" jumlah={jumlahTindakan} />}
 
       {/* Navigasi bawah: zona jempol, hanya di layar sempit */}
       <nav

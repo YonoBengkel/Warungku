@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import type { Barang, RekomendasiPrediksi } from '@/lib/types'
 import { Bagian, BarisData, Kartu, Tombol, TombolTautan } from '@/components/ui/dasar'
-import { BarisChip, BilahAksi, Chip } from '@/components/ui/navigasi'
+import { BarisChip, BilahAksi, Chip, RUANG_LONCENG } from '@/components/ui/navigasi'
 import { PengaturJumlah } from '@/components/ui/formulir'
 import { BilahProgres, KeadaanKosong, Penjelasan, Peringatan } from '@/components/ui/umpanBalik'
 import { GrafikTren } from '@/components/grafik/GrafikTren'
@@ -149,12 +149,13 @@ export default function Prediksi() {
 
   return (
     <div className="pb-8">
-      <div className="flex items-baseline justify-between gap-3 flex-wrap">
+      {/* Label metode di kanan judul, menggantikan "Perkiraan untuk bulan depan"
+          (revisi V2, Q42). Di layar sempit ia turun ke bawah judul. */}
+      <div className={cx('flex items-center justify-between gap-x-3 gap-y-2 flex-wrap', RUANG_LONCENG)}>
         <h1 className="text-judul font-extrabold text-ink tracking-tight">{JUDUL.prediksi}</h1>
-        <p className="text-isi text-ink-3">Perkiraan untuk bulan depan</p>
+        <LabelMetode {...metodePrediksi(modelBulananServer())} />
       </div>
       <p className="mt-1 text-isi text-ink-2 leading-relaxed max-w-[62ch]">{KALIMAT_MELESET}</p>
-      <LabelMetode className="mt-2" {...metodePrediksi(modelBulananServer())} />
 
       {barangMentah && !barangTerpilih ? (
         /* Tautan lama atau id yang salah salin. Halaman tidak boleh jadi buntu. */

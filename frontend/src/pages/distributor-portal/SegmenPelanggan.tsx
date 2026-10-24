@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { JudulBagian, Kartu, Lencana, TombolTautan } from '@/components/ui/dasar'
 import { KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
+import { RUANG_LONCENG } from '@/components/ui/navigasi'
 import { IkonProfil } from '@/icons'
 import { angka, cx, rupiah, rupiahRingkas, tanggalRingkas, waktuLalu } from '@/lib/format'
 import { GalatApi, ambilAnggotaSegmen, ambilSegmen } from '@/lib/api'
@@ -78,17 +79,15 @@ export default function SegmenPelanggan() {
 
   return (
     <div className="pb-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-judul font-extrabold text-ink tracking-tight">Pelanggan</h1>
-          <p className="mt-1 text-isi text-ink-2 leading-relaxed max-w-[62ch]">
-            Dipakai untuk memutuskan siapa ditawari kontrak dan siapa perlu dihubungi.
-          </p>
-          {/* Cara mengelompokkan dijelaskan di gelembung label metode; dulu juga
-              ada lipatan "Cara dikelompokkan" yang isinya sama. */}
-          <LabelMetode className="mt-2" {...METODE_SEGMEN} />
-        </div>
+      {/* Label metode di kanan judul (revisi V2, Q42); cara mengelompokkan
+          dijelaskan di gelembungnya. Di layar sempit ia turun ke bawah judul. */}
+      <div className={cx('flex items-center justify-between gap-x-3 gap-y-2 flex-wrap', RUANG_LONCENG)}>
+        <h1 className="text-judul font-extrabold text-ink tracking-tight">Pelanggan</h1>
+        <LabelMetode {...METODE_SEGMEN} />
       </div>
+      <p className="mt-1 text-isi text-ink-2 leading-relaxed max-w-[62ch]">
+        Dipakai untuk memutuskan siapa ditawari kontrak dan siapa perlu dihubungi.
+      </p>
 
       {!sesi ? (
         <Peringatan nada="netral" className="mt-4 max-w-[32rem]" judul="Perlu masuk sebagai distributor">

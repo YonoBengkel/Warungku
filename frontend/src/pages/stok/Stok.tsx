@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import type { Barang } from '@/lib/types'
 import { BarisStok, ChipStok } from '@/components/domain'
 import { Lencana, Tombol, TombolTautan } from '@/components/ui/dasar'
-import { BarisChip, Chip } from '@/components/ui/navigasi'
+import { BarisChip, Chip, RUANG_LONCENG } from '@/components/ui/navigasi'
 import { KeadaanKosong, Penjelasan, Peringatan } from '@/components/ui/umpanBalik'
 import { Lembar } from '@/components/ui/lembar'
 import { PilihanKartu } from '@/components/ui/formulir'
@@ -283,7 +283,7 @@ export default function Stok() {
     <div className="pb-6 lg:pb-0 lg:h-[calc(100dvh-3.5rem)] lg:flex lg:flex-col">
       {/* ---------------- Kepala lengket ---------------- */}
       <div className="sticky top-[var(--kepala-global,0px)] z-20 -mx-4 px-4 sm:-mx-6 sm:px-6 pt-1 pb-3 bg-bg/96 backdrop-blur-sm border-b border-line lg:shrink-0">
-        <div className="flex items-center gap-2 flex-wrap mb-3">
+        <div className={cx('flex items-center gap-2 flex-wrap mb-3', RUANG_LONCENG)}>
           <h1 className="text-judul font-extrabold text-ink tracking-tight mr-auto">Stok</h1>
           <TombolTautan ke="/stok/baru" ukuran="kecil" ikonKiri={<IkonTambah size={15} />}>
             Tambah Barang

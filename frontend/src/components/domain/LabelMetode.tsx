@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { IkonGrafik, IkonInfo } from '@/icons'
 import { cx } from '@/lib/format'
 
@@ -22,8 +22,25 @@ export function LabelMetode({
   className?: string
 }) {
   const [buka, setBuka] = useState(false)
+  const [rataKanan, setRataKanan] = useState(false)
   const id = useId()
   const wadah = useRef<HTMLSpanElement>(null)
+
+  /* Sejak revisi V2 label ini sering duduk di kanan judul. Gelembung yang
+     tertambat ke tepi kiri label lalu keluar layar, jadi ia dirata kanan bila
+     dari kiri ia tidak muat. Diukur ulang saat layar berubah ukuran dan sesaat
+     sebelum gelembung dibuka (disorot, difokus, diketuk). */
+  const ukur = useCallback(() => {
+    const r = wadah.current?.getBoundingClientRect()
+    if (!r) return
+    const lebarGelembung = Math.min(320, window.innerWidth - 32)
+    setRataKanan(r.left + lebarGelembung > window.innerWidth - 16)
+  }, [])
+  useLayoutEffect(() => {
+    ukur()
+    window.addEventListener('resize', ukur)
+    return () => window.removeEventListener('resize', ukur)
+  }, [ukur])
 
   useEffect(() => {
     if (!buka) return
@@ -42,12 +59,20 @@ export function LabelMetode({
   }, [buka])
 
   return (
-    <span ref={wadah} className={cx('group relative inline-flex max-w-full', className)}>
+    <span
+      ref={wadah}
+      onPointerEnter={ukur}
+      onFocusCapture={ukur}
+      className={cx('group relative inline-flex max-w-full', className)}
+    >
       <button
         type="button"
         aria-describedby={id}
         aria-expanded={buka}
-        onClick={() => setBuka((b) => !b)}
+        onClick={() => {
+          ukur()
+          setBuka((b) => !b)
+        }}
         className={cx(
           'inline-flex items-center gap-1.5 min-h-11 max-w-full rounded-full px-3.5',
           'bg-brand-soft text-brand-soft-ink text-kecil font-semibold',
@@ -64,7 +89,8 @@ export function LabelMetode({
         role="tooltip"
         id={id}
         className={cx(
-          'absolute left-0 top-full z-40 mt-1.5 w-[min(20rem,calc(100vw-2rem))]',
+          'absolute top-full z-40 mt-1.5 w-[min(20rem,calc(100vw-2rem))]',
+          rataKanan ? 'right-0' : 'left-0',
           'rounded-md border border-line bg-surface p-3 shadow-e3',
           'text-isi font-normal text-ink-2 leading-relaxed',
           buka ? 'block' : 'hidden group-hover:block group-has-[:focus-visible]:block',

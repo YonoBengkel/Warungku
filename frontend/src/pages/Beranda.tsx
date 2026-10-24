@@ -29,6 +29,7 @@ import {
   IkonTrenTurun,
 } from '@/icons'
 import { angka, angkaJumlah, cx, hariLagi, tanggalLengkapHari } from '@/lib/format'
+import { RUANG_LONCENG } from '@/components/ui/navigasi'
 import { jumlahTampil } from '@/lib/satuan'
 import {
   layakDiperkirakan,
@@ -461,7 +462,7 @@ export default function Beranda() {
           dibaca. Maknanya sama, kecepatan bacanya tidak.
           Lonceng, keranjang, logo, dan nama aplikasi tinggal di
           KerangkaAplikasi, jadi tidak diulang di sini. */}
-      <header className="mb-3">
+      <header className={cx('mb-3', RUANG_LONCENG)}>
         <h1 className="text-[1.375rem] font-extrabold text-ink tracking-tight leading-tight">
           Selamat datang, {profil.namaUsaha}
         </h1>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { cx } from '@/lib/format'
 import { NAV } from '@/lib/label'
@@ -18,7 +18,7 @@ import { useAplikasi, useJumlahKeranjang, useJumlahPerluTindakan } from '@/store
 import { Toast } from '@/components/ui/umpanBalik'
 import { TandaMerek } from '@/components/ui/Merek'
 import { Avatar } from '@/components/ui/dasar'
-import { MenuPemberitahuan, butirDariNotifikasi } from '@/components/domain/Pemberitahuan'
+import { LoncengMelayang } from '@/components/domain/Pemberitahuan'
 import { TautanSamping } from '@/components/ui/navigasi'
 
 /**
@@ -75,14 +75,14 @@ export default function KerangkaAplikasi() {
   const tutupRacun = useAplikasi((s) => s.tutupRacun)
   const navigate = useNavigate()
   const perluTindakan = useJumlahPerluTindakan()
-  const notifikasi = useAplikasi((s) => s.notifikasi)
-  const bacaNotifikasi = useAplikasi((s) => s.bacaNotifikasi)
-  const bacaSemuaNotifikasi = useAplikasi((s) => s.bacaSemuaNotifikasi)
-  const butirNotif = useMemo(() => butirDariNotifikasi(notifikasi), [notifikasi])
   const isiKeranjang = useJumlahKeranjang()
   const sedangDiJalan = useAplikasi((s) => s.pesanan.filter((p) => p.status === 'dikirim' && !p.pengiriman).length)
   const aktif = tabInduk(pathname)
   const tab = profil.jenisUsaha === 'produksi-makanan' ? TAB_PRODUKSI : TAB
+  /* Halaman pemberitahuan tampil tanpa menu samping di desktop, dengan tombol
+     kembali di kepalanya (revisi V2, Q54). Lonceng melayangnya ikut disembunyikan:
+     halamannya sudah terbuka. */
+  const fokus = pathname.startsWith('/notifikasi')
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -97,7 +97,10 @@ export default function KerangkaAplikasi() {
       {/* Navigasi samping: hanya muncul di layar lebar, isinya sama persis */}
       <nav
         aria-label="Menu utama"
-        className="hidden lg:flex lg:flex-col lg:shrink-0 lg:border-r lg:border-line lg:bg-surface lg:h-dvh lg:sticky lg:top-0"
+        className={cx(
+          'hidden',
+          !fokus && 'lg:flex lg:flex-col lg:shrink-0 lg:border-r lg:border-line lg:bg-surface lg:h-dvh lg:sticky lg:top-0',
+        )}
         style={{ width: 'var(--rail-w)' }}
       >
         <div className="px-5 py-5">
@@ -125,19 +128,10 @@ export default function KerangkaAplikasi() {
           ))}
         </div>
 
-        {/* Di desktop lonceng dan keranjang ada di sini, bukan di bilah atas
-            selebar layar yang isinya hanya dua ikon. */}
+        {/* Di desktop keranjang ada di sini, bukan di bilah atas selebar layar
+            yang isinya hanya dua ikon. Lonceng pemberitahuan tidak lagi di menu
+            ini: ia melayang di pojok kanan atas halaman (revisi V2, Q53). */}
         <div className="mt-3 mx-3 pt-3 border-t border-line flex flex-col gap-1">
-          {/* Panel kecil, bukan pindah halaman (revisi 23 Okt); halaman penuhnya
-              lewat "Lihat semua" di panel dan lonceng bilah atas di HP. */}
-          <MenuPemberitahuan
-            butir={butirNotif}
-            semuaKe="/notifikasi"
-            aktif={pathname.startsWith('/notifikasi')}
-            jumlah={perluTindakan}
-            bacaButir={bacaNotifikasi}
-            tandaiSemuaDibaca={bacaSemuaNotifikasi}
-          />
           <TautanSamping
             ke="/keranjang"
             aktif={pathname.startsWith('/keranjang')}
@@ -235,6 +229,8 @@ export default function KerangkaAplikasi() {
           <Outlet />
         </main>
       </div>
+
+      {!fokus && <LoncengMelayang ke="/notifikasi" jumlah={perluTindakan} />}
 
       {/* Navigasi bawah: zona jempol, hanya di layar sempit */}
       <nav

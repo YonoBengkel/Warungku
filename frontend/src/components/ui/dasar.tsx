@@ -245,6 +245,7 @@ export function JudulBagian({
   judul,
   keterangan,
   aksi,
+  bungkus = false,
   className,
 }: {
   /** Diteruskan ke <h2> supaya aria-labelledby pada <section> punya sasaran. */
@@ -252,10 +253,15 @@ export function JudulBagian({
   judul: string
   keterangan?: string
   aksi?: ReactNode
+  /**
+   * `aksi` turun ke bawah judul bila tidak muat sebaris, bukan menyempitkan
+   * judulnya. Dipakai label metode di kanan judul (revisi V2, Q42).
+   */
+  bungkus?: boolean
   className?: string
 }) {
   return (
-    <div className={cx('flex items-start justify-between gap-3 mb-3', className)}>
+    <div className={cx('flex items-start justify-between gap-x-3 gap-y-2 mb-3', bungkus && 'flex-wrap', className)}>
       <div className="min-w-0">
         <h2 id={id} className="text-kartu font-bold text-ink leading-tight">
           {judul}
@@ -291,6 +297,7 @@ export function Bagian({
   keterangan,
   aksi,
   kepala,
+  bungkus,
   className,
   children,
   ref,
@@ -300,6 +307,8 @@ export function Bagian({
   judul?: string
   keterangan?: string
   aksi?: ReactNode
+  /** Diteruskan ke JudulBagian. */
+  bungkus?: boolean
   kepala?: ReactNode
   className?: string
   children: ReactNode
@@ -315,7 +324,7 @@ export function Bagian({
   }
   return (
     <section ref={ref} aria-labelledby={id} className={kelas} {...rest}>
-      {kepala ?? (judul && <JudulBagian id={id} judul={judul} keterangan={keterangan} aksi={aksi} />)}
+      {kepala ?? (judul && <JudulBagian id={id} judul={judul} keterangan={keterangan} aksi={aksi} bungkus={bungkus} />)}
       {children}
     </section>
   )

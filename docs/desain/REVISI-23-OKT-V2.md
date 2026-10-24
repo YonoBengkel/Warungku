@@ -40,12 +40,29 @@ Catatan tahap 1:
 
 ## Tahap 2 — kerangka
 
-- [ ] **J. Lonceng pemberitahuan (Q53, Q54, Q58):** di desktop lonceng melayang di kanan atas,
+- [x] **J. Lonceng pemberitahuan (Q53, Q54, Q58):** di desktop lonceng melayang di kanan atas,
   menu samping dan panel kecilnya dihapus; halaman pemberitahuan tanpa menu samping dengan
   tombol kembali. Kedua portal. HP tidak berubah.
-- [ ] **B. Label metode di kanan judul (Q42),** di lima tempat; "Perkiraan untuk bulan depan"
+- [x] **B. Label metode di kanan judul (Q42),** di lima tempat; "Perkiraan untuk bulan depan"
   di Prediksi dihapus.
-- [ ] **I. Bagian atas beku (Q52)** di halaman Distributor dan Pesanan.
+- [x] **I. Bagian atas beku (Q52)** di halaman Distributor dan Pesanan.
+
+Catatan tahap 2:
+- `LoncengMelayang` menggantikan `MenuPemberitahuan` (panelnya dihapus beserta
+  `butirDariNotifikasi` yang tidak dipakai lagi). Tepi kanannya sejajar tepi kanan isi `<main>`,
+  juga di layar sangat lebar. Baris judul yang punya isi di kanan memberinya ruang lewat
+  `RUANG_LONCENG` (`lg:pr-14`) di `KepalaHalaman` dan di judul halaman Stok, Prediksi, Pesanan,
+  Produksi, Beranda, serta Dashboard, Pesanan, Promo, Pelanggan, dan Profil distributor.
+- Halaman pemberitahuan: kerangkanya menyembunyikan menu samping dan lonceng di rute itu;
+  `KepalaHalaman` mendapat `kembaliRiwayat`, yang mundur ke halaman sebelumnya atau ke Beranda
+  bila halamannya dibuka langsung.
+- Label metode: `JudulBagian`/`Bagian` mendapat `bungkus` (label turun ke bawah judul bila tidak
+  muat sebaris, misalnya kartu saran di kolom sempit). Gelembung `LabelMetode` kini mengukur
+  sendiri dan dirata kanan bila dari kiri ia keluar layar. Di kartu saran, waktu hitung pindah
+  ke bawah judul.
+- `BagianAtasBeku`: di desktop judul sampai tab/chip menempel; di HP pembungkusnya
+  `display: contents` sehingga hanya kotak cari dan tab (Distributor) atau tab dan chip
+  (Pesanan) yang menempel di bawah bilah atas. Garis bawah muncul begitu halaman digulir.
 
 ## Tahap 3 — penyaring
 

@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { HanyaPembacaLayar, Lencana, Tombol, TombolTautan } from '@/components/ui/dasar'
 import { AreaTeks, Kolom } from '@/components/ui/formulir'
 import { Konfirmasi, Lembar } from '@/components/ui/lembar'
-import { BarisChip, Chip, TabSegmen } from '@/components/ui/navigasi'
+import { BarisChip, Chip, RUANG_LONCENG, TabSegmen } from '@/components/ui/navigasi'
 import { KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
 import {
   IkonBintangIsi,
@@ -216,7 +216,7 @@ export default function PesananMasukDaftar() {
 
   return (
     <div className="pb-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className={cx('flex flex-wrap items-start justify-between gap-3', RUANG_LONCENG)}>
         <div className="min-w-0">
           <h1 className="text-judul font-extrabold text-ink tracking-tight">Pesanan</h1>
           <p className="mt-1 text-isi text-ink-2 leading-relaxed max-w-[62ch]">

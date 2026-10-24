@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dasar'
 import { Kolom } from '@/components/ui/formulir'
 import { Lembar } from '@/components/ui/lembar'
-import { Chip, TabSegmen } from '@/components/ui/navigasi'
+import { BagianAtasBeku, Chip, TabSegmen } from '@/components/ui/navigasi'
 import { KeadaanKosong } from '@/components/ui/umpanBalik'
 import { HargaBeli, LencanaPromo } from '@/components/domain/KartuPromo'
 import { LabelMetode, METODE_SARAN } from '@/components/domain/LabelMetode'
@@ -561,70 +561,81 @@ export default function Belanja() {
 
   return (
     <div className="pb-6">
-      <h1 className="text-judul font-extrabold text-ink tracking-tight">{JUDUL.belanja}</h1>
-      {/* Halaman ini berjudul sama dengan salah satu sub-tabnya, jadi kalimat
-          pembuka harus langsung menerangkan apa yang bisa dikerjakan di sini. */}
-      <p className="mt-1 text-isi text-ink-2 leading-relaxed max-w-[62ch]">
-        Tempat kamu mencari barang dan memilih distributor untuk dipesan. Harga dan stok di bawah berasal
-        dari distributor, bukan dari gudang kamu.
-      </p>
-
-      {/* Kolom cari dan tombol Filter sebaris: saringan dipindah ke atas,
-          dekat tempat orang mulai mencari, bukan di rail samping atau baris
-          chip yang tenggelam di bawah tab. */}
-      <form
-        className="mt-3 flex items-start gap-2"
-        onSubmit={(e) => {
-          e.preventDefault()
-        }}
-        role="search"
-      >
-        <Kolom
-          type="search"
-          aria-label={tab === 'barang' ? 'Cari barang atau kategori' : 'Cari distributor, kota, atau kategori'}
-          placeholder={tab === 'barang' ? 'Cari barang atau kategori, misal: gula' : 'Cari distributor atau kota'}
-          value={cari}
-          onChange={(e) => aturParam({ cari: e.target.value })}
-          awalan={<IkonCari size={18} />}
-          className="min-w-0 grow"
-        />
-        <button
-          type="button"
-          onClick={() => setLembarSaring(true)}
-          aria-haspopup="dialog"
-          aria-label={adaSaringAktif ? `Filter, ${saringAktif.length} sedang dipakai` : 'Filter'}
-          className={cx(
-            'relative shrink-0 inline-flex items-center gap-2 h-12 px-4 rounded-md border text-kartu font-semibold transition-colors',
-            adaSaringAktif
-              ? 'border-brand bg-brand-soft text-brand-soft-ink'
-              : 'border-line-strong bg-surface text-ink-2 hover:border-brand hover:text-brand',
-          )}
-        >
-          <IkonSaring size={18} />
-          <span className="hidden sm:inline">Filter</span>
-          {adaSaringAktif && (
-            <span
-              aria-hidden="true"
-              className="min-w-5 h-5 px-1 rounded-full bg-brand text-ink-inverse text-[0.6875rem] font-bold grid place-items-center tabular"
+      {/* Dari judul sampai tab tetap terlihat saat daftar digulir; di HP hanya
+          kotak cari dan tab (revisi V2, Q52). */}
+      <BagianAtasBeku
+        atas={
+          <>
+            <h1 className="text-judul font-extrabold text-ink tracking-tight">{JUDUL.belanja}</h1>
+            {/* Halaman ini berjudul sama dengan salah satu sub-tabnya, jadi kalimat
+                pembuka harus langsung menerangkan apa yang bisa dikerjakan di sini. */}
+            <p className="mt-1 text-isi text-ink-2 leading-relaxed max-w-[62ch]">
+              Tempat kamu mencari barang dan memilih distributor untuk dipesan. Harga dan stok di bawah berasal
+              dari distributor, bukan dari gudang kamu.
+            </p>
+          </>
+        }
+        inti={
+          <>
+            {/* Kolom cari dan tombol Filter sebaris: saringan dipindah ke atas,
+                dekat tempat orang mulai mencari, bukan di rail samping atau baris
+                chip yang tenggelam di bawah tab. */}
+            <form
+              className="flex items-start gap-2"
+              onSubmit={(e) => {
+                e.preventDefault()
+              }}
+              role="search"
             >
-              {saringAktif.length}
-            </span>
-          )}
-        </button>
-      </form>
+              <Kolom
+                type="search"
+                aria-label={tab === 'barang' ? 'Cari barang atau kategori' : 'Cari distributor, kota, atau kategori'}
+                placeholder={tab === 'barang' ? 'Cari barang atau kategori, misal: gula' : 'Cari distributor atau kota'}
+                value={cari}
+                onChange={(e) => aturParam({ cari: e.target.value })}
+                awalan={<IkonCari size={18} />}
+                className="min-w-0 grow"
+              />
+              <button
+                type="button"
+                onClick={() => setLembarSaring(true)}
+                aria-haspopup="dialog"
+                aria-label={adaSaringAktif ? `Filter, ${saringAktif.length} sedang dipakai` : 'Filter'}
+                className={cx(
+                  'relative shrink-0 inline-flex items-center gap-2 h-12 px-4 rounded-md border text-kartu font-semibold transition-colors',
+                  adaSaringAktif
+                    ? 'border-brand bg-brand-soft text-brand-soft-ink'
+                    : 'border-line-strong bg-surface text-ink-2 hover:border-brand hover:text-brand',
+                )}
+              >
+                <IkonSaring size={18} />
+                <span className="hidden sm:inline">Filter</span>
+                {adaSaringAktif && (
+                  <span
+                    aria-hidden="true"
+                    className="min-w-5 h-5 px-1 rounded-full bg-brand text-ink-inverse text-[0.6875rem] font-bold grid place-items-center tabular"
+                  >
+                    {saringAktif.length}
+                  </span>
+                )}
+              </button>
+            </form>
 
-      <TabSegmen<TabBelanja>
-        className="mt-3"
-        aktif={tab}
-        ubah={(v) => aturParam({ tab: v === 'barang' ? null : v })}
-        /* Label tab sengaja tidak sama dengan judul halaman: dua hal berbeda
-           dengan nama yang sama membuat orang mengira sedang di layar lain.
-           Nilai query (`barang`/`distributor`) TIDAK ikut berubah — banyak
-           tautan di layar lain sudah memakainya. */
-        tab={[
-          { nilai: 'barang', label: 'Cari Barang' },
-          { nilai: 'distributor', label: 'Daftar Distributor' },
-        ]}
+            <TabSegmen<TabBelanja>
+              className="mt-3"
+              aktif={tab}
+              ubah={(v) => aturParam({ tab: v === 'barang' ? null : v })}
+              /* Label tab sengaja tidak sama dengan judul halaman: dua hal berbeda
+                 dengan nama yang sama membuat orang mengira sedang di layar lain.
+                 Nilai query (`barang`/`distributor`) TIDAK ikut berubah — banyak
+                 tautan di layar lain sudah memakainya. */
+              tab={[
+                { nilai: 'barang', label: 'Cari Barang' },
+                { nilai: 'distributor', label: 'Daftar Distributor' },
+              ]}
+            />
+          </>
+        }
       />
 
       {/* Saringan yang sedang berlaku, satu chip per saringan. Mengetuk chip
@@ -770,14 +781,16 @@ export default function Belanja() {
           </>
         ) : (
           <div className="space-y-6">
-            {/* Seperti di Prediksi: nama metode di atas bagian yang memakai
-                keluarannya. Hanya bila urutannya memang dari saran distributor. */}
-            {tampilkanRekomendasi && pakaiMesin2 && <LabelMetode {...METODE_SARAN} />}
             {tampilkanRekomendasi && (
               <section aria-labelledby="judul-rekomendasi">
+                {/* Seperti di Prediksi: nama metode di kanan judul bagian yang
+                    memakai keluarannya (revisi V2, Q42), hanya bila urutannya
+                    memang dari saran distributor. */}
                 <JudulBagian
                   id="judul-rekomendasi"
                   judul="Rekomendasi untuk usahamu"
+                  bungkus
+                  aksi={pakaiMesin2 ? <LabelMetode {...METODE_SARAN} /> : undefined}
                   keterangan={
                     profil.jenisUsaha === 'lainnya'
                       ? `Mengirim ke ${wilayahProfil}. ${dasarUrutan}`

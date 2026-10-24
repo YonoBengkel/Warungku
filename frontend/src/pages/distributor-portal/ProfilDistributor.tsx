@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Avatar, BarisData, JudulBagian, Kartu, Lencana, Metrik, Pemisah, Tombol } from '@/components/ui/dasar'
 import { AreaTeks, Kolom, Pilihan } from '@/components/ui/formulir'
 import { Lembar } from '@/components/ui/lembar'
-import { BarisChip, Chip } from '@/components/ui/navigasi'
+import { BarisChip, Chip, RUANG_LONCENG } from '@/components/ui/navigasi'
 import {
   IkonBintang,
   IkonBintangIsi,
@@ -587,7 +587,9 @@ export default function ProfilDistributor() {
     <div className="pb-6">
       {/* 1. Identitas */}
       <p className="text-kecil font-bold uppercase tracking-wide text-ink-3">Profil toko</p>
-      <h1 className="mt-0.5 text-judul font-extrabold text-ink tracking-tight leading-snug">{distributor.nama}</h1>
+      <h1 className={cx('mt-0.5 text-judul font-extrabold text-ink tracking-tight leading-snug', RUANG_LONCENG)}>
+        {distributor.nama}
+      </h1>
 
       <div className="mt-3 flex items-start gap-3">
         <Avatar nama={distributor.nama} warna={distributor.warna} ukuran={56} />

@@ -9,7 +9,7 @@ import {
   type NadaLencana,
 } from '@/components/ui/dasar'
 import { KeadaanKosong } from '@/components/ui/umpanBalik'
-import { BarisChip, Chip, TabSegmen } from '@/components/ui/navigasi'
+import { BagianAtasBeku, BarisChip, Chip, RUANG_LONCENG, TabSegmen } from '@/components/ui/navigasi'
 import {
   IkonCentangLingkaran,
   IkonKeranjang,
@@ -19,7 +19,7 @@ import {
   IkonPasokan,
   IkonToko,
 } from '@/icons'
-import { angka, tanggalPendek } from '@/lib/format'
+import { angka, cx, tanggalPendek } from '@/lib/format'
 import { BANTUAN, LABEL_KONTRAK, PESANAN_BERJALAN } from '@/lib/label'
 import { distributorById } from '@/data/dummy'
 import type { Kontrak, Pesanan } from '@/lib/types'
@@ -277,66 +277,77 @@ export default function PesananDaftar() {
 
   return (
     <div className="pb-6">
-      <div className="flex items-baseline justify-between gap-3">
-        <h1 className="text-judul font-extrabold text-ink tracking-tight">Pesanan</h1>
-        <Link to="/belanja" className="text-isi font-bold text-brand hover:underline shrink-0">
-          Cari barang di Distributor
-        </Link>
-      </div>
-      {/* Baris prosa ditahan sekitar 70 karakter: di layar lebar kalimat yang
-          membentang penuh justru lebih sulit dikejar matanya. */}
-      <p className="mt-1 text-isi text-ink-2 leading-relaxed max-w-[62ch]">
-        Semua pesanan dan kontrak bulananmu, dari yang masih berjalan sampai yang sudah selesai.
-      </p>
-      <TombolTautan
-        ke="/pesanan/lacak"
-        ragam="garis"
-        ukuran="kecil"
-        ikonKiri={<IkonLokasi size={15} />}
-        className="mt-3"
-      >
-        Lacak Pesanan
-      </TombolTautan>
+      {/* Dari judul sampai chip penyaring tetap terlihat saat daftar digulir; di
+          HP hanya tab dan chip (revisi V2, Q52). */}
+      <BagianAtasBeku
+        atas={
+          <>
+            <div className={cx('flex items-baseline justify-between gap-3', RUANG_LONCENG)}>
+              <h1 className="text-judul font-extrabold text-ink tracking-tight">Pesanan</h1>
+              <Link to="/belanja" className="text-isi font-bold text-brand hover:underline shrink-0">
+                Cari barang di Distributor
+              </Link>
+            </div>
+            {/* Baris prosa ditahan sekitar 70 karakter: di layar lebar kalimat yang
+                membentang penuh justru lebih sulit dikejar matanya. */}
+            <p className="mt-1 text-isi text-ink-2 leading-relaxed max-w-[62ch]">
+              Semua pesanan dan kontrak bulananmu, dari yang masih berjalan sampai yang sudah selesai.
+            </p>
+            <TombolTautan
+              ke="/pesanan/lacak"
+              ragam="garis"
+              ukuran="kecil"
+              ikonKiri={<IkonLokasi size={15} />}
+              className="mt-3"
+            >
+              Lacak Pesanan
+            </TombolTautan>
+          </>
+        }
+        inti={
+          <>
+            <TabSegmen<Tab>
+              className="mt-1"
+              aktif={tab}
+              ubah={gantiTab}
+              tab={[
+                /* Angka di lencana tab sengaja menghitung yang masih berjalan saja,
+                   bukan seluruh isi tab: yang perlu dipantau itu yang belum kelar. */
+                { nilai: 'pesanan', label: 'Pesanan', jumlah: berjalan.length },
+                { nilai: 'kontrak', label: 'Kontrak', jumlah: kontrakBerjalan.length },
+              ]}
+            />
 
-      <TabSegmen<Tab>
-        className="mt-4"
-        aktif={tab}
-        ubah={gantiTab}
-        tab={[
-          /* Angka di lencana tab sengaja menghitung yang masih berjalan saja,
-             bukan seluruh isi tab: yang perlu dipantau itu yang belum kelar. */
-          { nilai: 'pesanan', label: 'Pesanan', jumlah: berjalan.length },
-          { nilai: 'kontrak', label: 'Kontrak', jumlah: kontrakBerjalan.length },
-        ]}
+            {/* Baris chip penyaring. Ia menggulir di dalam wadahnya sendiri, jadi di
+                360px badan halaman tetap diam meski chipnya tidak muat. */}
+            {tab === 'pesanan' ? (
+              <BarisChip className="mt-3">
+                {SARING_PESANAN.map((s) => (
+                  <Chip key={s} aktif={saringPesanan === s} onClick={() => gantiSaring(s)}>
+                    {LABEL_SARING_PESANAN[s]}
+                    <span className="tabular font-bold">
+                      {s === 'semua' ? pesanan.length : s === 'berjalan' ? berjalan.length : selesai.length}
+                    </span>
+                    <HanyaPembacaLayar>pesanan</HanyaPembacaLayar>
+                  </Chip>
+                ))}
+              </BarisChip>
+            ) : (
+              <BarisChip className="mt-3">
+                {SARING_KONTRAK.map((s) => (
+                  <Chip key={s} aktif={saringKontrak === s} onClick={() => gantiSaring(s)}>
+                    {LABEL_SARING_KONTRAK[s]}
+                    <span className="tabular font-bold">
+                      {kontrak.filter((k) => cocokKontrak(k, s)).length}
+                    </span>
+                    <HanyaPembacaLayar>kontrak</HanyaPembacaLayar>
+                  </Chip>
+                ))}
+              </BarisChip>
+            )}
+          </>
+        }
       />
-
-      {/* Baris chip penyaring. Ia menggulir di dalam wadahnya sendiri, jadi di
-          360px badan halaman tetap diam meski chipnya tidak muat. */}
-      {tab === 'pesanan' ? (
-        <BarisChip className="mt-3">
-          {SARING_PESANAN.map((s) => (
-            <Chip key={s} aktif={saringPesanan === s} onClick={() => gantiSaring(s)}>
-              {LABEL_SARING_PESANAN[s]}
-              <span className="tabular font-bold">
-                {s === 'semua' ? pesanan.length : s === 'berjalan' ? berjalan.length : selesai.length}
-              </span>
-              <HanyaPembacaLayar>pesanan</HanyaPembacaLayar>
-            </Chip>
-          ))}
-        </BarisChip>
-      ) : (
-        <BarisChip className="mt-3">
-          {SARING_KONTRAK.map((s) => (
-            <Chip key={s} aktif={saringKontrak === s} onClick={() => gantiSaring(s)}>
-              {LABEL_SARING_KONTRAK[s]}
-              <span className="tabular font-bold">
-                {kontrak.filter((k) => cocokKontrak(k, s)).length}
-              </span>
-              <HanyaPembacaLayar>kontrak</HanyaPembacaLayar>
-            </Chip>
-          ))}
-        </BarisChip>
-      )}
 
       {/* ---------------------------------------------------------- */}
       {/* Segmen Pesanan                                             */}

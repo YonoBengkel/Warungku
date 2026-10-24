@@ -12,6 +12,7 @@ import {
   IkonSilang,
 } from '@/icons'
 import { cx, tanggalLengkapHari, waktuLalu } from '@/lib/format'
+import { RUANG_LONCENG } from '@/components/ui/navigasi'
 import {
   LABEL_PESANAN_MASUK,
   LABEL_TITIK,
@@ -105,7 +106,7 @@ export default function Dashboard() {
   return (
     <div className="pb-6">
       {/* 1. Sambutan: nama toko ditulis apa adanya, bukan huruf kapital semua */}
-      <h1 className="text-judul font-extrabold text-ink tracking-tight leading-snug">
+      <h1 className={cx('text-judul font-extrabold text-ink tracking-tight leading-snug', RUANG_LONCENG)}>
         Selamat datang, {distributorAktif.nama}
       </h1>
       <p className="mt-1 text-isi text-ink-3">{tanggalLengkapHari(new Date())}</p>

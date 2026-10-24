@@ -362,17 +362,22 @@ export default function StokDetail() {
                   id="judul-tren"
                   judul="Tren pemakaian"
                   keterangan="14 hari terakhir dan 7 hari ke depan"
+                  /* Label metode di kanan judul bersama Rapor perkiraan (revisi V2,
+                     Q42); keduanya turun ke bawah judul kalau tidak muat. */
+                  bungkus
                   aksi={
-                    <Link
-                      to={`/stok/${barang.id}/rapor`}
-                      className="inline-flex items-center gap-1 text-isi font-bold text-brand hover:underline"
-                    >
-                      <IkonGrafik size={15} />
-                      Rapor perkiraan
-                    </Link>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                      {mesin.model && <LabelMetode {...metodePrediksi(mesin.model)} />}
+                      <Link
+                        to={`/stok/${barang.id}/rapor`}
+                        className="inline-flex items-center gap-1 text-isi font-bold text-brand hover:underline"
+                      >
+                        <IkonGrafik size={15} />
+                        Rapor perkiraan
+                      </Link>
+                    </div>
                   }
                 >
-                  {mesin.model && <LabelMetode className="-mt-1 mb-2" {...metodePrediksi(mesin.model)} />}
                   <GrafikTren
                     data={trenTampil(barang, tren)}
                     satuan={satuanTampil(barang).nama}
@@ -477,9 +482,8 @@ function KartuSaranMesin({
 
   if (saran.length === 0) {
     return (
-      <Bagian id="judul-saran" judul="Saran distributor">
-        <LabelMetode className="-mt-1" {...METODE_SARAN} />
-        <p className="mt-2 text-isi text-ink-3 leading-relaxed">
+      <Bagian id="judul-saran" judul="Saran distributor" bungkus aksi={<LabelMetode {...METODE_SARAN} />}>
+        <p className="text-isi text-ink-3 leading-relaxed">
           Belum ada saran untuk barang ini. Bisa jadi belum ada distributor di daerahmu yang menawarkannya.
         </p>
       </Bagian>
@@ -491,16 +495,14 @@ function KartuSaranMesin({
       ref={wadahRef}
       id="judul-saran"
       judul="Saran distributor"
-      aksi={
-        <p className="text-kecil text-ink-3">
-          Dihitung {waktuLalu(saran[0].dijalankanPada)}
-          {lama && ' · akan diperbarui'}
-        </p>
-      }
+      /* Label metode di kanan judul (revisi V2, Q42); waktu hitung pindah ke
+         bawah judul supaya kanannya cukup untuk label. */
+      keterangan={`Dihitung ${waktuLalu(saran[0].dijalankanPada)}${lama ? ' · akan diperbarui' : ''}`}
+      bungkus
+      aksi={<LabelMetode {...METODE_SARAN} />}
       className="scroll-mt-[calc(var(--kepala-global,0px)_+_4.5rem)]"
     >
-      <LabelMetode className="-mt-1" {...METODE_SARAN} />
-      <ul className="mt-3 space-y-3">
+      <ul className="space-y-3">
         {saran.map((s, i) => {
           const seg = SEGMEN_SARAN[s.segmen ?? ''] ?? { label: s.segmen ?? '–', nada: 'info' as const }
           return (
