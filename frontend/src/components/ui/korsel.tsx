@@ -22,15 +22,15 @@ const kurva = (p: number) => 1 - Math.pow(1 - p, 4)
  * panah kiri menuju kartu yang sudah terlihat dan tidak bergerak sama sekali.
  *
  * Dua mode, dipilih per pemakaian:
- * - `otomatis` — berjalan sendiri (promo), tapi berhenti pada kesempatan
+ * - `otomatis` — berjalan sendiri (promo, dan sejak revisi V2 juga daftar tugas
+ *   Beranda atas keputusan Ilham), tapi berhenti pada kesempatan
  *   pertama pengguna menunjukkan ia sedang membaca: saat kartunya disentuh,
  *   disorot tetikus, atau fokus keyboard masuk ke dalamnya, saat tab peramban
  *   tidak terlihat, dan selamanya begitu panahnya ditekan atau kartunya
  *   digeser. Ia TIDAK PERNAH berjalan kalau pengguna meminta gerak dikurangi
  *   (`prefers-reduced-motion`).
- * - manual — hanya bergeser kalau digeser atau tombol panahnya ditekan. Dipakai
- *   untuk daftar tugas: kartu yang berpindah sendiri bisa membuat tugas
- *   terlewat, atau tombol kartu lain tertekan saat ia sedang bergerak.
+ * - manual — hanya bergeser kalau digeser atau tombol panahnya ditekan. Cocok
+ *   untuk deretan yang tombolnya mudah tertekan saat kartu sedang bergerak.
  *
  * Tidak ada tombol jeda: pemilik proyek memintanya dihapus supaya bilah
  * kendalinya bersih. Gantinya, sekali pengguna mengambil alih, korsel berhenti

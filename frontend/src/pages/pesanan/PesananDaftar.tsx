@@ -51,6 +51,8 @@ type Kelompok = 'barang' | 'pemasok'
 
 const SARING_PESANAN: readonly SaringPesanan[] = ['semua', 'berjalan', 'selesai']
 const SARING_KONTRAK: readonly SaringKontrak[] = ['semua', 'berjalan', 'akan-berakhir', 'selesai']
+/** Kartu per kelompok di penyaring Semua; sisanya lewat "Lihat semua" (revisi V2, Q41). */
+const BATAS_SEMUA = 6
 
 const LABEL_SARING_PESANAN: Record<SaringPesanan, string> = {
   semua: 'Semua',
@@ -363,11 +365,27 @@ export default function PesananDaftar() {
                       {k.judul} ({angka(k.daftar.length)})
                     </h3>
                   )}
+                  {/* Di Semua, tiap kelompok berhenti di enam kartu (dua baris
+                      di desktop) supaya "Sudah selesai" tidak menenggelamkan yang
+                      masih berjalan; sisanya lewat penyaringnya (revisi V2, Q41). */}
                   <div className="space-y-3 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-3 lg:space-y-0">
-                    {k.daftar.map((p: Pesanan) => (
+                    {(saringPesanan === 'semua' ? k.daftar.slice(0, BATAS_SEMUA) : k.daftar).map((p: Pesanan) => (
                       <KartuPesanan key={p.id} pesanan={p} />
                     ))}
                   </div>
+                  {saringPesanan === 'semua' && k.daftar.length > BATAS_SEMUA && (
+                    <div className="mt-2 flex justify-end">
+                      <Link
+                        to={`/pesanan?tab=pesanan&status=${k.kunci}`}
+                        onClick={() => window.scrollTo(0, 0)}
+                        className="inline-flex items-center gap-1 py-2 text-isi font-bold text-brand hover:underline"
+                      >
+                        Lihat semua
+                        <HanyaPembacaLayar>{k.judul.toLowerCase()}</HanyaPembacaLayar>
+                        <IkonPanahKanan size={16} />
+                      </Link>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

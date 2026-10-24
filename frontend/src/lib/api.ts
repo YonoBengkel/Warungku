@@ -26,6 +26,14 @@ export class GalatApi extends Error {
 /** Server tidak bisa dihubungi sama sekali: belum dinyalakan, atau jaringan putus. */
 export class ServerTakTerjangkau extends Error {}
 
+/* Balasan bawaan FastAPI untuk rute yang tidak dikenalnya. Dari layar ini
+   artinya API yang menyala lebih tua daripada frontend-nya (revisi V2: Ringkasan
+   Penjualan menulis "Not Found"), jadi diganti kalimat yang menyebut jalan
+   keluarnya. Pesan buatan backend sendiri tetap ditampilkan apa adanya. */
+const RUTE_TIDAK_DIKENAL = new Set(['Not Found', 'Method Not Allowed'])
+const PESAN_RUTE_TIDAK_DIKENAL =
+  'Bagian ini belum ada di aplikasi yang sedang menyala. Matikan lalu nyalakan ulang aplikasinya (matikan.cmd, lalu nyalakan.cmd).'
+
 export interface SesiServer {
   token: string
   usahaId: number
@@ -77,13 +85,14 @@ export async function minta<T>(jalur: string, opsi: RequestInit & { token?: stri
     throw new ServerTakTerjangkau(`Turnify Flow di ${ALAMAT} tidak bisa dihubungi.`)
   }
   if (!jawab.ok) {
-    let pesan = `Permintaan belum berhasil (kode ${jawab.status}). Coba lagi sebentar lagi.`
+    let pesan = 'Permintaan belum berhasil. Coba lagi sebentar lagi.'
     try {
       const isi = await jawab.json()
       if (typeof isi?.detail === 'string') pesan = isi.detail
     } catch {
       /* Badan bukan JSON; pakai pesan bawaan. */
     }
+    if (RUTE_TIDAK_DIKENAL.has(pesan)) pesan = PESAN_RUTE_TIDAK_DIKENAL
     throw new GalatApi(jawab.status, pesan)
   }
   // 204 No Content (mis. hapus paket) tidak punya badan untuk dibaca.

@@ -13,7 +13,9 @@ Yang dikerjakan, berurutan:
      UMKM produsen ditambahkan bila belum ada, dan variasi demo (pesanan,
      kontrak, stok) disegarkan bila umurnya lebih dari tiga hari.
   5. API (8000), layanan model (8001), dan frontend (5173), masing-masing di
-     jendela sendiri. Layanan yang sudah menyala tidak dinyalakan dua kali.
+     jendela sendiri. Layanan yang sudah menyala tidak dinyalakan dua kali,
+     kecuali API dan layanan model yang menyala sebelum kodenya berubah: jendela
+     yang dibuka skrip ini dinyalakan ulang, program lain hanya diberi tahu.
   6. Ketiga mesin dijalankan sekali bila keluarannya belum lengkap.
   7. Peramban dibuka di halaman Masuk.
 
@@ -211,9 +213,9 @@ if (Test-Path $BerkasPid) {
 }
 
 $layanan = @(
-    @{ Nama = 'API'; Port = 8000; Url = 'http://localhost:8000/sehat'; Judul = 'Turnify API (8000)';
+    @{ Nama = 'API'; Port = 8000; Url = 'http://localhost:8000/sehat'; Judul = 'Turnify API (8000)'; CekKode = $true;
        Perintah = "& '$Python' -m uvicorn api.utama:app --port 8000" },
-    @{ Nama = 'Layanan model'; Port = 8001; Url = 'http://localhost:8001/sehat'; Judul = 'Turnify layanan model (8001)';
+    @{ Nama = 'Layanan model'; Port = 8001; Url = 'http://localhost:8001/sehat'; Judul = 'Turnify layanan model (8001)'; CekKode = $true;
        Perintah = "& '$Python' -m uvicorn ml.layanan:app --port 8001" },
     @{ Nama = 'Frontend'; Port = 5173; Url = 'http://localhost:5173'; Judul = 'Turnify frontend (5173)';
        Perintah = 'npm.cmd run dev' }
@@ -237,10 +239,64 @@ if (Paket-Frontend-Usang) {
     (Get-Item -LiteralPath (Join-Path $Akar 'frontend\node_modules\.package-lock.json')).LastWriteTime = Get-Date
 }
 
+# uvicorn tidak memuat ulang kode yang berubah. API yang menyala sejak sebelum
+# kode terbaru tidak mengenal endpoint baru (halaman menulis "Not Found"),
+# jadi waktunya dibandingkan dengan berkas kode Python yang paling baru.
+function Kode-Terbaru {
+    $folder = @('backend\api', 'backend\warungku', 'backend\migrations', 'ml', 'data\dataset') | ForEach-Object { Join-Path $Akar $_ }
+    $waktu = @(Get-ChildItem -Path $folder -Recurse -Filter *.py -File -ErrorAction SilentlyContinue | ForEach-Object { $_.LastWriteTime })
+    $waktu += (Get-Item -LiteralPath (Join-Path $Akar 'requirements-produksi.txt')).LastWriteTime
+    return ($waktu | Measure-Object -Maximum).Maximum
+}
+
+# Jendela yang dibuka Buka-Jendela: perintah tersandinya memuat judul
+# 'Turnify ...' (cara yang sama dipakai matikan.ps1). Proses python layanan
+# bisa satu atau dua tingkat di bawahnya, jadi induknya ditelusuri ke atas.
+function Jendela-Turnify([int]$id) {
+    for ($tingkat = 0; $tingkat -lt 3; $tingkat++) {
+        $p = Get-CimInstance Win32_Process -Filter "ProcessId = $id" -ErrorAction SilentlyContinue
+        if (-not $p) { return $null }
+        if ($p.Name -eq 'powershell.exe' -and $p.CommandLine -match '-EncodedCommand\s+(\S+)') {
+            $isi = ''
+            try { $isi = [Text.Encoding]::Unicode.GetString([Convert]::FromBase64String($Matches[1])) } catch { }
+            if ($isi -like "*WindowTitle = 'Turnify *") { return [int]$p.ProcessId }
+        }
+        $id = [int]$p.ParentProcessId
+    }
+    return $null
+}
+
+# Keadaan layanan yang sudah menyala: 'segar' (kodenya terbaru), 'ditutup'
+# (jendela skrip ini yang memakai kode lama sudah ditutup, port sudah lepas),
+# atau 'usang' (program lain memakai kode lama; hanya diberi tahu).
+function Keadaan-Layanan($l, $kodeTerbaru) {
+    $k = Get-NetTCPConnection -LocalPort $l.Port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+    if (-not $k) { return 'segar' }
+    $proses = Get-Process -Id $k.OwningProcess -ErrorAction SilentlyContinue
+    if (-not $proses -or $proses.StartTime -ge $kodeTerbaru) { return 'segar' }
+    $jendela = Jendela-Turnify $k.OwningProcess
+    if (-not $jendela) {
+        Write-Host "    $($l.Nama) di port $($l.Port) menyala sebelum kodenya berubah, tetapi bukan dibuka nyalakan.cmd." -ForegroundColor Yellow
+        Write-Host '    Tutup program itu lalu jalankan nyalakan.cmd lagi; sampai itu, fitur baru bisa belum ada.' -ForegroundColor Yellow
+        return 'usang'
+    }
+    cmd /c "taskkill /PID $jendela /T /F >nul 2>&1"
+    $batas = (Get-Date).AddSeconds(20)
+    while ((Port-Dipakai $l.Port) -and ((Get-Date) -lt $batas)) { Start-Sleep -Milliseconds 500 }
+    if (Port-Dipakai $l.Port) { Gagal "Port $($l.Port) belum lepas sesudah $($l.Nama) ditutup. Jalankan matikan.cmd, lalu ulangi." }
+    Info "$($l.Nama) menyala dengan kode lama, jadi dinyalakan ulang"
+    return 'ditutup'
+}
+
+$kodeTerbaru = Kode-Terbaru
 foreach ($l in $layanan) {
     if (Url-Hidup $l.Url) {
-        Oke "$($l.Nama) sudah menyala di port $($l.Port), dipakai apa adanya"
-        continue
+        $keadaan = if ($l.CekKode) { Keadaan-Layanan $l $kodeTerbaru } else { 'segar' }
+        if ($keadaan -eq 'segar') {
+            Oke "$($l.Nama) sudah menyala di port $($l.Port), dipakai apa adanya"
+            continue
+        }
+        if ($keadaan -eq 'usang') { continue }
     }
     if (Port-Dipakai $l.Port) {
         Gagal "Port $($l.Port) dipakai program lain. Tutup program itu atau jalankan matikan.cmd, lalu ulangi."

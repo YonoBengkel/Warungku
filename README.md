@@ -118,7 +118,10 @@ dikerjakan sekaligus:
 - ketiga mesin dijalankan bila keluarannya belum lengkap;
 - peramban dibuka di halaman Masuk.
 
-Menjalankannya lagi aman: layanan yang sudah menyala dipakai apa adanya.
+Menjalankannya lagi aman: layanan yang sudah menyala dipakai apa adanya. Satu
+pengecualian: API dan layanan model yang menyala sebelum kodenya berubah (misalnya
+sesudah `git pull`) dinyalakan ulang, karena `uvicorn` tidak memuat kode baru
+sendiri. Kalau API itu bukan dibuka `nyalakan.cmd`, skrip hanya memberi tahu.
 
 Selesai memakai? Klik dua kali **`matikan.cmd`**. Datanya tetap tersimpan di
 basis data. `matikan.cmd` juga menghentikan kontainer API dan layanan model dari
@@ -345,6 +348,7 @@ pesanan pekan depan di tab Produksi turun.
 | Gejala | Penyebab paling mungkin | Yang perlu dilakukan |
 | --- | --- | --- |
 | Tombol *Masuk* dengan akun simulasi gagal, atau angka di layar tetap data contoh | API (port 8000) belum menyala, atau basis data mati | Cek `curl.exe localhost:8000/sehat`. Nyalakan `uvicorn` (B4) atau kontainer (jalur A) |
+| Halaman menulis "Bagian ini belum ada di aplikasi yang sedang menyala", atau promo di Beranda tidak muncul | API menyala sejak sebelum kodenya berubah (frontend memuat kode baru sendiri, API tidak), dan variasi demonya masih versi lama | Jalankan `nyalakan.cmd` lagi: API dan layanan model yang usang dinyalakan ulang. Kalau API kamu nyalakan sendiri, matikan lalu nyalakan lagi |
 | Halaman *Pelanggan* di portal distributor kosong | Layanan model belum pernah menjalankan Mesin 3 | Jalankan perintah B5 |
 | Grafik perkiraan atau saran distributor kosong untuk satu barang | Mesin 1 atau 2 belum dijalankan sesudah data berubah | Jalankan perintah B5 |
 | Harus masuk ulang setiap API dinyalakan ulang | `WARUNGKU_RAHASIA` kosong | Isi di `backend/.env` (jalur B) atau `deployment/.env` (jalur A) |

@@ -12,7 +12,7 @@ import { KartuPromo } from '@/components/domain/KartuPromo'
 import { KartuRingkasanPenjualan } from '@/components/domain/RingkasanPenjualan'
 import { ambilRingkasanUsaha } from '@/lib/apiPenjualan'
 import { Korsel } from '@/components/ui/korsel'
-import { Bagian, Kartu, Kerangka, Lencana, Tombol, TombolTautan } from '@/components/ui/dasar'
+import { Bagian, Kartu, Kerangka, Lencana, Tombol } from '@/components/ui/dasar'
 import { PengaturJumlah } from '@/components/ui/formulir'
 import { Lembar } from '@/components/ui/lembar'
 import {
@@ -505,9 +505,11 @@ export default function Beranda() {
         judul="Perlu Tindakan"
         className="mt-3 sm:mt-4"
       >
+        {/* Ikon dan angka berdampingan di tengah ubin, namanya di bawah (revisi
+            V2, Q44), di HP juga: kisi 2 x 2 di HP, empat sebaris mulai 640px. */}
         <div
           aria-label="Pintasan ke daftar stok dan kontrak yang perlu ditindak"
-          className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-4 sm:gap-3 sm:overflow-visible"
+          className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3"
         >
           {pintasan.map((p) => (
             <Link
@@ -518,40 +520,18 @@ export default function Beranda() {
                   ? `${p.label.join(' ')}, ${p.jumlah} ${p.satuan}`
                   : `${p.label.join(' ')}, tidak ada ${p.satuan}`
               }
-              /* HP: ikon bulat berlabel, bisa digeser. Mulai 640px: empat ubin
-                 berangka sebaris, supaya tidak ada empat ikon kecil di kiri dan
-                 ruang kosong selebar layar di kanannya. */
-              className={cx(
-                'shrink-0 w-[4.75rem] flex flex-col items-center gap-1.5 rounded-md py-1 hover:bg-sunken transition-colors',
-                'sm:w-auto sm:flex-row sm:items-center sm:gap-3 sm:p-3 sm:bg-surface sm:border sm:border-line sm:rounded-lg sm:shadow-e1 sm:hover:bg-surface sm:hover:border-line-strong',
-              )}
+              className="min-w-0 flex flex-col items-center gap-1.5 p-3 text-center bg-surface border border-line rounded-lg shadow-e1 hover:border-line-strong transition-colors"
             >
-              {/* relative: lencana angka ditempel ke lingkaran ini, bukan ke
-                  leluhur berposisi entah di mana di luar wadah gulir. */}
-              <span className={cx('relative size-12 rounded-full grid place-items-center', p.warna)}>
-                <p.Ikon size={22} />
-                {p.jumlah > 0 && (
-                  <span
-                    aria-hidden="true"
-                    className="sm:hidden absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-kritis text-ink-inverse text-[0.6875rem] font-bold grid place-items-center"
-                  >
-                    {p.jumlah > 99 ? '99+' : p.jumlah}
-                  </span>
-                )}
-              </span>
-              <span
-                aria-hidden="true"
-                className="sm:hidden text-[0.6875rem] font-semibold text-ink-2 text-center leading-tight"
-              >
-                {p.label[0]}
-                <br />
-                {p.label[1]}
-              </span>
-              <span aria-hidden="true" className="hidden sm:block min-w-0">
-                <span className={cx('block text-angka font-extrabold tabular', p.jumlah > 0 ? 'text-ink' : 'text-ink-3')}>
+              <span aria-hidden="true" className="flex items-center justify-center gap-2.5">
+                <span className={cx('size-10 sm:size-12 rounded-full grid place-items-center shrink-0', p.warna)}>
+                  <p.Ikon size={20} />
+                </span>
+                <span className={cx('text-angka font-extrabold tabular', p.jumlah > 0 ? 'text-ink' : 'text-ink-3')}>
                   {p.jumlah > 99 ? '99+' : p.jumlah}
                 </span>
-                <span className="block mt-1 text-kecil font-semibold text-ink-2 leading-tight">{p.label.join(' ')}</span>
+              </span>
+              <span aria-hidden="true" className="text-kecil font-semibold text-ink-2 leading-tight">
+                {p.label.join(' ')}
               </span>
             </Link>
           ))}
@@ -566,8 +546,7 @@ export default function Beranda() {
           Sampai" dan ke Lembar Pesan Cepat. */}
       <Bagian
         id="judul-perlu-diurus"
-        judul="Yang perlu kamu urus hari ini"
-        keterangan={tugas.length > 0 ? `${tugas.length} hal menunggu keputusan kamu.` : undefined}
+        judul={tugas.length === 0 ? 'Yang perlu kamu urus hari ini' : undefined}
         className="mt-3 sm:mt-4"
       >
         {tugas.length === 0 ? (
@@ -576,26 +555,28 @@ export default function Beranda() {
             Semua aman hari ini.
           </p>
         ) : (
-          /* Geser manual, tidak pernah berjalan sendiri: isinya tugas, termasuk
-             satu-satunya jalan cepat ke "Barang Sudah Sampai". Kartu yang
-             berpindah sendiri bisa membuat tugas terlewat, atau tombol kartu lain
-             tertekan saat ia sedang bergerak. */
-          <>
-            <div className="lg:hidden">
-              <Korsel
-                label="Yang perlu kamu urus hari ini"
-                kelasItem="w-[88%] sm:w-[22rem]"
-                isi={tugas.map((t) => ({ kunci: t.kunci, elemen: t.elemen }))}
-              />
-            </div>
-            {/* Di desktop semua tugas tampil sekaligus dalam kisi: ruangnya ada,
-                dan tugas di balik tombol geser mudah terlewat. */}
-            <ul className="hidden lg:grid lg:grid-cols-2 xl:grid-cols-3 gap-3">
-              {tugas.map((t) => (
-                <li key={t.kunci}>{t.elemen}</li>
-              ))}
-            </ul>
-          </>
+          /* Slider seperti promo di semua ukuran: paling banyak tiga kartu
+             terlihat di desktop, sisanya di halaman berikut, panah di kanan atas
+             (revisi V2, Q45). Berputar sendiri dengan aturan promo (Q59) atas
+             keputusan Ilham; dulu sengaja manual karena kartu yang bergerak
+             sendiri bisa tertekan tanpa sengaja. Korsel berhenti selamanya begitu
+             disentuh, disorot, atau difokus, jadi tombolnya tetap aman ditekan. */
+          <Korsel
+            label="Yang perlu kamu urus hari ini"
+            otomatis
+            judul={
+              <div>
+                <h2 id="judul-perlu-diurus" className="text-kartu font-bold text-ink leading-tight">
+                  Yang perlu kamu urus hari ini
+                </h2>
+                <p className="text-isi text-ink-3 mt-0.5 leading-snug">
+                  {tugas.length} hal menunggu keputusan kamu.
+                </p>
+              </div>
+            }
+            kelasItem="w-[88%] sm:w-[22rem] lg:w-[calc((100%-0.75rem)/2)] xl:w-[calc((100%-1.5rem)/3)]"
+            isi={tugas.map((t) => ({ kunci: t.kunci, elemen: t.elemen }))}
+          />
         )}
       </Bagian>
 
@@ -805,15 +786,6 @@ export default function Beranda() {
         </Bagian>
       )}
 
-      {/* Jalan keluar yang selalu ada, supaya Beranda tidak pernah jadi buntu */}
-      <div className="mt-8 flex flex-wrap gap-2.5">
-        <TombolTautan ke="/stok?filter=menipis" ragam="garis" ukuran="kecil" ikonKiri={<IkonPeringatan size={15} />}>
-          Lihat semua stok menipis
-        </TombolTautan>
-        <TombolTautan ke="/belanja" ragam="garis" ukuran="kecil">
-          Cari barang di Distributor
-        </TombolTautan>
-      </div>
 
       <Lembar
         terbuka={pilihan != null}
