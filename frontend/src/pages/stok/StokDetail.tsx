@@ -129,7 +129,8 @@ export default function StokDetail() {
         : { nada: 'menipis' as const, teks: `Bawaan ${BATAS_AMAN_BAWAAN}` }
 
   return (
-    <div className="pb-8">
+    /* Di desktop tanpa jarak bawah sendiri: <main> sudah memberinya. */
+    <div className="pb-8 lg:pb-0">
       <KepalaHalaman
         judul={barang.nama}
         keterangan={barang.deskripsi ? `${barang.deskripsi} · ${barang.kategori}` : barang.kategori}
@@ -145,9 +146,14 @@ export default function StokDetail() {
         }
       />
 
-      <div className="mt-4 lg:grid lg:grid-cols-12 lg:gap-6 lg:items-start">
+      {/* Mulai 1280px tiga kolom: angka dan tombol, perkiraan dan Tren, saran
+          distributor. Sisa stok, grafik Tren, dan kartu saran lalu muat satu
+          layar acuan 1536 × 730 (revisi V2, Q63). Di 1024–1279px dua kolom
+          dengan saran di bawah kolom kiri; di HP urutannya tetap: angka, saran,
+          lalu penjelasan. */}
+      <div className="mt-4 lg:grid lg:grid-cols-12 lg:grid-rows-[auto_1fr] lg:gap-6 lg:items-start xl:grid-rows-1">
         {/* ============ Kolom kiri: angka dan keputusan ============ */}
-        <div className="lg:col-span-5 xl:col-span-4 space-y-4">
+        <div className="lg:col-start-1 lg:col-span-5 lg:row-start-1 xl:col-span-4 space-y-4">
           {/* ---- Angka sisa ---- */}
           <Bagian>
             <div className="flex items-end justify-between gap-4">
@@ -303,11 +309,13 @@ export default function StokDetail() {
               "Pesan" membuka saran distributor di halaman ini bila ada, dengan
               jumlah saran sudah terisi. Data barang diubah lewat ikon pena di kepala. */}
           <div className="grid grid-cols-2 gap-2.5">
+            {/* Di layar tiga kolom keduanya berdampingan supaya kolom ini tetap
+                muat satu layar; tombol utamanya tetap satu. */}
             <TombolTautan
               ke={kePesan}
               ragam={aksiUtama === 'pesan' ? 'utama' : 'garis'}
               penuh
-              className={cx(aksiUtama === 'pesan' && 'col-span-2')}
+              className={cx(aksiUtama === 'pesan' && 'col-span-2 xl:col-span-1')}
               ikonKiri={<IkonKeranjang size={16} />}
             >
               {aksiUtama === 'pesan' ? 'Pesan Sekarang' : 'Pesan'}
@@ -316,27 +324,32 @@ export default function StokDetail() {
               ke={`/stok/${barang.id}/koreksi`}
               ragam={aksiUtama === 'koreksi' ? 'utama' : 'garis'}
               penuh
-              className={cx(aksiUtama === 'pesan' && 'col-span-2', aksiUtama === 'koreksi' && 'order-first')}
+              className={cx(
+                aksiUtama === 'pesan' && 'col-span-2 xl:col-span-1',
+                aksiUtama === 'koreksi' && 'order-first',
+              )}
               ikonKiri={<IkonPena size={16} />}
             >
               Koreksi Stok
             </TombolTautan>
           </div>
+        </div>
 
-          {/* Saran distributor tepat di bawah ringkasan stok (revisi 23 Okt 2026):
-              dulu di bawah grafik di kolom kanan dan mudah terlewat, terutama di HP.
-              Di luar tab, jadi tombol "Pesan" selalu menemukannya. */}
-          {mesin.status === 'siap' && (
+        {/* Saran distributor dekat ringkasan stok (revisi 23 Okt 2026): dulu di
+            bawah grafik di kolom kanan dan mudah terlewat, terutama di HP. Di luar
+            tab, jadi tombol "Pesan" selalu menemukannya. */}
+        {mesin.status === 'siap' && (
+          <div className="mt-4 lg:mt-0 lg:col-start-1 lg:col-span-5 lg:row-start-2 xl:col-start-10 xl:col-span-3 xl:row-start-1">
             <KartuSaranMesin
               saran={mesin.saran}
               jumlahAwal={Math.max(1, perkiraan.saranBeli)}
               satuan={barang.kemasan[barang.kemasan.length - 1]?.nama ?? barang.satuan}
             />
-          )}
-        </div>
+          </div>
+        )}
 
-        {/* ============ Kolom kanan: penjelasan ============ */}
-        <div className="lg:col-span-7 xl:col-span-8 mt-6 lg:mt-0">
+        {/* ============ Kolom tengah (kanan di 1024–1279px): penjelasan ============ */}
+        <div className="mt-6 lg:mt-0 lg:col-start-6 lg:col-span-7 lg:row-start-1 lg:row-span-2 xl:col-start-5 xl:col-span-5 xl:row-span-1">
           <TabSegmen<TabDetail>
             tab={[
               { nilai: 'ringkasan', label: 'Ringkasan' },
@@ -362,6 +375,7 @@ export default function StokDetail() {
                   id="judul-tren"
                   judul="Tren pemakaian"
                   keterangan="14 hari terakhir dan 7 hari ke depan"
+                  className="lg:p-4"
                   /* Label metode di kanan judul bersama Rapor perkiraan (revisi V2,
                      Q42); keduanya turun ke bawah judul kalau tidak muat. */
                   bungkus
@@ -381,6 +395,7 @@ export default function StokDetail() {
                   <GrafikTren
                     data={trenTampil(barang, tren)}
                     satuan={satuanTampil(barang).nama}
+                    tinggi={150}
                   />
                   {/* Nama garis pembatas sama dengan yang tertulis di grafik. */}
                   <Penjelasan label="Cara membaca grafik" className="mt-1">

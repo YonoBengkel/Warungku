@@ -347,18 +347,21 @@ export default function Stok() {
     <div className="pb-6 lg:pb-0 lg:h-[calc(100dvh-3.5rem)] lg:flex lg:flex-col">
       {/* ---------------- Kepala lengket ---------------- */}
       <div className="sticky top-[var(--kepala-global,0px)] z-20 -mx-4 px-4 sm:-mx-6 sm:px-6 pt-1 pb-3 bg-bg/96 backdrop-blur-sm border-b border-line lg:shrink-0">
-        <div className={cx('flex items-center gap-2 flex-wrap mb-3', RUANG_LONCENG)}>
-          <h1 className="text-judul font-extrabold text-ink tracking-tight mr-auto">Stok</h1>
-          <TombolTautan ke="/stok/baru" ukuran="kecil" ikonKiri={<IkonTambah size={15} />}>
+        {/* HP: judul dan Tambah Barang sebaris, lalu kolom cari, lalu tiga angka.
+            Desktop: keempatnya sebaris, supaya tabel mendapat dua-tiga baris lebih
+            di layar acuan (revisi V2, Q63). Kolom cari selebar layar hanya membuang
+            ruang: yang diketik ke dalamnya paling panjang tiga kata. */}
+        <div className={cx('flex flex-wrap items-center gap-x-3 gap-y-3', RUANG_LONCENG)}>
+          <h1 className="text-judul font-extrabold text-ink tracking-tight mr-auto lg:mr-0">Stok</h1>
+          <TombolTautan
+            ke="/stok/baru"
+            ukuran="kecil"
+            ikonKiri={<IkonTambah size={15} />}
+            className="lg:order-last lg:ml-auto"
+          >
             Tambah Barang
           </TombolTautan>
-        </div>
-
-        {/* Di layar lebar kolom cari dan tiga angka berdiri berdampingan. Kolom
-            cari selebar layar hanya membuang ruang: yang diketik ke dalamnya
-            paling panjang tiga kata. */}
-        <div className="lg:flex lg:items-center lg:gap-3">
-          <div className="relative lg:flex-1 lg:min-w-0 lg:max-w-[22rem]">
+          <div className="relative w-full lg:w-auto lg:flex-1 lg:min-w-0 lg:max-w-[22rem]">
             <label htmlFor="cari-stok" className="sr-only">
               Cari barang di daftar stok
             </label>
@@ -392,7 +395,7 @@ export default function Stok() {
           </div>
 
           {/* Tiga angka yang bisa ditekan: ringkasan sekaligus penyaring */}
-          <div className="mt-3 lg:mt-0 grid grid-cols-3 gap-2 lg:flex lg:gap-2.5 lg:shrink-0">
+          <div className="w-full grid grid-cols-3 gap-2 lg:w-auto lg:flex lg:gap-2.5 lg:shrink-0">
             <TombolAngka
               label="Habis"
               nilai={jumlahStatus.habis}
@@ -654,7 +657,7 @@ export default function Stok() {
                   const dikirim = dikirimPerBarang.get(b.id)
                   return (
                     <tr key={b.id} className="hover:bg-sunken/60 [&>td]:border-b [&>td]:border-line last:[&>td]:border-b-0">
-                      <td className="py-3.5 px-4 align-middle">
+                      <td className="py-2.5 px-4 align-middle">
                         <Link
                           to={`/stok/${b.id}`}
                           className="text-kartu font-semibold text-ink hover:text-brand transition-colors"
@@ -670,13 +673,13 @@ export default function Stok() {
                           </div>
                         )}
                       </td>
-                      <td className="py-3.5 px-4 align-middle text-isi text-ink-2">
+                      <td className="py-2.5 px-4 align-middle text-isi text-ink-2">
                         {b.deskripsi || <span className="text-ink-3">&mdash;</span>}
                       </td>
-                      <td className="py-3.5 px-4 align-middle text-isi text-ink-2">{b.kategori}</td>
+                      <td className="py-2.5 px-4 align-middle text-isi text-ink-2">{b.kategori}</td>
                       {/* Angka saja. Satuannya di kolom sebelah, dan berlaku juga
                           untuk kolom batas aman — satu barang, satu satuan. */}
-                      <td className="py-3.5 px-4 align-middle text-right">
+                      <td className="py-2.5 px-4 align-middle text-right">
                         <span
                           className={cx(
                             'text-kartu font-bold tabular',
@@ -686,17 +689,17 @@ export default function Stok() {
                           {angkaTampil(b, Math.max(0, b.stok))}
                         </span>
                       </td>
-                      <td className="py-3.5 px-4 align-middle text-isi text-ink-2">{satuanTampil(b).nama}</td>
-                      <td className="py-3.5 px-4 align-middle text-right">
+                      <td className="py-2.5 px-4 align-middle text-isi text-ink-2">{satuanTampil(b).nama}</td>
+                      <td className="py-2.5 px-4 align-middle text-right">
                         <span className="text-isi text-ink-2 tabular">{angkaTampil(b, b.batasAman)}</span>
                       </td>
-                      <td className="py-3.5 px-4 align-middle">
+                      <td className="py-2.5 px-4 align-middle">
                         <ChipStok status={s} />
                       </td>
                       {/* "0 hari" tidak berarti apa-apa buat pemilik warung.
                           Yang ia perlu tahu: sisanya sudah tidak ada, atau
                           angkanya memang belum bisa dihitung. */}
-                      <td className="py-3.5 px-4 align-middle text-right text-isi text-ink-2">
+                      <td className="py-2.5 px-4 align-middle text-right text-isi text-ink-2">
                         {b.stok <= 0 ? (
                           <span>Tidak ada sisa</span>
                         ) : cukup == null ? (

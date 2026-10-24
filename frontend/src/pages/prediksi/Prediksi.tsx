@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import type { Barang, RekomendasiPrediksi } from '@/lib/types'
 import { Bagian, BarisData, Kartu, Tombol, TombolTautan } from '@/components/ui/dasar'
-import { BarisChip, BilahAksi, Chip, RUANG_LONCENG } from '@/components/ui/navigasi'
+import { BarisChip, BilahAksi, Chip, KepalaHalaman, RUANG_LONCENG } from '@/components/ui/navigasi'
 import { PengaturJumlah } from '@/components/ui/formulir'
 import { BilahProgres, KeadaanKosong, Penjelasan, Peringatan } from '@/components/ui/umpanBalik'
 import { GrafikTren } from '@/components/grafik/GrafikTren'
@@ -39,6 +39,9 @@ import { LabelMetode, metodePrediksi } from '@/components/domain/LabelMetode'
  *    perkiraan antarbarang. Tanpa kategori, kategori pertama yang dibuka.
  * 2. `/prediksi?barang=b-01`  — satu barang: grafiknya, angka bulan ini dan
  *    bulan depan, lalu tombol pesan.
+ * 3. `/prediksi?kategori=...&tampil=semua` — "Prediksi · <kategori>": semua
+ *    kartu barang satu kategori. Keadaan 1 hanya memuat BATAS_KARTU kartu
+ *    supaya seluruhnya muat satu layar acuan (revisi V2, Q51 dan Q57).
  *
  * Yang sengaja TIDAK ada lagi:
  * - "Semua kategori". Grafik lintas kategori menjumlahkan gram, ml, dan pcs
@@ -59,6 +62,13 @@ const KALIMAT_MELESET =
 
 /** Ruang label sumbu untuk Rupiah ringkas ("12,5 jt"), lebih lebar dari angka biasa. */
 const LEBAR_SUMBU_RUPIAH = 48
+
+/**
+ * Kartu barang paling banyak di halaman kategori: dua baris kartu, supaya
+ * kartu, grafik nilai, dan perbandingan antarbarang muat di layar acuan
+ * 1536 × 730 tanpa digulir. Sisanya lewat "Lihat semua" (revisi V2, Q57).
+ */
+const BATAS_KARTU = 6
 
 /**
  * Arah perubahan dari bulan ini ke bulan depan.
@@ -147,15 +157,31 @@ export default function Prediksi() {
      grafik harus ikut. */
   const barangKategori = useMemo(() => barang.filter((b) => b.kategori === kategori), [barang, kategori])
 
+  if (param.get('tampil') === 'semua' && !barangMentah) {
+    return (
+      <SemuaBarangKategori
+        kategori={kategori}
+        daftar={barangKategori}
+        alamat={alamat}
+        kembaliKe={alamat({ tampil: null })}
+      />
+    )
+  }
+
   return (
-    <div className="pb-8">
+    /* Di desktop tanpa jarak bawah sendiri: <main> sudah memberinya, dan dua
+       jarak bertumpuk mendorong halaman melewati layar acuan. */
+    <div className="pb-8 lg:pb-0">
       {/* Label metode di kanan judul, menggantikan "Perkiraan untuk bulan depan"
-          (revisi V2, Q42). Di layar sempit ia turun ke bawah judul. */}
-      <div className={cx('flex items-center justify-between gap-x-3 gap-y-2 flex-wrap', RUANG_LONCENG)}>
+          (revisi V2, Q42). Di desktop kalimat peringatannya ikut sebaris supaya
+          isi halaman muat satu layar; di layar sempit ia turun ke bawah. */}
+      <div className={cx('flex items-center justify-between gap-x-4 gap-y-1 flex-wrap', RUANG_LONCENG)}>
         <h1 className="text-judul font-extrabold text-ink tracking-tight">{JUDUL.prediksi}</h1>
+        <p className="order-last w-full text-isi text-ink-2 leading-relaxed max-w-[62ch] lg:order-none lg:w-auto lg:max-w-none lg:grow lg:basis-0">
+          {KALIMAT_MELESET}
+        </p>
         <LabelMetode {...metodePrediksi(modelBulananServer())} />
       </div>
-      <p className="mt-1 text-isi text-ink-2 leading-relaxed max-w-[62ch]">{KALIMAT_MELESET}</p>
 
       {barangMentah && !barangTerpilih ? (
         /* Tautan lama atau id yang salah salin. Halaman tidak boleh jadi buntu. */
@@ -182,9 +208,9 @@ export default function Prediksi() {
       ) : (
         <>
           {/* -------- Pemilih kategori: geser mendatar di wadahnya sendiri -------- */}
-          <BarisChip className="mt-4">
+          <BarisChip className="mt-2">
             {kategoriBarang.map((k) => (
-              <Chip key={k} aktif={k === kategori} onClick={() => aturParam({ kategori: k, barang: null })}>
+              <Chip key={k} aktif={k === kategori} onClick={() => aturParam({ kategori: k, barang: null, tampil: null })}>
                 {k}
               </Chip>
             ))}
@@ -192,17 +218,17 @@ export default function Prediksi() {
 
           {/* Di HP urutannya grafik garis → kartu barang → grafik batang, sesuai
               alur "pilih kategori, lihat grafiknya, lalu pilih barang". Di layar
-              lebar kartu barang di kiri, dua grafik bertumpuk di kanan. Baris
-              kedua kisi `1fr` supaya tinggi kolom kiri tidak menarik grafik
-              garis menjauh dari grafik batang di bawahnya. */}
-          <div className="mt-4 flex flex-col gap-4 lg:grid lg:grid-cols-12 lg:grid-rows-[auto_1fr] lg:gap-6 lg:items-start">
-            <div className="min-w-0 lg:col-start-8 lg:col-span-5 lg:row-start-1">
+              lebar mengikuti sketsa Ilham (revisi V2, Q51): baris atas kartu
+              barang di kiri dan grafik nilai di kanan, sama tinggi; baris bawah
+              perbandingan antarbarang selebar halaman. */}
+          <div className="mt-3 flex flex-col gap-4 lg:grid lg:grid-cols-12 [&>*]:min-w-0">
+            <div className="lg:col-start-8 lg:col-span-5 lg:row-start-1">
               <GrafikKategori kategori={kategori} daftar={barangKategori} />
             </div>
-            <div className="min-w-0 lg:col-start-1 lg:col-span-7 lg:row-start-1 lg:row-span-2">
+            <div className="lg:col-start-1 lg:col-span-7 lg:row-start-1">
               <DaftarBarangKategori kategori={kategori} daftar={barangKategori} alamat={alamat} />
             </div>
-            <div className="min-w-0 lg:col-start-8 lg:col-span-5 lg:row-start-2">
+            <div className="lg:col-span-12 lg:row-start-2">
               <PerbandinganBarang daftar={barangKategori} alamat={alamat} />
             </div>
           </div>
@@ -228,6 +254,7 @@ function GrafikKategori({ kategori, daftar }: { kategori: string; daftar: Barang
       id="judul-tren-kategori"
       judul={`Nilai pemakaian ${kategori}`}
       keterangan="Setahun terakhir dan perkiraan bulan depan, dalam Rupiah harga beli."
+      className="h-full lg:p-4"
     >
       {adaData ? (
         <>
@@ -235,7 +262,7 @@ function GrafikKategori({ kategori, daftar }: { kategori: string; daftar: Barang
             <GrafikTren
               data={tren}
               satuan="Rupiah"
-              tinggi={200}
+              tinggi={130}
               bulanan
               labelAktual="Nilai pemakaian"
               format={rupiah}
@@ -243,7 +270,7 @@ function GrafikKategori({ kategori, daftar }: { kategori: string; daftar: Barang
               lebarSumbu={LEBAR_SUMBU_RUPIAH}
             />
           </div>
-          <p className="mt-3 text-isi text-ink-2 leading-relaxed">
+          <p className="mt-2 text-isi text-ink-2 leading-relaxed">
             Bulan depan diperkirakan <strong className="text-ink tabular">{rupiah(bulanDepan)}</strong>,{' '}
             <TandaArah arah={arah} /> dari bulan ini.
           </p>
@@ -270,11 +297,24 @@ function DaftarBarangKategori({
   daftar: Barang[]
   alamat: (ubahan: Record<string, string | null>) => string
 }) {
+  const lebih = daftar.length > BATAS_KARTU
   return (
     <Bagian
       id="judul-isi-kategori"
       judul={`Barang di ${kategori}`}
       keterangan={`${daftar.length} barang. Tekan salah satu untuk melihat grafiknya dan memesan.`}
+      aksi={
+        lebih ? (
+          <Link
+            to={alamat({ tampil: 'semua' })}
+            className="inline-flex items-center gap-1 text-isi font-bold text-brand hover:underline"
+          >
+            Lihat semua
+            <IkonPanahKanan size={16} />
+          </Link>
+        ) : undefined
+      }
+      className="h-full lg:p-4"
     >
       {daftar.length === 0 ? (
         <Kartu>
@@ -288,8 +328,8 @@ function DaftarBarangKategori({
           />
         </Kartu>
       ) : (
-        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 [&>*]:min-w-0">
-          {daftar.map((b) => (
+        <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 [&>*]:min-w-0">
+          {daftar.slice(0, BATAS_KARTU).map((b) => (
             <li key={b.id}>
               <KartuBarangPrediksi barang={b} ke={alamat({ barang: b.id })} />
             </li>
@@ -297,6 +337,42 @@ function DaftarBarangKategori({
         </ul>
       )}
     </Bagian>
+  )
+}
+
+/**
+ * "Prediksi · <kategori>": semua kartu barang satu kategori (revisi V2, Q57).
+ * Halaman kategori hanya memuat BATAS_KARTU kartu supaya muat satu layar; di
+ * sini semuanya, dan halamannya boleh menggulir.
+ */
+function SemuaBarangKategori({
+  kategori,
+  daftar,
+  alamat,
+  kembaliKe,
+}: {
+  kategori: string
+  daftar: Barang[]
+  alamat: (ubahan: Record<string, string | null>) => string
+  kembaliKe: string
+}) {
+  return (
+    <div className="pb-8">
+      <KepalaHalaman
+        judul={`Prediksi · ${kategori}`}
+        keterangan={`${daftar.length} barang. Tekan salah satu untuk melihat grafiknya dan memesan.`}
+        kembaliKe={kembaliKe}
+        kembaliRiwayat
+        aksi={<LabelMetode {...metodePrediksi(modelBulananServer())} />}
+      />
+      <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 [&>*]:min-w-0">
+        {daftar.map((b) => (
+          <li key={b.id}>
+            <KartuBarangPrediksi barang={b} ke={alamat({ barang: b.id, tampil: null })} />
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }
 
@@ -335,20 +411,22 @@ function KartuBarangPrediksi({ barang, ke }: { barang: Barang; ke: string }) {
         <span className="min-w-0 text-kartu font-semibold text-ink leading-snug">{barang.nama}</span>
         <IkonPanahKanan size={18} className="shrink-0 mt-0.5 text-ink-3" />
       </span>
-      <span className="mt-auto flex items-end justify-between gap-3">
-        {rekomendasi ? (
-          <span className="min-w-0">
-            <span className="block text-kecil text-ink-3">Perkiraan bulan depan</span>
-            <span className="block text-[1.125rem] font-extrabold text-ink leading-tight">
+      {/* Label di baris sendiri: di kartu tiga kolom ia akan terpotong dua baris
+          kalau berbagi tempat dengan garis tren, dan kartu jadi lebih tinggi. */}
+      <span className="mt-auto">
+        {rekomendasi && <span className="block text-kecil text-ink-3">Perkiraan bulan depan</span>}
+        <span className="flex items-end justify-between gap-3">
+          {rekomendasi ? (
+            <span className="min-w-0 text-[1.125rem] font-extrabold text-ink leading-tight">
               {jumlahTampil(barang, rekomendasi.perkiraanBulanDepan)}
             </span>
-          </span>
-        ) : (
-          <span className="min-w-0 text-isi text-ink-3 leading-snug">
-            {barang.dicatatManual ? 'Dicatat manual, tidak diperkirakan.' : 'Perkiraannya belum bisa dibuat.'}
-          </span>
-        )}
-        <Percikan data={deret} label={`Tren pemakaian ${barang.nama} setahun terakhir`} />
+          ) : (
+            <span className="min-w-0 text-isi text-ink-3 leading-snug">
+              {barang.dicatatManual ? 'Dicatat manual, tidak diperkirakan.' : 'Perkiraannya belum bisa dibuat.'}
+            </span>
+          )}
+          <Percikan data={deret} label={`Tren pemakaian ${barang.nama} setahun terakhir`} />
+        </span>
       </span>
     </Link>
   )
@@ -376,6 +454,24 @@ function PerbandinganBarang({
     [daftar],
   )
 
+  /* Daftar di samping grafik menggulir di dalam kotaknya. Selama masih ada
+     barang di bawahnya, ujung bawahnya dipudarkan supaya terlihat bisa digulir. */
+  const wadahDaftar = useRef<HTMLUListElement>(null)
+  const [masihAdaDiBawah, setMasihAdaDiBawah] = useState(false)
+  useEffect(() => {
+    const el = wadahDaftar.current
+    if (!el) return
+    const baca = () => setMasihAdaDiBawah(el.scrollHeight - el.scrollTop - el.clientHeight > 4)
+    baca()
+    el.addEventListener('scroll', baca, { passive: true })
+    const amati = new ResizeObserver(baca)
+    amati.observe(el)
+    return () => {
+      el.removeEventListener('scroll', baca)
+      amati.disconnect()
+    }
+  }, [baris.length])
+
   if (baris.length === 0) return null
 
   return (
@@ -383,44 +479,56 @@ function PerbandinganBarang({
       id="judul-perbandingan"
       judul="Perkiraan bulan depan per barang"
       keterangan="Dalam Rupiah harga beli, supaya barang bersatuan berbeda bisa dibandingkan."
+      className="lg:p-4"
     >
-      {/* Batang yang banyak tidak muat di layar 360px. Yang digulir wadah
-          grafiknya, bukan badan halaman. */}
-      <div className="overflow-x-auto no-scrollbar">
-        <div className={cx(baris.length > 5 && 'min-w-[28rem]')}>
-          <GrafikBatang
-            data={baris.map((x) => ({ label: labelPendek(x.barang.nama), nilai: x.nilaiDepan }))}
-            satuan="Rupiah"
-            tinggi={170}
-            format={rupiahSumbu}
-            formatSumbu={rupiahSumbu}
-            lebarSumbu={LEBAR_SUMBU_RUPIAH}
-          />
+      {/* Di desktop batang di kiri dan angkanya di kanan, sebaris, supaya kotak
+          selebar halaman ini tetap pendek (revisi V2, Q51). Daftar yang lebih
+          panjang dari grafiknya menggulir di dalam kotaknya sendiri. */}
+      <div className="lg:grid lg:grid-cols-12 lg:gap-6 lg:items-start">
+        {/* Batang yang banyak tidak muat di layar 360px. Yang digulir wadah
+            grafiknya, bukan badan halaman. */}
+        <div className="overflow-x-auto no-scrollbar lg:col-span-7">
+          <div className={cx(baris.length > 5 && 'min-w-[28rem]')}>
+            <GrafikBatang
+              data={baris.map((x) => ({ label: labelPendek(x.barang.nama), nilai: x.nilaiDepan }))}
+              satuan="Rupiah"
+              tinggi={120}
+              format={rupiahSumbu}
+              formatSumbu={rupiahSumbu}
+              lebarSumbu={LEBAR_SUMBU_RUPIAH}
+            />
+          </div>
         </div>
-      </div>
 
-      <ul className="mt-3 space-y-1">
-        {baris.map((x) => (
-          <li key={x.barang.id}>
-            <Link
-              to={alamat({ barang: x.barang.id })}
-              className="flex items-center gap-3 min-h-11 -mx-2 px-2 py-1.5 rounded-md hover:bg-sunken transition-colors"
-            >
-              <span className="min-w-0 grow">
-                <span className="block text-isi font-semibold text-ink truncate">{x.barang.nama}</span>
-                <span className="block text-kecil text-ink-3">
-                  <TandaArah arah={x.arah} /> dari bulan ini
+        <ul
+          ref={wadahDaftar}
+          className={cx(
+            'mt-3 space-y-1 lg:mt-0 lg:col-span-5 lg:max-h-[9rem] lg:overflow-y-auto lg:overscroll-contain lg:space-y-0',
+            masihAdaDiBawah && 'lg:[mask-image:linear-gradient(to_bottom,#000_70%,transparent)]',
+          )}
+        >
+          {baris.map((x) => (
+            <li key={x.barang.id}>
+              <Link
+                to={alamat({ barang: x.barang.id })}
+                className="flex items-center gap-3 min-h-11 -mx-2 px-2 py-1.5 rounded-md hover:bg-sunken transition-colors lg:mx-0 lg:min-h-10 lg:py-1"
+              >
+                <span className="min-w-0 grow">
+                  <span className="block text-isi font-semibold text-ink truncate">{x.barang.nama}</span>
+                  <span className="block text-kecil text-ink-3">
+                    <TandaArah arah={x.arah} /> dari bulan ini
+                  </span>
                 </span>
-              </span>
-              <span className="shrink-0 text-right">
-                <span className="block text-isi font-bold text-ink tabular">{rupiah(x.nilaiDepan)}</span>
-                <span className="block text-kecil text-ink-3 tabular">dari {rupiah(x.nilaiIni)}</span>
-              </span>
-              <IkonPanahKanan size={18} className="shrink-0 text-ink-3" />
-            </Link>
-          </li>
-        ))}
-      </ul>
+                <span className="shrink-0 text-right">
+                  <span className="block text-isi font-bold text-ink tabular">{rupiah(x.nilaiDepan)}</span>
+                  <span className="block text-kecil text-ink-3 tabular">dari {rupiah(x.nilaiIni)}</span>
+                </span>
+                <IkonPanahKanan size={18} className="shrink-0 text-ink-3" />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
     </Bagian>
   )
 }

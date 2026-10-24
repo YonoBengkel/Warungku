@@ -167,6 +167,9 @@ export function TampilanRingkasan({
 
   const istilah = data ? ISTILAH[data.sumber] : null
   const panjang = data ? Math.round((+tanggalLokal(data.sampai) - +tanggalLokal(data.dari)) / 86_400_000) + 1 : 0
+  /** Tanpa kotak rincian dan daftar pembeli, Terlaris sendirian di baris bawah. */
+  const terlarisSendiri =
+    !!data && data.rincian.length === 0 && !(istilah?.judulPihak && data.pihakTeratas.length > 0)
 
   const batang = useMemo(() => {
     if (!data) return []
@@ -337,16 +340,27 @@ export function TampilanRingkasan({
               </Bagian>
             )}
 
-            {/* ---------------- Terlaris ---------------- */}
+            {/* ---------------- Terlaris ----------------
+                Tanpa rincian dan tanpa daftar pembeli (nota kasir), Terlaris
+                sendirian di kisi: ia dilebarkan dan daftarnya dibagi dua kolom,
+                1-5 di kiri dan 6-10 di kanan, supaya tidak menyisakan separuh
+                layar kosong dan tingginya separuh (revisi V2, final touch). */}
             <Bagian
               id="judul-terlaris"
               judul="Terlaris"
               keterangan={data.sumber === 'nota' ? 'Menurut nilai penjualan, dengan nama seperti di nota.' : 'Menurut nilai penjualan.'}
+              className={cx(terlarisSendiri && 'lg:col-span-2')}
             >
               {data.terlaris.length === 0 ? (
                 <p className="text-isi text-ink-3">Belum ada penjualan di rentang ini.</p>
               ) : (
-                <ol className="space-y-3">
+                <ol
+                  className={cx(
+                    'space-y-3',
+                    terlarisSendiri &&
+                      'lg:space-y-0 lg:grid lg:grid-flow-col lg:grid-rows-[repeat(5,auto)] lg:grid-cols-2 lg:gap-x-10 lg:gap-y-3',
+                  )}
+                >
                   {data.terlaris.map((t, i) => (
                     <li key={`${t.nama}-${t.satuan}`} className="min-w-0">
                       <div className="flex items-baseline justify-between gap-3">

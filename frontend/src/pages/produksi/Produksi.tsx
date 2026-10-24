@@ -189,20 +189,30 @@ function TabProduksi({
         {riwayat.length === 0 ? (
           <p className="mt-2 text-isi text-ink-3">Belum ada sesi masak dalam 3 pekan terakhir.</p>
         ) : (
-          <ul className="mt-2 divide-y divide-line">
-            {riwayat.map((r) => (
-              <li key={r.id} className="py-2.5 flex items-center justify-between gap-3">
-                <span className="min-w-0">
-                  <span className="block text-isi font-semibold text-ink truncate">{r.namaProduk}</span>
-                  <span className="block text-kecil text-ink-3">
-                    {tanggalLengkapHari(r.waktu)}
-                    {r.oleh ? ` · ${r.oleh}` : ''}
-                  </span>
-                </span>
-                <span className="shrink-0 text-isi font-bold text-ink tabular">{angka(r.jumlah)} toples</span>
-              </li>
-            ))}
-          </ul>
+          /* Di desktop dibagi dua kolom, yang terbaru di kiri atas, supaya daftar
+             sesi tiga pekan tidak memanjang dua layar (revisi V2, final touch).
+             Di HP kedua bagian bersambung menjadi satu daftar. */
+          <div className="mt-2 lg:grid lg:grid-cols-2 lg:gap-x-10">
+            {[riwayat.slice(0, Math.ceil(riwayat.length / 2)), riwayat.slice(Math.ceil(riwayat.length / 2))].map(
+              (isi, k) =>
+                isi.length > 0 && (
+                  <ul key={k} className={`divide-y divide-line ${k === 1 ? 'max-lg:border-t max-lg:border-line' : ''}`}>
+                    {isi.map((r) => (
+                      <li key={r.id} className="py-2.5 flex items-center justify-between gap-3">
+                        <span className="min-w-0">
+                          <span className="block text-isi font-semibold text-ink truncate">{r.namaProduk}</span>
+                          <span className="block text-kecil text-ink-3">
+                            {tanggalLengkapHari(r.waktu)}
+                            {r.oleh ? ` · ${r.oleh}` : ''}
+                          </span>
+                        </span>
+                        <span className="shrink-0 text-isi font-bold text-ink tabular">{angka(r.jumlah)} toples</span>
+                      </li>
+                    ))}
+                  </ul>
+                ),
+            )}
+          </div>
         )}
       </Kartu>
     </div>

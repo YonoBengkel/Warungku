@@ -90,13 +90,38 @@ Catatan tahap 3:
 
 ## Tahap 4 — dasbor dan final touch
 
-- [ ] **H. Prediksi tanpa gulir (Q50, Q51, Q57):** baris atas barang dan nilai pemakaian, baris
+- [x] **H. Prediksi tanpa gulir (Q50, Q51, Q57):** baris atas barang dan nilai pemakaian, baris
   bawah perkiraan per barang; "Lihat semua ›" ke halaman "Prediksi · <kategori>".
-- [ ] **K. Stok (Q63):** daftar dengan bagian atas dan judul kolom tetap terlihat, baris lebih
+- [x] **K. Stok (Q63):** daftar dengan bagian atas dan judul kolom tetap terlihat, baris lebih
   rapat; rincian barang memuat sisa stok, Tren, dan kartu saran dalam satu layar.
-- [ ] **K. Ringkasan Penjualan dan Produksi (Q64):** informasi utama tanpa gulir.
-- [ ] **K. Halaman lain (Q62, Q64):** rapi dan seimbang, boleh menggulir; Beranda satu kolom.
-- [ ] Tangkapan layar sebelum dan sesudah per halaman (Q55).
+- [x] **K. Ringkasan Penjualan dan Produksi (Q64):** informasi utama tanpa gulir.
+- [x] **K. Halaman lain (Q62, Q64):** rapi dan seimbang, boleh menggulir; Beranda satu kolom.
+- [x] Tangkapan layar sebelum dan sesudah per halaman (Q55).
+
+Catatan tahap 4 (diukur di Edge headless, 1536 × 730, tema terang):
+
+| Halaman | Sebelum | Sesudah | Perubahan |
+|---|---|---|---|
+| Prediksi (Kopi Kita, Bu Ratmi) | 1186, 1250px | 730px | Susunan sketsa Ilham; kalimat peringatan sebaris judul; kartu tiga kolom, paling banyak 6; grafik lebih pendek; daftar perbandingan menggulir di kotaknya dengan ujung memudar |
+| Prediksi · kategori, Prediksi satu barang | – | 730px | Halaman baru `?tampil=semua`; tampilan satu barang sudah muat |
+| Stok | 730px (tabel menggulir di dalam) | 730px | Judul, kotak cari, tiga angka, dan Tambah Barang sebaris; baris tabel `py-2.5`: 7 baris terlihat, dulu 5,5 |
+| Rincian barang | 1030px | 730px | Mulai 1280px tiga kolom: angka dan tombol, perkiraan dan Tren, saran distributor; tombol Pesan dan Koreksi berdampingan |
+| Ringkasan Penjualan | 1341px | 1066px | Angka utama dan grafik di layar pertama; Terlaris selebar halaman dalam dua kolom bila tanpa daftar pembeli |
+| Produksi | 1896px | 1415px | Kartu produk di layar pertama; riwayat masak dua kolom |
+| Pesanan | 4400px | 991px | Tahap 1 (6 kartu per kelompok) |
+| Beranda | 2663px | 2476px | Tahap 1; tetap satu kolom (Q62, Q64) |
+| Akun | 1309px | 1102px | Kotak alat uji pindah ke bawah selebar halaman, tiga bagian berdampingan; kedua kolom menu sejajar |
+
+Halaman yang tetap menggulir di layar acuan, dan alasannya:
+- Beranda: tujuh bagian (promo, Perlu Tindakan, tugas, ringkasan penjualan, prediksi, pesanan
+  berjalan, kuota kontrak); dua kolom tidak dipakai atas keputusan Q62/Q64.
+- Distributor (katalog), Pesanan, Pemberitahuan: daftar panjang; bagian atasnya beku (Q52).
+- Ringkasan Penjualan dan Produksi: informasi utamanya sudah di layar pertama; yang menggulir
+  hanya rincian di bawahnya (Terlaris, riwayat masak).
+- Lacak Pesanan: daftar kiriman di samping peta; peta dan keterangannya di layar pertama.
+- Akun: daftar menu dan kotak alat uji purwarupa.
+- Di 1280 × 720 Prediksi (771px) dan rincian barang (760px) masih menggulir sedikit; layar acuan
+  Q50 adalah 1536 × 730.
 
 ## Tahap 5 — akhir
 
