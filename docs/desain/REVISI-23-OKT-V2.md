@@ -125,5 +125,16 @@ Halaman yang tetap menggulir di layar acuan, dan alasannya:
 
 ## Tahap 5 — akhir
 
-- [ ] DESIGN.md dan README: lonceng melayang, menu tarik-turun, bagian atas beku, layar acuan.
-- [ ] Image backend hanya bila backend berubah.
+- [x] DESIGN.md dan README: lonceng melayang, menu tarik-turun, bagian atas beku, layar acuan.
+- [x] Image backend hanya bila backend berubah.
+
+Catatan tahap 5:
+- DESIGN.md: baris Pemberitahuan di tabel tata letak; aturan layar acuan dasbor dan bagian atas
+  beku; daftar tugas Beranda sebagai korsel berputar; komponen `LoncengMelayang` dan
+  `MenuTarik`; label metode di kanan judul; jeda menu tarik-turun. README sudah diperbarui di
+  tahap 1 (perilaku `nyalakan.cmd` dan baris galat baru). Komentar kode yang masih menyebut panel
+  pemberitahuan lama diperbarui.
+- Image backend tidak dibangun: revisi V2 hanya mengubah frontend dan `tools/lokal`, jadi image
+  0.10.0 tetap yang terbaru. Frontend tidak ada di dalam image.
+- Lingkungan uji dibersihkan: basis data `uji-db-v2` beserta volumenya, server uji 8010, 8011, dan
+  5180, serta tiga entri sementara di `.claude/launch.json` (tidak dilacak git).

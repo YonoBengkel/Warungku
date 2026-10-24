@@ -154,7 +154,8 @@ terpisah dari angkanya di 360px.
 | | HP (di bawah 1024px) | Desktop (`lg`, 1024px ke atas) |
 |---|---|---|
 | Bilah atas | 56px, menempel, berisi lonceng dan keranjang | Disembunyikan |
-| Navigasi | Bilah bawah setinggi `--nav-h` (4,5rem) | Navigasi samping selebar `--rail-w` (16,5rem), termasuk Pemberitahuan dan Keranjang dengan lencana |
+| Navigasi | Bilah bawah setinggi `--nav-h` (4,5rem) | Navigasi samping selebar `--rail-w` (16,5rem), termasuk Keranjang dengan lencana |
+| Pemberitahuan | Lonceng di bilah atas | Lonceng bulat yang melayang di pojok kanan atas isi (`LoncengMelayang`), tetap di tempat saat digulir; baris judul yang berisi di kanan memberi ruang lewat `RUANG_LONCENG` |
 | Jarak atas `<main>` | `pt-4` | `lg:pt-6` |
 
 - **Tab navigasi:**
@@ -174,8 +175,18 @@ terpisah dari angkanya di 360px.
 - **Satu kotak per bagian** (revisi 23 Okt): `Bagian` di Beranda, Dashboard distributor, rincian
   barang, dan Prediksi. Kotak putih `rounded-xl` di atas latar abu-abu mulai 640px; di HP pita
   putih selebar layar tanpa sudut, supaya lebar isinya tidak terpotong dua kali.
-- **Kisi di desktop, korsel di HP:** daftar tugas Beranda tampil dalam kisi mulai `lg` dan korsel
-  satu kartu per layar di HP. Ubin pintasan berangka muncul mulai `sm`.
+- **Daftar tugas Beranda** ("Yang perlu kamu urus hari ini") adalah `Korsel` di semua ukuran:
+  3 kartu per halaman mulai 1280px, 2 di 1024–1279px, 1 di HP (revisi V2). Petak Perlu Tindakan
+  menaruh ikon dan angka di tengah dengan nama di bawah, kisi 2 × 2 di HP.
+- **Layar acuan dasbor** (revisi V2): area halaman 1536 × 730 piksel CSS (laptop 1920 × 1080
+  skala 125%). Di sana Prediksi, Stok, dan rincian barang muat tanpa menggulir halaman; Ringkasan
+  Penjualan dan Produksi menaruh angka utamanya di layar pertama. Daftar panjang di dalam dasbor
+  menampilkan yang muat ditambah "Lihat semua ›", atau menggulir di kotaknya sendiri. Halaman lain
+  cukup rapi dan seimbang, boleh menggulir. Halaman yang menghitung tinggi layar tidak memberi
+  jarak bawah sendiri di desktop (`lg:pb-0`), karena `<main>` sudah memberinya.
+- **Bagian atas beku** (`BagianAtasBeku`) di halaman daftar Distributor dan Pesanan: di desktop
+  judul sampai tab/chip tetap terlihat; di HP hanya kotak cari dan tab, atau tab dan chip. Garis
+  bawah muncul begitu halaman digulir.
 - **Tombol selebar wadah hanya di HP:** `penuh="hp"` membuat tombol selebar wadah di HP dan
   selebar isinya mulai 640px. Tombol selebar 1.000px terbaca seperti spanduk.
 - **Foto tidak dibentangkan** lebih dari sekitar 1,1 kali ukuran aslinya. Foto kecil diberi
@@ -224,7 +235,8 @@ Cari komponen yang sudah ada sebelum menulis yang baru. Komponen dasar ada di
 | Judul bagian dengan aksi di kanan | `JudulBagian` |
 | Kotak satu bagian halaman, dengan atau tanpa judul | `Bagian` (`KELAS_BAGIAN` untuk kotak serupa) |
 | Deretan kartu yang digeser | `Korsel`; dengan `judul` panahnya di pojok kanan atas, `nada="aksen"` di wadah coral |
-| Pemberitahuan di navigasi samping desktop | `MenuPemberitahuan`: panel kecil, halaman penuh lewat "Lihat semua" |
+| Pemberitahuan di desktop | `LoncengMelayang`: langsung membuka halaman pemberitahuan, yang tampil tanpa menu samping dengan tombol kembali (`KepalaHalaman kembaliRiwayat`) |
+| Penyaring dan urutan yang membuka pilihan | `MenuTarik` di perangkat bertetikus (`usePakaiMenuTarik`), `Lembar` di HP; satu keadaan buka dan satu isi untuk keduanya. Chip pemicunya memakai `bukaMenu`. Jangan taruh pemicunya di dalam wadah yang menggulir ke samping: menunya terpotong |
 | Status pendek | `Lencana nada=...` dengan ikon, atau `Titik` yang selalu disertai teks |
 | Kotak peringatan dan informasi | `Peringatan` (ikon dan warna mengikuti nada) |
 | Rincian yang boleh tidak dibaca | `Penjelasan` (`<details>`, label bawaan "Selengkapnya") |
@@ -232,7 +244,7 @@ Cari komponen yang sudah ada sebelum menulis yang baru. Komponen dasar ada di
 | Hasil aksi | Toast lewat `tampilkanRacun(teks, nada)`; aksi massal cukup satu toast ringkasan |
 | Lembar bawah dan konfirmasi | `Lembar`, `Konfirmasi` |
 | Kolom isian | `Kolom`, `AreaTeks`, `Pilihan`, `PengaturJumlah`; bingkai galat lewat `kelasBingkai(galat)` |
-| Nama metode analitik | `LabelMetode` di atas halaman atau kartu: nama metode saja, penjelasan 2–3 kalimat di gelembung (hover, ketuk, atau fokus). LightGBM di Prediksi, Thompson Sampling + fuzzy di saran distributor dan halaman Distributor, K-Prototypes di Pelanggan |
+| Nama metode analitik | `LabelMetode` di kanan judul halaman atau bagian yang dijelaskannya (revisi V2); bagian memakai `bungkus` supaya label turun ke bawah judul bila tidak muat. Nama metode saja, penjelasan 2–3 kalimat di gelembung (hover, ketuk, atau fokus), yang dirata kanan sendiri bila dari kiri ia keluar layar. LightGBM di Prediksi dan Tren, Thompson Sampling + fuzzy di saran distributor dan Rekomendasi, K-Prototypes di Pelanggan |
 | Logo toko dan gambar produk | `Avatar`, yang mencari gambar lewat `gambarUntuk(nama)` dengan huruf awal sebagai cadangan |
 | Tanda merek Turnify Flow | `TandaMerek`: `logo-mark.png` di tema terang, `logo-mark-gelap.png` (ungu terang) di tema gelap |
 | Peta Lacak Pesanan | `TampilanLacak` (daftar + peta), `PetaLacak`, `KeteranganPeta`: Leaflet dengan ubin OpenStreetMap, dimuat malas. Posisi kiriman selalu disebut "perkiraan posisi", dan daftar teks di sebelahnya memuat informasi yang sama |
@@ -253,15 +265,19 @@ ukuran bundel.
 | Muncul halus | 220ms dengan kurva yang sama |
 | Latar memudar | 180ms |
 | Geser korsel satu halaman | 300ms, kurva keluar |
+| Menu tarik-turun: buka saat disorot / tutup saat kursor pergi | jeda 150ms / 250ms |
 
 - **Gerak dikurangi:** dengan `prefers-reduced-motion`, semua animasi dan transisi dimatikan.
 - **Fokus keyboard:** garis 2px warna merek, berjarak 2px.
 - **Korsel:** bergeser per halaman, yaitu sebanyak kartu yang muat sekaligus (promo Beranda: 3 di
   desktop, 2 di tablet, 1 di HP). Panah, titik penanda, geseran jari, dan tarikan tetikus
-  semuanya per halaman. Promo berputar sendiri tiap 3 detik.
-- **Korsel promo tanpa tombol jeda.** Ia berhenti selamanya begitu pengguna mengambil alih, dan
+  semuanya per halaman. Promo dan daftar tugas Beranda berputar sendiri tiap 3 detik (tugas atas
+  keputusan Ilham, revisi V2).
+- **Korsel otomatis tanpa tombol jeda.** Ia berhenti selamanya begitu pengguna mengambil alih, dan
   juga berhenti saat disorot, difokus, atau tabnya tersembunyi. Ini longgar terhadap WCAG 2.2.2
   (keputusan tim, 2 Oktober 2026).
+- **Menu tarik-turun:** klik tetikus pada pemicu yang sudah terbuka karena disorot tidak
+  menutupnya; Enter membuka dan menutup, Esc menutup dan mengembalikan fokus ke pemicu.
 - **Kerangka pemuatan** (`.skeleton`, `Kerangka`, `KerangkaBaris`) dipakai selama data dimuat
   di koneksi lambat.
 

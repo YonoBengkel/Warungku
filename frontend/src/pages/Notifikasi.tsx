@@ -34,7 +34,7 @@ const PENYARING: Array<{ nilai: Penyaring; label: string }> = [
   { nilai: 'kontrak', label: LABEL_KATEGORI_NOTIF.kontrak },
 ]
 
-/** Ikon dan warna per kategori dipakai bersama panel pemberitahuan desktop.
+/** Ikon dan warna per kategori diambil dari peta bersama di Pemberitahuan.tsx.
     Status tidak pernah hanya warna: judul, detail, dan tombolnya selalu
     menyebutkan sendiri apa yang terjadi. */
 function warnaIkon(n: TipeNotifikasi): string {

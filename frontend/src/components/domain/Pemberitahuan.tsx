@@ -18,11 +18,12 @@ import type { KategoriNotifikasi, Notifikasi } from '@/lib/types'
 import { useAplikasi, useKontrakMasuk, usePesananMasuk } from '@/store/aplikasi'
 
 /**
- * Pemberitahuan ringkas untuk kedua portal (revisi 23 Okt 2026).
+ * Pemberitahuan untuk kedua portal (revisi 23 Okt 2026, diubah di revisi V2).
  *
- * Di desktop, menu "Pemberitahuan" di navigasi samping membuka panel kecil di
- * samping menu, bukan pindah halaman; halaman penuhnya tetap ada lewat "Lihat
- * semua". Di HP lonceng di bilah atas tetap membuka halaman penuh.
+ * Di desktop lonceng melayang di pojok kanan atas (LoncengMelayang) dan langsung
+ * membuka halaman pemberitahuan, yang tampil tanpa menu samping. Panel kecil
+ * yang dulu keluar dari menu samping sudah dihapus. Di HP lonceng di bilah atas
+ * membuka halaman yang sama.
  *
  * Sisi UMKM membaca daftar pemberitahuan yang tersimpan. Sisi distributor belum
  * punya daftar tersimpan, jadi isinya diturunkan dari data yang sudah dimuat:
