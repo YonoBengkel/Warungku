@@ -66,8 +66,27 @@ Catatan tahap 2:
 
 ## Tahap 3 — penyaring
 
-- [ ] **G. Menu tarik-turun (Q49, Q56):** Kategori dan Urutkan di Stok, Filter di halaman
+- [x] **G. Menu tarik-turun (Q49, Q56):** Kategori dan Urutkan di Stok, Filter di halaman
   Distributor. Desktop: terbuka saat disorot, diklik, atau Enter. HP tetap lembar bawah.
+
+Catatan tahap 3:
+- Komponen baru `MenuTarik` (`components/ui/menuTarik.tsx`):
+  - terbuka saat disorot dengan jeda 150 ms;
+  - tertutup saat kursor pergi dengan jeda 250 ms, saat Esc (fokus kembali ke pemicu), saat
+    klik di luar, saat fokus keluar, atau setelah memilih;
+  - klik tetikus pada pemicu yang sudah terbuka karena disorot tidak menutupnya lagi, tetapi
+    Enter tetap membuka dan menutup;
+  - celah ke isinya berupa padding, jadi kursor yang menyeberang tidak menutup menu.
+- `usePakaiMenuTarik`: menu dipakai di perangkat bertetikus dengan lebar minimal 640px. Satu
+  keadaan buka di halaman menggerakkan menu itu atau `Lembar`, dan isi pilihannya ditulis
+  sekali untuk keduanya.
+- Di Stok, chip Kategori dan Urutkan dikeluarkan dari `BarisChip` di perangkat bertetikus,
+  karena wadah yang menggulir ke samping akan memotong menunya. `Chip` mendapat `bukaMenu`
+  (`aria-haspopup`/`aria-expanded` alih-alih `aria-pressed`).
+- Diuji dengan kursor dan tombol sungguhan lewat DevTools Protocol di Edge headless: hover
+  membuka (tidak sebelum 150 ms), memilih kategori menerapkan penyaring lalu menutup, Filter
+  Distributor tetap terbuka sesudah memilih kota, Enter membuka dan menutup Urutkan, Esc
+  mengembalikan fokus. Di 360px chip Kategori membuka lembar bawah.
 
 ## Tahap 4 — dasbor dan final touch
 

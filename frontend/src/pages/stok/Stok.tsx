@@ -4,6 +4,7 @@ import type { Barang } from '@/lib/types'
 import { BarisStok, ChipStok } from '@/components/domain'
 import { Lencana, Tombol, TombolTautan } from '@/components/ui/dasar'
 import { BarisChip, Chip, RUANG_LONCENG } from '@/components/ui/navigasi'
+import { MenuTarik, usePakaiMenuTarik } from '@/components/ui/menuTarik'
 import { KeadaanKosong, Penjelasan, Peringatan } from '@/components/ui/umpanBalik'
 import { Lembar } from '@/components/ui/lembar'
 import { PilihanKartu } from '@/components/ui/formulir'
@@ -75,6 +76,14 @@ const LABEL_URUTAN: Record<Urutan, string> = {
 }
 
 const URUTAN_SAH = Object.keys(LABEL_URUTAN) as Urutan[]
+
+/** Urutan yang bisa dipilih dari menu Urutkan; sisanya lewat judul kolom tabel. */
+const PILIHAN_URUTAN: Array<{ nilai: Urutan; keterangan: string }> = [
+  { nilai: 'genting', keterangan: 'Habis, lalu menipis, lalu yang segera kedaluwarsa, lalu yang masih memakai batas bawaan.' },
+  { nilai: 'nama', keterangan: 'Untuk mencari barang tertentu saat kamu sudah tahu namanya.' },
+  { nilai: 'terakhir', keterangan: 'Barang yang stoknya paling baru bergerak, entah terjual, masuk, atau dikoreksi.' },
+  { nilai: 'sisa', keterangan: 'Untuk melihat barang yang menumpuk dan mengikat uang.' },
+]
 
 /** Menyeragamkan teks supaya "Gula Aren" dan "gula-aren" dianggap sama. */
 function normal(teks: string): string {
@@ -275,6 +284,61 @@ export default function Stok() {
   /** Menekan chip yang sedang aktif berarti melepasnya, bukan memilihnya lagi. */
   const chipAktif = (n: Penyaring): string | null => (filter === n ? null : n)
 
+  /* Kategori dan Urutkan: menu tarik-turun di perangkat bertetikus, lembar bawah
+     di HP (revisi V2, Q49). Isinya ditulis sekali dan dipakai keduanya. */
+  const pakaiMenuTarik = usePakaiMenuTarik()
+  function pilihKategori(k: string | null) {
+    aturParam({ kategori: k })
+    setBukaKategori(false)
+  }
+  function pilihUrutan(v: Urutan) {
+    aturParam({ urut: v === 'genting' ? null : v })
+    setBukaSortir(false)
+  }
+  const isiKategori = (
+    <div className="space-y-1.5">
+      {[null, ...kategoriBarang].map((k) => {
+        const terpilih = k === null ? !kategori : kategori === k
+        return (
+          <button
+            key={k ?? 'semua'}
+            type="button"
+            onClick={() => pilihKategori(k)}
+            className={cx(
+              'w-full flex items-center justify-between gap-3 h-12 px-3.5 rounded-md text-left text-kartu font-semibold',
+              terpilih ? 'bg-brand-soft text-brand-soft-ink' : 'text-ink hover:bg-sunken',
+            )}
+          >
+            {k ?? 'Semua kategori'}
+            <span className="text-isi text-ink-3 tabular">
+              {angka(k === null ? barang.length : barang.filter((b) => b.kategori === k).length)}
+            </span>
+          </button>
+        )
+      })}
+    </div>
+  )
+  const tautanKelolaKategori = (
+    <Link to="/stok/kategori" className="block text-center text-isi font-bold text-brand hover:underline">
+      Kelola daftar kategori
+    </Link>
+  )
+  const chipKategori = (
+    <Chip
+      aktif={!!kategori}
+      bukaMenu={bukaKategori}
+      onClick={() => setBukaKategori(!bukaKategori)}
+      ikon={<IkonKotak size={15} />}
+    >
+      {kategori || 'Kategori'}
+    </Chip>
+  )
+  const chipUrutan = (
+    <Chip bukaMenu={bukaSortir} onClick={() => setBukaSortir(!bukaSortir)} ikon={<IkonSaring size={15} />}>
+      {LABEL_URUTAN[urut] ?? 'Urutkan'}
+    </Chip>
+  )
+
   return (
     /* Tinggi di layar lebar = layar dikurangi jarak atas-bawah <main> (1,5rem
        + 2rem). Bilah global disembunyikan di desktop, jadi tidak ikut dikurangi.
@@ -353,7 +417,11 @@ export default function Stok() {
           </div>
         </div>
 
-        <BarisChip className="mt-3">
+        {/* Di perangkat bertetikus Kategori dan Urutkan duduk di luar baris chip
+            yang menggulir ke samping: menu tarik-turunnya akan terpotong kalau
+            ia tinggal di dalam wadah gulir. */}
+        <div className="mt-3 flex items-center gap-2">
+        <BarisChip className="min-w-0">
           {/* Jalan kembali ke seluruh barang tanpa harus mencari "Bersihkan penyaring". */}
           <Chip aktif={filter === 'semua'} onClick={() => aturParam({ filter: null })}>
             Semua
@@ -379,13 +447,60 @@ export default function Stok() {
           >
             Tidak bergerak
           </Chip>
-          <Chip aktif={!!kategori} onClick={() => setBukaKategori(true)} ikon={<IkonKotak size={15} />}>
-            {kategori || 'Kategori'}
-          </Chip>
-          <Chip onClick={() => setBukaSortir(true)} ikon={<IkonSaring size={15} />}>
-            {LABEL_URUTAN[urut] ?? 'Urutkan'}
-          </Chip>
+          {!pakaiMenuTarik && chipKategori}
+          {!pakaiMenuTarik && chipUrutan}
         </BarisChip>
+        {pakaiMenuTarik && (
+          <>
+            <MenuTarik
+              buka={bukaKategori}
+              ubahBuka={setBukaKategori}
+              label="Filter menurut kategori"
+              isi={
+                <>
+                  {isiKategori}
+                  <div className="mt-2 pt-2 pb-1 border-t border-line">{tautanKelolaKategori}</div>
+                </>
+              }
+            >
+              {chipKategori}
+            </MenuTarik>
+            <MenuTarik
+              buka={bukaSortir}
+              ubahBuka={setBukaSortir}
+              label="Urutkan daftar"
+              rata="kanan"
+              isi={
+                <ul className="space-y-0.5">
+                  {PILIHAN_URUTAN.map((p) => {
+                    const terpilih = urut === p.nilai
+                    return (
+                      <li key={p.nilai}>
+                        <button
+                          type="button"
+                          aria-pressed={terpilih}
+                          onClick={() => pilihUrutan(p.nilai)}
+                          className={cx(
+                            'w-full text-left rounded-md px-3 py-2.5 transition-colors',
+                            terpilih ? 'bg-brand-soft' : 'hover:bg-sunken',
+                          )}
+                        >
+                          <span className={cx('block text-isi font-semibold', terpilih ? 'text-brand-soft-ink' : 'text-ink')}>
+                            {LABEL_URUTAN[p.nilai]}
+                          </span>
+                          <span className="block mt-0.5 text-kecil text-ink-3 leading-snug">{p.keterangan}</span>
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ul>
+              }
+            >
+              {chipUrutan}
+            </MenuTarik>
+          </>
+        )}
+        </div>
       </div>
 
       {/* ---------------- Ringkasan penyaring aktif ---------------- */}
@@ -605,108 +720,36 @@ export default function Stok() {
 
       {/* ---------------- Lembar sortir ---------------- */}
       <Lembar
-        terbuka={bukaSortir}
+        terbuka={bukaSortir && !pakaiMenuTarik}
         tutup={() => setBukaSortir(false)}
         judul="Urutkan daftar"
         keterangan="Urutan tersimpan di alamat halaman, jadi tautan yang kamu bagikan membawa urutan yang sama."
         lebar="sempit"
       >
         <div className="space-y-2.5 pb-4">
-          <PilihanKartu
-            terpilih={urut === 'genting'}
-            nilai="genting"
-            ubah={(v) => {
-              aturParam({ urut: v === 'genting' ? null : v })
-              setBukaSortir(false)
-            }}
-            judul="Paling genting dulu"
-            keterangan="Habis, lalu menipis, lalu yang segera kedaluwarsa, lalu yang masih memakai batas bawaan."
-          />
-          <PilihanKartu
-            terpilih={urut === 'nama'}
-            nilai="nama"
-            ubah={(v) => {
-              aturParam({ urut: v })
-              setBukaSortir(false)
-            }}
-            judul="Nama A-Z"
-            keterangan="Untuk mencari barang tertentu saat kamu sudah tahu namanya."
-          />
-          <PilihanKartu
-            terpilih={urut === 'terakhir'}
-            nilai="terakhir"
-            ubah={(v) => {
-              aturParam({ urut: v })
-              setBukaSortir(false)
-            }}
-            judul="Terakhir berubah"
-            keterangan="Barang yang stoknya paling baru bergerak, entah terjual, masuk, atau dikoreksi."
-          />
-          <PilihanKartu
-            terpilih={urut === 'sisa'}
-            nilai="sisa"
-            ubah={(v) => {
-              aturParam({ urut: v })
-              setBukaSortir(false)
-            }}
-            judul="Sisa terbanyak"
-            keterangan="Untuk melihat barang yang menumpuk dan mengikat uang."
-          />
+          {PILIHAN_URUTAN.map((p) => (
+            <PilihanKartu
+              key={p.nilai}
+              terpilih={urut === p.nilai}
+              nilai={p.nilai}
+              ubah={() => pilihUrutan(p.nilai)}
+              judul={LABEL_URUTAN[p.nilai]}
+              keterangan={p.keterangan}
+            />
+          ))}
         </div>
       </Lembar>
 
       {/* ---------------- Lembar kategori ---------------- */}
       <Lembar
-        terbuka={bukaKategori}
+        terbuka={bukaKategori && !pakaiMenuTarik}
         tutup={() => setBukaKategori(false)}
         judul="Filter menurut kategori"
         keterangan="Kategori hanya penyaring, bukan folder. Satu barang tetap punya satu tempat di daftar."
         lebar="sempit"
-        kaki={
-          <Link
-            to="/stok/kategori"
-            className="block text-center text-isi font-bold text-brand hover:underline"
-          >
-            Kelola daftar kategori
-          </Link>
-        }
+        kaki={tautanKelolaKategori}
       >
-        <div className="pb-4 space-y-1.5">
-          <button
-            type="button"
-            onClick={() => {
-              aturParam({ kategori: null })
-              setBukaKategori(false)
-            }}
-            className={cx(
-              'w-full flex items-center justify-between gap-3 h-12 px-3.5 rounded-md text-left text-kartu font-semibold',
-              !kategori ? 'bg-brand-soft text-brand-soft-ink' : 'text-ink hover:bg-sunken',
-            )}
-          >
-            Semua kategori
-            <span className="text-isi text-ink-3 tabular">{angka(barang.length)}</span>
-          </button>
-          {kategoriBarang.map((k) => {
-            const jumlah = barang.filter((b) => b.kategori === k).length
-            return (
-              <button
-                key={k}
-                type="button"
-                onClick={() => {
-                  aturParam({ kategori: k })
-                  setBukaKategori(false)
-                }}
-                className={cx(
-                  'w-full flex items-center justify-between gap-3 h-12 px-3.5 rounded-md text-left text-kartu font-semibold',
-                  kategori === k ? 'bg-brand-soft text-brand-soft-ink' : 'text-ink hover:bg-sunken',
-                )}
-              >
-                {k}
-                <span className="text-isi text-ink-3 tabular">{angka(jumlah)}</span>
-              </button>
-            )
-          })}
-        </div>
+        <div className="pb-4">{isiKategori}</div>
       </Lembar>
 
     </div>

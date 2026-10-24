@@ -12,6 +12,7 @@ import {
 import { Kolom } from '@/components/ui/formulir'
 import { Lembar } from '@/components/ui/lembar'
 import { BagianAtasBeku, Chip, TabSegmen } from '@/components/ui/navigasi'
+import { MenuTarik, usePakaiMenuTarik } from '@/components/ui/menuTarik'
 import { KeadaanKosong } from '@/components/ui/umpanBalik'
 import { HargaBeli, LencanaPromo } from '@/components/domain/KartuPromo'
 import { LabelMetode, METODE_SARAN } from '@/components/domain/LabelMetode'
@@ -358,6 +359,7 @@ export default function Belanja() {
   const hanyaAdaKontrak = params.get('kontrak') === 'ada'
 
   const [lembarSaring, setLembarSaring] = useState(false)
+  const pakaiMenuTarik = usePakaiMenuTarik()
 
   function aturParam(ubahan: Record<string, string | null>) {
     const baru = new URLSearchParams(params)
@@ -498,6 +500,9 @@ export default function Belanja() {
   if (tab === 'barang' && hanyaAdaStok) saringAktif.push({ kunci: 'stok', label: 'Stok tersedia' })
   if (tab === 'barang' && hanyaAdaKontrak) saringAktif.push({ kunci: 'kontrak', label: 'Tersedia kontrak' })
   const adaSaringAktif = saringAktif.length > 0
+  const keteranganSaring = adaSaringAktif
+    ? `${saringAktif.length} filter sedang dipakai.`
+    : 'Belum ada filter yang dipakai. Pilih yang kamu perlukan.'
 
   const panelSaring = (
     <div className="space-y-4">
@@ -559,6 +564,33 @@ export default function Belanja() {
     </div>
   )
 
+  const tombolFilter = (
+    <button
+      type="button"
+      onClick={() => setLembarSaring(!lembarSaring)}
+      aria-haspopup="dialog"
+      aria-expanded={lembarSaring}
+      aria-label={adaSaringAktif ? `Filter, ${saringAktif.length} sedang dipakai` : 'Filter'}
+      className={cx(
+        'relative shrink-0 inline-flex items-center gap-2 h-12 px-4 rounded-md border text-kartu font-semibold transition-colors',
+        adaSaringAktif
+          ? 'border-brand bg-brand-soft text-brand-soft-ink'
+          : 'border-line-strong bg-surface text-ink-2 hover:border-brand hover:text-brand',
+      )}
+    >
+      <IkonSaring size={18} />
+      <span className="hidden sm:inline">Filter</span>
+      {adaSaringAktif && (
+        <span
+          aria-hidden="true"
+          className="min-w-5 h-5 px-1 rounded-full bg-brand text-ink-inverse text-[0.6875rem] font-bold grid place-items-center tabular"
+        >
+          {saringAktif.length}
+        </span>
+      )}
+    </button>
+  )
+
   return (
     <div className="pb-6">
       {/* Dari judul sampai tab tetap terlihat saat daftar digulir; di HP hanya
@@ -596,29 +628,27 @@ export default function Belanja() {
                 awalan={<IkonCari size={18} />}
                 className="min-w-0 grow"
               />
-              <button
-                type="button"
-                onClick={() => setLembarSaring(true)}
-                aria-haspopup="dialog"
-                aria-label={adaSaringAktif ? `Filter, ${saringAktif.length} sedang dipakai` : 'Filter'}
-                className={cx(
-                  'relative shrink-0 inline-flex items-center gap-2 h-12 px-4 rounded-md border text-kartu font-semibold transition-colors',
-                  adaSaringAktif
-                    ? 'border-brand bg-brand-soft text-brand-soft-ink'
-                    : 'border-line-strong bg-surface text-ink-2 hover:border-brand hover:text-brand',
-                )}
-              >
-                <IkonSaring size={18} />
-                <span className="hidden sm:inline">Filter</span>
-                {adaSaringAktif && (
-                  <span
-                    aria-hidden="true"
-                    className="min-w-5 h-5 px-1 rounded-full bg-brand text-ink-inverse text-[0.6875rem] font-bold grid place-items-center tabular"
-                  >
-                    {saringAktif.length}
-                  </span>
-                )}
-              </button>
+              {/* Menu tarik-turun di perangkat bertetikus, lembar bawah di HP
+                  (revisi V2, Q56). Pilihan di dalamnya langsung berlaku. */}
+              {pakaiMenuTarik ? (
+                <MenuTarik
+                  buka={lembarSaring}
+                  ubahBuka={setLembarSaring}
+                  label="Filter"
+                  rata="kanan"
+                  className="shrink-0"
+                  isi={
+                    <div className="p-1.5">
+                      <p className="pb-3 text-kecil text-ink-3">{keteranganSaring}</p>
+                      {panelSaring}
+                    </div>
+                  }
+                >
+                  {tombolFilter}
+                </MenuTarik>
+              ) : (
+                tombolFilter
+              )}
             </form>
 
             <TabSegmen<TabBelanja>
@@ -903,14 +933,10 @@ export default function Belanja() {
       {/* Satu pop-up untuk semua saringan: lembar bawah di HP, panel di layar
           lebar. Perubahan langsung berlaku, jadi tombolnya cukup "Selesai". */}
       <Lembar
-        terbuka={lembarSaring}
+        terbuka={lembarSaring && !pakaiMenuTarik}
         tutup={() => setLembarSaring(false)}
         judul="Filter"
-        keterangan={
-          adaSaringAktif
-            ? `${saringAktif.length} filter sedang dipakai.`
-            : 'Belum ada filter yang dipakai. Pilih yang kamu perlukan.'
-        }
+        keterangan={keteranganSaring}
         lebar="sempit"
         kaki={
           <Tombol penuh onClick={() => setLembarSaring(false)}>

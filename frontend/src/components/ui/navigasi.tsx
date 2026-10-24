@@ -88,17 +88,26 @@ export function Chip({
   onClick,
   children,
   ikon,
+  bukaMenu,
 }: {
   aktif?: boolean
   onClick?: () => void
   children: ReactNode
   ikon?: ReactNode
+  /**
+   * Chip ini membuka pilihan (menu tarik-turun atau lembar), bukan menyaring
+   * sendiri: pembaca layar mendengar "bisa dibuka" dan keadaannya, bukan
+   * "ditekan".
+   */
+  bukaMenu?: boolean
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-pressed={aktif}
+      aria-pressed={bukaMenu === undefined ? aktif : undefined}
+      aria-haspopup={bukaMenu === undefined ? undefined : 'dialog'}
+      aria-expanded={bukaMenu}
       className={cx(
         // relative: teks khusus pembaca layar di dalam chip diposisikan absolut.
         // Tanpa jangkar di sini, ia mencari leluhur berposisi terdekat - yaitu
