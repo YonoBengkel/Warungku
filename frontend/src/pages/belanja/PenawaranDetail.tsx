@@ -16,6 +16,7 @@ import { BilahAksi, KepalaHalaman } from '@/components/ui/navigasi'
 import { KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
 import { ChipStok, KuotaBulanIni, TombolTerkunci, useTerkunci } from '@/components/domain'
 import { HargaBeli, KALIMAT_PROMO, LencanaPromo } from '@/components/domain/KartuPromo'
+import { HitunganSaran, jumlahBeliUntuk } from '@/components/domain/HitunganSaran'
 import {
   IkonBintangIsi,
   IkonKeranjang,
@@ -118,19 +119,21 @@ export default function PenawaranDetail() {
   const rincianBeliSekali = rincianHarga(penawaran.id, null)
   const promo = rincianBeliSekali.promo
 
+  /* Perkiraan bulan depan barang gudang yang terkait, untuk kartu hitungan di
+     kolom kanan (revisi V3, Q79) dan jumlah awal lembar beli. Bukan hook:
+     komponen ini sudah punya return lebih awal di atas. */
+  const rekomendasiBarang = barang && layakDiperkirakan(barang) ? rekomendasiDari(barang) : null
+
   /* Jumlah awal lembar beli: kekurangan barang terhadap perkiraan bulan depan,
-     dikonversi ke kemasan penawaran ini. Tanpa perkiraan, 1. Dulu selalu 1,
-     jadi pemilik yang datang dari stok habis harus menekan + belasan kali. */
-  /* Bukan hook: komponen ini sudah punya return lebih awal di atas. */
+     dalam kemasan penawaran ini. Tanpa perkiraan, 1. Dulu selalu 1, jadi
+     pemilik yang datang dari stok habis harus menekan + belasan kali. Rumusnya
+     sama dengan kartu hitungan di kanan, jadi kedua angka selalu sama; dulu
+     saran kemasan barang dibulatkan dulu lalu dikonversi, sehingga bisa lebih. */
   const jumlahSaran = (() => {
-    if (!barang || !layakDiperkirakan(barang)) return null
-    const r = rekomendasiDari(barang)
-    if (r.arah !== 'tambah') return null
-    const isiSaran = barang.kemasan[barang.kemasan.length - 1]?.isi ?? 1
-    const isiPenawaran = penawaran.kemasanJual?.isi ?? 1
+    if (!barang || !rekomendasiBarang || rekomendasiBarang.arah !== 'tambah') return null
     // Tidak melebihi stok distributor: PengaturJumlah hanya membatasi saat diubah.
     const maks = Math.max(1, Math.floor(penawaran.stokTersedia))
-    return Math.min(maks, Math.max(1, Math.ceil((r.jumlah * isiSaran) / isiPenawaran)))
+    return Math.min(maks, jumlahBeliUntuk(barang, rekomendasiBarang, penawaran.kemasanJual?.isi ?? 1))
   })()
 
   function bukaLembarBeli() {
@@ -273,6 +276,23 @@ export default function PenawaranDetail() {
                   <> &middot; {hariCukup(barang) === 0 ? 'stok tidak cukup' : <>cukup &plusmn;{hariCukup(barang)} hari</>}</>
                 )}
               </p>
+              {/* Berapa yang perlu dibeli dari distributor ini, dalam kemasan
+                  jualnya (revisi V3, Q79). Hanya untuk barang yang sudah
+                  diperkirakan; angkanya sama dengan jumlah awal Beli Sekali. */}
+              {rekomendasiBarang && (
+                <div className="mt-3 pt-3 border-t border-line">
+                  <h3 className="text-isi font-bold text-ink">Kebutuhan bulan depan</h3>
+                  <div className="mt-1">
+                    <HitunganSaran
+                      barang={barang}
+                      rekomendasi={rekomendasiBarang}
+                      kemasan={penawaran.kemasanJual}
+                      satuanBeli={penawaran.satuan}
+                      ringkas
+                    />
+                  </div>
+                </div>
+              )}
               <Link
                 to={`/stok/${barang.id}`}
                 className="mt-2 inline-flex items-center gap-1 text-isi font-bold text-brand hover:underline"

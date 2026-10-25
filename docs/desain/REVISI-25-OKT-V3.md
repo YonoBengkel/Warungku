@@ -121,10 +121,31 @@ Catatan tahap 3 (Edge headless, tema terang):
 
 ## Tahap 4 — Distributor dan Pesanan
 
-- [ ] **Label metode (Q71)** rata kanan di baris tab, hanya saat Rekomendasi tampil.
-- [ ] **Dua tombol di bawah halaman Distributor dihapus (Q72).**
-- [ ] **Tab Pesanan · Kontrak sebaris dengan Lacak Pesanan (Q73).**
-- [ ] **Hitungan saran ringkas di rincian barang distributor (Q79).**
+- [x] **Label metode (Q71)** rata kanan di baris tab, hanya saat Rekomendasi tampil.
+- [x] **Dua tombol di bawah halaman Distributor dihapus (Q72).**
+- [x] **Tab Pesanan · Kontrak sebaris dengan Lacak Pesanan (Q73).**
+- [x] **Hitungan saran ringkas di rincian barang distributor (Q79).**
+
+Catatan tahap 4 (Edge headless, 1536 × 834 dan 390 × 844):
+- **Halaman Distributor:**
+  - label "Thompson Sampling + fuzzy" kini di baris tab; tepi kanannya lurus dengan tombol Filter;
+  - di tab Cari Barang, atau bila ada kata cari atau saringan kota, label itu tidak tampil;
+  - di HP baris tab tidak muat, jadi label tetap di kanan judul Rekomendasi;
+  - "Lihat stok yang menipis" dan "Buka keranjang" dihapus dari kedua tab.
+- **Pesanan:** di desktop tab Pesanan · Kontrak di kiri dan Lacak Pesanan (berangka) di ujung kanan, sebaris; chip
+  Semua/Berjalan/Selesai langsung di bawah tab. Di HP Lacak Pesanan tetap di atas tab.
+- **Rincian barang distributor:** kartu "Stok kamu untuk barang ini" mendapat bagian "Kebutuhan bulan
+  depan".
+  - Isinya `HitunganSaran` ringkas (tanpa pemakaian bulan ini) dalam kemasan jual penawaran itu, hanya
+    untuk barang yang sudah diperkirakan.
+  - Rumus jumlah beli kini satu, `jumlahBeliUntuk`, dan dipakai kartu itu maupun jumlah awal lembar Beli
+    Sekali.
+  - Dulu jumlah awal itu membulatkan saran dalam kemasan barang lebih dulu, baru dikonversi ke kemasan
+    distributor. Hasilnya bisa lebih besar, misalnya kurang 11 liter dengan kemasan barang 10 liter dan
+    kemasan distributor 4 liter: dulu 5, sekarang 3.
+  - Jumlah awal Beli Sekali tetap dibatasi stok distributor.
+- Baris "Isi 1 …" di kartu hitungan disembunyikan bila kemasannya sama dengan satuan tampil barang
+  ("Isi 1 kg: 1 kg" tidak menjelaskan apa-apa).
 
 ## Tahap 5 — Lacak Pesanan
 

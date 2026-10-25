@@ -7,7 +7,6 @@ import {
   Kartu,
   Lencana,
   Tombol,
-  TombolTautan,
 } from '@/components/ui/dasar'
 import { Kolom } from '@/components/ui/formulir'
 import { Lembar } from '@/components/ui/lembar'
@@ -20,7 +19,6 @@ import {
   IkonBintangIsi,
   IkonCari,
   IkonKontrak,
-  IkonKotak,
   IkonPanahKanan,
   IkonSaring,
   IkonSilang,
@@ -651,19 +649,30 @@ export default function Belanja() {
               )}
             </form>
 
-            <TabSegmen<TabBelanja>
-              className="mt-3"
-              aktif={tab}
-              ubah={(v) => aturParam({ tab: v === 'barang' ? null : v })}
-              /* Label tab sengaja tidak sama dengan judul halaman: dua hal berbeda
-                 dengan nama yang sama membuat orang mengira sedang di layar lain.
-                 Nilai query (`barang`/`distributor`) TIDAK ikut berubah — banyak
-                 tautan di layar lain sudah memakainya. */
-              tab={[
-                { nilai: 'barang', label: 'Cari Barang' },
-                { nilai: 'distributor', label: 'Daftar Distributor' },
-              ]}
-            />
+            {/* Label metode rata kanan di baris tab, di bawah tombol Filter (revisi
+                V3, Q71). Hanya saat bagian Rekomendasi tampil: hanya urutan itu
+                yang memakai Mesin 2. Di HP baris ini tidak muat, jadi labelnya
+                tetap di kanan judul Rekomendasi. */}
+            <div className="mt-3 flex items-center justify-between gap-3">
+              <TabSegmen<TabBelanja>
+                className="min-w-0"
+                aktif={tab}
+                ubah={(v) => aturParam({ tab: v === 'barang' ? null : v })}
+                /* Label tab sengaja tidak sama dengan judul halaman: dua hal berbeda
+                   dengan nama yang sama membuat orang mengira sedang di layar lain.
+                   Nilai query (`barang`/`distributor`) TIDAK ikut berubah — banyak
+                   tautan di layar lain sudah memakainya. */
+                tab={[
+                  { nilai: 'barang', label: 'Cari Barang' },
+                  { nilai: 'distributor', label: 'Daftar Distributor' },
+                ]}
+              />
+              {tampilkanRekomendasi && pakaiMesin2 && (
+                <div className="hidden lg:block shrink-0">
+                  <LabelMetode {...METODE_SARAN} />
+                </div>
+              )}
+            </div>
           </>
         }
       />
@@ -815,12 +824,19 @@ export default function Belanja() {
               <section aria-labelledby="judul-rekomendasi">
                 {/* Seperti di Prediksi: nama metode di kanan judul bagian yang
                     memakai keluarannya (revisi V2, Q42), hanya bila urutannya
-                    memang dari saran distributor. */}
+                    memang dari saran distributor. Di desktop label ini pindah ke
+                    baris tab (revisi V3, Q71). */}
                 <JudulBagian
                   id="judul-rekomendasi"
                   judul="Rekomendasi untuk usahamu"
                   bungkus
-                  aksi={pakaiMesin2 ? <LabelMetode {...METODE_SARAN} /> : undefined}
+                  aksi={
+                    pakaiMesin2 ? (
+                      <span className="lg:hidden">
+                        <LabelMetode {...METODE_SARAN} />
+                      </span>
+                    ) : undefined
+                  }
                   keterangan={
                     profil.jenisUsaha === 'lainnya'
                       ? `Mengirim ke ${wilayahProfil}. ${dasarUrutan}`
@@ -919,15 +935,6 @@ export default function Belanja() {
             )}
           </div>
         )}
-
-        <div className="mt-8 flex flex-wrap gap-2.5">
-          <TombolTautan ke="/stok?filter=menipis" ragam="garis" ukuran="kecil" ikonKiri={<IkonKotak size={15} />}>
-            Lihat stok yang menipis
-          </TombolTautan>
-          <TombolTautan ke="/keranjang" ragam="sunyi" ukuran="kecil">
-            Buka keranjang
-          </TombolTautan>
-        </div>
       </div>
 
       {/* Satu pop-up untuk semua saringan: lembar bawah di HP, panel di layar

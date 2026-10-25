@@ -1,7 +1,17 @@
 import type { Barang, Kemasan, RekomendasiPrediksi } from '@/lib/types'
 import { BarisData } from '@/components/ui/dasar'
 import { angka } from '@/lib/format'
-import { jumlahTampil } from '@/lib/satuan'
+import { jumlahTampil, satuanTampil } from '@/lib/satuan'
+
+/**
+ * Banyak kemasan beli yang menutup kekurangan bulan depan: (perkiraan − stok) ÷
+ * isi kemasan, dibulatkan ke atas, paling sedikit 1. Rumus `rekomendasiDari`,
+ * dipakai juga untuk kemasan jual distributor supaya kartu hitungan dan jumlah
+ * awal Beli Sekali tidak pernah berbeda angka.
+ */
+export function jumlahBeliUntuk(barang: Barang, rekomendasi: RekomendasiPrediksi, isiKemasan: number): number {
+  return Math.max(1, Math.ceil((rekomendasi.perkiraanBulanDepan - barang.stok) / isiKemasan))
+}
 
 /**
  * Asal angka saran beli (revisi V3, Q70 dan Q79): perkiraan pemakaian bulan
@@ -38,7 +48,7 @@ export function HitunganSaran({
   const isi = k?.isi ?? 1
   const kurang = perkiraan - barang.stok
   const beliMentah = kurang / isi
-  const jumlahBeli = Math.max(1, Math.ceil(beliMentah))
+  const jumlahBeli = jumlahBeliUntuk(barang, rekomendasi, isi)
   // Satu desimal cukup untuk menunjukkan pembulatannya: "4,5 dus".
   const beliSepersepuluh = Math.round(beliMentah * 10) / 10
   const namaBeli = k?.nama ?? satuanBeli
@@ -55,7 +65,11 @@ export function HitunganSaran({
         {rekomendasi.arah === 'tambah' ? (
           <>
             <BarisData label="Kurang" nilai={jumlahTampil(barang, kurang)} tebal />
-            {k && <BarisData label={`Isi 1 ${k.nama}`} nilai={jumlahTampil(barang, isi)} />}
+            {/* "Isi 1 kg: 1 kg" tidak menjelaskan apa-apa, jadi baris isi hanya
+                untuk kemasan yang berbeda dari satuan tampil barangnya. */}
+            {k && k.nama !== satuanTampil(barang).nama && (
+              <BarisData label={`Isi 1 ${k.nama}`} nilai={jumlahTampil(barang, isi)} />
+            )}
             <div className="mt-2 rounded-md bg-brand-soft/60 px-3 py-2.5">
               <p className="flex items-baseline justify-between gap-3">
                 <span className="text-isi font-semibold text-brand-soft-ink">Saran beli</span>

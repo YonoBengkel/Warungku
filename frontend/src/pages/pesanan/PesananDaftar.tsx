@@ -295,22 +295,34 @@ export default function PesananDaftar() {
             <p className="mt-1 text-isi text-ink-2 leading-relaxed max-w-[62ch]">
               Semua pesanan dan kontrak bulananmu, dari yang masih berjalan sampai yang sudah selesai.
             </p>
-            <TombolLacak ke="/pesanan/lacak" jumlah={sedangDiJalan} className="mt-3" />
+            {/* Di desktop tombol ini sebaris dengan tab (lihat `inti`). */}
+            <div className="mt-3 lg:hidden">
+              <TombolLacak ke="/pesanan/lacak" jumlah={sedangDiJalan} />
+            </div>
           </>
         }
         inti={
           <>
-            <TabSegmen<Tab>
-              className="mt-1"
-              aktif={tab}
-              ubah={gantiTab}
-              tab={[
-                /* Angka di lencana tab sengaja menghitung yang masih berjalan saja,
-                   bukan seluruh isi tab: yang perlu dipantau itu yang belum kelar. */
-                { nilai: 'pesanan', label: 'Pesanan', jumlah: berjalan.length },
-                { nilai: 'kontrak', label: 'Kontrak', jumlah: kontrakBerjalan.length },
-              ]}
-            />
+            {/* Di desktop tab dan Lacak Pesanan sebaris (revisi V3, Q73): tab di
+                kiri, supaya chip di bawahnya tetap lurus di bawah tab yang ia
+                saring; Lacak Pesanan di ujung kanan. Di HP barisnya tidak muat,
+                jadi tombol itu tetap di atas tab. */}
+            <div className="mt-1 flex items-center justify-between gap-3">
+              <TabSegmen<Tab>
+                className="min-w-0"
+                aktif={tab}
+                ubah={gantiTab}
+                tab={[
+                  /* Angka di lencana tab sengaja menghitung yang masih berjalan saja,
+                     bukan seluruh isi tab: yang perlu dipantau itu yang belum kelar. */
+                  { nilai: 'pesanan', label: 'Pesanan', jumlah: berjalan.length },
+                  { nilai: 'kontrak', label: 'Kontrak', jumlah: kontrakBerjalan.length },
+                ]}
+              />
+              <div className="hidden lg:block shrink-0">
+                <TombolLacak ke="/pesanan/lacak" jumlah={sedangDiJalan} />
+              </div>
+            </div>
 
             {/* Baris chip penyaring. Ia menggulir di dalam wadahnya sendiri, jadi di
                 360px badan halaman tetap diam meski chipnya tidak muat. */}
