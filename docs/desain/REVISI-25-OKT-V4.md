@@ -114,8 +114,37 @@ Catatan tahap 3 (Edge headless, 1536 × 834 dan 390 × 844, terang dan gelap):
 
 ## Tahap 4 — Beranda dan Sebaran distributor
 
-- [ ] **Beranda (Q95):** isi tetap, kotak bergaya Beranda UMKM.
-- [ ] **Sebaran (Q87, Q84):** peta Leaflet dan OpenStreetMap penuh sampai bawah; teks penjelas dihapus.
+- [x] **Beranda (Q95):** isi tetap, kotak bergaya Beranda UMKM.
+- [x] **Sebaran (Q87, Q84):** peta Leaflet dan OpenStreetMap penuh sampai bawah; teks penjelas dihapus.
+
+Catatan tahap 4 (Edge headless, 1536 × 834 dan 390 × 844, terang dan gelap):
+- **Beranda distributor** (`Dashboard.tsx`): isinya tetap, kotaknya meniru Beranda UMKM.
+  - **Yang perlu kamu urus hari ini:** kartu "N pesanan menunggu kamu jawab" ada di dalam kotak ini, selebar
+    kartu tugas UMKM (setengah baris, lalu sepertiga mulai 1280px). Bila tidak ada yang menunggu, muncul
+    baris hijau "Semua aman hari ini.".
+  - **Rekap pesanan:** lima petak bergaya Perlu Tindakan (ikon berlingkaran dan angka di tengah, nama di
+    bawah), sebaris mulai 1024px. Di HP dua kolom, dan petak Ditolak selebar dua kolom (358px).
+  - **Sebaran pemesan:** tiga petak bergaya sama dengan cincin seperti di peta, dan "Buka peta ›" di kanan
+    judul.
+  - **Pesanan terbaru:** kartu bergaya kartu pesanan UMKM, dua sebaris mulai 1024px dan tiga mulai 1280px;
+    kartu sebaris sama tinggi. Isinya:
+    - logo dan nama pemesan, serta status;
+    - barang ringkas ("Biji Kopi Arabika 3 kg + 1 barang lain");
+    - total, waktu masuk, dan nomor pesanan.
+- **Peta Sebaran** (`components/domain/PetaSebaran.tsx`): Leaflet dan OpenStreetMap dengan `buatPeta` yang
+  sama dengan peta rincian pesanan.
+  - Penanda tetap cincin bernomor: merah utuh, jingga putus-putus, biru ganda, dirender React lewat portal.
+    Bentuk cincinnya pindah ke `TandaTitik.tsx`, supaya Beranda tidak ikut memuat Leaflet.
+  - Mengetuk titik (atau Enter) memilih tokonya di daftar kanan; titik terpilih bercincin gelap, dan peta
+    bergeser bila titik yang dipilih dari daftar ada di luar pandangan.
+  - Di desktop peta memanjang sampai 32px di atas dasar layar (bawahnya 777px di layar 834px). Kalimat di
+    bawahnya kini "Angka di titik adalah jumlah pesanan toko itu.".
+  - Kotak koordinat `BATAS_PETA` dan pemadatan titik lama dihapus.
+- **Hitungan titik (Q84):** judul di tengah tanpa keterangan, kalimat penjelas tiap kotak dan kalimat "Satu
+  toko bisa masuk beberapa kartu…" dihapus (`KETERANGAN_TITIK` ikut hilang). "Seberapa tepat letaknya?"
+  dihapus.
+- **Perbaikan sampingan:** pilihan barang di Sebaran kini membaca katalog portal yang tersambung. Dulu ia
+  membaca katalog contoh, sehingga peta per barang selalu kosong saat portal tersambung ke server.
 
 ## Tahap 5 — data
 

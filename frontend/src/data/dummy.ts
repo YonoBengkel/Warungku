@@ -2965,15 +2965,6 @@ export function ulasanUntuk(distributorId: string): Ulasan[] {
  */
 export const distributorAktif: Distributor = daftarDistributor[0]
 
-/**
- * Kotak koordinat peta sebaran.
- *
- * Peta digambar sendiri dari kotak ini, tanpa layanan peta mana pun. Semua
- * UMKM di bawah wajib berada di dalamnya, kalau tidak titiknya jatuh di luar
- * bingkai.
- */
-export const BATAS_PETA = { latMin: -7.83, latMaks: -7.67, lngMin: 110.31, lngMaks: 110.45 }
-
 export const daftarUmkm: UmkmPemesan[] = [
   {
     // Toko pemilik aplikasi sendiri. Datanya sengaja dibuat sama dengan profilAwal

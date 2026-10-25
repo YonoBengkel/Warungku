@@ -29,9 +29,10 @@ import { useAplikasi, usePesananMasuk, useTitikPeta } from '@/store/aplikasi'
  * (`/sebaran/:penawaranId`, dibuka dari tautan "Lihat sebaran" di tiap barang
  * pesanan) ia menjawab "barang ini sedang ditunggu siapa saja".
  *
- * Di desktop seluruh halaman muat satu layar: kolom kiri hitungan titik dan
- * peta, kolom kanan info barang dan daftar toko yang digulir di dalam
- * kolomnya sendiri. Di HP keduanya bertumpuk seperti biasa.
+ * Di desktop seluruh halaman muat satu layar: kolom kiri peta sungguhan
+ * (Leaflet + OpenStreetMap sejak revisi V4) setinggi layar, kolom kanan
+ * hitungan titik, info barang, dan daftar toko yang digulir di dalam kolomnya
+ * sendiri. Di HP semuanya bertumpuk seperti biasa.
  *
  * Hitungan titik sengaja diletakkan DI ATAS peta: angkanya yang paling sering
  * dicari, dan menaruhnya di bawah peta berarti orang harus menggulir melewati
@@ -61,7 +62,10 @@ function LencanaStatus({ status }: { status: StatusPesananMasuk }) {
 export default function PetaSebaranBarang() {
   const { penawaranId } = useParams()
   const navigate = useNavigate()
-  const katalog = useAplikasi((s) => s.katalog)
+  // Katalog portal yang tersambung lebih dulu, seperti halaman Promo: katalog
+  // contoh memakai id lain, jadi titik barang dari pesanan server tidak pernah
+  // cocok dan peta per barang selalu kosong.
+  const katalog = useAplikasi((s) => s.katalogDistributorServer?.penawaran ?? s.katalog)
   const barangSaya = katalog.filter((p) => p.distributorId === distributorAktif.id)
 
   // Pemiliknya ikut diperiksa: tanpa itu tautan ke barang distributor lain
@@ -182,18 +186,19 @@ export default function PetaSebaranBarang() {
             </Kartu>
           </section>
         )}
+        {/* Judul di tengah, tepat di atas ketiga kotak, tanpa keterangan (revisi V4, Q84). */}
         <section aria-labelledby="judul-hitung" className="lg:col-start-7 lg:col-span-6 lg:row-start-1">
-          <JudulBagian
-            id="judul-hitung"
-            judul="Hitungan titik"
-            keterangan="Tiga kondisi, masing-masing dengan bentuk cincin dan keterangannya sendiri."
-          />
+          <h2 id="judul-hitung" className="mb-3 text-kartu font-bold text-ink leading-tight text-center">
+            Hitungan titik
+          </h2>
           <KartuHitungTitik titik={titik} />
         </section>
+        {/* Peta sungguhan (Leaflet + OpenStreetMap, revisi V4, Q87). Di desktop
+            kolomnya memanjang sampai dasar layar. */}
         <section
           aria-labelledby="judul-peta"
           className={cx(
-            'lg:col-start-1 lg:col-span-6 lg:row-start-1 lg:min-h-0 lg:overflow-y-auto',
+            'lg:col-start-1 lg:col-span-6 lg:row-start-1 lg:min-h-0 lg:flex lg:flex-col',
             penawaran ? 'lg:row-span-3' : 'lg:row-span-2',
           )}
         >
@@ -208,9 +213,17 @@ export default function PetaSebaranBarang() {
               />
             </Kartu>
           ) : (
-            <Kartu padat className="sm:p-4">
-              <PetaSebaran titik={titik} dipilih={dipilih} pilih={setDipilih} />
-            </Kartu>
+            <>
+              <PetaSebaran
+                titik={titik}
+                dipilih={dipilih}
+                pilih={setDipilih}
+                className="h-[22rem] sm:h-[26rem] lg:h-auto lg:flex-1 lg:min-h-[16rem]"
+              />
+              <p className="mt-2 text-kecil text-ink-3 leading-snug lg:shrink-0">
+                Angka di titik adalah jumlah pesanan toko itu.
+              </p>
+            </>
           )}
         </section>
         {titik.length > 0 && (

@@ -340,12 +340,6 @@ export const LABEL_TITIK: Record<WarnaTitik, string> = {
   biru: 'Sudah sampai',
 }
 
-export const KETERANGAN_TITIK: Record<WarnaTitik, string> = {
-  merah: 'Pesanan masuk yang belum kamu terima atau tolak.',
-  oren: 'Sudah kamu terima, barangnya masih di jalan atau di gudang.',
-  biru: 'Sudah sampai di pemilik usaha. Titik ini hilang sendiri setelah 12 jam.',
-}
-
 /** Warna titik memakai token grafik, bukan token status, karena ini peta bukan lencana. */
 export const WARNA_TITIK_TOKEN: Record<WarnaTitik, string> = {
   merah: 'var(--c-kritis)',

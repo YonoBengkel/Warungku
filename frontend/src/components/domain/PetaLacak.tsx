@@ -59,8 +59,9 @@ const PUSAT_AWAL: L.LatLngExpression = [-7.797, 110.37]
  * Peta dasar bersama: ubin OSM dengan atribusinya, gulir halaman tidak
  * tersangkut (perbesar lewat tombol, dua jari, atau Ctrl + gulir), dan ukuran
  * diukur ulang saat wadahnya berubah, mis. dari tab tersembunyi ke terlihat.
+ * Dipakai juga peta Sebaran pemesan (revisi V4, Q87).
  */
-function buatPeta(
+export function buatPeta(
   el: HTMLElement,
   aturGagal: (gagal: boolean) => void,
   padaUkuran: () => void,
@@ -103,7 +104,7 @@ function buatPeta(
   }
 }
 
-function PesanGagalUbin() {
+export function PesanGagalUbin() {
   return (
     <p className="absolute inset-x-3 bottom-3 z-[1000] rounded-md bg-surface/95 border border-line p-3 text-isi text-ink-2 shadow-e2">
       Gambar peta belum termuat. Periksa koneksi internet; keterangan di luar peta tetap lengkap.
