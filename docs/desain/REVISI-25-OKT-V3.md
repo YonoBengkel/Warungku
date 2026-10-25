@@ -85,9 +85,39 @@ Catatan tahap 2:
 
 ## Tahap 3 — Prediksi
 
-- [ ] **Isi tinggi layar (Q68):** "Perkiraan bulan depan per barang" di Prediksi per kategori dan
+- [x] **Isi tinggi layar (Q68):** "Perkiraan bulan depan per barang" di Prediksi per kategori dan
   grafik di Prediksi per barang memanjang.
-- [ ] **Hitungan saran dan Dipesan dari (Q70)** di kolom kanan Prediksi per barang.
+- [x] **Hitungan saran dan Dipesan dari (Q70)** di kolom kanan Prediksi per barang.
+
+Catatan tahap 3 (Edge headless, tema terang):
+- Mulai 1024px halaman Prediksi setinggi layar dikurangi jarak atas-bawah `<main>`. Di kategori,
+  baris bawah ("Perkiraan bulan depan per barang") mengisi sisa tinggi:
+  - `GrafikBatang` mendapat `isiTinggi` seperti `GrafikTren`;
+  - daftar barang di kanannya kini `absolute` di wadah setinggi baris (paling pendek 9rem), jadi
+    menampilkan sebanyak yang muat dan tidak ikut meninggikan halaman.
+- Ukuran yang terukur, semuanya tanpa gulir halaman:
+
+  | Halaman | 1536 × 834 | 1536 × 730 |
+  |---|---|---|
+  | Kemasan: grafik batang | 265px (dulu 120px) | 161px |
+  | Kemasan: daftar | keempat barang terlihat | menggulir sedikit, ujungnya memudar |
+  | Susu Kental Manis: grafik | 323px (dulu 200px) | 219px |
+
+  Di halaman per barang kedua kotaknya sama tinggi sampai di atas bilah bawah.
+- Komponen baru `HitunganSaran` (`components/domain/HitunganSaran.tsx`) menulis asal angka saran
+  dengan rumus yang sama dengan `rekomendasiDari`, sehingga angkanya selalu sama dengan bilah bawah.
+  Contoh Susu Kental Manis:
+  - terpakai bulan ini 69,2 liter, perkiraan bulan depan 67,8 liter, sisa − 40,8 liter;
+  - kurang 27 liter, isi 1 dus 6 liter;
+  - saran beli 5 dus (4,5 dus, dibulatkan ke atas).
+
+  Untuk arah "tetap" kartunya menyebut berapa persen perkiraan yang tertutup sisa; untuk arah
+  "kurang", kelebihannya. Keduanya tanpa angka beli.
+- **Dipesan dari** (Q70):
+  - menyebut distributor yang dipakai tombol keranjang: nama, logo, harga per satuan (harga kontrak
+    bila ada), dan tautan "Lihat penawarannya";
+  - contoh: Dairy Prima Jaya, Rp 180.000/dus, harga beli sekali, cocok dengan perkiraan biaya
+    Rp 900.000 untuk 5 dus di bilah bawah.
 
 ## Tahap 4 — Distributor dan Pesanan
 

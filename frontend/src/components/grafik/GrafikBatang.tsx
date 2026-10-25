@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { angka } from '@/lib/format'
-import { useLebarWadah, batasRapi } from './dasarGrafik'
+import { useLebarWadah, useTinggiWadah, batasRapi } from './dasarGrafik'
 
 /**
  * Batang vertikal untuk perbandingan magnitudo antar hari / antar barang.
@@ -29,6 +29,7 @@ export function GrafikBatang({
   format,
   formatSumbu = (n: number) => angka(n),
   lebarSumbu = SISI.kiri,
+  isiTinggi = false,
 }: {
   data: BatangData[]
   satuan: string
@@ -39,127 +40,149 @@ export function GrafikBatang({
   /** Label sumbu tegak, sebaiknya ringkas. */
   formatSumbu?: (n: number) => string
   lebarSumbu?: number
+  /**
+   * Grafik memanjang mengisi sisa tinggi wadahnya (revisi V3, Q68); `tinggi`
+   * menjadi tinggi paling pendek. Sama dengan `GrafikTren`.
+   */
+  isiTinggi?: boolean
 }) {
   const tulis = format ?? ((n: number) => angka(n))
   const sisi = { ...SISI, kiri: lebarSumbu }
   const [wadahRef, lebar] = useLebarWadah<HTMLDivElement>()
+  const [tinggiRef, tinggiTersedia] = useTinggiWadah<HTMLDivElement>()
+  const tinggiGambar = isiTinggi ? Math.max(tinggi, Math.floor(tinggiTersedia)) : tinggi
   const [sorot, setSorot] = useState<number | null>(null)
 
   const g = useMemo(() => {
     const w = Math.max(lebar, 240)
     const pw = w - sisi.kiri - sisi.kanan
-    const ph = tinggi - sisi.atas - sisi.bawah
+    const ph = tinggiGambar - sisi.atas - sisi.bawah
     const maks = batasRapi(Math.max(1, ...data.map((d) => d.nilai)) * 1.12)
     const slot = pw / Math.max(1, data.length)
     // Jarak 2px di kedua sisi menjadi pemisah antar batang yang bersentuhan.
     const tebal = Math.min(24, Math.max(6, slot - 8))
     return { w, ph, maks, slot, tebal, pw }
-  }, [data, lebar, tinggi, lebarSumbu])
+  }, [data, lebar, tinggiGambar, lebarSumbu])
 
   const indeksTertinggi = data.reduce((a, d, i) => (d.nilai > data[a].nilai ? i : a), 0)
 
-  return (
-    <div ref={wadahRef} className="relative select-none">
-      <svg
-        width={g.w}
-        height={tinggi}
-        role="img"
-        aria-label={`Grafik batang ${data.length} isian dalam ${satuan}. Nilai tertinggi ${
-          format ? format(data[indeksTertinggi]?.nilai ?? 0) : `${angka(data[indeksTertinggi]?.nilai ?? 0)} ${satuan}`
-        } pada ${data[indeksTertinggi]?.label ?? '-'}.`}
-        onPointerLeave={() => setSorot(null)}
-      >
+  const gambar = (
+    <svg
+      width={g.w}
+      height={tinggiGambar}
+      role="img"
+      aria-label={`Grafik batang ${data.length} isian dalam ${satuan}. Nilai tertinggi ${
+        format ? format(data[indeksTertinggi]?.nilai ?? 0) : `${angka(data[indeksTertinggi]?.nilai ?? 0)} ${satuan}`
+      } pada ${data[indeksTertinggi]?.label ?? '-'}.`}
+      onPointerLeave={() => setSorot(null)}
+    >
+      <line
+        x1={sisi.kiri}
+        x2={g.w - sisi.kanan}
+        y1={sisi.atas + g.ph}
+        y2={sisi.atas + g.ph}
+        stroke="var(--c-grid)"
+        strokeWidth="1"
+      />
+      {[0.5, 1].map((f) => (
         <line
+          key={f}
           x1={sisi.kiri}
           x2={g.w - sisi.kanan}
-          y1={sisi.atas + g.ph}
-          y2={sisi.atas + g.ph}
+          y1={sisi.atas + g.ph - g.ph * f}
+          y2={sisi.atas + g.ph - g.ph * f}
           stroke="var(--c-grid)"
           strokeWidth="1"
         />
-        {[0.5, 1].map((f) => (
-          <line
-            key={f}
-            x1={sisi.kiri}
-            x2={g.w - sisi.kanan}
-            y1={sisi.atas + g.ph - g.ph * f}
-            y2={sisi.atas + g.ph - g.ph * f}
-            stroke="var(--c-grid)"
-            strokeWidth="1"
-          />
-        ))}
-        {[0.5, 1].map((f) => (
-          <text
-            key={f}
-            x={sisi.kiri - 7}
-            y={sisi.atas + g.ph - g.ph * f + 4}
-            textAnchor="end"
-            fontSize="10.5"
-            fill="var(--c-sumbu)"
-            className="tabular"
-          >
-            {formatSumbu(g.maks * f)}
-          </text>
-        ))}
+      ))}
+      {[0.5, 1].map((f) => (
+        <text
+          key={f}
+          x={sisi.kiri - 7}
+          y={sisi.atas + g.ph - g.ph * f + 4}
+          textAnchor="end"
+          fontSize="10.5"
+          fill="var(--c-sumbu)"
+          className="tabular"
+        >
+          {formatSumbu(g.maks * f)}
+        </text>
+      ))}
 
-        {data.map((d, i) => {
-          // Label sekitar 38px: di layar sempit dijarangkan supaya "Okt '25"
-          // dan "Nov '25" tidak bertumpuk. Batang yang disorot selalu berlabel.
-          const langkah = Math.max(1, Math.ceil(38 / Math.max(1, g.slot)))
-          const berlabel =
-            d.sorot ||
-            i === data.length - 1 ||
-            (i % langkah === 0 && data.length - 1 - i >= langkah / 2)
-          const t = (d.nilai / g.maks) * g.ph
-          const x = sisi.kiri + g.slot * i + (g.slot - g.tebal) / 2
-          const y = sisi.atas + g.ph - t
-          const aktif = sorot === i
-          const r = Math.min(4, t / 2)
-          return (
-            <g key={d.label + i} onPointerEnter={() => setSorot(i)}>
-              {/* Sasaran sentuh lebih lebar daripada batangnya */}
-              <rect
-                x={sisi.kiri + g.slot * i}
-                y={sisi.atas}
-                width={g.slot}
-                height={g.ph}
-                fill="transparent"
-              />
-              <path
-                d={`M${x},${sisi.atas + g.ph} L${x},${y + r} Q${x},${y} ${x + r},${y} L${x + g.tebal - r},${y} Q${x + g.tebal},${y} ${x + g.tebal},${y + r} L${x + g.tebal},${sisi.atas + g.ph} Z`}
-                fill={warna}
-                opacity={d.sorot || aktif ? 1 : sorot != null ? 0.45 : 0.82}
-                style={{ transition: 'opacity .15s' }}
-              />
-              {(i === indeksTertinggi || aktif) && (
-                <text
-                  x={x + g.tebal / 2}
-                  y={y - 6}
-                  textAnchor="middle"
-                  fontSize="10.5"
-                  fontWeight="700"
-                  fill="var(--c-ink-2)"
-                  className="tabular"
-                >
-                  {tulis(d.nilai)}
-                </text>
-              )}
-              {(berlabel || aktif) && (
-                <text
-                  x={x + g.tebal / 2}
-                  y={tinggi - 7}
-                  textAnchor={i === data.length - 1 && langkah > 1 ? 'end' : 'middle'}
-                  fontSize="10.5"
-                  fill={d.sorot || aktif ? 'var(--c-ink)' : 'var(--c-sumbu)'}
-                  fontWeight={d.sorot ? 700 : 400}
-                >
-                  {d.label}
-                </text>
-              )}
-            </g>
-          )
-        })}
-      </svg>
+      {data.map((d, i) => {
+        // Label sekitar 38px: di layar sempit dijarangkan supaya "Okt '25"
+        // dan "Nov '25" tidak bertumpuk. Batang yang disorot selalu berlabel.
+        const langkah = Math.max(1, Math.ceil(38 / Math.max(1, g.slot)))
+        const berlabel =
+          d.sorot ||
+          i === data.length - 1 ||
+          (i % langkah === 0 && data.length - 1 - i >= langkah / 2)
+        const t = (d.nilai / g.maks) * g.ph
+        const x = sisi.kiri + g.slot * i + (g.slot - g.tebal) / 2
+        const y = sisi.atas + g.ph - t
+        const aktif = sorot === i
+        const r = Math.min(4, t / 2)
+        return (
+          <g key={d.label + i} onPointerEnter={() => setSorot(i)}>
+            {/* Sasaran sentuh lebih lebar daripada batangnya */}
+            <rect
+              x={sisi.kiri + g.slot * i}
+              y={sisi.atas}
+              width={g.slot}
+              height={g.ph}
+              fill="transparent"
+            />
+            <path
+              d={`M${x},${sisi.atas + g.ph} L${x},${y + r} Q${x},${y} ${x + r},${y} L${x + g.tebal - r},${y} Q${x + g.tebal},${y} ${x + g.tebal},${y + r} L${x + g.tebal},${sisi.atas + g.ph} Z`}
+              fill={warna}
+              opacity={d.sorot || aktif ? 1 : sorot != null ? 0.45 : 0.82}
+              style={{ transition: 'opacity .15s' }}
+            />
+            {(i === indeksTertinggi || aktif) && (
+              <text
+                x={x + g.tebal / 2}
+                y={y - 6}
+                textAnchor="middle"
+                fontSize="10.5"
+                fontWeight="700"
+                fill="var(--c-ink-2)"
+                className="tabular"
+              >
+                {tulis(d.nilai)}
+              </text>
+            )}
+            {(berlabel || aktif) && (
+              <text
+                x={x + g.tebal / 2}
+                y={tinggiGambar - 7}
+                textAnchor={i === data.length - 1 && langkah > 1 ? 'end' : 'middle'}
+                fontSize="10.5"
+                fill={d.sorot || aktif ? 'var(--c-ink)' : 'var(--c-sumbu)'}
+                fontWeight={d.sorot ? 700 : 400}
+              >
+                {d.label}
+              </text>
+            )}
+          </g>
+        )
+      })}
+    </svg>
+  )
+
+  /* Di mode `isiTinggi` gambarnya duduk di lapisan `absolute`, supaya wadahnya
+     diukur dari sisa kolom, bukan dari tinggi gambar yang sedang tampil. */
+  if (isiTinggi) {
+    return (
+      <div ref={tinggiRef} className="relative flex-1" style={{ minHeight: tinggi }}>
+        <div ref={wadahRef} className="absolute inset-0 select-none">
+          {gambar}
+        </div>
+      </div>
+    )
+  }
+  return (
+    <div ref={wadahRef} className="relative select-none">
+      {gambar}
     </div>
   )
 }

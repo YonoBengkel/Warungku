@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import type { Barang, RekomendasiPrediksi } from '@/lib/types'
-import { Bagian, BarisData, Kartu, Tombol, TombolTautan } from '@/components/ui/dasar'
+import { Avatar, Bagian, Kartu, Tombol, TombolTautan } from '@/components/ui/dasar'
 import { BarisChip, BilahAksi, Chip, KepalaHalaman, RUANG_LONCENG } from '@/components/ui/navigasi'
 import { PengaturJumlah } from '@/components/ui/formulir'
 import { BilahProgres, KeadaanKosong, Penjelasan, Peringatan } from '@/components/ui/umpanBalik'
@@ -20,6 +20,7 @@ import { angka, cx, rupiah, rupiahSumbu } from '@/lib/format'
 import { angkaTampil, jumlahTampil, satuanTampil, trenTampil } from '@/lib/satuan'
 import { JUDUL, LABEL_ARAH_PREDIKSI } from '@/lib/label'
 import {
+  distributorById,
   layakDiperkirakan,
   modelBulananServer,
   nilaiPemakaian,
@@ -30,6 +31,7 @@ import {
 } from '@/data/dummy'
 import { useAplikasi, usePenentuHarga } from '@/store/aplikasi'
 import { LabelMetode, metodePrediksi } from '@/components/domain/LabelMetode'
+import { HitunganSaran } from '@/components/domain/HitunganSaran'
 
 /**
  * Halaman Prediksi: dua keadaan, dibedakan oleh query string.
@@ -170,8 +172,11 @@ export default function Prediksi() {
 
   return (
     /* Di desktop tanpa jarak bawah sendiri: <main> sudah memberinya, dan dua
-       jarak bertumpuk mendorong halaman melewati layar acuan. */
-    <div className="pb-8 lg:pb-0">
+       jarak bertumpuk mendorong halaman melewati layar acuan. Mulai 1024px
+       halaman ini setinggi layar dikurangi jarak atas-bawah <main>, dan bagian
+       bawahnya memanjang mengisi sisanya: tetap muat di 730, tanpa ruang kosong
+       di layar yang lebih tinggi (revisi V3, Q68). */
+    <div className="pb-8 lg:pb-0 lg:flex lg:flex-col lg:min-h-[calc(100dvh-3.5rem)]">
       {/* Label metode di kanan judul, menggantikan "Perkiraan untuk bulan depan"
           (revisi V2, Q42). Di desktop kalimat peringatannya ikut sebaris supaya
           isi halaman muat satu layar; di layar sempit ia turun ke bawah. */}
@@ -221,14 +226,14 @@ export default function Prediksi() {
               lebar mengikuti sketsa Ilham (revisi V2, Q51): baris atas kartu
               barang di kiri dan grafik nilai di kanan, sama tinggi; baris bawah
               perbandingan antarbarang selebar halaman. */}
-          <div className="mt-3 flex flex-col gap-4 lg:grid lg:grid-cols-12 [&>*]:min-w-0">
+          <div className="mt-3 flex flex-col gap-4 lg:grid lg:grid-cols-12 lg:grid-rows-[auto_1fr] lg:flex-1 [&>*]:min-w-0">
             <div className="lg:col-start-8 lg:col-span-5 lg:row-start-1">
               <GrafikKategori kategori={kategori} daftar={barangKategori} />
             </div>
             <div className="lg:col-start-1 lg:col-span-7 lg:row-start-1">
               <DaftarBarangKategori kategori={kategori} daftar={barangKategori} alamat={alamat} />
             </div>
-            <div className="lg:col-span-12 lg:row-start-2">
+            <div className="lg:col-span-12 lg:row-start-2 lg:flex lg:flex-col">
               <PerbandinganBarang daftar={barangKategori} alamat={alamat} />
             </div>
           </div>
@@ -478,16 +483,17 @@ function PerbandinganBarang({
       id="judul-perbandingan"
       judul="Perkiraan bulan depan per barang"
       keterangan="Dalam Rupiah harga beli, supaya barang bersatuan berbeda bisa dibandingkan."
-      className="lg:p-4"
+      className="lg:p-4 lg:flex-1 lg:flex lg:flex-col"
     >
       {/* Di desktop batang di kiri dan angkanya di kanan, sebaris, supaya kotak
-          selebar halaman ini tetap pendek (revisi V2, Q51). Daftar yang lebih
-          panjang dari grafiknya menggulir di dalam kotaknya sendiri. */}
-      <div className="lg:grid lg:grid-cols-12 lg:gap-6 lg:items-start">
+          selebar halaman ini tetap pendek (revisi V2, Q51). Kotak ini mengisi sisa
+          tinggi layar (revisi V3, Q68): grafiknya ikut tinggi, dan daftarnya
+          menampilkan sebanyak yang muat; sisanya menggulir di dalam kotaknya. */}
+      <div className="lg:grid lg:grid-cols-12 lg:gap-6 lg:flex-1">
         {/* Batang yang banyak tidak muat di layar 360px. Yang digulir wadah
             grafiknya, bukan badan halaman. */}
-        <div className="overflow-x-auto no-scrollbar lg:col-span-7">
-          <div className={cx(baris.length > 5 && 'min-w-[28rem]')}>
+        <div className="overflow-x-auto no-scrollbar lg:col-span-7 lg:flex lg:flex-col">
+          <div className={cx('lg:flex-1 lg:flex lg:flex-col', baris.length > 5 && 'min-w-[28rem]')}>
             <GrafikBatang
               data={baris.map((x) => ({ label: labelPendek(x.barang.nama), nilai: x.nilaiDepan }))}
               satuan="Rupiah"
@@ -495,38 +501,43 @@ function PerbandinganBarang({
               format={rupiahSumbu}
               formatSumbu={rupiahSumbu}
               lebarSumbu={LEBAR_SUMBU_RUPIAH}
+              isiTinggi
             />
           </div>
         </div>
 
-        <ul
-          ref={wadahDaftar}
-          className={cx(
-            'mt-3 space-y-1 lg:mt-0 lg:col-span-5 lg:max-h-[9rem] lg:overflow-y-auto lg:overscroll-contain lg:space-y-0',
-            masihAdaDiBawah && 'lg:[mask-image:linear-gradient(to_bottom,#000_70%,transparent)]',
-          )}
-        >
-          {baris.map((x) => (
-            <li key={x.barang.id}>
-              <Link
-                to={alamat({ barang: x.barang.id })}
-                className="flex items-center gap-3 min-h-11 -mx-2 px-2 py-1.5 rounded-md hover:bg-sunken transition-colors lg:mx-0 lg:min-h-10 lg:py-1"
-              >
-                <span className="min-w-0 grow">
-                  <span className="block text-isi font-semibold text-ink truncate">{x.barang.nama}</span>
-                  <span className="block text-kecil text-ink-3">
-                    <TandaArah arah={x.arah} /> dari bulan ini
+        {/* Di desktop daftarnya `absolute` di dalam wadah setinggi baris, supaya
+            daftar yang panjang tidak ikut meninggikan halaman. */}
+        <div className="relative lg:col-span-5 lg:min-h-[9rem]">
+          <ul
+            ref={wadahDaftar}
+            className={cx(
+              'mt-3 space-y-1 lg:mt-0 lg:absolute lg:inset-0 lg:overflow-y-auto lg:overscroll-contain lg:space-y-0',
+              masihAdaDiBawah && 'lg:[mask-image:linear-gradient(to_bottom,#000_70%,transparent)]',
+            )}
+          >
+            {baris.map((x) => (
+              <li key={x.barang.id}>
+                <Link
+                  to={alamat({ barang: x.barang.id })}
+                  className="flex items-center gap-3 min-h-11 -mx-2 px-2 py-1.5 rounded-md hover:bg-sunken transition-colors lg:mx-0 lg:min-h-10 lg:py-1"
+                >
+                  <span className="min-w-0 grow">
+                    <span className="block text-isi font-semibold text-ink truncate">{x.barang.nama}</span>
+                    <span className="block text-kecil text-ink-3">
+                      <TandaArah arah={x.arah} /> dari bulan ini
+                    </span>
                   </span>
-                </span>
-                <span className="shrink-0 text-right">
-                  <span className="block text-isi font-bold text-ink tabular">{rupiah(x.nilaiDepan)}</span>
-                  <span className="block text-kecil text-ink-3 tabular">dari {rupiah(x.nilaiIni)}</span>
-                </span>
-                <IkonPanahKanan size={18} className="shrink-0 text-ink-3" />
-              </Link>
-            </li>
-          ))}
-        </ul>
+                  <span className="shrink-0 text-right">
+                    <span className="block text-isi font-bold text-ink tabular">{rupiah(x.nilaiDepan)}</span>
+                    <span className="block text-kecil text-ink-3 tabular">dari {rupiah(x.nilaiIni)}</span>
+                  </span>
+                  <IkonPanahKanan size={18} className="shrink-0 text-ink-3" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
     </Bagian>
   )
@@ -574,6 +585,7 @@ function DetailBarang({
   )
   const tren = useMemo(() => trenBulanan(barang.id), [barang.id])
   const penawaran = rekomendasi?.penawaranId ? penawaranById(rekomendasi.penawaranId) : undefined
+  const distributor = penawaran ? distributorById(penawaran.distributorId) : undefined
 
   /* Hanya arah "tambah" yang punya angka beli.
 
@@ -616,7 +628,9 @@ function DetailBarang({
         </TombolTautan>
       </div>
 
-      <div className="mt-3 lg:grid lg:grid-cols-12 lg:gap-6 lg:items-start">
+      {/* Kedua kotak sama tinggi dan memanjang sampai bilah bawah (revisi V3,
+          Q68): grafiknya ikut tinggi, kolom kanan berisi hitungan saran. */}
+      <div className="mt-3 lg:grid lg:grid-cols-12 lg:gap-6 lg:flex-1">
         {/* ---------------- Grafik barang ini ---------------- */}
         <Bagian
           id="judul-barang"
@@ -628,7 +642,7 @@ function DetailBarang({
               <p className="mt-0.5 text-isi text-ink-3">{barang.kategori}</p>
             </>
           }
-          className="lg:col-span-8 min-w-0"
+          className="lg:col-span-8 min-w-0 lg:flex lg:flex-col"
         >
           <div className="mt-3.5">
             <p className="text-kecil font-semibold uppercase tracking-wide text-ink-3">Sisa tercatat</p>
@@ -641,16 +655,17 @@ function DetailBarang({
           </div>
 
           {tren.length > 0 ? (
-            <div className="mt-4 min-w-0">
+            <div className="mt-4 min-w-0 lg:flex-1 lg:flex lg:flex-col">
               <h3 className="text-isi font-bold text-ink leading-tight">
                 Pemakaian setahun terakhir dan perkiraan bulan depan
               </h3>
-              <div className="mt-2 min-w-0">
+              <div className="mt-2 min-w-0 lg:flex-1 lg:flex lg:flex-col">
                 <GrafikTren
                   data={trenTampil(barang, tren)}
                   satuan={satuanTampil(barang).nama}
                   tinggi={200}
                   bulanan
+                  isiTinggi
                 />
               </div>
               {/* Nama garis pembatas sama dengan yang tertulis di grafik. */}
@@ -667,16 +682,39 @@ function DetailBarang({
           )}
         </Bagian>
 
-        {/* ---------------- Bulan ini dan bulan depan ---------------- */}
-        <Bagian id="judul-angka" judul="Bulan ini dan bulan depan" className="lg:col-span-4 min-w-0 mt-4 lg:mt-0">
+        {/* ---------------- Hitungan saran dan distributornya ----------------
+            Asal angka di tombol keranjang, dan dari distributor mana barangnya
+            dipesan; dulu tombol itu sama sekali tidak menyebut distributornya
+            (revisi V3, Q70). */}
+        <Bagian id="judul-angka" judul="Hitungan saran" className="lg:col-span-4 min-w-0 mt-4 lg:mt-0">
           {rekomendasi ? (
             <div className="-mt-1">
-              <BarisData label="Terpakai bulan ini" nilai={jumlahTampil(barang, rekomendasi.pemakaianBulanIni)} />
-              <BarisData
-                label="Perkiraan bulan depan"
-                nilai={jumlahTampil(barang, rekomendasi.perkiraanBulanDepan)}
-                tebal
-              />
+              <HitunganSaran barang={barang} rekomendasi={rekomendasi} />
+              {penawaran && distributor && (
+                <div className="mt-4 pt-3.5 border-t border-line">
+                  <h3 className="text-isi font-bold text-ink">Dipesan dari</h3>
+                  <div className="mt-2 flex items-center gap-3">
+                    <Avatar nama={distributor.nama} warna={distributor.warna} ukuran={40} />
+                    <div className="min-w-0">
+                      <p className="text-kartu font-bold text-ink leading-snug truncate">{distributor.nama}</p>
+                      <p className="text-isi text-ink-2 tabular">
+                        {rupiah(hargaBerlaku(penawaran.id, rekomendasi.kontrakId ?? null))}/{penawaran.satuan}
+                        <span className="text-ink-3">
+                          {' '}
+                          &middot; {rekomendasi.kontrakId ? 'harga kontrak' : 'harga beli sekali'}
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                  <Link
+                    to={`/penawaran/${penawaran.id}`}
+                    className="mt-1 inline-flex items-center gap-1 min-h-11 text-isi font-bold text-brand hover:underline"
+                  >
+                    Lihat penawarannya
+                    <IkonPanahKanan size={15} />
+                  </Link>
+                </div>
+              )}
             </div>
           ) : (
             /* Data belum cukup. Layar menyebutkan berapa yang sudah terkumpul
