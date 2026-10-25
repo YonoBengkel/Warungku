@@ -254,8 +254,10 @@ function BarisDaftarLacak({ b }: { b: BarisLacak }) {
         </div>
       </div>
 
+      {/* Sejajar dengan teks di atasnya (logo 40px + jarak 12px), di desktop juga
+          (revisi V4, Q84). */}
       {b.aksi && (
-        <div className="relative z-10 mt-3 pl-[52px] lg:pl-0">
+        <div className="relative z-10 mt-3 pl-[52px]">
           <TombolTautan ke={b.aksi.ke} ukuran="kecil">
             {b.aksi.label}
           </TombolTautan>

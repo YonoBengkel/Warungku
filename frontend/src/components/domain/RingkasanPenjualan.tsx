@@ -167,9 +167,15 @@ export function TampilanRingkasan({
 
   const istilah = data ? ISTILAH[data.sumber] : null
   const panjang = data ? Math.round((+tanggalLokal(data.sampai) - +tanggalLokal(data.dari)) / 86_400_000) + 1 : 0
+  const adaPihak = !!data && !!istilah?.judulPihak && data.pihakTeratas.length > 0
   /** Tanpa kotak rincian dan daftar pembeli, Terlaris sendirian di baris bawah. */
-  const terlarisSendiri =
-    !!data && data.rincian.length === 0 && !(istilah?.judulPihak && data.pihakTeratas.length > 0)
+  const terlarisSendiri = !!data && data.rincian.length === 0 && !adaPihak
+  /* Rincian dan pelanggan teratas sama-sama ada: keduanya bertumpuk di kolom
+     kiri dan Terlaris setinggi dua baris di kanan (revisi V4, Q84). Dulu
+     pelanggan teratas menunggu di baris kedua, di bawah Terlaris yang panjang,
+     sehingga ada celah lebar di bawah rincian. Baris kedua `1fr` supaya
+     kelebihan tinggi Terlaris jatuh ke sana, bukan menjarakkan kedua kotak. */
+  const tigaKotak = !!data && data.rincian.length > 0 && adaPihak
 
   const batang = useMemo(() => {
     if (!data) return []
@@ -321,10 +327,10 @@ export function TampilanRingkasan({
             )}
           </Bagian>
 
-          <div className="mt-4 grid gap-4 lg:grid-cols-2 lg:items-start [&>*]:min-w-0">
+          <div className={cx('mt-4 grid gap-4 lg:grid-cols-2 lg:items-start [&>*]:min-w-0', tigaKotak && 'lg:grid-rows-[auto_1fr]')}>
             {/* ---------------- Rincian ---------------- */}
             {data.rincian.length > 0 && (
-              <Bagian id="judul-rincian" judul="Rincian pendapatan">
+              <Bagian id="judul-rincian" judul="Rincian pendapatan" className={cx(tigaKotak && 'lg:col-start-1 lg:row-start-1')}>
                 <dl className="divide-y divide-line">
                   {data.rincian.map((r) => (
                     <div key={r.label} className="flex items-baseline justify-between gap-3 py-2.5">
@@ -349,7 +355,7 @@ export function TampilanRingkasan({
               id="judul-terlaris"
               judul="Terlaris"
               keterangan={data.sumber === 'nota' ? 'Menurut nilai penjualan, dengan nama seperti di nota.' : 'Menurut nilai penjualan.'}
-              className={cx(terlarisSendiri && 'lg:col-span-2')}
+              className={cx(terlarisSendiri && 'lg:col-span-2', tigaKotak && 'lg:col-start-2 lg:row-start-1 lg:row-span-2')}
             >
               {data.terlaris.length === 0 ? (
                 <p className="text-isi text-ink-3">Belum ada penjualan di rentang ini.</p>
@@ -386,8 +392,8 @@ export function TampilanRingkasan({
             </Bagian>
 
             {/* ---------------- Pembeli atau pelanggan teratas ---------------- */}
-            {istilah.judulPihak && data.pihakTeratas.length > 0 && (
-              <Bagian id="judul-pihak" judul={istilah.judulPihak}>
+            {adaPihak && (
+              <Bagian id="judul-pihak" judul={istilah.judulPihak ?? undefined} className={cx(tigaKotak && 'lg:col-start-1 lg:row-start-2')}>
                 <ol className="divide-y divide-line">
                   {data.pihakTeratas.map((p, i) => (
                     <li key={p.nama} className="flex items-baseline justify-between gap-3 py-2.5">

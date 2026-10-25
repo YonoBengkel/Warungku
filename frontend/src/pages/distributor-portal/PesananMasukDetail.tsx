@@ -121,7 +121,10 @@ export default function PesananMasukDetail() {
         : null
 
   return (
-    <div className="pb-6">
+    /* Mulai 1024px halaman ini setinggi layar dikurangi jarak atas-bawah <main>,
+       dan kotak terakhir di tiap kolom memanjang sampai di atas bilah bawah,
+       jadi tidak ada pita kosong di bawahnya (revisi V4, Q88). */
+    <div className="pb-6 lg:pb-0 lg:flex lg:flex-col lg:min-h-[calc(100dvh-3.5rem)]">
       <KepalaHalaman
         judul={p.nomor}
         keterangan={umkm?.nama ?? 'Pemilik usaha'}
@@ -153,8 +156,8 @@ export default function PesananMasukDetail() {
         </Peringatan>
       )}
 
-      <div className="mt-4 lg:grid lg:grid-cols-12 lg:gap-5 lg:items-start space-y-4 lg:space-y-0">
-        <div className="lg:col-span-7 space-y-4">
+      <div className="mt-4 lg:grid lg:grid-cols-12 lg:gap-5 lg:flex-1 space-y-4 lg:space-y-0">
+        <div className="lg:col-span-7 space-y-4 lg:flex lg:flex-col">
           {/* 1. Siapa yang memesan */}
           <section aria-labelledby="judul-pemesan">
             <Kartu>
@@ -202,8 +205,8 @@ export default function PesananMasukDetail() {
           </section>
 
           {/* 2. Barang yang dipesan, lengkap dengan pintu ke peta sebaran */}
-          <section aria-labelledby="judul-barang">
-            <Kartu>
+          <section aria-labelledby="judul-barang" className="lg:flex-1 lg:flex lg:flex-col">
+            <Kartu className="lg:flex-1">
               <h2 id="judul-barang" className="text-kartu font-bold text-ink mb-3">
                 Barang yang Dipesan
               </h2>
@@ -281,7 +284,7 @@ export default function PesananMasukDetail() {
           </section>
         </div>
 
-        <div className="lg:col-span-5 space-y-4">
+        <div className="lg:col-span-5 space-y-4 lg:flex lg:flex-col">
           {berpeta && (
             <PetaPesanan
               gudang={{ ...gudang, kunci: 'gudang', judul: `Gudang ${distributor.nama}`, kota: distributor.kota }}
@@ -292,8 +295,8 @@ export default function PesananMasukDetail() {
           )}
 
           {/* 3. Jejak: satu baris per kejadian, ikon + teks, bukan warna saja */}
-          <section aria-labelledby="judul-jejak">
-            <Kartu>
+          <section aria-labelledby="judul-jejak" className={cx(!(p.status === 'selesai' && p.ulasan) && 'lg:flex-1 lg:flex lg:flex-col')}>
+            <Kartu className={cx(!(p.status === 'selesai' && p.ulasan) && 'lg:flex-1')}>
               <h2 id="judul-jejak" className="text-kartu font-bold text-ink mb-3">
                 Jejak Pesanan
               </h2>
@@ -336,8 +339,8 @@ export default function PesananMasukDetail() {
 
           {/* 5. Ulasan dari pemilik usaha */}
           {p.status === 'selesai' && p.ulasan && (
-            <section aria-labelledby="judul-ulasan">
-              <Kartu>
+            <section aria-labelledby="judul-ulasan" className="lg:flex-1 lg:flex lg:flex-col">
+              <Kartu className="lg:flex-1">
                 <h2 id="judul-ulasan" className="text-kartu font-bold text-ink mb-3">
                   Penilaian dari Pemesan
                 </h2>

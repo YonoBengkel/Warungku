@@ -169,7 +169,9 @@ export default function PesananDetail() {
   }
 
   return (
-    <div className="pb-6">
+    /* Mulai 1024px setinggi layar; kotak terakhir di tiap kolom memanjang sampai
+       di atas bilah bawah (revisi V4, Q88), sama dengan rincian Pesanan Masuk. */
+    <div className="pb-6 lg:pb-0 lg:flex lg:flex-col lg:min-h-[calc(100dvh-3.5rem)]">
       <KepalaHalaman
         judul={distributor?.nama ?? 'Pesanan'}
         keterangan={`${LABEL_PESANAN[pesanan.status]} · dibuat ${tanggalPendek(pesanan.dibuatPada)}`}
@@ -246,8 +248,8 @@ export default function PesananDetail() {
       {/* Di layar lebar halaman dibelah dua: kiri perjalanan barangnya, kanan
           urusan uang dan jejak data. Keduanya memang jalur terpisah, jadi
           berdampingan justru menegaskan bahwa satu tidak menunggu yang lain. */}
-      <div className="mt-4 lg:grid lg:grid-cols-12 lg:gap-5 lg:items-start space-y-4 lg:space-y-0">
-        <div className="lg:col-span-7 space-y-4">
+      <div className="mt-4 lg:grid lg:grid-cols-12 lg:gap-5 lg:flex-1 space-y-4 lg:space-y-0">
+        <div className="lg:col-span-7 space-y-4 lg:flex lg:flex-col">
           {/* 2a. Jalur pengiriman: garis waktu bertitik */}
           <section aria-labelledby="judul-pengiriman" className="bg-surface border border-line rounded-lg p-4 shadow-e1">
             <div className="flex items-baseline justify-between gap-3 mb-3">
@@ -350,8 +352,8 @@ export default function PesananDetail() {
           )}
 
           {/* 3. Rincian harga */}
-          <section aria-labelledby="judul-rincian">
-            <Kartu>
+          <section aria-labelledby="judul-rincian" className="lg:flex-1 lg:flex lg:flex-col">
+            <Kartu className="lg:flex-1">
               <h2 id="judul-rincian" className="text-kartu font-bold text-ink mb-3">
                 Rincian Pesanan
               </h2>
@@ -427,7 +429,7 @@ export default function PesananDetail() {
           </section>
         </div>
 
-        <div className="lg:col-span-5 space-y-4">
+        <div className="lg:col-span-5 space-y-4 lg:flex lg:flex-col">
           {berpeta && (
             <PetaPesanan
               gudang={{ ...gudang, kunci: 'gudang', judul: `Gudang ${distributor?.nama ?? 'distributor'}`, kota: distributor?.kota ?? profil.kota }}
@@ -440,7 +442,7 @@ export default function PesananDetail() {
           {/* 2b. Jalur pembayaran: sengaja berbentuk kotak, bukan garis waktu */}
           <section
             aria-labelledby="judul-pembayaran"
-            className="bg-surface-2 border-2 border-dashed border-line-strong rounded-lg p-4"
+            className="bg-surface-2 border-2 border-dashed border-line-strong rounded-lg p-4 lg:flex-1"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">

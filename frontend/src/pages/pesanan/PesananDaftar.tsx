@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { KartuPesanan, KuotaBulanIni, TombolTerkunci, useTerkunci } from '@/components/domain'
 import {
+  Avatar,
   HanyaPembacaLayar,
   Lencana,
   Tombol,
@@ -16,7 +17,6 @@ import {
   IkonKontrak,
   IkonPanahKanan,
   IkonPasokan,
-  IkonToko,
 } from '@/icons'
 import { angka, cx, tanggalPendek } from '@/lib/format'
 import { BANTUAN, LABEL_KONTRAK, PESANAN_BERJALAN } from '@/lib/label'
@@ -437,68 +437,79 @@ export default function PesananDaftar() {
               </div>
               <p className="mt-1 text-isi text-ink-3 max-w-[70ch]">{BANTUAN.satuKontrakSatuBarang}</p>
 
-              <div className="mt-4 space-y-6">
+              {/* Satu kotak per kelompok, tiga per baris mulai 1280px (revisi V4,
+                  Q85): kepala kotak menyebut kelompoknya, isinya satu baris per
+                  kontrak. Dulu tiap kelompok berjudul lepas dengan kartu setengah
+                  lebar di bawahnya, jadi halaman tampak berserakan begitu tiap
+                  kelompok hanya berisi satu kontrak. */}
+              <div className="mt-4 grid gap-3 lg:grid-cols-2 xl:grid-cols-3 [&>*]:min-w-0">
                 {grup.map((g) => {
                   const distributor = kelompok === 'pemasok' ? distributorById(g.id) : null
                   return (
-                    <div key={g.id}>
-                      <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
+                    <section
+                      key={g.id}
+                      aria-labelledby={`kelompok-${g.id}`}
+                      className="flex flex-col bg-surface border border-line rounded-lg shadow-e1"
+                    >
+                      <div className="flex items-start gap-3 p-4 pb-3">
+                        <Avatar nama={g.judul} warna={distributor?.warna} ukuran={40} />
                         <div className="min-w-0">
-                          <h3 className="text-kartu font-bold text-ink leading-snug">
-                            {g.judul} &mdash; {angka(g.daftar.length)} {KATA_KONTRAK[saringKontrak]}
+                          <h3 id={`kelompok-${g.id}`} className="text-kartu font-bold text-ink leading-snug">
+                            {g.judul}
                           </h3>
                           {/* Kewajiban bulanan hanya dihitung dari kontrak yang
                               masih berjalan. Menjumlahkan kontrak yang sudah
                               selesai bikin angkanya menagih sesuatu yang sudah
                               tidak ditagih siapa-siapa. */}
-                          {g.berjalan.length > 0 && (
-                            <p className="mt-0.5 text-isi text-ink-2">
-                              Kewajiban kontrak: <strong className="text-ink">{kewajibanBulanan(g.berjalan)}</strong>
-                              /bulan
-                              {g.berjalan.length > 1 && ` dari ${g.berjalan.length} kontrak berjalan`}
-                            </p>
-                          )}
+                          <p className="mt-0.5 text-isi text-ink-3">
+                            {angka(g.daftar.length)} {KATA_KONTRAK[saringKontrak]}
+                            {g.berjalan.length > 0 && (
+                              <>
+                                {' '}
+                                &middot; kewajiban <strong className="text-ink">{kewajibanBulanan(g.berjalan)}</strong>/bulan
+                              </>
+                            )}
+                          </p>
                         </div>
-
-                        {/* Label tombol menyebut nama distributor lengkap, jadi di layar
-                            360px barisnya digeser di dalam wadahnya sendiri — badan
-                            halaman tidak boleh ikut bergeser. */}
-                        {distributor && (
-                          <div className="flex items-center gap-2 max-w-full overflow-x-auto no-scrollbar py-1 lg:overflow-visible">
-                            {/* Tidak ada gunanya menawarkan "pesan sekaligus" untuk
-                                kelompok yang semua kontraknya sudah selesai. */}
-                            {g.berjalan.length > 0 &&
-                              (terkunci ? (
-                                <TombolTerkunci label={`Pesan sekaligus ke ${distributor.nama}`} />
-                              ) : (
-                                <Tombol
-                                  ukuran="kecil"
-                                  className="shrink-0"
-                                  ikonKiri={<IkonKeranjang size={15} />}
-                                  onClick={() => pesanSekaligus(distributor.id, g.berjalan)}
-                                >
-                                  Pesan sekaligus ke {distributor.nama}
-                                </Tombol>
-                              ))}
-                            <TombolTautan
-                              ke={`/mitra/${distributor.id}`}
-                              ragam="garis"
-                              ukuran="kecil"
-                              className="shrink-0"
-                              ikonKanan={<IkonPanahKanan size={15} />}
-                            >
-                              Lihat kerja sama
-                            </TombolTautan>
-                          </div>
-                        )}
                       </div>
 
-                      <div className="mt-3 space-y-3 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
+                      <ul className="border-t border-line divide-y divide-line">
                         {g.daftar.map((k) => (
-                          <KartuKontrak key={k.id} kontrak={k} tampilkanDistributor={kelompok === 'barang'} />
+                          <li key={k.id}>
+                            <BarisKontrak kontrak={k} tampilkanDistributor={kelompok === 'barang'} />
+                          </li>
                         ))}
-                      </div>
-                    </div>
+                      </ul>
+
+                      {distributor && (
+                        <div className="mt-auto flex flex-wrap items-center gap-2 border-t border-line px-4 py-3">
+                          {/* Tidak ada gunanya menawarkan "pesan sekaligus" untuk
+                              kelompok yang semua kontraknya sudah selesai. */}
+                          {g.berjalan.length > 0 &&
+                            (terkunci ? (
+                              <TombolTerkunci label="Pesan sekaligus" />
+                            ) : (
+                              <Tombol
+                                ukuran="kecil"
+                                ikonKiri={<IkonKeranjang size={15} />}
+                                onClick={() => pesanSekaligus(distributor.id, g.berjalan)}
+                              >
+                                Pesan sekaligus
+                                <HanyaPembacaLayar> ke {distributor.nama}</HanyaPembacaLayar>
+                              </Tombol>
+                            ))}
+                          <TombolTautan
+                            ke={`/mitra/${distributor.id}`}
+                            ragam="tautan"
+                            ukuran="kecil"
+                            className="ml-auto"
+                            ikonKanan={<IkonPanahKanan size={15} />}
+                          >
+                            Lihat kerja sama
+                          </TombolTautan>
+                        </div>
+                      )}
+                    </section>
                   )
                 })}
               </div>
@@ -598,11 +609,12 @@ function KosongKontrak({ saring }: { saring: SaringKontrak }) {
 /* ================================================================== */
 
 /**
- * Judulnya NAMA BARANG, bukan kode paket. Nama distributor turun jadi baris
- * kedua yang kecil, karena yang dicari pemilik usaha saat membuka daftar ini
- * adalah "kopi saya bagaimana", bukan "pemasok nomor berapa".
+ * Satu kontrak sebagai baris di dalam kotak kelompoknya (revisi V4, Q85).
+ * Judulnya yang BUKAN nama kelompok: nama distributor di kotak per barang, nama
+ * barang di kotak per pemasok. Bukan kode paket, karena yang dicari pemilik
+ * usaha adalah "kopi saya bagaimana", bukan "paket nomor berapa".
  */
-function KartuKontrak({ kontrak, tampilkanDistributor }: { kontrak: Kontrak; tampilkanDistributor: boolean }) {
+function BarisKontrak({ kontrak, tampilkanDistributor }: { kontrak: Kontrak; tampilkanDistributor: boolean }) {
   const distributor = distributorById(kontrak.distributorId)
   const sisa = sisaKuota(kontrak)
   const berakhir = sudahSelesai(kontrak)
@@ -610,18 +622,14 @@ function KartuKontrak({ kontrak, tampilkanDistributor }: { kontrak: Kontrak; tam
   return (
     <Link
       to={`/kontrak/${kontrak.id}`}
-      className="block bg-surface border border-line rounded-lg p-4 shadow-e1 transition-[border-color,box-shadow] hover:border-line-strong hover:shadow-e2 active:bg-surface-2"
+      className="block px-4 py-3 transition-colors hover:bg-sunken active:bg-surface-2 last:rounded-b-lg"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-subjudul font-bold text-ink leading-snug">{kontrak.namaBarang}</p>
+          <p className="text-isi font-bold text-ink leading-snug">
+            {tampilkanDistributor ? (distributor?.nama ?? 'Distributor') : kontrak.namaBarang}
+          </p>
           <p className="mt-0.5 text-isi text-ink-3 leading-snug">
-            {tampilkanDistributor && (
-              <span className="inline-flex items-center gap-1 align-middle">
-                <IkonToko size={13} />
-                {distributor?.nama} &middot;{' '}
-              </span>
-            )}
             {kontrak.durasiBulan} bulan
             {/* Tanggalnya tidak diulang untuk kontrak yang sudah berakhir:
                 barisnya sudah disebut di bawah, lengkap dengan konteksnya. */}
@@ -636,14 +644,14 @@ function KartuKontrak({ kontrak, tampilkanDistributor }: { kontrak: Kontrak; tam
           kontrak yang sudah selesai ajakan itu keliru, jadi barnya diganti
           satu baris ringkas yang menyatakan kapan kontraknya berakhir. */}
       {berakhir ? (
-        <p className="mt-3 inline-flex items-center gap-1.5 text-isi text-ink-2">
+        <p className="mt-2 inline-flex items-center gap-1.5 text-isi text-ink-2">
           <IkonKontrak size={15} className="shrink-0 text-ink-3" />
           {kontrak.status === 'dihentikan' ? 'Kontrak dihentikan' : 'Kontrak selesai'}{' '}
           {tanggalPendek(kontrak.berakhir)}
         </p>
       ) : (
         <>
-          <div className="mt-3">
+          <div className="mt-2">
             <KuotaBulanIni kontrak={kontrak} ringkas />
           </div>
 

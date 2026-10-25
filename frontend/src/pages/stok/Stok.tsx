@@ -356,14 +356,16 @@ export default function Stok() {
             ruang: yang diketik ke dalamnya paling panjang tiga kata.
             Kolom cari, tiga angka, dan Tambah Barang setinggi 56px (revisi V3, Q65):
             rata-rata kelimanya dulu 54,6px (48, 63, dan 36px), dibulatkan ke
-            kelipatan 8. Di HP Tambah Barang tetap kecil di samping judul. */}
+            kelipatan 8. Di HP Tambah Barang tetap kecil di samping judul.
+            Hurufnya ikut dibesarkan sebanding kotak 56px (revisi V4, Q83): judul
+            28px di desktop, isi kolom cari dan Tambah Barang 17px. */}
         <div className={cx('flex flex-wrap items-center gap-x-3 gap-y-3', RUANG_LONCENG)}>
-          <h1 className="text-judul font-extrabold text-ink tracking-tight mr-auto lg:mr-0">Stok</h1>
+          <h1 className="text-judul lg:text-[1.75rem] font-extrabold text-ink tracking-tight mr-auto lg:mr-0">Stok</h1>
           <TombolTautan
             ke="/stok/baru"
             ukuran="kecil"
-            ikonKiri={<IkonTambah size={15} />}
-            className="lg:order-last lg:ml-auto lg:h-14 lg:px-5 lg:text-kartu lg:rounded-md"
+            ikonKiri={<IkonTambah size={15} className="lg:size-[18px]" />}
+            className="lg:order-last lg:ml-auto lg:h-14 lg:px-5 lg:text-subjudul lg:rounded-md"
           >
             Tambah Barang
           </TombolTautan>
@@ -372,8 +374,8 @@ export default function Stok() {
               Cari barang di daftar stok
             </label>
             <IkonCari
-              size={18}
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-3 pointer-events-none"
+              size={20}
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-3 pointer-events-none"
             />
             <input
               id="cari-stok"
@@ -382,7 +384,7 @@ export default function Stok() {
               onChange={(e) => aturParam({ cari: e.target.value })}
               placeholder="Cari barang, misal: gula aren"
               className={cx(
-                'w-full h-14 pl-11 pr-11 rounded-md bg-surface text-ink text-kartu',
+                'w-full h-14 pl-12 pr-11 rounded-md bg-surface text-ink text-subjudul',
                 'border border-line-strong placeholder:text-ink-3/70',
                 'focus:border-brand focus:outline-none focus:ring-4 focus:ring-[var(--c-brand-ring)]',
                 '[&::-webkit-search-cancel-button]:appearance-none',
