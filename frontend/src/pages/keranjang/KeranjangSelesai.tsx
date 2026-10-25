@@ -218,9 +218,9 @@ export default function KeranjangSelesai() {
           </Kartu>
         </aside>
 
-        {/* Bilah aksi diangkat setinggi navigasi bawah, supaya tombolnya tidak
-            berada tepat di belakang navigasi mobile. */}
-        <div className="lg:hidden sticky bottom-[var(--nav-h)] z-30">
+        {/* Hanya di HP; di desktop tombolnya ada di kolom kanan. BilahAksi
+            sendiri yang menaruhnya tepat di atas navigasi bawah. */}
+        <div className="lg:hidden">
           <BilahAksi>
             <TombolTautan ke="/pesanan" penuh ukuran="besar" ikonKiri={<IkonPasokan size={18} />}>
               Lihat Pesanan Saya

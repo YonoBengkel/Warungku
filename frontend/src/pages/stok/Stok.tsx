@@ -345,8 +345,11 @@ export default function Stok() {
        Dengan begitu halaman pas satu layar, dan satu-satunya yang bisa digulir
        adalah wadah tabel. */
     <div className="pb-6 lg:pb-0 lg:h-[calc(100dvh-3.5rem)] lg:flex lg:flex-col">
-      {/* ---------------- Kepala lengket ---------------- */}
-      <div className="sticky top-[var(--kepala-global,0px)] z-20 -mx-4 px-4 sm:-mx-6 sm:px-6 pt-1 pb-3 bg-bg/96 backdrop-blur-sm border-b border-line lg:shrink-0">
+      {/* ---------------- Kepala lengket ----------------
+          Di HP mulai rapat di bawah bilah global, di posisi yang sama dengan saat
+          menempel, supaya tidak bergeser ketika daftar digulir (revisi V3, Q66).
+          Di desktop halaman ini tidak menggulir; yang menggulir wadah tabelnya. */}
+      <div className="sticky top-[var(--kepala-global,0px)] z-20 -mx-4 px-4 sm:-mx-6 sm:px-6 -mt-4 pt-2 lg:mt-0 lg:pt-1 pb-3 bg-bg/96 backdrop-blur-sm border-b border-line lg:shrink-0">
         {/* HP: judul dan Tambah Barang sebaris, lalu kolom cari, lalu tiga angka.
             Desktop: keempatnya sebaris, supaya tabel mendapat dua-tiga baris lebih
             di layar acuan (revisi V2, Q63). Kolom cari selebar layar hanya membuang

@@ -29,7 +29,6 @@ export default function PemberitahuanDistributor() {
         judul={JUDUL.notifikasi}
         keterangan={perlu.length > 0 ? `${perlu.length} butuh tindakan` : 'Tidak ada yang menunggu tindakan'}
         kembaliKe="/distributor-portal"
-        kembaliRiwayat
       />
 
       <div className="mt-4 max-w-3xl">

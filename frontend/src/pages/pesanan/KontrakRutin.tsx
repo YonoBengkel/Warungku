@@ -80,7 +80,8 @@ export default function KontrakRutin() {
         : `Jadwal pesanan rutin ${kt.namaBarang} tersimpan. Drafnya muncul H-2 sebelum jadwal, bukan langsung terkirim.`,
       'aman',
     )
-    navigate(`/kontrak/${kt.id}`)
+    // Mengganti formulir di riwayat supaya tombol kembali tidak membukanya lagi (revisi V3, Q78).
+    navigate(`/kontrak/${kt.id}`, { replace: true })
   }
 
   return (

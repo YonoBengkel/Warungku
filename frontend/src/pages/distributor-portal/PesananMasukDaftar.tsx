@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { HanyaPembacaLayar, Lencana, Tombol, TombolTautan } from '@/components/ui/dasar'
+import { HanyaPembacaLayar, Lencana, Tombol } from '@/components/ui/dasar'
 import { AreaTeks, Kolom } from '@/components/ui/formulir'
 import { Konfirmasi, Lembar } from '@/components/ui/lembar'
 import { BarisChip, Chip, RUANG_LONCENG, TabSegmen } from '@/components/ui/navigasi'
 import { KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
+import { TombolLacak } from '@/components/domain/Lacak'
 import {
   IkonBintangIsi,
   IkonCentang,
@@ -12,7 +13,6 @@ import {
   IkonGudang,
   IkonJam,
   IkonKirim,
-  IkonLokasi,
   IkonSilang,
 } from '@/icons'
 import { bintang, cx, rupiah, waktuLalu } from '@/lib/format'
@@ -224,14 +224,7 @@ export default function PesananMasukDaftar() {
             {dariServer ? '' : ' Saat ini memakai data contoh.'}
           </p>
         </div>
-        <TombolTautan
-          ke="/distributor-portal/lacak"
-          ragam="garis"
-          ukuran="kecil"
-          ikonKiri={<IkonLokasi size={15} />}
-        >
-          Lacak Pesanan
-        </TombolTautan>
+        <TombolLacak ke="/distributor-portal/lacak" jumlah={perStatus.dikirim.length} />
       </div>
       {!dariServer && (
         <p className="mt-3 text-isi text-ink-2">

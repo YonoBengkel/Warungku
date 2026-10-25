@@ -8,14 +8,13 @@ import {
   IkonKembali,
   IkonGrafik,
   IkonKontrak,
-  IkonLokasi,
   IkonLonceng,
   IkonPasokan,
   IkonProfil,
   IkonToko,
 } from '@/icons'
 import { distributorAktif } from '@/data/dummy'
-import { useAplikasi, useJumlahPerluKonfirmasi, usePesananMasuk } from '@/store/aplikasi'
+import { useAplikasi, useJumlahPerluKonfirmasi } from '@/store/aplikasi'
 import { Toast } from '@/components/ui/umpanBalik'
 import { Avatar } from '@/components/ui/dasar'
 import { LoncengMelayang, usePemberitahuanDistributor } from '@/components/domain/Pemberitahuan'
@@ -49,6 +48,9 @@ const TAB = [
  */
 export function tabDistributorAktif(pathname: string, ke: string): boolean {
   if (ke === '/distributor-portal') return pathname === '/distributor-portal' || pathname === '/distributor-portal/'
+  /* Lacak Pesanan dibuka dari halaman Pesanan Masuk dan tidak punya menu sendiri
+     lagi (revisi V3, Q74), jadi menu Pesanan yang menyala di sana. */
+  if (ke === '/distributor-portal/pesanan' && tabDistributorAktif(pathname, '/distributor-portal/lacak')) return true
   return pathname === ke || pathname.startsWith(`${ke}/`)
 }
 
@@ -101,7 +103,6 @@ export default function KerangkaDistributor() {
   const tutupRacun = useAplikasi((s) => s.tutupRacun)
   const perluKonfirmasi = useJumlahPerluKonfirmasi()
   const pemberitahuan = usePemberitahuanDistributor()
-  const sedangDiJalan = usePesananMasuk().filter((p) => p.status === 'dikirim').length
   const jumlahTindakan = pemberitahuan.filter((b) => b.perluTindakan).length
   /* Sama dengan portal usaha (revisi V2, Q58): halaman pemberitahuan tanpa menu
      samping di desktop, dan lonceng melayang disembunyikan di sana. */
@@ -169,16 +170,10 @@ export default function KerangkaDistributor() {
           })}
         </div>
 
-        {/* Lacak Pesanan dan Ringkasan Penjualan (revisi 23 Okt). Pemberitahuan
-            tidak lagi di sini: lonceng melayang di pojok kanan atas (revisi V2). */}
+        {/* Ringkasan Penjualan (revisi 23 Okt). Pemberitahuan tidak lagi di sini:
+            lonceng melayang di pojok kanan atas (revisi V2). Lacak Pesanan juga
+            tidak: ia dibuka dari halaman Pesanan Masuk (revisi V3, Q74). */}
         <div className="mt-3 mx-3 pt-3 border-t border-line flex flex-col gap-1">
-          <TautanSamping
-            ke="/distributor-portal/lacak"
-            aktif={pathname.startsWith('/distributor-portal/lacak')}
-            Ikon={IkonLokasi}
-            label="Lacak Pesanan"
-            jumlah={sedangDiJalan}
-          />
           <TautanSamping
             ke="/distributor-portal/penjualan"
             aktif={pathname.startsWith('/distributor-portal/penjualan')}
@@ -274,7 +269,7 @@ export default function KerangkaDistributor() {
       </nav>
 
       {/* Pemberitahuan singkat: umpan balik Terima/Tolak muncul di sini */}
-      <div className="fixed left-1/2 -translate-x-1/2 bottom-[calc(var(--nav-h)+1rem)] lg:bottom-6 z-50 flex flex-col gap-2 w-[min(30rem,calc(100vw-2rem))] pointer-events-none">
+      <div className="fixed left-1/2 -translate-x-1/2 bottom-[calc(var(--nav-h)+var(--tinggi-bilah,0px)+1rem)] lg:bottom-[calc(var(--tinggi-bilah,0px)+1.5rem)] z-50 flex flex-col gap-2 w-[min(30rem,calc(100vw-2rem))] pointer-events-none">
         {racun.map((r) => (
           <Toast key={r.id} pesan={r.pesan} nada={r.nada} tutup={() => tutupRacun(r.id)} />
         ))}

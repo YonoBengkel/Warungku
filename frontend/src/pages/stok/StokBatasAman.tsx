@@ -96,7 +96,8 @@ export default function StokBatasAman() {
       `Batas aman ${barang.nama} jadi ${jumlahTampil(barang, saran)}, mengikuti saran sistem.`,
       'aman',
     )
-    navigasi(`/stok/${barang.id}`)
+    // Mengganti formulir di riwayat supaya tombol kembali tidak membukanya lagi (revisi V3, Q78).
+    navigasi(`/stok/${barang.id}`, { replace: true })
   }
 
   /* Batas aman 0 sama artinya dengan mematikan pengingat diam-diam: stok tidak
@@ -118,7 +119,8 @@ export default function StokBatasAman() {
       `Batas aman ${barang.nama} kamu atur jadi ${angkaTampil(barang, dariTampil(barang, nilai))} ${satuanTampil(barang).nama}.`,
       'aman',
     )
-    navigasi(`/stok/${barang.id}`)
+    // Mengganti formulir di riwayat supaya tombol kembali tidak membukanya lagi (revisi V3, Q78).
+    navigasi(`/stok/${barang.id}`, { replace: true })
   }
 
   return (

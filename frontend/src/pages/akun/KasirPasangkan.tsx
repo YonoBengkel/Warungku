@@ -139,7 +139,7 @@ export default function KasirPasangkan() {
     )
     setMenyimpan(false)
     // Kembali ke daftar asal: dari Perlu Dibereskan, menu berikutnya biasanya menunggu.
-    if (berhasil) navigate(asal)
+    if (berhasil) navigate(asal, { replace: true })
   }
 
   const bahanById = (id: string) => barang.find((b) => b.id === id)

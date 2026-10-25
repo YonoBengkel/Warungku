@@ -210,7 +210,6 @@ export default function Notifikasi() {
         judul={JUDUL.notifikasi}
         keterangan={belumDibaca > 0 ? `${belumDibaca} belum dibaca` : 'Semua sudah dibaca'}
         kembaliKe="/beranda"
-        kembaliRiwayat
         aksi={
           belumDibaca > 0 ? (
             <Tombol ragam="sunyi" ukuran="kecil" onClick={bacaSemuaNotifikasi}>

@@ -146,7 +146,8 @@ export default function BeriPenilaian() {
       }. Terima kasih.`,
       'aman',
     )
-    navigate(`/pesanan/${ps.id}`)
+    // Mengganti formulir di riwayat supaya tombol kembali tidak membukanya lagi (revisi V3, Q78).
+    navigate(`/pesanan/${ps.id}`, { replace: true })
   }
 
   return (
@@ -267,7 +268,7 @@ export default function BeriPenilaian() {
         </Tombol>
         <button
           type="button"
-          onClick={() => navigate(`/pesanan/${ps.id}`)}
+          onClick={() => navigate(`/pesanan/${ps.id}`, { replace: true })}
           className="w-full min-h-11 mt-1 text-isi font-semibold text-ink-3 hover:text-ink"
         >
           Nanti saja

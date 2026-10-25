@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Kartu, Tombol, TombolTautan } from '@/components/ui/dasar'
 import { PengaturJumlah } from '@/components/ui/formulir'
-import { KepalaHalaman } from '@/components/ui/navigasi'
+import { KepalaHalaman, useKembali } from '@/components/ui/navigasi'
 import { KeadaanKosong } from '@/components/ui/umpanBalik'
 import { IkonKotak } from '@/icons'
 import {
@@ -31,6 +31,7 @@ import { useAplikasi } from '@/store/aplikasi'
 export default function StokKoreksi() {
   const { id = '' } = useParams()
   const navigasi = useNavigate()
+  const kembali = useKembali()
   const barang = useAplikasi((s) => s.barang.find((b) => b.id === id))
   const koreksiStok = useAplikasi((s) => s.koreksiStok)
 
@@ -69,7 +70,8 @@ export default function StokKoreksi() {
     setDicoba(true)
     if (sama) return
     koreksiStok(barang.id, stokBaru)
-    navigasi(`/stok/${barang.id}`)
+    // Mengganti formulir di riwayat supaya tombol kembali tidak membukanya lagi (revisi V3, Q78).
+    navigasi(`/stok/${barang.id}`, { replace: true })
   }
 
   return (
@@ -120,9 +122,9 @@ export default function StokKoreksi() {
             <Tombol penuh onClick={simpan}>
               Simpan Koreksi
             </Tombol>
-            <TombolTautan ke={`/stok/${barang.id}`} ragam="garis" penuh>
+            <Tombol ragam="garis" penuh onClick={() => kembali(`/stok/${barang.id}`)}>
               Batal
-            </TombolTautan>
+            </Tombol>
           </div>
         </Kartu>
       </div>

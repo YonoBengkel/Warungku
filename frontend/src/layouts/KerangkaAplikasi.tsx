@@ -11,7 +11,6 @@ import {
   IkonPasokan,
   IkonLonceng,
   IkonKeranjang,
-  IkonLokasi,
   IkonGrafik,
 } from '@/icons'
 import { useAplikasi, useJumlahKeranjang, useJumlahPerluTindakan } from '@/store/aplikasi'
@@ -76,7 +75,6 @@ export default function KerangkaAplikasi() {
   const navigate = useNavigate()
   const perluTindakan = useJumlahPerluTindakan()
   const isiKeranjang = useJumlahKeranjang()
-  const sedangDiJalan = useAplikasi((s) => s.pesanan.filter((p) => p.status === 'dikirim' && !p.pengiriman).length)
   const aktif = tabInduk(pathname)
   const tab = profil.jenisUsaha === 'produksi-makanan' ? TAB_PRODUKSI : TAB
   /* Halaman pemberitahuan tampil tanpa menu samping di desktop, dengan tombol
@@ -117,7 +115,7 @@ export default function KerangkaAplikasi() {
               to={ke}
               className={cx(
                 'flex items-center gap-3 h-12 px-3 rounded-md font-semibold text-kartu transition-colors',
-                aktif === ke && !pathname.startsWith('/pesanan/lacak')
+                aktif === ke
                   ? 'bg-brand-soft text-brand-soft-ink'
                   : 'text-ink-2 hover:bg-sunken hover:text-ink',
               )}
@@ -130,7 +128,9 @@ export default function KerangkaAplikasi() {
 
         {/* Di desktop keranjang ada di sini, bukan di bilah atas selebar layar
             yang isinya hanya dua ikon. Lonceng pemberitahuan tidak lagi di menu
-            ini: ia melayang di pojok kanan atas halaman (revisi V2, Q53). */}
+            ini: ia melayang di pojok kanan atas halaman (revisi V2, Q53). Lacak
+            Pesanan juga tidak (revisi V3, Q74): ia dibuka dari halaman Pesanan,
+            dan menu Pesanan tetap menyala selama halaman lacak terbuka. */}
         <div className="mt-3 mx-3 pt-3 border-t border-line flex flex-col gap-1">
           <TautanSamping
             ke="/keranjang"
@@ -139,13 +139,6 @@ export default function KerangkaAplikasi() {
             label="Keranjang"
             jumlah={isiKeranjang}
             nadaJumlah="merek"
-          />
-          <TautanSamping
-            ke="/pesanan/lacak"
-            aktif={pathname.startsWith('/pesanan/lacak')}
-            Ikon={IkonLokasi}
-            label="Lacak Pesanan"
-            jumlah={sedangDiJalan}
           />
           <TautanSamping
             ke="/penjualan"
@@ -272,8 +265,9 @@ export default function KerangkaAplikasi() {
         </div>
       </nav>
 
-      {/* Pemberitahuan singkat */}
-      <div className="fixed left-1/2 -translate-x-1/2 bottom-[calc(var(--nav-h)+1rem)] lg:bottom-6 z-50 flex flex-col gap-2 w-[min(30rem,calc(100vw-2rem))] pointer-events-none">
+      {/* Pemberitahuan singkat, di atas bilah aksi bawah bila halaman punya
+          (`--tinggi-bilah` dipasang BilahAksi), supaya tidak menutupi tombolnya. */}
+      <div className="fixed left-1/2 -translate-x-1/2 bottom-[calc(var(--nav-h)+var(--tinggi-bilah,0px)+1rem)] lg:bottom-[calc(var(--tinggi-bilah,0px)+1.5rem)] z-50 flex flex-col gap-2 w-[min(30rem,calc(100vw-2rem))] pointer-events-none">
         {racun.map((r) => (
           <Toast
             key={r.id}

@@ -491,10 +491,9 @@ export default function PesanCepat() {
           })}
         </div>
 
-        {/* Bilah aksi diangkat setinggi navigasi bawah. Tanpa ini, bilahnya
-            menempel di dasar layar tepat di belakang navigasi mobile dan tombol
-            utamanya tidak bisa ditekan sama sekali. */}
-        <div className="sticky bottom-[var(--nav-h)] lg:bottom-0 z-30">
+        {/* BilahAksi sendiri yang menaruhnya di dasar layar, di HP tepat di atas
+            navigasi bawah supaya tombol utamanya tetap bisa ditekan. */}
+        <div>
           <BilahAksi
             ringkasan={
               <p className="text-isi text-ink-2 leading-snug">

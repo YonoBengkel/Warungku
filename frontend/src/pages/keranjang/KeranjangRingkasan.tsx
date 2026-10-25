@@ -280,9 +280,9 @@ export default function KeranjangRingkasan() {
           </Kartu>
         </aside>
 
-        {/* Bilah aksi diangkat setinggi navigasi bawah, supaya tombol kirim tidak
-            tertutup navigasi mobile dan benar-benar bisa ditekan. */}
-        <div className="lg:hidden sticky bottom-[var(--nav-h)] z-30">
+        {/* Hanya di HP; di desktop ringkasannya ada di kolom kanan. BilahAksi
+            sendiri yang menaruhnya tepat di atas navigasi bawah. */}
+        <div className="lg:hidden">
           <BilahAksi
             ringkasan={
               <div className="space-y-1">

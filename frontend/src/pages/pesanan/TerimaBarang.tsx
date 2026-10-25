@@ -194,7 +194,8 @@ export default function TerimaBarang() {
     }
 
     terimaBarang(ps.id, diterima, waktuTerima.toISOString())
-    navigate(`/pesanan/${ps.id}`)
+    // Mengganti formulir di riwayat supaya tombol kembali tidak membukanya lagi (revisi V3, Q78).
+    navigate(`/pesanan/${ps.id}`, { replace: true })
   }
 
   return (
@@ -393,7 +394,7 @@ export default function TerimaBarang() {
           type="button"
           onClick={() => {
             tampilkanRacun('Belum ada yang dicatat. Stok gudang tidak berubah.', 'info')
-            navigate(`/pesanan/${ps.id}`)
+            navigate(`/pesanan/${ps.id}`, { replace: true })
           }}
           className="w-full min-h-11 mt-1 text-isi font-semibold text-ink-3 hover:text-ink"
         >

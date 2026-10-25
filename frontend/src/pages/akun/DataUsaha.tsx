@@ -129,7 +129,8 @@ export default function DataUsaha() {
       alasanPerbaikan: [],
     })
     tampilkanRacun('Data usaha terkirim. Kami kabari lewat WhatsApp begitu pemeriksaan selesai.', 'info')
-    navigate('/akun/profil')
+    // Mengganti formulir di riwayat supaya tombol kembali tidak membukanya lagi (revisi V3, Q78).
+    navigate('/akun/profil', { replace: true })
   }
 
   /* Alat uji: memindahkan keadaan verifikasi tanpa menunggu Admin sungguhan. */

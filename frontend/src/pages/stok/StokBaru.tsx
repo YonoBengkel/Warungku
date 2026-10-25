@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import type { Barang, Kemasan, SumberBatasAman } from '@/lib/types'
 import { Kartu, Lencana, Pemisah, Tombol, TombolIkon, TombolTautan } from '@/components/ui/dasar'
 import { AreaTeks, Kolom, Pilihan, Sakelar } from '@/components/ui/formulir'
-import { KepalaHalaman } from '@/components/ui/navigasi'
+import { KepalaHalaman, useKembali } from '@/components/ui/navigasi'
 import { Konfirmasi } from '@/components/ui/lembar'
 import { Penjelasan, Peringatan } from '@/components/ui/umpanBalik'
 import { IkonPanahKanan, IkonSampah, IkonSilang, IkonTambah } from '@/icons'
@@ -74,6 +74,7 @@ function teksAngka(n: number): string {
 
 export function FormulirBarang({ barang }: { barang?: Barang }) {
   const navigasi = useNavigate()
+  const kembali = useKembali()
   const [param] = useSearchParams()
   const semuaBarang = useAplikasi((s) => s.barang)
   const pergerakan = useAplikasi((s) => s.pergerakan)
@@ -281,7 +282,7 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
         catatan: catatan.trim() || null,
       })
       tampilkanRacun(`Perubahan ${nama.trim()} tersimpan.`, 'aman')
-      navigasi(`/stok/${barang.id}`)
+      navigasi(`/stok/${barang.id}`, { replace: true })
       return
     }
 
@@ -310,7 +311,8 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
       catatan: catatan.trim() || null,
     }
     tambahBarang(baru)
-    navigasi(`/stok/${baru.id}`)
+    // Mengganti formulir di riwayat: tombol kembali di rincian barang tidak membukanya lagi (revisi V3, Q78).
+    navigasi(`/stok/${baru.id}`, { replace: true })
   }
 
   return (
@@ -727,14 +729,9 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
         <Tombol penuh ukuran="besar" onClick={kirim}>
           {mengubah ? 'Simpan Perubahan' : 'Simpan Barang'}
         </Tombol>
-        <TombolTautan
-          ke={barang ? `/stok/${barang.id}` : '/stok'}
-          ragam="garis"
-          ukuran="besar"
-          penuh
-        >
+        <Tombol ragam="garis" ukuran="besar" penuh onClick={() => kembali(barang ? `/stok/${barang.id}` : '/stok')}>
           Batal
-        </TombolTautan>
+        </Tombol>
       </div>
 
       <Konfirmasi

@@ -362,7 +362,6 @@ function SemuaBarangKategori({
         judul={`Prediksi · ${kategori}`}
         keterangan={`${daftar.length} barang. Tekan salah satu untuk melihat grafiknya dan memesan.`}
         kembaliKe={kembaliKe}
-        kembaliRiwayat
         aksi={<LabelMetode {...metodePrediksi(modelBulananServer())} />}
       />
       <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 [&>*]:min-w-0">
@@ -724,6 +723,7 @@ function DetailBarang({
       {rekomendasi &&
         (penawaran ? (
           <BilahAksi
+            lebarAksi="lebar"
             ringkasan={
               <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
                 {/* Satu cabang per arah. Kalimatnya harus sejalan dengan

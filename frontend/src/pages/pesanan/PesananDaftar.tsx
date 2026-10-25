@@ -14,7 +14,6 @@ import {
   IkonCentangLingkaran,
   IkonKeranjang,
   IkonKontrak,
-  IkonLokasi,
   IkonPanahKanan,
   IkonPasokan,
   IkonToko,
@@ -24,6 +23,7 @@ import { BANTUAN, LABEL_KONTRAK, PESANAN_BERJALAN } from '@/lib/label'
 import { distributorById } from '@/data/dummy'
 import type { Kontrak, Pesanan } from '@/lib/types'
 import { useAplikasi } from '@/store/aplikasi'
+import { TombolLacak } from '@/components/domain/Lacak'
 
 /**
  * Tab Pesanan: dua segmen, dan tidak satu pun menampilkan katalog.
@@ -175,6 +175,8 @@ export default function PesananDaftar() {
   const terkunci = useTerkunci()
 
   const pesanan = useAplikasi((s) => s.pesanan)
+  /* Kiriman yang sedang di jalan; angkanya dulu di menu samping (revisi V3, Q74). */
+  const sedangDiJalan = pesanan.filter((p) => p.status === 'dikirim' && !p.pengiriman).length
   const kontrak = useAplikasi((s) => s.kontrak)
   const tambahKeKeranjang = useAplikasi((s) => s.tambahKeKeranjang)
   const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
@@ -293,15 +295,7 @@ export default function PesananDaftar() {
             <p className="mt-1 text-isi text-ink-2 leading-relaxed max-w-[62ch]">
               Semua pesanan dan kontrak bulananmu, dari yang masih berjalan sampai yang sudah selesai.
             </p>
-            <TombolTautan
-              ke="/pesanan/lacak"
-              ragam="garis"
-              ukuran="kecil"
-              ikonKiri={<IkonLokasi size={15} />}
-              className="mt-3"
-            >
-              Lacak Pesanan
-            </TombolTautan>
+            <TombolLacak ke="/pesanan/lacak" jumlah={sedangDiJalan} className="mt-3" />
           </>
         }
         inti={

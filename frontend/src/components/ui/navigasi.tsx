@@ -1,5 +1,5 @@
-import { useEffect, useState, type ComponentType, type ReactNode } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ComponentType, type ReactNode } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { cx } from '@/lib/format'
 import { IkonKembali } from '@/icons'
 
@@ -132,53 +132,65 @@ export function Chip({
 /* ================================================================== */
 
 /**
+ * Mundur ke halaman sebelumnya, persis seperti tombol Back peramban (revisi V3,
+ * Q78). `cadangan` hanya dipakai bila halaman ini dibuka langsung (tautan atau
+ * muat ulang di entri pertama), karena mundur dari sana akan keluar dari
+ * aplikasi. Cadangan MENGGANTI entri ini: kalau ditumpuk, panah kembali di
+ * halaman cadangan akan mundur lagi ke sini, dan keduanya saling memantul.
+ */
+export function useKembali(): (cadangan?: string) => void {
+  const navigate = useNavigate()
+  return useCallback(
+    (cadangan = '/beranda') => {
+      // React Router menomori entri riwayatnya sendiri: 0 = entri pertama sesi ini.
+      const idx = (window.history.state as { idx?: number } | null)?.idx ?? 0
+      if (idx > 0) navigate(-1)
+      else navigate(cadangan, { replace: true })
+    },
+    [navigate],
+  )
+}
+
+/**
  * Kepala untuk halaman detail. Di mobile ia menempel di atas dengan tombol
  * kembali; di desktop tombol kembali tetap ada karena navigasi samping tidak
  * menyorot halaman detail.
+ *
+ * Kepala ini mulai rapat di tepi atas, di posisi yang sama dengan saat ia
+ * menempel (revisi V3, Q66): margin negatif menghapus jarak atas <main>
+ * (1rem di HP, 1,5rem di desktop). Dulu ia mulai di bawah jarak itu lalu naik
+ * saat halaman digulir, sehingga seluruh kepala tampak bergeser.
  */
 export function KepalaHalaman({
   judul,
   keterangan,
   kembaliKe,
-  kembaliRiwayat = false,
   aksi,
   bawah,
 }: {
   judul: string
   keterangan?: ReactNode
-  kembaliKe?: string
   /**
-   * Tombol kembali menuju halaman sebelumnya, bukan `kembaliKe`. `kembaliKe`
-   * tetap dipakai bila halaman ini dibuka langsung (belum ada riwayat di
-   * aplikasi). Dipakai halaman pemberitahuan yang tampil tanpa menu samping.
+   * Menyalakan tombol kembali. Tombolnya mundur ke halaman sebelumnya; alamat
+   * ini hanya dipakai bila halaman dibuka langsung (lihat `useKembali`).
    */
-  kembaliRiwayat?: boolean
+  kembaliKe?: string
   aksi?: ReactNode
   bawah?: ReactNode
 }) {
-  const navigate = useNavigate()
-  const { key } = useLocation()
-  const kelasKembali = '-ml-2 size-11 grid place-items-center rounded-md text-ink-2 hover:bg-sunken shrink-0'
+  const kembali = useKembali()
   return (
-    <header className="sticky top-[var(--kepala-global,0px)] z-30 bg-bg/95 backdrop-blur-sm border-b border-line -mx-4 px-4 sm:-mx-6 sm:px-6">
+    <header className="sticky top-[var(--kepala-global,0px)] z-30 bg-bg/95 backdrop-blur-sm border-b border-line -mx-4 px-4 sm:-mx-6 sm:px-6 -mt-4 lg:-mt-6">
       <div className={cx('flex items-center gap-2 min-h-14 py-2', RUANG_LONCENG)}>
-        {kembaliRiwayat ? (
+        {kembaliKe && (
           <button
             type="button"
             aria-label="Kembali"
-            // Entri pertama riwayat React Router berkunci 'default': tidak ada
-            // halaman aplikasi sebelumnya, jadi mundur akan keluar dari aplikasi.
-            onClick={() => (key !== 'default' ? navigate(-1) : navigate(kembaliKe ?? '/beranda'))}
-            className={kelasKembali}
+            onClick={() => kembali(kembaliKe)}
+            className="-ml-2 size-11 grid place-items-center rounded-md text-ink-2 hover:bg-sunken shrink-0"
           >
             <IkonKembali size={22} />
           </button>
-        ) : (
-          kembaliKe && (
-            <Link to={kembaliKe} aria-label="Kembali" className={kelasKembali}>
-              <IkonKembali size={22} />
-            </Link>
-          )
         )}
         <div className="min-w-0 grow">
           {/* Nama layar dikunci spesifikasi, jadi ia dibungkus dua baris di layar
@@ -249,20 +261,69 @@ export function BagianAtasBeku({ atas, inti }: { atas: ReactNode; inti: ReactNod
 /**
  * Untuk halaman dengan satu aksi utama (checkout, setujui kontrak).
  * Ditempel di bawah supaya selalu berada di jangkauan jempol.
+ *
+ * Selalu di dasar layar, berapa pun panjang halamannya (revisi V3, Q69): di
+ * desktop sejajar blok akun di dasar menu samping, di HP tepat di atas
+ * navigasi bawah. Dulu ia `sticky` di dalam halaman, sehingga di halaman yang
+ * pendek ia berhenti tepat di bawah isi dan menyisakan ruang kosong di bawahnya.
+ *
+ * Karena `fixed` tidak memakan tempat, sebuah pengganti setinggi bilah dipasang
+ * di alur halaman supaya baris terakhir isi tidak tertutup. Tingginya juga
+ * dibagikan lewat `--tinggi-bilah` supaya toast muncul di atas bilah, bukan
+ * menutupi tombolnya.
  */
-export function BilahAksi({ children, ringkasan }: { children: ReactNode; ringkasan?: ReactNode }) {
+export function BilahAksi({
+  children,
+  ringkasan,
+  lebarAksi = 'biasa',
+}: {
+  children: ReactNode
+  ringkasan?: ReactNode
+  /**
+   * `lebar`: kelompok aksi selebar isinya, untuk aksi yang lebih dari satu
+   * tombol (pengatur jumlah + tombol). Bawaannya paling lebar ±450px.
+   */
+  lebarAksi?: 'biasa' | 'lebar'
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [tinggi, setTinggi] = useState(0)
+
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const akar = document.documentElement
+    const ukur = () => {
+      setTinggi(el.offsetHeight)
+      akar.style.setProperty('--tinggi-bilah', `${el.offsetHeight}px`)
+    }
+    ukur()
+    const pengamat = new ResizeObserver(ukur)
+    pengamat.observe(el)
+    return () => {
+      pengamat.disconnect()
+      akar.style.removeProperty('--tinggi-bilah')
+    }
+  }, [])
+
   return (
-    // Ditempel tepat di ATAS bilah navigasi bawah, bukan di dasar layar.
-    // Kalau dipatok bottom-0, navigasi yang fixed menutupinya selama halaman
-    // belum digulir mentok, dan tombol utamanya benar-benar tidak bisa ditekan.
-    <div className="sticky bottom-[var(--nav-h)] lg:bottom-0 -mx-4 sm:-mx-6 px-4 sm:px-6 py-3 bg-surface/97 backdrop-blur-sm border-t border-line pb-aman lg:pb-3 z-30">
-      {/* Di desktop tombolnya berkumpul di kanan selebar ±450px, ringkasan di
-          kiri. Tombol selebar 1.000px terbaca seperti spanduk, bukan tombol. */}
-      <div className="lg:flex lg:items-center lg:justify-end lg:gap-6">
-        {ringkasan && <div className="mb-2.5 lg:mb-0 lg:mr-auto">{ringkasan}</div>}
-        <div className="lg:w-full lg:max-w-md">{children}</div>
+    <>
+      <div aria-hidden="true" style={{ height: tinggi }} />
+      {/* Ditempel tepat di ATAS bilah navigasi bawah di HP, bukan di dasar layar:
+          navigasi yang fixed akan menutupi tombol utamanya. */}
+      <div
+        ref={ref}
+        className="fixed inset-x-0 bottom-[var(--nav-h)] lg:bottom-0 lg:left-[var(--rail-w)] z-30 bg-surface/97 backdrop-blur-sm border-t border-line"
+      >
+        {/* Lebar dan jarak tepinya sama dengan isi <main>, jadi ringkasan dan
+            tombolnya lurus dengan isi halaman, juga di layar sangat lebar. Di
+            desktop tombolnya berkumpul di kanan selebar ±450px, ringkasan di
+            kiri. Tombol selebar 1.000px terbaca seperti spanduk, bukan tombol. */}
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-3 lg:flex lg:items-center lg:justify-end lg:gap-6">
+          {ringkasan && <div className="mb-2.5 lg:mb-0 lg:mr-auto min-w-0">{ringkasan}</div>}
+          <div className={cx(lebarAksi === 'lebar' ? 'lg:shrink-0' : 'lg:w-full lg:max-w-md')}>{children}</div>
+        </div>
       </div>
-    </div>
+    </>
   )
 }
 
@@ -272,7 +333,7 @@ export function BilahAksi({ children, ringkasan }: { children: ReactNode; ringka
 
 /**
  * Tautan kecil di navigasi samping desktop, di bawah menu utama (keranjang,
- * Lacak Pesanan), dengan angka opsional. Dipakai kedua portal.
+ * Ringkasan Penjualan), dengan angka opsional. Dipakai kedua portal.
  */
 export function TautanSamping({
   ke,

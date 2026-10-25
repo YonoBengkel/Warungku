@@ -50,6 +50,30 @@ export interface BarisLacak {
   aksi?: { label: string; ke: string }
 }
 
+/**
+ * Jalan ke Lacak Pesanan dari halaman Pesanan, dengan jumlah kiriman yang sedang
+ * di jalan. Angka itu dulu ada di menu samping, yang sejak revisi V3 (Q74) tidak
+ * lagi memuat Lacak Pesanan.
+ */
+export function TombolLacak({ ke, jumlah, className }: { ke: string; jumlah: number; className?: string }) {
+  return (
+    <TombolTautan ke={ke} ragam="garis" ukuran="kecil" ikonKiri={<IkonLokasi size={15} />} className={className}>
+      Lacak Pesanan
+      {jumlah > 0 && (
+        <>
+          <span className="sr-only">, {jumlah} sedang di jalan</span>
+          <span
+            aria-hidden="true"
+            className="min-w-[1.25rem] h-5 px-1.5 rounded-full bg-brand text-ink-inverse text-[0.6875rem] font-bold grid place-items-center tabular"
+          >
+            {jumlah}
+          </span>
+        </>
+      )}
+    </TombolTautan>
+  )
+}
+
 /** Waktu sekarang yang diperbarui tiap menit, supaya perkiraan posisi ikut bergerak. */
 export function useSekarang(selang = 60_000): number {
   const [sekarang, setSekarang] = useState(() => Date.now())

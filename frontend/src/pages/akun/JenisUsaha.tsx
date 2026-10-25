@@ -53,7 +53,8 @@ export default function JenisUsaha() {
   function simpan() {
     ubahProfil({ caraHitung: pilihan })
     tampilkanRacun(`Tersimpan. Detail Barang sekarang mengikuti pilihan "${LABEL_CARA_HITUNG[pilihan].judul}".`, 'aman')
-    navigate('/akun')
+    // Mengganti formulir di riwayat supaya tombol kembali tidak membukanya lagi (revisi V3, Q78).
+    navigate('/akun', { replace: true })
   }
 
   return (
