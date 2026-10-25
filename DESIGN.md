@@ -107,6 +107,9 @@ Daftar; kerangka halaman tidak memasangnya sendiri.
 | `text-angka` | 26px / 1 | Satu angka besar (sisa stok, total) | `font-extrabold` |
 
 - **Satu-satunya ukuran di bawah 12px:** lencana kecil dan penghitung di tab, 11px tebal.
+- **Pengecualian halaman Stok** (revisi V4, Q83): di desktop judulnya 28px (`lg:text-[1.75rem]`),
+  dan isi kolom cari serta Tambah Barang 17px (`text-subjudul`), supaya bagian atas yang paling
+  sering dipakai terbaca dari jauh. Halaman lain tetap memakai tabel di atas.
 - **Keterangan di bawah judul halaman:** `mt-1 text-isi text-ink-2 leading-relaxed max-w-[62ch]`.
 - **Satu angka besar per baris.** `tabular` (tabular-nums) hanya untuk kolom angka yang harus
   sejajar vertikal, bukan untuk angka besar yang berdiri sendiri.
@@ -161,7 +164,10 @@ terpisah dari angkanya di 360px.
 - **Tab navigasi:**
   - pemilik usaha: lima tab (Beranda · Stok · Prediksi · Distributor · Pesanan);
   - UMKM produsen: tab keenam Produksi sesudah Stok;
-  - portal distributor: enam tab (Beranda · Pesanan · Kontrak · Promo · Pelanggan · Profil).
+  - portal distributor: lima tab (Beranda · Pesanan · Kontrak · Promo · Pelanggan). Akun toko
+    tidak lagi jadi tab (revisi V4, Q93): di desktop blok akun di kiri bawah menu samping (logo,
+    nama, "Lihat akun") dengan tanda merek Turnify Flow di kiri atas, di HP logo toko di bilah
+    atas. Keduanya membuka halaman akun, seperti avatar di portal usaha.
   - Tab baru di HP harus diukur ulang di 360px. Label terpanjang "Distributor" lebarnya 55,8px.
 - **`KepalaHalaman`** (halaman detail) menempel tepat di bawah bilah global lewat
   `top-[var(--kepala-global)]`. Variabel itu bernilai 0 di desktop. Elemen yang digulir otomatis
@@ -195,6 +201,11 @@ terpisah dari angkanya di 360px.
 - **Daftar tugas Beranda** ("Yang perlu kamu urus hari ini") adalah `Korsel` di semua ukuran:
   3 kartu per halaman mulai 1280px, 2 di 1024–1279px, 1 di HP (revisi V2). Petak Perlu Tindakan
   menaruh ikon dan angka di tengah dengan nama di bawah, kisi 2 × 2 di HP.
+  - Beranda distributor memakai bentuk yang sama (revisi V4, Q95): kotak "Yang perlu kamu urus
+    hari ini" berisi satu kartu tugas selebar kartu korsel (atau baris hijau "Semua aman hari
+    ini."), petak Rekap pesanan dan Sebaran pemesan bergaya Perlu Tindakan, dan kartu Pesanan
+    terbaru bergaya `KartuPesanan`. Lima petak Rekap sebaris mulai 1024px; di HP dua kolom dengan
+    petak kelima selebar dua kolom.
 - **Layar acuan dasbor** (revisi V2, diubah revisi V3): dua ukuran area halaman, **1536 × 834**
   piksel CSS (laptop Ilham, 1920 × 1200 skala 125%) dan **1536 × 730** (laptop 1920 × 1080).
   - Prediksi, Stok, dan rincian barang mengisi tinggi layar berapa pun. Halamannya setinggi layar
@@ -212,6 +223,17 @@ terpisah dari angkanya di 360px.
 - **Formulir panjang** (Tambah dan Ubah Barang, revisi V3) memakai dua kolom selebar halaman
   mulai 1024px, dengan urutan isian tetap dari atas kiri ke bawah kanan. Simpan dan Batal ada di
   `BilahAksi`, dan kolom yang belum beres disebut namanya di kiri bilah.
+  - Halaman ubah dan buat promo (`PromoUbah`, revisi V4, Q91) memakai pola yang sama, bukan
+    pop-up: pratinjau kartu paling atas di HP dan di atas kolom kanan di desktop, isian yang
+    lebar (tingkat keanggotaan) selebar halaman di bawah kedua kolom. Aksi berbahaya
+    (Akhiri Sekarang) ada di dasar halaman sebagai `bahaya-garis` dengan `Konfirmasi`, jauh
+    dari Simpan.
+- **Rincian pesanan mengisi layar** (revisi V4, Q88): mulai 1024px kolom kedua rincian pesanan
+  memanjang, dan kotak terakhir tiap kolom memanjang sampai di atas `BilahAksi`.
+- **Kotak per kelompok** (Pesanan › Kontrak, revisi V4, Q85): satu `section` per barang atau
+  pemasok, tiga per baris mulai 1280px dan dua di 1024–1279px. Kepalanya logo, nama, jumlah, dan
+  kewajiban per bulan; isinya satu baris per kontrak (`BarisKontrak`); kaki yang rata bawah
+  memuat aksi kelompok.
 - **Bagian atas beku** (`BagianAtasBeku`) di halaman daftar Distributor dan Pesanan: di desktop
   judul sampai tab/chip tetap terlihat; di HP hanya kotak cari dan tab, atau tab dan chip. Garis
   bawah muncul begitu halaman digulir.
@@ -278,6 +300,9 @@ Cari komponen yang sudah ada sebelum menulis yang baru. Komponen dasar ada di
 | Tanda merek Turnify Flow | `TandaMerek`: `logo-mark.png` di tema terang, `logo-mark-gelap.png` (ungu terang) di tema gelap |
 | Lacak Pesanan | `DaftarLacak` (revisi V3): satu baris per pesanan dengan garis empat status Menunggu Konfirmasi → Disiapkan → Dikirim → Selesai, bertanggal dari riwayat; truk di antara Dikirim dan Selesai selama di jalan. Dibuka lewat `TombolLacak` (berangka) di halaman Pesanan |
 | Peta satu pesanan | `PetaPesanan` di rincian pesanan selama pesanan berjalan (di atas Pembayaran atau Jejak Pesanan), memakai `PetaLacak` dan `KeteranganPeta`: Leaflet dengan ubin OpenStreetMap, dimuat malas. Posisi kiriman selalu disebut "perkiraan posisi" |
+| Peta sebaran pemesan | `PetaSebaran` (revisi V4, Q87): Leaflet + OpenStreetMap lewat `buatPeta` yang sama dengan `PetaLacak`, penanda cincin bernomor per kondisi (merah utuh, jingga putus-putus, biru ganda). Bentuk cincinnya `Cincin` dan `TandaTitik` di `TandaTitik.tsx`, berkas tanpa Leaflet, supaya petak Beranda tidak memuat pustaka peta. Di desktop kolom peta setinggi layar |
+| Logo promo | `LogoPromo` (`KartuPromo.tsx`): glyph kategori barang (`GlyphPromo`, `logoPromo.tsx`) putih di ubin warna jenis promo, redup bila promo berakhir. Delapan glyph dibangkitkan `tools/buat_logo_promo.py` ke `data/glyphPromo.ts`; masternya di `docs/desain/logo-promo/`. Kategori promo = kelompok barang terbanyak di dalamnya, seri atau kosong memakai Campuran. Lencana kecil di jalur beli (`LencanaPromo`) tetap memakai ikon jenis (revisi V4, Q92) |
+| Menu halaman akun | `Kelompok`, `BarisMenu`, `TombolPilihan` (`components/ui/menuAkun.tsx`), dipakai Akun pemilik usaha dan Akun distributor (revisi V4, Q94). Alat uji purwarupa (masuk/keluar akun simulasi, ganti peran) selalu di kotak bergaris putus paling bawah halaman akun |
 | Memilih satu titik di peta | `PetaPilihTitik`: ketuk peta, atau geser dengan tombol panah lalu "Pakai titik tengah peta" |
 | Tautan kecil di navigasi samping desktop | `TautanSamping` (keranjang, Ringkasan Penjualan), dengan angka opsional. Lacak Pesanan tidak di sini sejak revisi V3 |
 | Ringkasan penjualan | `TampilanRingkasan` (halaman) dan `KartuRingkasanPenjualan` (Beranda, Dashboard). Tanpa laba kotor; angka utama dibandingkan dengan periode sebelumnya yang sama panjang, dengan ikon dan kata |

@@ -183,5 +183,31 @@ Catatan tahap 5:
 
 ## Tahap 6 — akhir
 
-- [ ] DESIGN.md, sapuan regresi, perbandingan sebelum–sesudah, lembar logo promo, dan pembersihan
+- [x] DESIGN.md, sapuan regresi, perbandingan sebelum–sesudah, lembar logo promo, dan pembersihan
   lingkungan uji.
+
+Catatan tahap 6:
+- **DESIGN.md** memuat pola baru V4:
+  - pengecualian huruf Stok dan lima tab distributor dengan blok akun;
+  - Beranda distributor bergaya Beranda UMKM;
+  - halaman ubah promo, rincian pesanan yang mengisi layar, dan kotak per kelompok di Kontrak;
+  - komponen `PetaSebaran`, `TandaTitik`, `LogoPromo`, dan menu akun bersama.
+- **Sapuan regresi:** 85 pemeriksaan di Edge headless terhadap image 0.11.0 di basis data baru:
+  - 37 rute kedua portal di 1536 × 834 dan 390 × 844, ditambah 11 halaman yang berubah dalam tema gelap;
+  - tanpa geseran horizontal, `h1` selalu satu, tidak ada tombol atau tautan tanpa nama, dan tidak ada
+    galat konsol;
+  - tujuh tanda "tumpang dengan lonceng" ternyata palsu: kotak `h1` selebar baris, sementara teksnya
+    berakhir 773–1.098px sebelum lonceng.
+- **Perbandingan sebelum–sesudah:** 16 halaman di 1536 × 834 dan 1536 × 730, termasuk tiga halaman baru
+  (halaman ubah promo, Profil Toko, korsel promo Beranda), ditambah lembar logo promo.
+  - Yang memendek: Kontrak per barang 1.839 → 936px, per pemasok 1.899 → 1.074px, Ringkasan Penjualan
+    distributor 1.673 → 1.295px, dan akun distributor 1.299 → 846px. Rincian Pesanan Masuk kini tepat
+    834px.
+  - Beranda distributor memanjang 1.185 → 1.424px, karena kotaknya kini seukuran kotak Beranda UMKM.
+- **Pembersihan:**
+  - empat kontainer uji beserta volumenya dan jaringan `uji-v4` dihapus;
+  - tiga server pratinjau dihentikan, dan entri uji di `.claude/launch.json` (tidak dilacak git) dihapus;
+  - port 5180, 5181, 8010, 8020, 8021, 5434, dan 9333 bebas;
+  - `warungku-db` (5433) tidak disentuh.
+- **Alat uji (di luar repo):** sejak Edge 156 folder profil `--user-data-dir` harus berupa path absolut.
+  Path relatif membuat Edge keluar dengan kode 21 dan port debug tidak pernah terbuka.
