@@ -106,6 +106,9 @@ const KontrakDistributor = lazy(() => import('@/pages/distributor-portal/Kontrak
 const PromoDistributor = lazy(() => import('@/pages/distributor-portal/PromoDistributor'))
 const PetaSebaran = lazy(() => import('@/pages/distributor-portal/PetaSebaran'))
 const ProfilDistributor = lazy(() => import('@/pages/distributor-portal/ProfilDistributor'))
+const ProfilToko = lazy(() => import('@/pages/distributor-portal/ProfilToko'))
+const BarangDijual = lazy(() => import('@/pages/distributor-portal/BarangDijual'))
+const PenilaianUlasan = lazy(() => import('@/pages/distributor-portal/PenilaianUlasan'))
 const SegmenPelanggan = lazy(() => import('@/pages/distributor-portal/SegmenPelanggan'))
 const PemberitahuanDistributor = lazy(() => import('@/pages/distributor-portal/PemberitahuanDistributor'))
 const LacakPesananDistributor = lazy(() => import('@/pages/distributor-portal/LacakPesananDistributor'))
@@ -231,6 +234,9 @@ export default function App() {
           <Route path="lacak/toko/:umkmId" element={<Navigate to="/distributor-portal/lacak" replace />} />
           <Route path="lacak/barang/:penawaranId" element={<AlihKeSebaran />} />
           <Route path="profil" element={<ProfilDistributor />} />
+          <Route path="profil/toko" element={<ProfilToko />} />
+          <Route path="profil/barang" element={<BarangDijual />} />
+          <Route path="profil/ulasan" element={<PenilaianUlasan />} />
           <Route path="*" element={<TidakDitemukan />} />
         </Route>
       </Routes>

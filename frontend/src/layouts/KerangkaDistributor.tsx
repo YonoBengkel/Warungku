@@ -5,30 +5,28 @@ import { NAV_DISTRIBUTOR } from '@/lib/label'
 import {
   IkonBeranda,
   IkonBintang,
-  IkonKembali,
   IkonGrafik,
   IkonKontrak,
   IkonLonceng,
   IkonPasokan,
-  IkonProfil,
   IkonToko,
 } from '@/icons'
-import { distributorAktif } from '@/data/dummy'
-import { useAplikasi, useJumlahPerluKonfirmasi } from '@/store/aplikasi'
+import { useAplikasi, useDistributorAktif, useJumlahPerluKonfirmasi } from '@/store/aplikasi'
 import { Toast } from '@/components/ui/umpanBalik'
 import { Avatar } from '@/components/ui/dasar'
+import { TandaMerek } from '@/components/ui/Merek'
 import { LoncengMelayang, usePemberitahuanDistributor } from '@/components/domain/Pemberitahuan'
 import { TautanSamping } from '@/components/ui/navigasi'
 
 /**
- * Kerangka Portal Distributor: empat item, sistem desain yang sama dengan
- * KerangkaAplikasi.
+ * Kerangka Portal Distributor: sistem desain yang sama dengan KerangkaAplikasi.
  *
  * Bentuknya sengaja meniru sisi UMKM (navigasi samping di layar lebar, bilah
  * bawah di layar sempit, kepala halaman yang tetap) supaya orang yang sudah
- * hafal satu sisi tidak perlu belajar ulang di sisi lain. Yang beda hanya
- * isinya: tidak ada keranjang dan tidak ada avatar akun, karena distributor
- * tidak berbelanja dan profilnya sudah punya tab sendiri.
+ * hafal satu sisi tidak perlu belajar ulang di sisi lain. Sejak revisi V4
+ * (Q93) akun toko juga ditaruh seperti di UMKM: blok akun di kiri bawah menu
+ * samping dan logo toko di bilah atas HP, bukan tab Profil di menu utama. Yang
+ * beda hanya isinya: tidak ada keranjang, karena distributor tidak berbelanja.
  */
 
 const TAB = [
@@ -37,7 +35,6 @@ const TAB = [
   { ke: '/distributor-portal/kontrak', label: NAV_DISTRIBUTOR.kontrak, Ikon: IkonKontrak },
   { ke: '/distributor-portal/promo', label: NAV_DISTRIBUTOR.promo, Ikon: IkonBintang },
   { ke: '/distributor-portal/pelanggan', label: NAV_DISTRIBUTOR.pelanggan, Ikon: IkonToko },
-  { ke: '/distributor-portal/profil', label: NAV_DISTRIBUTOR.profil, Ikon: IkonProfil },
 ]
 
 /**
@@ -54,55 +51,13 @@ export function tabDistributorAktif(pathname: string, ke: string): boolean {
   return pathname === ke || pathname.startsWith(`${ke}/`)
 }
 
-/**
- * Berpindah peran bukan fitur produk, hanya jalan pintas supaya purwarupa bisa
- * ditelusuri dari dua sisi. Karena itu pitanya dibiarkan mencolok dan diberi
- * keterangan, bukan disembunyikan di balik menu.
- */
-function PitaAlatUji({ kelas }: { kelas?: string }) {
-  const sesi = useAplikasi((s) => s.sesiDistributor)
-  const putus = useAplikasi((s) => s.putusDistributor)
-  return (
-    <div className={cx('bg-menipis-soft border-line px-3 py-2.5', kelas)}>
-      {/* Asal data portal ini: server (dengan akun distributor) atau data contoh. */}
-      <p className="text-kecil leading-snug text-menipis-ink">
-        {sesi ? (
-          <>
-            Masuk sebagai {sesi.namaPengguna}.{' '}
-            <button type="button" onClick={putus} className="font-bold underline underline-offset-2 min-h-11">
-              Keluar
-            </button>
-          </>
-        ) : (
-          <>
-            Memakai data contoh.{' '}
-            <Link to="/masuk/distributor" className="font-bold underline underline-offset-2 inline-flex items-center min-h-11">
-              Masuk sebagai distributor
-            </Link>
-          </>
-        )}
-      </p>
-      <Link
-        to="/beranda"
-        className="flex items-center gap-2 min-h-11 font-bold text-isi text-menipis-ink"
-      >
-        <IkonKembali size={18} />
-        Kembali ke portal UMKM
-      </Link>
-      <p className="text-kecil leading-snug text-menipis-ink">
-        Berpindah peran adalah alat uji purwarupa, bukan bagian dari aplikasi yang dipakai pemilik
-        usaha.
-      </p>
-    </div>
-  )
-}
-
 export default function KerangkaDistributor() {
   const { pathname } = useLocation()
   const racun = useAplikasi((s) => s.racun)
   const tutupRacun = useAplikasi((s) => s.tutupRacun)
   const perluKonfirmasi = useJumlahPerluKonfirmasi()
   const pemberitahuan = usePemberitahuanDistributor()
+  const distributor = useDistributorAktif()
   const jumlahTindakan = pemberitahuan.filter((b) => b.perluTindakan).length
   /* Sama dengan portal usaha (revisi V2, Q58): halaman pemberitahuan tanpa menu
      samping di desktop, dan lonceng melayang disembunyikan di sana. */
@@ -127,13 +82,12 @@ export default function KerangkaDistributor() {
         )}
         style={{ width: 'var(--rail-w)' }}
       >
+        {/* Merek aplikasi di atas, nama toko di blok akun bawah (revisi V4, Q93) */}
         <div className="px-5 py-5">
           <Link to="/distributor-portal" className="flex items-center gap-2.5 min-w-0">
-            <Avatar nama={distributorAktif.nama} warna={distributorAktif.warna} ukuran={36} />
+            <TandaMerek ukuran={36} />
             <span className="min-w-0">
-              <span className="block font-extrabold text-ink text-[1rem] tracking-tight truncate">
-                {distributorAktif.nama}
-              </span>
+              <span className="block font-extrabold text-ink text-subjudul tracking-tight leading-tight">Turnify Flow</span>
               <span className="block text-kecil text-ink-3">Portal Distributor</span>
             </span>
           </Link>
@@ -182,7 +136,23 @@ export default function KerangkaDistributor() {
           />
         </div>
 
-        <PitaAlatUji kelas="mt-auto border-t" />
+        {/* Blok akun seperti di portal usaha: pintu ke halaman akun, yang kini
+            juga memuat alat uji purwarupa dari pita kuning yang lama. */}
+        <div className="mt-auto p-3 border-t border-line">
+          <Link
+            to="/distributor-portal/profil"
+            className={cx(
+              'flex items-center gap-3 p-2.5 rounded-md transition-colors',
+              pathname.startsWith('/distributor-portal/profil') ? 'bg-sunken' : 'hover:bg-sunken',
+            )}
+          >
+            <Avatar nama={distributor.nama} warna={distributor.warna} ukuran={36} />
+            <span className="min-w-0">
+              <span className="block text-isi font-bold text-ink truncate">{distributor.nama}</span>
+              <span className="block text-kecil text-ink-3 truncate">Lihat akun</span>
+            </span>
+          </Link>
+        </div>
       </nav>
 
       <div className="flex-1 min-w-0 flex flex-col">
@@ -193,10 +163,8 @@ export default function KerangkaDistributor() {
               to="/distributor-portal"
               className="flex items-center gap-2 mr-auto min-w-0 min-h-11 pr-2"
             >
-              <Avatar nama={distributorAktif.nama} warna={distributorAktif.warna} ukuran={32} />
-              <span className="font-extrabold text-ink text-kartu truncate">
-                {distributorAktif.nama}
-              </span>
+              <TandaMerek ukuran={32} />
+              <span className="font-extrabold text-ink text-kartu truncate">Turnify Flow</span>
             </Link>
 
             <Link
@@ -211,12 +179,17 @@ export default function KerangkaDistributor() {
                 </span>
               )}
             </Link>
+
+            {/* Logo toko membuka halaman akun, seperti avatar di portal usaha. */}
+            <Link
+              to="/distributor-portal/profil"
+              aria-label={`Akun ${distributor.nama}`}
+              className="size-11 grid place-items-center rounded-md shrink-0"
+            >
+              <Avatar nama={distributor.nama} warna={distributor.warna} ukuran={36} />
+            </Link>
           </div>
         </header>
-
-        {/* Di layar sempit navigasi samping tidak ada, jadi jalan pulang ke
-            portal UMKM ikut dibawa ke bawah kepala halaman. */}
-        <PitaAlatUji kelas="lg:hidden border-b" />
 
         <main
           id="konten"

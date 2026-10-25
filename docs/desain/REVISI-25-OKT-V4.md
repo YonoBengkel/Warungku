@@ -47,10 +47,32 @@ Catatan tahap 1 (Edge headless, 1536 × 834):
 
 ## Tahap 2 — kerangka dan akun distributor
 
-- [ ] **Profil keluar dari menu utama (Q93):** 5 tab, blok akun di kiri bawah, logo Turnify Flow di kiri atas,
+- [x] **Profil keluar dari menu utama (Q93):** 5 tab, blok akun di kiri bawah, logo Turnify Flow di kiri atas,
   pita alat uji pindah ke halaman akun.
-- [ ] **Halaman akun bergaya UMKM (Q94)** dengan halaman bawahan Profil Toko, Barang yang Dijual, dan
+- [x] **Halaman akun bergaya UMKM (Q94)** dengan halaman bawahan Profil Toko, Barang yang Dijual, dan
   Penilaian & Ulasan.
+
+Catatan tahap 2 (Edge headless, 1536 × 834 dan 390 × 844):
+- **Kerangka:** menu utama tinggal Beranda, Pesanan, Kontrak, Promo, Pelanggan (juga di bilah bawah HP).
+  - Kiri atas kini `TandaMerek` dengan "Turnify Flow · Portal Distributor".
+  - Kiri bawah ada blok akun (logo toko, nama, "Lihat akun") yang menyala di semua halaman `/profil`.
+  - Di HP, logo toko di bilah atas membuka akun. Pita kuning, di desktop maupun HP, dihapus.
+- **Akun** (`/distributor-portal/profil`, `ProfilDistributor.tsx`): kartu kepala (logo, nama, Distributor ·
+  kota · bintang, Terverifikasi, bergabung sejak), lalu dua kolom kelompok:
+  - **Toko:** Profil Toko dan Barang yang Dijual;
+  - **Tampilan:** Terang atau Gelap;
+  - **Penilaian:** Penilaian & Ulasan.
+
+  Di bawahnya kotak bergaris putus **Alat uji purwarupa**: akun distributor (Masuk atau Keluar) dan
+  Kembali ke portal UMKM. `Kelompok`, `BarisMenu`, dan `TombolPilihan` dipindah dari `Akun.tsx` ke
+  `components/ui/menuAkun.tsx` supaya dipakai kedua portal.
+- **Halaman bawahan:** semuanya punya tombol kembali ke Akun.
+  - `/profil/toko`: info usaha dengan deskripsi, yang dilayani, dan lokasi gudang.
+  - `/profil/barang`: satu kotak per barang, tiga per baris, dengan Tambah di kepala halaman.
+  - `/profil/ulasan`: penilaian di kiri, semua ulasan di kanan, bukan lagi lima terakhir.
+
+  Formulirnya tidak berubah, hanya pindah ke `formProfil.tsx`.
+- Ketiga halaman bawahan pas 834px. Akun 846px di desktop dan 1.345px di HP, tanpa geseran di 390px.
 
 ## Tahap 3 — Promo
 

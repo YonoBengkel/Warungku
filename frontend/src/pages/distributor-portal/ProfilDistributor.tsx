@@ -1,580 +1,35 @@
-import { lazy, Suspense, useMemo, useRef, useState, type ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Avatar, BarisData, JudulBagian, Kartu, Lencana, Metrik, Pemisah, Tombol } from '@/components/ui/dasar'
-import { AreaTeks, Kolom, Pilihan } from '@/components/ui/formulir'
-import { Lembar } from '@/components/ui/lembar'
-import { BarisChip, Chip, RUANG_LONCENG } from '@/components/ui/navigasi'
-import {
-  IkonBintang,
-  IkonBintangIsi,
-  IkonBulan,
-  IkonCentangLingkaran,
-  IkonKotak,
-  IkonMatahari,
-  IkonMata,
-  IkonMataTutup,
-  IkonPena,
-  IkonTambah,
-  IkonToko,
-} from '@/icons'
-import { angka, bacaAngkaIndonesia, bintang, cx, nomorHp, rupiah, tanggalPendek } from '@/lib/format'
-import { kalimatIsiKemasan } from '@/lib/satuan'
-import type { Distributor, InfoUsahaDistributor, Penawaran } from '@/lib/types'
-import { koordinatSah, pusatKota, type Koordinat } from '@/lib/lacak'
-import { KATEGORI_BARANG, WILAYAH_KIRIM, umkmById } from '@/data/dummy'
-import { useAplikasi, useDistributorAktif, usePesananMasuk } from '@/store/aplikasi'
+import { Link, useNavigate } from 'react-router-dom'
+import { Avatar, Lencana, Tombol } from '@/components/ui/dasar'
+import { KepalaHalaman } from '@/components/ui/navigasi'
+import { BarisMenu, Kelompok, TombolPilihan } from '@/components/ui/menuAkun'
+import { IkonBintang, IkonBulan, IkonCentangLingkaran, IkonKeluar, IkonKotak, IkonMatahari, IkonToko } from '@/icons'
+import { angka, bintang } from '@/lib/format'
+import { useAplikasi, useDistributorAktif } from '@/store/aplikasi'
 
 /**
- * Profil toko distributor (catatan B4, ON-Dist 6).
+ * Akun distributor (revisi V4, Q93–Q94): papan petunjuk seperti Akun pemilik
+ * usaha, dibuka dari blok akun di kiri bawah menu samping (di HP dari logo toko
+ * di bilah atas), bukan lagi dari menu utama.
  *
- * Tiga hal yang sebelumnya hanya bisa dibaca kini bisa diatur sendiri oleh
- * distributor: barang yang dijual (harga, stok, satuan jual, kelipatan),
- * kategori dan area kirim, serta info usaha. Ketiganya langsung dibaca sisi
- * pemilik usaha: katalog, harga di keranjang, dan rekomendasi distributor
- * (yang menyaring menurut kategori dan area kirim).
+ * Isinya dipecah ke tiga halaman bawahan: Profil Toko (deskripsi, info usaha,
+ * yang dilayani, lokasi gudang), Barang yang Dijual, serta Penilaian & Ulasan.
+ * Dulu semuanya satu halaman panjang yang dibuka dengan daftar barang, padahal
+ * halaman profil pertama-tama menjawab "toko ini siapa".
  *
- * Nama toko, kota, dan lencana verifikasi tidak bisa diubah di sini: ketiganya
- * hasil verifikasi, bukan isian bebas.
- *
- * Sakelar tema ikut di sini karena portal distributor tidak punya halaman
- * pengaturan lain, sedangkan pilihan terang/gelap tetap harus bisa diubah.
+ * Alat uji purwarupa (berpindah peran dan sesi distributor) pindah ke sini dari
+ * pita kuning di menu samping, sama seperti di Akun pemilik usaha.
  */
-
-const SUB_RATING: Array<{ kunci: keyof Distributor['subRating']; nama: string }> = [
-  { kunci: 'ketepatanWaktu', nama: 'Ketepatan waktu' },
-  { kunci: 'jumlahSesuai', nama: 'Jumlah sesuai pesanan' },
-  { kunci: 'kondisiBarang', nama: 'Kondisi barang' },
-]
-
-type PilihanIsi = { nilai: string; dasar: string; kali: number }
-
-/** Pilihan satuan isi untuk barang baru, dengan pengali ke satuan dasarnya. */
-const SATUAN_ISI_BEBAS: PilihanIsi[] = [
-  { nilai: 'kg', dasar: 'gram', kali: 1000 },
-  { nilai: 'gram', dasar: 'gram', kali: 1 },
-  { nilai: 'liter', dasar: 'ml', kali: 1000 },
-  { nilai: 'ml', dasar: 'ml', kali: 1 },
-  { nilai: 'pcs', dasar: 'pcs', kali: 1 },
-]
-
-/**
- * Barang yang sudah terkait daftar stok pemilik usaha hanya boleh memakai
- * satuan dasar yang sama (gram boleh ditulis kg, ml boleh ditulis liter).
- * Mengganti satuan dasarnya membuat stok gudang pembeli bertambah dengan
- * angka yang salah setiap barang diterima.
- */
-function pilihanIsiUntuk(penawaran: Penawaran | null): PilihanIsi[] {
-  const dasar = penawaran?.barangIdTerkait ? penawaran.satuanIsi : undefined
-  if (!dasar) return SATUAN_ISI_BEBAS
-  const sekeluarga = SATUAN_ISI_BEBAS.filter((s) => s.dasar === dasar)
-  return sekeluarga.length > 0 ? sekeluarga : [{ nilai: dasar, dasar, kali: 1 }]
-}
-
-/** "1 jerigen = 5 liter", atau "per 1 kg" kalau satuan jualnya sama dengan isinya. */
-function kalimatKelipatan(pw: Penawaran): string {
-  if (!pw.kemasanJual) return `per 1 ${pw.satuan}`
-  if (pw.satuanIsi) return kalimatIsiKemasan(pw.kemasanJual.nama, pw.kemasanJual.isi, pw.satuanIsi) ?? `per 1 ${pw.kemasanJual.nama}`
-  return `per 1 ${pw.kemasanJual.nama}`
-}
-
-/* ================================================================== */
-/* Formulir barang                                                    */
-/* ================================================================== */
-
-function FormBarang({
-  distributor,
-  penawaran,
-  tutup,
-}: {
-  distributor: Distributor
-  /** Kosong berarti barang baru. */
-  penawaran: Penawaran | null
-  tutup: () => void
-}) {
-  const simpanPenawaran = useAplikasi((s) => s.simpanPenawaran)
-
-  const pilihanIsi = pilihanIsiUntuk(penawaran)
-
-  /* Isi kemasan lama ditulis ulang dengan satuan yang paling wajar, supaya
-     formulir ubah tidak membuka angka mentah seperti "5000 ml". */
-  const isiAwal = (() => {
-    const k = penawaran?.kemasanJual
-    const dasar = penawaran?.satuanIsi
-    if (!k || !dasar) return { isi: k ? angka(k.isi) : '1', satuan: pilihanIsi[0].nilai }
-    const besar = pilihanIsi.find((s) => s.dasar === dasar && s.kali > 1 && k.isi >= s.kali)
-    if (besar) return { isi: angka(k.isi / besar.kali, 2), satuan: besar.nilai }
-    return { isi: angka(k.isi), satuan: pilihanIsi.find((s) => s.dasar === dasar && s.kali === 1)?.nilai ?? dasar }
-  })()
-
-  const [nama, setNama] = useState(penawaran?.nama ?? '')
-  const [kategori, setKategori] = useState(penawaran?.kategori ?? distributor.kategori[0] ?? KATEGORI_BARANG[0])
-  const [keterangan, setKeterangan] = useState(penawaran?.keterangan ?? '')
-  const [satuan, setSatuan] = useState(penawaran?.satuan ?? '')
-  const [isi, setIsi] = useState(isiAwal.isi)
-  const [satuanIsi, setSatuanIsi] = useState(isiAwal.satuan)
-  const [harga, setHarga] = useState(penawaran ? angka(penawaran.hargaSatuan) : '')
-  const [stok, setStok] = useState(penawaran ? angka(penawaran.stokTersedia) : '')
-  const [dicoba, setDicoba] = useState(false)
-
-  const angkaIsi = bacaAngkaIndonesia(isi)
-  const angkaHarga = bacaAngkaIndonesia(harga)
-  const angkaStok = bacaAngkaIndonesia(stok)
-  const isiTerpilih = pilihanIsi.find((s) => s.nilai === satuanIsi) ?? pilihanIsi[0]
-
-  const galat = {
-    nama: nama.trim().length < 3 ? 'Nama barang belum diisi. Tulis nama yang dikenal pembeli. Contoh: Teh Melati Kering.' : undefined,
-    satuan: !satuan.trim() ? 'Satuan jual belum diisi. Tulis satuan saat barang dijual. Contoh: kg, dus, jerigen.' : undefined,
-    isi:
-      !Number.isFinite(angkaIsi) || angkaIsi <= 0
-        ? 'Isi satu satuan jual belum diisi. Contoh: 1 dus berisi 24 pcs, tulis 24.'
-        : undefined,
-    harga:
-      !Number.isFinite(angkaHarga) || angkaHarga <= 0
-        ? `Harga per ${satuan.trim() || 'satuan jual'} belum diisi. Tulis dalam rupiah. Contoh: 96.000.`
-        : undefined,
-    stok:
-      !Number.isFinite(angkaStok) || angkaStok < 0
-        ? 'Stok belum diisi. Tulis jumlah yang siap dikirim, atau 0 kalau sedang kosong.'
-        : undefined,
-  }
-
-  function simpan() {
-    setDicoba(true)
-    if (Object.values(galat).some(Boolean)) return
-    const satuanBersih = satuan.trim()
-    const isiDasar = Math.round(angkaIsi * isiTerpilih.kali * 100) / 100
-    simpanPenawaran({
-      id: penawaran?.id ?? `pw-${Date.now()}`,
-      distributorId: distributor.id,
-      nama: nama.trim(),
-      kategori,
-      satuan: satuanBersih,
-      hargaSatuan: Math.round(angkaHarga),
-      kemasanJual: { nama: satuanBersih, isi: isiDasar },
-      stokTersedia: angkaStok,
-      stokDiperbaruiPada: new Date().toISOString(),
-      barangIdTerkait: penawaran?.barangIdTerkait ?? null,
-      keterangan: keterangan.trim(),
-      aktif: penawaran?.aktif ?? true,
-      satuanIsi: isiTerpilih.dasar,
-    })
-    tutup()
-  }
-
-  return (
-    <Lembar
-      terbuka
-      tutup={tutup}
-      judul={penawaran ? `Ubah ${penawaran.nama}` : 'Tambah barang'}
-      keterangan="Yang tertulis di sini persis yang dilihat pemilik usaha saat memesan."
-      kunciLatar
-      kaki={
-        <div className="flex gap-2.5">
-          <Tombol ragam="garis" penuh onClick={tutup}>
-            Batal
-          </Tombol>
-          <Tombol penuh onClick={simpan}>
-            Simpan Barang
-          </Tombol>
-        </div>
-      }
-    >
-      <div className="pb-4 space-y-4">
-        <Kolom label="Nama barang" wajib value={nama} onChange={(e) => setNama(e.target.value)} galat={dicoba ? galat.nama : undefined} />
-        <Pilihan label="Kategori" wajib value={kategori} onChange={(e) => setKategori(e.target.value)}>
-          {KATEGORI_BARANG.map((k) => (
-            <option key={k} value={k}>
-              {k}
-            </option>
-          ))}
-        </Pilihan>
-        <AreaTeks
-          label="Keterangan singkat"
-          rows={2}
-          value={keterangan}
-          onChange={(e) => setKeterangan(e.target.value)}
-          bantuan="Misalnya ukuran kemasan atau asal barang."
-        />
-        <div className="grid grid-cols-2 gap-3 [&>*]:min-w-0">
-          <Kolom
-            label="Satuan jual"
-            wajib
-            value={satuan}
-            onChange={(e) => setSatuan(e.target.value)}
-            galat={dicoba ? galat.satuan : undefined}
-            placeholder="dus"
-          />
-          <Kolom
-            label={`Harga per ${satuan.trim() || 'satuan'}`}
-            wajib
-            inputMode="numeric"
-            awalan="Rp"
-            value={harga}
-            onChange={(e) => setHarga(e.target.value)}
-            galat={dicoba ? galat.harga : undefined}
-          />
-        </div>
-        {/* Isi satu satuan jual inilah kelipatan pemesanan: pemilik usaha hanya
-            bisa memesan per satuan jual, dan stok gudangnya bertambah sebanyak isi ini. */}
-        <div>
-          <p className="text-isi font-semibold text-ink-2 mb-1.5">
-            Isi 1 {satuan.trim() || 'satuan jual'}
-            <span className="text-ink-3 ml-0.5" aria-hidden="true">
-              *
-            </span>
-          </p>
-          <div className="grid grid-cols-2 gap-3 [&>*]:min-w-0">
-            <Kolom
-              aria-label={`Isi 1 ${satuan.trim() || 'satuan jual'}`}
-              inputMode="decimal"
-              value={isi}
-              onChange={(e) => setIsi(e.target.value)}
-              galat={dicoba ? galat.isi : undefined}
-            />
-            <Pilihan
-              aria-label="Satuan isi"
-              value={satuanIsi}
-              onChange={(e) => setSatuanIsi(e.target.value)}
-              disabled={pilihanIsi.length === 1}
-            >
-              {pilihanIsi.map((s) => (
-                <option key={s.nilai} value={s.nilai}>
-                  {s.nilai}
-                </option>
-              ))}
-            </Pilihan>
-          </div>
-          {penawaran?.barangIdTerkait && (
-            <p className="mt-1.5 text-isi text-ink-3 leading-snug">
-              Satuan isinya mengikuti catatan stok pembeli yang sudah ada, jadi tidak bisa diganti ke satuan lain.
-            </p>
-          )}
-        </div>
-        <Kolom
-          label="Stok siap kirim"
-          wajib
-          inputMode="decimal"
-          akhiran={satuan.trim() || undefined}
-          value={stok}
-          onChange={(e) => setStok(e.target.value)}
-          galat={dicoba ? galat.stok : undefined}
-          bantuan="Waktu pembaruan stok ikut tersimpan dan ditampilkan ke pemilik usaha."
-        />
-      </div>
-    </Lembar>
-  )
-}
-
-/* ================================================================== */
-/* Formulir layanan dan info usaha                                    */
-/* ================================================================== */
-
-function FormLayanan({ distributor, tutup }: { distributor: Distributor; tutup: () => void }) {
-  const ubahDistributor = useAplikasi((s) => s.ubahDistributor)
-  const [kategori, setKategori] = useState<string[]>(distributor.kategori)
-  const [area, setArea] = useState<string[]>(distributor.areaKirim)
-  const [dicoba, setDicoba] = useState(false)
-  const [menyimpan, setMenyimpan] = useState(false)
-
-  const galatKategori = kategori.length === 0 ? 'Pilih minimal satu kategori barang yang kamu jual.' : undefined
-  const galatArea = area.length === 0 ? 'Pilih minimal satu wilayah yang kamu kirimi.' : undefined
-
-  const ganti = (daftar: string[], nilai: string) =>
-    daftar.includes(nilai) ? daftar.filter((x) => x !== nilai) : [...daftar, nilai]
-
-  async function simpan() {
-    setDicoba(true)
-    if (galatKategori || galatArea) return
-    setMenyimpan(true)
-    const tersimpan = await ubahDistributor(distributor.id, { kategori, areaKirim: area })
-    setMenyimpan(false)
-    // Ditolak atau gagal: lembar tetap terbuka supaya pilihannya tidak hilang.
-    if (tersimpan) tutup()
-  }
-
-  return (
-    <Lembar
-      terbuka
-      tutup={tutup}
-      judul="Ubah yang kamu layani"
-      keterangan="Rekomendasi distributor di sisi pemilik usaha menyaring menurut dua hal ini."
-      lebar="sempit"
-      kunciLatar
-      kaki={
-        <div className="flex gap-2.5">
-          <Tombol ragam="garis" penuh onClick={tutup}>
-            Batal
-          </Tombol>
-          <Tombol penuh memuat={menyimpan} onClick={simpan}>
-            Simpan
-          </Tombol>
-        </div>
-      }
-    >
-      <div className="pb-4 space-y-5">
-        <div>
-          <p className="text-isi font-semibold text-ink-2 mb-2.5">Kategori barang</p>
-          <BarisChip className="flex-wrap">
-            {KATEGORI_BARANG.map((k) => (
-              <Chip key={k} aktif={kategori.includes(k)} onClick={() => setKategori((d) => ganti(d, k))}>
-                {k}
-              </Chip>
-            ))}
-          </BarisChip>
-          {dicoba && galatKategori && <p className="mt-2 text-isi text-kritis font-medium">{galatKategori}</p>}
-        </div>
-        <div>
-          <p className="text-isi font-semibold text-ink-2 mb-2.5">Area kirim</p>
-          <BarisChip className="flex-wrap">
-            {WILAYAH_KIRIM.map((w) => (
-              <Chip key={w} aktif={area.includes(w)} onClick={() => setArea((d) => ganti(d, w))}>
-                {w}
-              </Chip>
-            ))}
-          </BarisChip>
-          {dicoba && galatArea && <p className="mt-2 text-isi text-kritis font-medium">{galatArea}</p>}
-        </div>
-      </div>
-    </Lembar>
-  )
-}
-
-function FormInfoUsaha({ distributor, tutup }: { distributor: Distributor; tutup: () => void }) {
-  const ubahDistributor = useAplikasi((s) => s.ubahDistributor)
-  const awal: InfoUsahaDistributor = distributor.info ?? {
-    alamatGudang: '',
-    nomorHp: '',
-    jamOperasional: '',
-    minimumPesanan: 0,
-  }
-  const [deskripsi, setDeskripsi] = useState(distributor.deskripsi)
-  const [alamat, setAlamat] = useState(awal.alamatGudang)
-  const [nomor, setNomor] = useState(awal.nomorHp)
-  const [jam, setJam] = useState(awal.jamOperasional)
-  const [minimum, setMinimum] = useState(awal.minimumPesanan > 0 ? angka(awal.minimumPesanan) : '')
-  const [dicoba, setDicoba] = useState(false)
-  const [menyimpan, setMenyimpan] = useState(false)
-
-  /* Aturan dan pesannya sama dengan PUT /distributor/{id}/profil. Batas jam
-     mengikuti panjang kolomnya; minimum di atas Rp 1 miliar hampir pasti salah ketik. */
-  const angkaMinimum = minimum.trim() === '' ? 0 : bacaAngkaIndonesia(minimum)
-  const galat = {
-    alamat: alamat.trim().length < 8 ? 'Alamat gudang belum lengkap. Tulis nama jalan dan nomornya. Contoh: Jl. Magelang KM 7.' : undefined,
-    nomor: !/^08\d{8,11}$/.test(nomor.replace(/\D/g, '')) ? 'Nomor HP harus diawali 08 dan berisi 10-13 angka. Contoh: 081234567890.' : undefined,
-    jam:
-      jam.trim().length < 5
-        ? 'Jam operasional belum diisi. Contoh: Senin sampai Sabtu, 07.00 - 16.00.'
-        : jam.trim().length > 120
-          ? 'Jam operasional terlalu panjang. Ringkas jadi paling banyak 120 huruf.'
-          : undefined,
-    minimum:
-      !Number.isFinite(angkaMinimum) || angkaMinimum < 0
-        ? 'Minimum pesanan harus angka rupiah, atau kosongkan kalau tidak ada minimum. Contoh: 250.000.'
-        : Math.round(angkaMinimum) > 1_000_000_000
-          ? 'Minimum pesanan terlalu besar. Tulis paling banyak 1.000.000.000.'
-          : undefined,
-  }
-
-  async function simpan() {
-    setDicoba(true)
-    if (Object.values(galat).some(Boolean)) return
-    setMenyimpan(true)
-    const tersimpan = await ubahDistributor(distributor.id, {
-      deskripsi: deskripsi.trim(),
-      info: {
-        alamatGudang: alamat.trim(),
-        nomorHp: nomor.replace(/\D/g, ''),
-        jamOperasional: jam.trim(),
-        minimumPesanan: Math.round(angkaMinimum),
-      },
-    })
-    setMenyimpan(false)
-    // Ditolak atau gagal: lembar tetap terbuka supaya isiannya tidak hilang.
-    if (tersimpan) tutup()
-  }
-
-  return (
-    <Lembar
-      terbuka
-      tutup={tutup}
-      judul="Ubah info usaha"
-      keterangan="Ditampilkan di halaman tokomu yang dibuka pemilik usaha."
-      kunciLatar
-      kaki={
-        <div className="flex gap-2.5">
-          <Tombol ragam="garis" penuh onClick={tutup}>
-            Batal
-          </Tombol>
-          <Tombol penuh memuat={menyimpan} onClick={simpan}>
-            Simpan
-          </Tombol>
-        </div>
-      }
-    >
-      <div className="pb-4 space-y-4">
-        <AreaTeks label="Tentang tokomu" rows={3} value={deskripsi} onChange={(e) => setDeskripsi(e.target.value)} />
-        <AreaTeks
-          label="Alamat gudang"
-          wajib
-          rows={2}
-          value={alamat}
-          onChange={(e) => setAlamat(e.target.value)}
-          galat={dicoba ? galat.alamat : undefined}
-        />
-        <Kolom
-          label="Nomor HP atau WhatsApp"
-          wajib
-          inputMode="tel"
-          value={nomor}
-          onChange={(e) => setNomor(e.target.value)}
-          galat={dicoba ? galat.nomor : undefined}
-        />
-        <Kolom
-          label="Jam operasional"
-          wajib
-          value={jam}
-          onChange={(e) => setJam(e.target.value)}
-          galat={dicoba ? galat.jam : undefined}
-        />
-        <Kolom
-          label="Minimum pesanan"
-          inputMode="numeric"
-          awalan="Rp"
-          value={minimum}
-          onChange={(e) => setMinimum(e.target.value)}
-          galat={dicoba ? galat.minimum : undefined}
-          bantuan="Pemilik usaha diingatkan di keranjang kalau belanjanya belum mencapai angka ini."
-        />
-      </div>
-    </Lembar>
-  )
-}
-
-/* Leaflet hanya diunduh saat lembar lokasi dibuka. */
-const PetaPilihTitik = lazy(() =>
-  import('@/components/domain/PetaLacak').then((m) => ({ default: m.PetaPilihTitik })),
-)
-
-/**
- * Lokasi gudang (revisi 23 Okt 2026): titik yang dilihat pemilik usaha di peta
- * Lacak Pesanan. Boleh kosong; peta lalu memakai titik tengah kota distributor.
- * Titik dipilih dengan mengetuk peta, atau, tanpa tetikus, dengan menggeser
- * peta memakai tombol panah lalu "Pakai titik tengah peta".
- */
-function FormLokasiGudang({ distributor, tutup }: { distributor: Distributor; tutup: () => void }) {
-  const simpanLokasiGudang = useAplikasi((s) => s.simpanLokasiGudang)
-  const awal: Koordinat | null = koordinatSah(distributor.lat, distributor.lng)
-    ? { lat: distributor.lat, lng: distributor.lng as number }
-    : null
-  const [titik, setTitik] = useState<Koordinat | null>(awal)
-  const [menyimpan, setMenyimpan] = useState(false)
-  const tengahRef = useRef<(() => Koordinat | null) | null>(null)
-
-  async function simpan(nilai: Koordinat | null) {
-    setMenyimpan(true)
-    const tersimpan = await simpanLokasiGudang(nilai)
-    setMenyimpan(false)
-    if (tersimpan) tutup()
-  }
-
-  return (
-    <Lembar
-      terbuka
-      tutup={tutup}
-      judul="Lokasi gudang"
-      keterangan="Ketuk peta di titik gudangmu. Pemilik usaha yang memesan darimu melihatnya di peta Lacak Pesanan."
-      kunciLatar
-      kaki={
-        <div className="flex gap-2.5">
-          <Tombol ragam="garis" penuh onClick={tutup}>
-            Batal
-          </Tombol>
-          <Tombol penuh memuat={menyimpan} disabled={!titik} onClick={() => simpan(titik)}>
-            Simpan
-          </Tombol>
-        </div>
-      }
-    >
-      <div className="pb-4 space-y-3">
-        <Suspense fallback={<div className="h-72 sm:h-80 rounded-lg skeleton" />}>
-          <PetaPilihTitik
-            nilai={titik}
-            ubah={setTitik}
-            pusat={pusatKota(distributor.kota)}
-            label="Peta untuk memilih titik gudang"
-            className="h-72 sm:h-80"
-            pakaiTengahRef={tengahRef}
-          />
-        </Suspense>
-        <p className="text-isi text-ink-2">
-          {titik ? (
-            <>
-              Titik terpilih:{' '}
-              <span className="tabular font-semibold text-ink">
-                lintang {angka(titik.lat, 5)} &middot; bujur {angka(titik.lng, 5)}
-              </span>
-            </>
-          ) : (
-            'Belum ada titik. Ketuk peta, atau geser peta lalu pakai titik tengahnya.'
-          )}
-        </p>
-        <div className="flex flex-wrap gap-2">
-          <Tombol
-            ragam="garis"
-            ukuran="kecil"
-            onClick={() => {
-              const tengah = tengahRef.current?.()
-              if (tengah) setTitik(tengah)
-            }}
-          >
-            Pakai titik tengah peta
-          </Tombol>
-          {awal && (
-            <Tombol ragam="sunyi" ukuran="kecil" disabled={menyimpan} onClick={() => simpan(null)}>
-              Kosongkan titik
-            </Tombol>
-          )}
-        </div>
-      </div>
-    </Lembar>
-  )
-}
-
-/* ================================================================== */
-/* Halaman                                                            */
-/* ================================================================== */
-
 export default function ProfilDistributor() {
   const navigate = useNavigate()
   const tema = useAplikasi((s) => s.tema)
   const aturTema = useAplikasi((s) => s.aturTema)
   const aturPeran = useAplikasi((s) => s.aturPeran)
   const katalog = useAplikasi((s) => s.katalog)
-  const aturAktifPenawaran = useAplikasi((s) => s.aturAktifPenawaran)
+  const sesi = useAplikasi((s) => s.sesiDistributor)
+  const putus = useAplikasi((s) => s.putusDistributor)
   const distributor = useDistributorAktif()
-  const pesananMasuk = usePesananMasuk()
 
-  const [formBarang, setFormBarang] = useState<{ penawaran: Penawaran | null } | null>(null)
-  const [formLayanan, setFormLayanan] = useState(false)
-  const [formInfo, setFormInfo] = useState(false)
-  const [formLokasi, setFormLokasi] = useState(false)
-
-  const penawaranSaya = useMemo(
-    () => katalog.filter((p) => p.distributorId === distributor.id),
-    [katalog, distributor.id],
-  )
-  const jumlahDijual = penawaranSaya.filter((p) => p.aktif !== false).length
-
-  /* Lima penilaian terbaru. Lebih dari itu halaman berubah jadi daftar ulasan,
-     padahal ini halaman profil. */
-  const ulasanTerbaru = useMemo(
-    () =>
-      pesananMasuk
-        .filter((p) => p.ulasan)
-        .sort((a, b) => +new Date(b.ulasan!.waktu) - +new Date(a.ulasan!.waktu))
-        .slice(0, 5),
-    [pesananMasuk],
-  )
+  const jumlahDijual = katalog.filter((p) => p.distributorId === distributor.id && p.aktif !== false).length
 
   function kembaliKePortalUmkm() {
     // Peran diubah lebih dulu, baru layarnya dibuka, supaya kerangka yang
@@ -584,371 +39,141 @@ export default function ProfilDistributor() {
   }
 
   return (
-    <div className="pb-6">
-      {/* 1. Identitas */}
-      <p className="text-kecil font-bold uppercase tracking-wide text-ink-3">Profil toko</p>
-      <h1 className={cx('mt-0.5 text-judul font-extrabold text-ink tracking-tight leading-snug', RUANG_LONCENG)}>
-        {distributor.nama}
-      </h1>
+    <div className="pb-8">
+      <KepalaHalaman judul="Akun" kembaliKe="/distributor-portal" />
 
-      <div className="mt-3 flex items-start gap-3">
-        <Avatar nama={distributor.nama} warna={distributor.warna} ukuran={56} />
+      {/* Kepala identitas toko */}
+      <div className="mt-4 flex items-center gap-3.5">
+        <Avatar nama={distributor.nama} warna={distributor.warna} ukuran={64} className="rounded-lg" />
         <div className="min-w-0">
-          <p className="text-isi text-ink-2 leading-snug">
-            {distributor.kota} &middot; bergabung {distributor.sejak}
+          <h2 className="text-[1.125rem] font-extrabold text-ink leading-tight truncate">{distributor.nama}</h2>
+          <p className="text-isi text-ink-3 truncate">
+            Distributor &middot; {distributor.kota}
+            {distributor.rating != null && (
+              <>
+                {' '}
+                &middot; <IkonBintang size={13} className="inline align-[-2px] text-menipis" /> {bintang(distributor.rating)}
+              </>
+            )}
           </p>
-          <div className="mt-1.5 flex flex-wrap gap-1.5">
-            {distributor.terverifikasi && (
+          {distributor.terverifikasi && (
+            <div className="mt-1.5">
               <Lencana nada="aman" ikon={<IkonCentangLingkaran size={13} />}>
                 Terverifikasi
               </Lencana>
-            )}
-            <Lencana nada="netral" ikon={<IkonToko size={13} />}>
-              {jumlahDijual} barang dijual
-            </Lencana>
-          </div>
+            </div>
+          )}
         </div>
       </div>
 
-      <p className="mt-3 text-isi text-ink-2 leading-relaxed max-w-[70ch]">{distributor.deskripsi}</p>
+      <p className="mt-2.5 text-kecil text-ink-3">Bergabung sejak {distributor.sejak}</p>
 
-      <div className="mt-5 lg:grid lg:grid-cols-12 lg:gap-5 lg:items-start space-y-6 lg:space-y-0">
-        <div className="lg:col-span-7 space-y-6">
-          {/* 2. Barang yang dijual: yang paling sering diubah, jadi paling atas */}
-          <section aria-labelledby="judul-penawaran">
-            <JudulBagian
-              id="judul-penawaran"
-              judul="Barang yang kamu jual"
-              keterangan="Harga dan stok yang dilihat pemilik usaha saat memesan."
-              aksi={
-                <Tombol
-                  ragam="garis"
-                  ukuran="kecil"
-                  ikonKiri={<IkonTambah size={15} />}
-                  onClick={() => setFormBarang({ penawaran: null })}
-                >
-                  Tambah
-                </Tombol>
-              }
+      {/* Dua kolom di layar lebar supaya daftar tidak jadi pita panjang */}
+      <div className="mt-6 lg:grid lg:grid-cols-2 lg:gap-x-6 lg:items-start space-y-6 lg:space-y-0">
+        <div className="space-y-6">
+          <Kelompok judul="Toko">
+            <BarisMenu
+              ke="/distributor-portal/profil/toko"
+              ikon={<IkonToko size={19} />}
+              judul="Profil Toko"
+              keterangan="Deskripsi, info usaha, yang kamu layani, dan lokasi gudang"
             />
-            <Kartu>
-              <div className="divide-y divide-line">
-                {penawaranSaya.map((pw) => {
-                  const nonaktif = pw.aktif === false
-                  return (
-                    <div key={pw.id} className={cx('py-3 first:pt-0 last:pb-0', nonaktif && 'opacity-70')}>
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="text-kartu font-bold text-ink leading-snug">
-                            {pw.nama}
-                            {nonaktif && (
-                              <Lencana nada="netral" className="ml-2 align-middle">
-                                Disembunyikan
-                              </Lencana>
-                            )}
-                          </p>
-                          <p className="mt-0.5 text-isi text-ink-3 leading-snug">
-                            {[pw.keterangan, kalimatKelipatan(pw)].filter(Boolean).join(' · ')}
-                          </p>
-                        </div>
-                        <p className="text-kartu font-bold text-ink tabular shrink-0">
-                          {rupiah(pw.hargaSatuan)}
-                          <span className="block text-right text-kecil font-normal text-ink-3">per {pw.satuan}</span>
-                        </p>
-                      </div>
-                      <p className="mt-1.5 flex items-start gap-1.5 text-isi text-ink-2 leading-snug">
-                        <IkonKotak size={14} className="shrink-0 mt-0.5 text-ink-3" />
-                        <span>
-                          Stok {angka(pw.stokTersedia)} {pw.satuan} &middot; diperbarui {tanggalPendek(pw.stokDiperbaruiPada)}
-                        </span>
-                      </p>
-                      <div className="mt-1 flex flex-wrap gap-x-1">
-                        <Tombol
-                          ragam="sunyi"
-                          ukuran="kecil"
-                          ikonKiri={<IkonPena size={14} />}
-                          onClick={() => setFormBarang({ penawaran: pw })}
-                          aria-label={`Ubah ${pw.nama}`}
-                        >
-                          Ubah
-                        </Tombol>
-                        <Tombol
-                          ragam="sunyi"
-                          ukuran="kecil"
-                          ikonKiri={nonaktif ? <IkonMata size={14} /> : <IkonMataTutup size={14} />}
-                          onClick={() => aturAktifPenawaran(pw.id, nonaktif)}
-                          aria-label={`${nonaktif ? 'Jual lagi' : 'Sembunyikan'} ${pw.nama}`}
-                        >
-                          {nonaktif ? 'Jual Lagi' : 'Sembunyikan'}
-                        </Tombol>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </Kartu>
-          </section>
-
-          {/* 3. Angka penilaian */}
-          <section aria-labelledby="judul-penilaian">
-            <JudulBagian id="judul-penilaian" judul="Penilaian dari pemilik usaha" />
-            <Kartu>
-              {/* Satuan ditaruh di baris bantuan, bukan di samping angka:
-                  di 360px satu kolom cuma kebagian ±90px, dan "412 pesanan"
-                  sejajar tidak muat tanpa melebarkan halaman. */}
-              <div className="grid grid-cols-3 gap-3">
-                <Metrik
-                  label="Rata-rata"
-                  nilai={distributor.rating == null ? '—' : bintang(distributor.rating)}
-                  bantuan="dari 5 bintang"
-                  nada="merek"
-                />
-                <Metrik
-                  label="Ulasan"
-                  nilai={angka(distributor.jumlahUlasan)}
-                  bantuan={`dari ${angka(distributor.jumlahUmkmPengulas)} pemilik usaha`}
-                />
-                <Metrik label="Selesai" nilai={angka(distributor.jumlahPesananSelesai)} bantuan="pesanan" />
-              </div>
-
-              {distributor.rating == null ? (
-                <p className="mt-4 text-isi text-ink-2 leading-relaxed">
-                  Belum ada penilaian yang masuk. Angkanya muncul setelah pesanan pertama selesai dan pemiliknya menulis
-                  ulasan.
-                </p>
-              ) : (
-                <>
-                  <Pemisah className="my-4" />
-                  <div className="space-y-3">
-                    {SUB_RATING.map(({ kunci, nama }) => {
-                      const nilai = distributor.subRating[kunci]
-                      return (
-                        <div key={kunci}>
-                          <div className="flex items-baseline justify-between gap-2">
-                            <span className="text-isi text-ink-2 font-medium">{nama}</span>
-                            {/* Tiga angka yang sejajar vertikal: di sini tabular
-                                memang pada tempatnya. */}
-                            <span className="text-isi font-bold text-ink tabular">{angka(nilai, 1)} dari 5</span>
-                          </div>
-                          {/* Bilahnya dekoratif: angkanya sudah tertulis di atas. */}
-                          <div className="mt-1.5 h-2 rounded-full bg-sunken overflow-hidden" aria-hidden="true">
-                            <div className="h-full rounded-full bg-brand" style={{ width: `${(nilai / 5) * 100}%` }} />
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </>
-              )}
-            </Kartu>
-          </section>
-        </div>
-
-        <div className="lg:col-span-5 space-y-6">
-          {/* 4. Yang dilayani */}
-          <section aria-labelledby="judul-layanan">
-            <JudulBagian
-              id="judul-layanan"
-              judul="Yang kamu layani"
-              aksi={
-                <Tombol ragam="sunyi" ukuran="kecil" ikonKiri={<IkonPena size={14} />} onClick={() => setFormLayanan(true)}>
-                  Ubah
-                </Tombol>
-              }
+            <BarisMenu
+              ke="/distributor-portal/profil/barang"
+              ikon={<IkonKotak size={19} />}
+              judul="Barang yang Dijual"
+              keterangan={`${angka(jumlahDijual)} barang dijual · harga dan stok yang dilihat pemilik usaha`}
             />
-            <Kartu>
-              <h3 className="text-isi font-bold text-ink-2">Kategori barang</h3>
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {distributor.kategori.map((k) => (
-                  <Lencana key={k} nada="merek" besar>
-                    {k}
-                  </Lencana>
-                ))}
-              </div>
+          </Kelompok>
 
-              <h3 className="mt-4 text-isi font-bold text-ink-2">Area kirim</h3>
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {distributor.areaKirim.map((a) => (
-                  <Lencana key={a} nada="netral" besar>
-                    {a}
-                  </Lencana>
-                ))}
-              </div>
-            </Kartu>
-          </section>
-
-          {/* 5. Info usaha */}
-          <section aria-labelledby="judul-info">
-            <JudulBagian
-              id="judul-info"
-              judul="Info usaha"
-              aksi={
-                <Tombol ragam="sunyi" ukuran="kecil" ikonKiri={<IkonPena size={14} />} onClick={() => setFormInfo(true)}>
-                  Ubah
-                </Tombol>
-              }
-            />
-            <Kartu>
-              {distributor.info ? (
-                <dl>
-                  <BarisData label="Alamat gudang" nilai={distributor.info.alamatGudang} />
-                  <BarisData label="Nomor HP" nilai={nomorHp(distributor.info.nomorHp)} />
-                  <BarisData label="Jam operasional" nilai={distributor.info.jamOperasional} />
-                  <BarisData
-                    label="Minimum pesanan"
-                    nilai={distributor.info.minimumPesanan > 0 ? rupiah(distributor.info.minimumPesanan) : 'Tanpa minimum'}
-                  />
-                </dl>
-              ) : (
-                <p className="text-isi text-ink-2 leading-relaxed">
-                  Belum diisi. Lengkapi alamat gudang, kontak, dan jam operasional supaya pemilik usaha tahu kapan
-                  pesanannya bisa diproses.
-                </p>
-              )}
-            </Kartu>
-          </section>
-
-          {/* 5b. Lokasi gudang: titik di peta Lacak Pesanan (revisi 23 Okt) */}
-          <section aria-labelledby="judul-lokasi">
-            <JudulBagian
-              id="judul-lokasi"
-              judul="Lokasi gudang"
-              keterangan="Pemilik usaha yang memesan darimu melihat titik ini di peta Lacak Pesanan."
-              aksi={
-                <Tombol ragam="sunyi" ukuran="kecil" ikonKiri={<IkonPena size={14} />} onClick={() => setFormLokasi(true)}>
-                  Ubah
-                </Tombol>
-              }
-            />
-            <Kartu>
-              {koordinatSah(distributor.lat, distributor.lng) ? (
-                <p className="text-isi text-ink-2">
-                  Titik dipilih di peta:{' '}
-                  <span className="tabular font-semibold text-ink">
-                    lintang {angka(distributor.lat, 5)} &middot; bujur {angka(distributor.lng as number, 5)}
-                  </span>
-                </p>
-              ) : (
-                <p className="text-isi text-ink-2 leading-relaxed">
-                  Belum diisi. Peta memakai titik tengah {distributor.kota} sampai kamu memilih titik gudangmu.
-                </p>
-              )}
-            </Kartu>
-          </section>
-
-          {/* 6. Ulasan terbaru */}
-          <section aria-labelledby="judul-ulasan">
-            <JudulBagian
-              id="judul-ulasan"
-              judul="Ulasan terbaru"
-              keterangan={ulasanTerbaru.length > 0 ? 'Lima penilaian paling akhir.' : undefined}
-            />
-            <Kartu>
-              {ulasanTerbaru.length === 0 ? (
-                <p className="text-isi text-ink-2 leading-relaxed">
-                  Belum ada pemilik usaha yang menulis penilaian. Ulasan bisa ditulis setelah pesanannya ditandai sudah
-                  sampai.
-                </p>
-              ) : (
-                <div className="divide-y divide-line">
-                  {ulasanTerbaru.map((p) => {
-                    const u = p.ulasan!
-                    return (
-                      <div key={p.id} className="py-3 first:pt-0 last:pb-0">
-                        {/* Dibiarkan membungkus: nama usaha bisa panjang, dan
-                            bintang + angkanya tidak boleh ikut menyempit
-                            sampai melebarkan kartu di layar 360px. */}
-                        <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
-                          <p className="text-isi font-bold text-ink leading-snug min-w-0">
-                            {umkmById(p.umkmId)?.nama ?? 'Pemilik usaha'}
-                          </p>
-                          <span className="flex items-center gap-1 shrink-0">
-                            <span className="flex items-center gap-0.5 text-menipis" aria-hidden="true">
-                              {[1, 2, 3, 4, 5].map((i) =>
-                                i <= u.rating ? <IkonBintangIsi key={i} size={13} /> : <IkonBintang key={i} size={13} />,
-                              )}
-                            </span>
-                            <span className="text-isi font-bold text-ink">{bintang(u.rating)} dari 5</span>
-                          </span>
-                        </div>
-                        {u.isi && (
-                          <p className="mt-1 text-isi text-ink-2 leading-relaxed max-w-[60ch]">
-                            &ldquo;{u.isi}&rdquo;
-                          </p>
-                        )}
-                        <p className="mt-1 text-kecil text-ink-3">
-                          {p.nomor} &middot; {tanggalPendek(u.waktu)}
-                        </p>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </Kartu>
-          </section>
-
-          {/* 7. Tampilan */}
           <section aria-labelledby="judul-tampilan">
-            <JudulBagian id="judul-tampilan" judul="Tampilan" keterangan="Berlaku di perangkat ini saja." />
+            <h2 id="judul-tampilan" className="text-kecil font-bold uppercase tracking-wide text-ink-3 mb-2">
+              Tampilan
+            </h2>
+            <p className="text-isi text-ink-3 mb-2.5 leading-snug">Berlaku di perangkat ini saja.</p>
             <div className="flex gap-2.5">
-              <PilihanTema aktif={tema === 'terang'} onClick={() => aturTema('terang')} ikon={<IkonMatahari size={17} />}>
+              <TombolPilihan aktif={tema === 'terang'} onClick={() => aturTema('terang')} ikon={<IkonMatahari size={17} />}>
                 Terang
-              </PilihanTema>
-              <PilihanTema aktif={tema === 'gelap'} onClick={() => aturTema('gelap')} ikon={<IkonBulan size={17} />}>
+              </TombolPilihan>
+              <TombolPilihan aktif={tema === 'gelap'} onClick={() => aturTema('gelap')} ikon={<IkonBulan size={17} />}>
                 Gelap
-              </PilihanTema>
+              </TombolPilihan>
             </div>
           </section>
+        </div>
 
-          {/* 8. Jalan pulang ke sisi pemilik usaha */}
-          <section aria-labelledby="judul-peran">
-            <JudulBagian id="judul-peran" judul="Peran akun" />
-            <p className="-mt-1 text-isi text-ink-3 leading-relaxed max-w-[60ch]">
-              Berpindah peran adalah alat uji purwarupa. Di aplikasi yang sungguhan, satu akun hanya punya satu peran:
-              pemilik usaha atau distributor, tidak keduanya.
-            </p>
-            <Tombol ragam="garis" className="mt-3" ikonKiri={<IkonToko size={17} />} onClick={kembaliKePortalUmkm}>
-              Kembali ke portal UMKM
-            </Tombol>
-          </section>
+        <div className="space-y-6 mt-6 lg:mt-0">
+          <Kelompok judul="Penilaian">
+            <BarisMenu
+              ke="/distributor-portal/profil/ulasan"
+              ikon={<IkonBintang size={19} />}
+              judul="Penilaian & Ulasan"
+              keterangan={
+                distributor.rating == null
+                  ? 'Belum ada penilaian dari pemilik usaha'
+                  : `${bintang(distributor.rating)} dari 5 · ${angka(distributor.jumlahUlasan)} ulasan dari pemilik usaha`
+              }
+            />
+          </Kelompok>
         </div>
       </div>
 
-      {formBarang && (
-        <FormBarang distributor={distributor} penawaran={formBarang.penawaran} tutup={() => setFormBarang(null)} />
-      )}
-      {formLayanan && <FormLayanan distributor={distributor} tutup={() => setFormLayanan(false)} />}
-      {formInfo && <FormInfoUsaha distributor={distributor} tutup={() => setFormInfo(false)} />}
-      {formLokasi && <FormLokasiGudang distributor={distributor} tutup={() => setFormLokasi(false)} />}
-    </div>
-  )
-}
+      {/* Alat uji. Sengaja tidak disembunyikan, sama dengan Akun pemilik usaha:
+          purwarupa ini dipakai untuk menelusuri kedua sisi. */}
+      <section aria-labelledby="judul-alat-uji" className="mt-6">
+        <div className="rounded-lg border border-dashed border-line-strong bg-surface-2 p-4">
+          <h2 id="judul-alat-uji" className="text-kartu font-bold text-ink">
+            Alat uji purwarupa
+          </h2>
+          <p className="mt-1 text-isi text-ink-3 leading-relaxed">
+            Hanya untuk pengembang. Yang ada di kotak ini tidak mengubah pesanan, kontrak, maupun katalogmu.
+          </p>
 
-/** Dua pilihan tema yang saling meniadakan. Tinggi 44px, ikon + teks. */
-function PilihanTema({
-  aktif,
-  onClick,
-  ikon,
-  children,
-}: {
-  aktif: boolean
-  onClick: () => void
-  ikon: ReactNode
-  children: ReactNode
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={aktif}
-      className={cx(
-        'inline-flex items-center gap-2 h-11 px-4 rounded-md text-isi font-semibold border',
-        'transition-colors duration-150',
-        aktif ? 'bg-brand-soft text-brand-soft-ink border-brand' : 'bg-surface text-ink-2 border-line-strong hover:text-ink',
-      )}
-    >
-      {ikon}
-      {children}
-    </button>
+          <div className="mt-4 grid gap-5 lg:grid-cols-2 lg:gap-6">
+            {/* Asal data portal ini: server (dengan akun distributor) atau data contoh. */}
+            <div>
+              <h3 className="text-isi font-bold text-ink">Akun distributor</h3>
+              {sesi ? (
+                <>
+                  <p className="mt-1 text-isi text-ink-3 leading-relaxed">
+                    Masuk sebagai {sesi.namaPengguna}. Keluar mengembalikan portal ini ke data contoh.
+                  </p>
+                  <Tombol ragam="garis" ikonKiri={<IkonKeluar size={17} />} className="mt-3" onClick={putus}>
+                    Keluar
+                  </Tombol>
+                </>
+              ) : (
+                <>
+                  <p className="mt-1 text-isi text-ink-3 leading-relaxed">
+                    Portal ini memakai data contoh. Masuk dengan akun distributor untuk melihat pesanan sungguhan.
+                  </p>
+                  <Link
+                    to="/masuk/distributor"
+                    className="mt-2 inline-flex items-center min-h-11 text-isi font-bold text-brand hover:underline"
+                  >
+                    Masuk sebagai distributor
+                  </Link>
+                </>
+              )}
+            </div>
+
+            {/* Jalan pulang ke sisi pemilik usaha. Tombol, bukan tautan biasa:
+                perannya harus ikut berpindah sebelum layarnya dibuka. */}
+            <div>
+              <h3 className="text-isi font-bold text-ink">Peran akun</h3>
+              <p className="mt-1 text-isi text-ink-3 leading-relaxed">
+                Berpindah peran adalah alat uji purwarupa. Di aplikasi yang sungguhan, satu akun hanya punya satu
+                peran: pemilik usaha atau distributor, tidak keduanya.
+              </p>
+              <Tombol ragam="garis" className="mt-3" ikonKiri={<IkonToko size={17} />} onClick={kembaliKePortalUmkm}>
+                Kembali ke portal UMKM
+              </Tombol>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <p className="mt-8 text-center text-kecil text-ink-3">Turnify Flow untuk Distributor &middot; versi purwarupa</p>
+    </div>
   )
 }
