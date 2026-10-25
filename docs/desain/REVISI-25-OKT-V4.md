@@ -148,8 +148,38 @@ Catatan tahap 4 (Edge headless, 1536 × 834 dan 390 × 844, terang dan gelap):
 
 ## Tahap 5 — data
 
-- [ ] **Minta Berhenti (Q89):** dua pengajuan dari kedai simulasi, versi variasi dinaikkan, dan data contoh.
-- [ ] **Image backend 0.11.0 (Q97).**
+- [x] **Minta Berhenti (Q89):** dua pengajuan dari kedai simulasi, versi variasi dinaikkan, dan data contoh.
+- [x] **Image backend 0.11.0 (Q97).**
+
+Catatan tahap 5:
+- **Variasi demo** (`data/dataset/variasi_demo.py`): dua kontrak baru dengan Sumber Tani Nusantara yang
+  sedang berjalan, berstatus aktif dengan pengajuan berhenti yang belum dijawab, seperti tombol Minta
+  Berhenti di portal usaha:
+  - Kedai Kopi Sudut Bantul, Gula Aren Cair, Kontrak C, diajukan kemarin: "Menu kopi susu gula aren
+    dihentikan sementara selama dapur direnovasi.";
+  - Kafe Beranda Kotabaru, Matcha Bubuk, Kontrak C, diajukan 3 hari lalu: "Pindah ke pemasok yang lebih
+    dekat, ongkos kirimnya lebih ringan.".
+
+  Kontrak Kopi Kita tidak berubah. Kontrak lama tidak diubah statusnya, jadi contoh Aktif, Rutin, dan Akan
+  berakhir tetap ada; kontrak kedai jadi 10.
+- **Versi variasi:** `basi()` kini juga benar bila kontrak kedai dengan distributor demo lebih sedikit dari
+  daftarnya.
+  - Akibatnya `nyalakan.cmd` dan `siapkan.cmd` langsung memasang ulang di basis data lama, dan putaran
+    berikutnya "masih segar".
+  - Hitungannya dari jumlah kontrak, bukan dari pengajuannya: pengajuan hilang begitu dijawab lewat portal,
+    dan menjawabnya saat demo tidak boleh memicu pasang ulang.
+- **Data contoh frontend:** sudah punya satu pengajuan berhenti sejak revisi 23 Oktober (`kp-07`, "Usaha sedang
+  sepi…"), jadi tidak diubah.
+- **Image `yonobengkel/turnify-flow-backend:0.11.0`:** dibangun dari `Rombak#4` dan di-push ke Docker Hub
+  (digest `sha256:14f7f0bf…`). `deployment/docker-compose.yml`, contoh perintah di Dockerfile, dan README
+  kini menunjuk ke sana. Versi paketnya sama persis dengan 0.10.0 (FastAPI 0.161.1, pandas 3.1.0,
+  LightGBM 4.7.0).
+- **Uji image** di basis data `0.2.0` yang masih baru, lewat jaringan Docker sendiri:
+  - API bermigrasi sendiri `a650ed7218eb → 5e0c7a3d9b21`, dan API serta layanan model sehat;
+  - langkah data `siapkan.cmd` di dalam kontainer: 968 deskripsi dirapikan, variasi ketiga akun (distributor:
+    11 pesanan, 10 kontrak, 9 promo), dan putaran kedua "masih segar";
+  - frontend uji ke API image: Beranda, Kontrak (tab Minta Berhenti 2), Promo, Sebaran, Beranda UMKM, dan
+    Distributor tanpa galat konsol, tanpa respons 4xx atau 5xx di log.
 
 ## Tahap 6 — akhir
 

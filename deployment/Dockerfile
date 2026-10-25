@@ -4,7 +4,7 @@
 #   Layanan model            uvicorn ml.layanan:app  --port 8001
 #
 # Build dari AKAR repo (konteksnya akar, bukan folder deployment/):
-#   docker build -f deployment/Dockerfile -t yonobengkel/turnify-flow-backend:0.10.0 .
+#   docker build -f deployment/Dockerfile -t yonobengkel/turnify-flow-backend:0.11.0 .
 #
 # Tidak ada rahasia di dalam image. WARUNGKU_DB, WARUNGKU_RAHASIA, dan
 # WARUNGKU_ML diberikan saat kontainer dijalankan (`-e` atau docker compose).

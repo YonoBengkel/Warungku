@@ -30,6 +30,8 @@ Sambal Bu Ratmi (produksi1):
   lima kedai simulasi di setiap tahap (nomor `PS-yymmdd-W`), kontrak dengan beberapa
   kedai di setiap status, dan promo berjalan yang beragam, ditambah promo dari
   distributor lain supaya Beranda Kopi Kita punya promo. Diminta Ilham 23 Okt 2026.
+  Sejak revisi V4 (25 Okt) dua kontrak kedai yang berjalan diajukan berhenti dan
+  belum dijawab, supaya tab Minta Berhenti di portal berisi.
 * **Kiriman simulasi yang terlambat** (masih "dikirim" padahal perkiraan tibanya
   sudah lewat lebih dari dua hari) ditandai sudah sampai oleh distributornya, sama
   seperti tombol "Tandai Sudah Sampai". Stok pemiliknya tidak berubah sampai ia
@@ -211,7 +213,16 @@ KONTRAK_DISTRIBUTOR: list[tuple] = [
     ("selesai", 4, "Bubuk Cokelat", "Kontrak A", 80),
     ("dihentikan", 2, "Gula Aren Cair", "Kontrak C", 95),
     ("ditolak", 1, "Matcha Bubuk", "Kontrak A", 5),
+    ("minta-berhenti", 4, "Gula Aren Cair", "Kontrak C", 45),
+    ("minta-berhenti", 3, "Matcha Bubuk", "Kontrak C", 35),
 ]
+
+#: Pengajuan berhenti yang belum dijawab distributor (revisi V4, Q89):
+#: (urutan pembeli, produk) -> (berapa hari lalu diajukan, alasan dari pemilik usaha).
+PENGAJUAN_BERHENTI: dict[tuple[int, str], tuple[int, str]] = {
+    (4, "Gula Aren Cair"): (1, "Menu kopi susu gula aren dihentikan sementara selama dapur direnovasi."),
+    (3, "Matcha Bubuk"): (3, "Pindah ke pemasok yang lebih dekat, ongkos kirimnya lebih ringan."),
+}
 
 #: Promo berjalan: (distributor, jenis, judul, keterangan, [produk], potongan %, berakhir dalam hari | None,
 #: dibuat berapa hari lalu, tingkat). Judulnya dipakai untuk membuangnya lagi saat dipasang ulang.
@@ -544,9 +555,12 @@ def _variasi_kontrak(kon, usaha_id: int, email: str, sekarang: datetime) -> int:
 
 def _satu_kontrak(
     kon, usaha_id: int, barang: dict[str, dict], status: str, distributor: str, nama: str, kode: str,
-    hari_mulai: int, sekarang: datetime,
+    hari_mulai: int, sekarang: datetime, berhenti: tuple[int, str] | None = None,
 ) -> None:
-    """Satu kontrak di status yang diminta, beserta pemenuhan kuota per bulannya."""
+    """
+    Satu kontrak di status yang diminta, beserta pemenuhan kuota per bulannya.
+    `berhenti` = (berapa hari lalu, alasan), wajib untuk status "minta-berhenti".
+    """
     hari_ini = sekarang.astimezone(WIB).replace(hour=9, minute=0, second=0, microsecond=0).astimezone(timezone.utc)
     kota = kon.execute(text("SELECT kota FROM usaha WHERE id = :u"), {"u": usaha_id}).scalar_one()
     b = barang[nama]
@@ -586,6 +600,16 @@ def _satu_kontrak(
         data.update(
             status=StatusKontrak.DITOLAK,
             alasan_ditolak=f"Kuota minimum terlalu kecil untuk ongkos kirim ke {kota}.",
+        )
+    elif status == "minta-berhenti":
+        # Tetap berjalan sampai distributor menjawab, sama seperti tombol Minta
+        # Berhenti di portal usaha (POST /kontrak/{id}/berhenti).
+        if berhenti is None:
+            raise ValueError(f"Kontrak minta berhenti {nama} butuh hari dan alasan pengajuan.")
+        hari_lalu, alasan = berhenti
+        data.update(
+            pengajuan_berhenti_waktu=sekarang - timedelta(days=hari_lalu, hours=2),
+            pengajuan_berhenti_alasan=alasan,
         )
     kid = kon.execute(Kontrak.__table__.insert().returning(Kontrak.__table__.c.id), data).scalar_one()
 
@@ -861,7 +885,10 @@ def _variasi_distributor(kon, sekarang: datetime) -> dict | None:
         nomor += 1
         _satu_pesanan(kon, pembeli[i], barang_pembeli[i], status, nama_dist, isi, hari_lalu, alasan, nomor, sekarang, "W")
     for status, i, nama, kode, hari_mulai in KONTRAK_DISTRIBUTOR:
-        _satu_kontrak(kon, pembeli[i], barang_pembeli[i], status, nama_dist, nama, kode, hari_mulai, sekarang)
+        _satu_kontrak(
+            kon, pembeli[i], barang_pembeli[i], status, nama_dist, nama, kode, hari_mulai, sekarang,
+            PENGAJUAN_BERHENTI.get((i, nama)),
+        )
 
     n_promo = 0
     for distributor, jenis, judul, keterangan, produk, potongan, berakhir_hari, dibuat_hari, tingkat in PROMO:
@@ -906,7 +933,10 @@ def _variasi_distributor(kon, sekarang: datetime) -> dict | None:
 
 
 def basi(kon) -> bool:
-    """Belum ada variasi, atau pesanan variasi terbarunya sudah lebih dari tiga hari."""
+    """
+    Belum ada variasi, pesanan variasi terbarunya sudah lebih dari tiga hari, atau
+    variasinya dipasang sebelum isi terbaru skrip ini ada.
+    """
     terbaru = kon.execute(
         text("SELECT MAX(dibuat_pada) FROM pesanan WHERE nomor LIKE 'PS-%-V%'")
     ).scalar()
@@ -918,7 +948,24 @@ def basi(kon) -> bool:
         text("SELECT EXISTS (SELECT 1 FROM transaksi WHERE nomor_struk LIKE 'DEMO-V-%')")
     ).scalar():
         return True
-    return not kon.execute(text("SELECT EXISTS (SELECT 1 FROM pesanan WHERE nomor LIKE 'PS-%-W%')")).scalar()
+    if not kon.execute(text("SELECT EXISTS (SELECT 1 FROM pesanan WHERE nomor LIKE 'PS-%-W%')")).scalar():
+        return True
+    # Dipasang sebelum dua kontrak minta berhenti (revisi V4): kontrak kedai
+    # dengan distributor demo lebih sedikit dari daftarnya. Dihitung dari
+    # jumlah, bukan dari pengajuannya, karena pengajuan hilang begitu dijawab
+    # lewat portal, dan menjawabnya saat demo tidak boleh memicu pasang ulang.
+    kontrak_kedai = kon.execute(
+        text(
+            """
+            SELECT count(*) FROM kontrak k
+              JOIN distributor d ON d.id = k.distributor_id
+              JOIN pengguna p ON p.id = d.pengguna_id
+             WHERE p.email = :e AND k.usaha_id <> ALL(:demo)
+            """
+        ),
+        {"e": EMAIL_DISTRIBUTOR, "demo": _demo_usaha(kon)},
+    ).scalar_one()
+    return kontrak_kedai < len(KONTRAK_DISTRIBUTOR)
 
 
 def pasang(jika_basi: bool = False) -> dict | None:
