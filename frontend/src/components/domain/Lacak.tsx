@@ -1,54 +1,26 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { Lencana, Tombol, TombolTautan } from '@/components/ui/dasar'
-import { TabSegmen } from '@/components/ui/navigasi'
-import { BilahProgres } from '@/components/ui/umpanBalik'
-import { IkonLokasi, IkonPanahKanan } from '@/icons'
-import { angka, cx, waktuNanti } from '@/lib/format'
-import { jarakKm, type Koordinat } from '@/lib/lacak'
-import type { InfoKiriman } from '@/lib/types'
+import { Avatar, Lencana, TombolTautan } from '@/components/ui/dasar'
+import { IkonCentang, IkonLokasi, IkonPanahKanan, IkonPasokan } from '@/icons'
+import { cx, jam, tanggalRingkas, waktuNanti } from '@/lib/format'
+import type { Koordinat } from '@/lib/lacak'
 import type { GarisLacak, TitikLacak } from '@/components/domain/PetaLacak'
 
 /**
- * Tampilan Lacak Pesanan bersama untuk kedua portal (revisi 23 Okt 2026):
- * daftar dan peta berdampingan di desktop, dua tab (Daftar · Peta) di HP.
+ * Lacak Pesanan untuk kedua portal (revisi V3, Q75 dan Q77): satu daftar selebar
+ * halaman, satu baris per pesanan, dengan garis empat status Menunggu
+ * Konfirmasi → Disiapkan → Dikirim → Selesai seperti gambar acuan Ilham.
+ * Dulu daftar dan peta berdampingan; petanya kini ada di rincian tiap pesanan
+ * (`PetaPesanan`), jadi peta hanya pernah menunjukkan satu pesanan.
  *
- * Halaman pemanggil menyiapkan `BarisLacak` (siapa pihak lainnya, titik asal,
- * titik tujuan, perkiraan posisi), tampilan ini menggambar daftar, titik peta,
- * dan garisnya. Peta dimuat malas: Leaflet tidak ikut terunduh sebelum
- * halaman ini dibuka.
+ * Halaman pemanggil menyiapkan `BarisLacak`; tampilan ini menggambar daftarnya.
+ * Peta dimuat malas: Leaflet tidak ikut terunduh sebelum rincian dibuka.
  */
 
 const PetaLacak = lazy(() => import('@/components/domain/PetaLacak').then((m) => ({ default: m.PetaLacak })))
 const KeteranganPeta = lazy(() =>
   import('@/components/domain/PetaLacak').then((m) => ({ default: m.KeteranganPeta })),
 )
-
-export interface TitikBaris extends Koordinat {
-  /** Kunci penanda di peta; satu gudang atau satu tujuan bisa dipakai banyak baris. */
-  kunci: string
-  judul: string
-}
-
-export interface BarisLacak {
-  id: string
-  nomor: string
-  /** Nama pihak lain: distributor di sisi pemilik usaha, pemesan di sisi distributor. */
-  nama: string
-  status: ReactNode
-  /** Rincian pesanan. */
-  ke: string
-  gudang: TitikBaris & { cadangan: boolean; kota: string }
-  tujuan: TitikBaris & { cadangan?: boolean }
-  /** Hanya untuk kiriman yang sedang di jalan. */
-  posisi: { titik: Koordinat; kemajuan: number; lewat: boolean } | null
-  perkiraanTiba: string | null
-  kiriman: InfoKiriman | null
-  /** Kunci penanda yang didatangi peta saat baris ini dipilih. */
-  kunciPeta: string
-  catatan?: string
-  aksi?: { label: string; ke: string }
-}
 
 /**
  * Jalan ke Lacak Pesanan dari halaman Pesanan, dengan jumlah kiriman yang sedang
@@ -84,210 +56,298 @@ export function useSekarang(selang = 60_000): number {
   return sekarang
 }
 
-function KartuLacak({
-  b,
-  terpilih,
-  lihatPeta,
+/* ================================================================== */
+/* Garis empat status                                                 */
+/* ================================================================== */
+
+const LANGKAH = [
+  { status: 'menunggu-konfirmasi', judul: 'Menunggu Konfirmasi', pendek: 'Menunggu' },
+  { status: 'disiapkan', judul: 'Disiapkan', pendek: 'Disiapkan' },
+  { status: 'dikirim', judul: 'Dikirim', pendek: 'Dikirim' },
+  { status: 'selesai', judul: 'Selesai', pendek: 'Selesai' },
+] as const
+
+export interface LangkahLacak {
+  judul: string
+  pendek: string
+  /** Kapan titik ini dilewati, dari riwayat pesanan; kosong bila belum. */
+  waktu: string | null
+  lewat: boolean
+}
+
+/**
+ * Empat titik status dari riwayat pesanan. Waktu tiap titik diambil dari kabar
+ * TERBARU di status itu, sama dengan garis waktu di rincian pesanan.
+ */
+export function langkahLacak(jejak: Array<{ status: string; waktu: string }>, status: string): LangkahLacak[] {
+  const sekarang = LANGKAH.findIndex((l) => l.status === status)
+  return LANGKAH.map((l, i) => {
+    const lewat = i <= sekarang
+    const kabar = [...jejak].reverse().find((j) => j.status === l.status)
+    return { judul: l.judul, pendek: l.pendek, lewat, waktu: lewat ? (kabar?.waktu ?? null) : null }
+  })
+}
+
+const waktuTitik = (w: string) => `${tanggalRingkas(w)}, ${jam(w)}`
+
+/**
+ * Garis status mendatar. Bagian yang sudah dilewati berwarna merek, sisanya
+ * garis putus abu-abu. Selama barang di jalan, ikon truk berdiri di antara
+ * Dikirim dan Selesai sesuai perkiraan posisinya: pengganti peta di daftar.
+ */
+function GarisStatus({
+  langkah,
+  posisi,
+  sudahSampai,
 }: {
-  b: BarisLacak
-  terpilih: boolean
-  lihatPeta: () => void
+  langkah: LangkahLacak[]
+  posisi: { kemajuan: number; lewat: boolean } | null
+  sudahSampai: boolean
 }) {
-  const jarak = jarakKm(b.gudang, b.tujuan)
+  const terakhir = langkah.reduce((a, l, i) => (l.lewat ? i : a), -1)
+  const diJalan = terakhir === 2 && (posisi != null || sudahSampai)
+  /* Bagian garis yang terisi, 0 sampai 1, dari titik pertama ke titik terakhir. */
+  const terisi = Math.max(
+    0,
+    terakhir / (langkah.length - 1) + (diJalan ? (sudahSampai ? 1 : Math.min(1, posisi!.kemajuan)) / (langkah.length - 1) : 0),
+  )
+  const lewatPerkiraan = posisi?.lewat ?? false
+
+  return (
+    <div className="relative">
+      {/* Rel: dari pusat titik pertama sampai pusat titik terakhir (kolom 1/8 dan
+          7/8), setinggi 2px tepat di tengah titik yang 24px. */}
+      <div aria-hidden="true" className="absolute top-[11px] left-[12.5%] right-[12.5%] h-0.5">
+        <div className="absolute inset-x-0 top-0 border-t-2 border-dashed border-line-strong" />
+        <div className="absolute left-0 top-0 h-0.5 rounded-full bg-brand" style={{ width: `${terisi * 100}%` }} />
+        {/* Di atas titik (z-20): barang yang sudah sampai tapi belum dihitung
+            berdiri tepat di titik Selesai. */}
+        {diJalan && (
+          <span
+            className={cx(
+              'absolute z-20 top-1/2 -translate-x-1/2 -translate-y-1/2 grid place-items-center size-7 rounded-full shadow-e2 text-ink-inverse',
+              lewatPerkiraan ? 'bg-menipis' : 'bg-info',
+            )}
+            style={{ left: `${terisi * 100}%` }}
+          >
+            <IkonPasokan size={15} />
+          </span>
+        )}
+      </div>
+
+      <ol aria-label="Status pesanan" className="relative grid grid-cols-4">
+        {langkah.map((l, i) => {
+          const kini = i === terakhir
+          return (
+            <li key={l.judul} className="flex flex-col items-center text-center px-1">
+              <span
+                aria-hidden="true"
+                className={cx(
+                  'relative z-10 grid place-items-center size-6 rounded-full',
+                  l.lewat ? 'bg-brand text-ink-inverse' : 'bg-surface border-2 border-line-strong',
+                  kini && !diJalan && 'ring-4 ring-brand/20',
+                )}
+              >
+                {l.lewat && <IkonCentang size={14} />}
+              </span>
+              <span className={cx('mt-2 text-kecil font-semibold leading-tight', l.lewat ? 'text-ink' : 'text-ink-3')}>
+                {/* Di HP label penuh "Menunggu Konfirmasi" tidak muat di seperempat
+                    layar 360px; pembaca layar tetap mendengar nama lengkapnya. */}
+                <span aria-hidden="true" className="sm:hidden">
+                  {l.pendek}
+                </span>
+                <span className="sr-only sm:not-sr-only">{l.judul}</span>
+                <span className="sr-only">{l.lewat ? ', sudah' : ', belum'}</span>
+              </span>
+              {/* Di HP tanggal hanya di titik terakhir yang sudah dilewati (Q75). */}
+              {l.waktu && (
+                <span className={cx('mt-0.5 text-kecil text-ink-3 tabular leading-tight', !kini && 'hidden sm:block')}>
+                  {waktuTitik(l.waktu)}
+                </span>
+              )}
+            </li>
+          )
+        })}
+      </ol>
+      {diJalan && (
+        <p className="sr-only">
+          {sudahSampai
+            ? 'Barang sudah sampai, tinggal dihitung.'
+            : `Perkiraan posisi kiriman: sekitar ${Math.round(posisi!.kemajuan * 100)}% perjalanan.`}
+        </p>
+      )}
+    </div>
+  )
+}
+
+/* ================================================================== */
+/* Daftar lacak                                                       */
+/* ================================================================== */
+
+export interface BarisLacak {
+  id: string
+  nomor: string
+  /** Nama pihak lain: distributor di sisi pemilik usaha, pemesan di sisi distributor. */
+  nama: string
+  warna?: string
+  status: ReactNode
+  /** Rincian pesanan. */
+  ke: string
+  /** Barang di pesanan ini, satu baris: "Gula Aren Cair 2 jerigen + 1 barang lain". */
+  ringkas?: string
+  langkah: LangkahLacak[]
+  /** Hanya untuk kiriman yang sedang di jalan. */
+  posisi: { kemajuan: number; lewat: boolean } | null
+  /** Distributor sudah menandai barangnya sampai; tinggal dihitung pemilik usaha. */
+  sudahSampai: boolean
+  perkiraanTiba: string | null
+  catatan?: string
+  aksi?: { label: string; ke: string }
+}
+
+function BarisDaftarLacak({ b }: { b: BarisLacak }) {
   return (
     <article
       aria-labelledby={`lacak-${b.id}`}
-      className={cx(
-        'rounded-lg border bg-surface p-3.5 shadow-e1 transition-[border-color,box-shadow] scroll-mt-24',
-        terpilih ? 'border-brand ring-2 ring-brand/25' : 'border-line',
-      )}
+      className="relative rounded-lg border border-line bg-surface p-4 shadow-e1 transition-[border-color,box-shadow] hover:border-line-strong hover:shadow-e2"
     >
-      <div className="flex items-start justify-between gap-2.5">
-        <div className="min-w-0">
-          <h3 id={`lacak-${b.id}`} className="text-kartu font-bold text-ink leading-snug">
-            {b.nama}
-          </h3>
-          <p className="mt-0.5 text-isi text-ink-3 tabular">{b.nomor}</p>
+      <div className="lg:grid lg:grid-cols-[minmax(0,19rem)_1fr] lg:items-center lg:gap-8">
+        <div className="flex items-start gap-3 min-w-0">
+          <Avatar nama={b.nama} warna={b.warna} ukuran={40} />
+          <div className="min-w-0 grow">
+            <div className="flex items-start justify-between gap-2">
+              <h3 id={`lacak-${b.id}`} className="min-w-0 text-kartu font-bold text-ink leading-snug">
+                {/* Seluruh baris bisa ditekan lewat tautan yang direntangkan;
+                    tombol Hitung Barang duduk di atasnya. */}
+                <Link to={b.ke} className="after:absolute after:inset-0 after:rounded-lg">
+                  {b.nama}
+                </Link>
+              </h3>
+              <IkonPanahKanan size={18} className="shrink-0 mt-0.5 text-ink-3 lg:hidden" />
+            </div>
+            <p className="text-kecil text-ink-3 tabular">{b.nomor}</p>
+            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+              {b.status}
+              {b.posisi?.lewat && <Lencana nada="menipis">Lewat perkiraan tiba</Lencana>}
+            </div>
+            {b.ringkas && <p className="mt-1.5 text-isi text-ink-2 truncate">{b.ringkas}</p>}
+            <p className="mt-0.5 text-kecil text-ink-2">
+              {b.sudahSampai ? (
+                <strong className="font-semibold text-brand">Sudah sampai, tinggal dihitung</strong>
+              ) : b.perkiraanTiba ? (
+                <>
+                  Perkiraan tiba <strong className="font-semibold text-ink">{waktuNanti(b.perkiraanTiba)}</strong>
+                </>
+              ) : (
+                'Jadwal tiba belum dipastikan'
+              )}
+            </p>
+            {b.catatan && <p className="mt-1 text-kecil text-ink-3 leading-relaxed">{b.catatan}</p>}
+          </div>
         </div>
-        <div className="shrink-0">{b.status}</div>
+
+        <div className="mt-4 lg:mt-0 flex items-center gap-4">
+          <div className="min-w-0 grow">
+            <GarisStatus langkah={b.langkah} posisi={b.posisi} sudahSampai={b.sudahSampai} />
+          </div>
+          <IkonPanahKanan size={18} className="hidden lg:block shrink-0 text-ink-3" />
+        </div>
       </div>
 
-      <p className="mt-2 text-isi text-ink-2">
-        {b.perkiraanTiba ? (
-          <>
-            Perkiraan tiba <strong className="text-ink">{waktuNanti(b.perkiraanTiba)}</strong>
-          </>
-        ) : (
-          'Jadwal tiba belum dipastikan'
-        )}
-        <span className="text-ink-3"> &middot; jarak &plusmn;{angka(jarak, jarak < 10 ? 1 : 0)} km</span>
-      </p>
-
-      {b.kiriman && (
-        <p className="mt-1 text-isi text-ink-2 break-words">
-          {b.kiriman.kurir ?? 'Jasa kirim belum dicatat'}
-          {b.kiriman.pengantar && <> &middot; {b.kiriman.pengantar}</>}
-          <span className="text-ink-3"> &middot; resi </span>
-          <span className="tabular font-semibold text-ink">{b.kiriman.nomorResi ?? 'belum dicatat'}</span>
-        </p>
-      )}
-
-      {b.posisi && (
-        <div className="mt-2.5">
-          <BilahProgres
-            nilai={Math.round(b.posisi.kemajuan * 100)}
-            maks={100}
-            nada="info"
-            tinggi={6}
-            label={`Perkiraan posisi: ±${Math.round(b.posisi.kemajuan * 100)}% perjalanan`}
-          />
-          {b.posisi.lewat && (
-            <Lencana nada="menipis" className="mt-2">
-              Lewat perkiraan tiba
-            </Lencana>
-          )}
-        </div>
-      )}
-
-      {b.catatan && <p className="mt-2 text-isi text-ink-2 leading-relaxed">{b.catatan}</p>}
-      {b.gudang.cadangan && (
-        <p className="mt-2 text-kecil text-ink-3 leading-relaxed">
-          Lokasi gudang belum diisi distributor; peta memakai titik tengah {b.gudang.kota}.
-        </p>
-      )}
-
-      <div className="mt-3 flex flex-wrap gap-2">
-        {b.aksi && (
+      {b.aksi && (
+        <div className="relative z-10 mt-3 pl-[52px] lg:pl-0">
           <TombolTautan ke={b.aksi.ke} ukuran="kecil">
             {b.aksi.label}
           </TombolTautan>
-        )}
-        <Tombol ragam="garis" ukuran="kecil" ikonKiri={<IkonLokasi size={15} />} onClick={lihatPeta}>
-          Lihat di peta
-        </Tombol>
-        <Link
-          to={b.ke}
-          className="inline-flex items-center gap-1 min-h-11 px-1 text-isi font-bold text-brand hover:underline"
-        >
-          Rincian
-          <IkonPanahKanan size={15} />
-        </Link>
-      </div>
+        </div>
+      )}
     </article>
   )
 }
 
-type Tampilan = 'daftar' | 'peta'
+export function DaftarLacak({ baris, judul }: { baris: BarisLacak[]; judul: string }) {
+  return (
+    <section aria-labelledby="judul-daftar-lacak" className="mt-4">
+      <h2 id="judul-daftar-lacak" className="sr-only">
+        {judul}
+      </h2>
+      <div className="space-y-3">
+        {baris.map((b) => (
+          <BarisDaftarLacak key={b.id} b={b} />
+        ))}
+      </div>
+    </section>
+  )
+}
 
-export function TampilanLacak({
-  baris,
-  terpilih,
-  pilih,
-  labelPeta,
+/* ================================================================== */
+/* Peta satu pesanan, di rinciannya                                   */
+/* ================================================================== */
+
+export interface TitikBaris extends Koordinat {
+  /** Kunci penanda di peta. */
+  kunci: string
+  judul: string
+}
+
+/**
+ * Peta satu pesanan (revisi V3, Q76 dan Q80): gudang distributor, tempat usaha
+ * tujuan, garis rutenya, dan truk bila sedang di jalan. Tampil di rincian
+ * pesanan selama pesanan berjalan.
+ */
+export function PetaPesanan({
+  gudang,
+  tujuan,
+  posisi,
+  label,
 }: {
-  baris: BarisLacak[]
-  /** Id baris yang disorot. */
-  terpilih: string | null
-  pilih: (id: string | null) => void
-  labelPeta: string
+  gudang: TitikBaris & { cadangan: boolean; kota: string }
+  tujuan: TitikBaris
+  posisi: { titik: Koordinat; kemajuan: number } | null
+  label: string
 }) {
-  const [tampilan, setTampilan] = useState<Tampilan>(terpilih ? 'peta' : 'daftar')
-  const daftarRef = useRef<HTMLDivElement>(null)
-
+  /* Bergantung pada angkanya, bukan pada objeknya: halaman rincian membuat objek
+     titik baru di setiap render, dan peta yang digambar ulang akan kembali ke
+     tampilan awal setiap kali pengguna menggeser atau memperbesarnya. */
+  const kiriman = posisi ? { lat: posisi.titik.lat, lng: posisi.titik.lng } : null
   const { titik, garis } = useMemo(() => {
-    const t = new Map<string, TitikLacak>()
-    const g: GarisLacak[] = []
-    for (const b of baris) {
-      t.set(b.gudang.kunci, { kunci: b.gudang.kunci, jenis: 'gudang', lat: b.gudang.lat, lng: b.gudang.lng, judul: b.gudang.judul })
-      t.set(b.tujuan.kunci, { kunci: b.tujuan.kunci, jenis: 'tujuan', lat: b.tujuan.lat, lng: b.tujuan.lng, judul: b.tujuan.judul })
-      if (b.posisi) {
-        t.set(b.id, {
-          kunci: b.id,
-          jenis: 'kiriman',
-          lat: b.posisi.titik.lat,
-          lng: b.posisi.titik.lng,
-          judul: `Kiriman ${b.nomor} untuk ${b.tujuan.judul}, perkiraan posisi`,
-        })
-        g.push({ kunci: b.id, dari: b.gudang, ke: b.tujuan })
-      }
-    }
-    return { titik: [...t.values()], garis: g }
-  }, [baris])
-
-  const barisTerpilih = baris.find((b) => b.id === terpilih) ?? null
-
-  function lihatPeta(id: string) {
-    pilih(id)
-    setTampilan('peta')
-  }
-
-  /* Ketukan penanda: pilih baris pertama yang memakai penanda itu dan
-     tunjukkan kartunya di daftar (desktop) atau di bawah peta (HP). */
-  function pilihDariPeta(kunci: string) {
-    const b = baris.find((x) => x.id === kunci) ?? baris.find((x) => x.kunciPeta === kunci)
-      ?? baris.find((x) => x.gudang.kunci === kunci || x.tujuan.kunci === kunci)
-    if (!b) return
-    pilih(b.id)
-    daftarRef.current?.querySelector(`[aria-labelledby="lacak-${b.id}"]`)?.scrollIntoView({ block: 'nearest' })
-  }
+    const dari = { lat: gudang.lat, lng: gudang.lng }
+    const ke = { lat: tujuan.lat, lng: tujuan.lng }
+    const t: TitikLacak[] = [
+      { kunci: gudang.kunci, jenis: 'gudang', ...dari, judul: gudang.judul },
+      { kunci: tujuan.kunci, jenis: 'tujuan', ...ke, judul: tujuan.judul },
+    ]
+    if (kiriman) t.push({ kunci: 'kiriman', jenis: 'kiriman', ...kiriman, judul: 'Kiriman ini, perkiraan posisi' })
+    const g: GarisLacak[] = [{ kunci: 'rute', dari, ke }]
+    return { titik: t, garis: g }
+  }, [gudang.kunci, gudang.judul, gudang.lat, gudang.lng, tujuan.kunci, tujuan.judul, tujuan.lat, tujuan.lng, kiriman?.lat, kiriman?.lng])
 
   return (
-    <>
-      <TabSegmen<Tampilan>
-        className="mt-4 lg:hidden"
-        aktif={tampilan}
-        ubah={setTampilan}
-        tab={[
-          { nilai: 'daftar', label: 'Daftar', jumlah: baris.length },
-          { nilai: 'peta', label: 'Peta' },
-        ]}
-      />
-
-      <div className="mt-4 lg:grid lg:grid-cols-12 lg:gap-5 lg:items-start">
-        <section
-          aria-labelledby="judul-daftar-lacak"
-          className={cx('lg:col-span-5', tampilan !== 'daftar' && 'hidden lg:block')}
-        >
-          <h2 id="judul-daftar-lacak" className="sr-only">
-            Daftar pesanan yang dilacak
-          </h2>
-          <div ref={daftarRef} className="space-y-3">
-            {baris.map((b) => (
-              <KartuLacak key={b.id} b={b} terpilih={b.id === terpilih} lihatPeta={() => lihatPeta(b.id)} />
-            ))}
-          </div>
-        </section>
-
-        <section
-          aria-labelledby="judul-peta-lacak"
-          className={cx('lg:col-span-7 lg:sticky lg:top-6', tampilan !== 'peta' && 'hidden lg:block')}
-        >
-          <h2 id="judul-peta-lacak" className="sr-only">
-            Peta
-          </h2>
-          <Suspense fallback={<div className="h-[60vh] min-h-[22rem] rounded-lg skeleton" />}>
-            <PetaLacak
-              titik={titik}
-              garis={garis}
-              terpilih={barisTerpilih?.kunciPeta ?? null}
-              pilih={pilihDariPeta}
-              label={labelPeta}
-              className="h-[60vh] min-h-[22rem] lg:h-[calc(100dvh-12rem)]"
-            />
-            <KeteranganPeta className="mt-3" />
-          </Suspense>
-          <p className="mt-2 text-kecil text-ink-3 leading-relaxed max-w-[70ch]">
-            Posisi kiriman diperkirakan dari waktu berangkat dan perkiraan tiba, di garis lurus antara gudang dan
-            tempat usaha. Bukan dari GPS kurir.
-          </p>
-          {/* Di HP daftarnya ada di tab lain, jadi kartu yang dipilih ditaruh di bawah peta. */}
-          {barisTerpilih && (
-            <div className="mt-3 lg:hidden">
-              <KartuLacak b={barisTerpilih} terpilih lihatPeta={() => pilih(barisTerpilih.id)} />
-            </div>
-          )}
-        </section>
+    <section aria-labelledby="judul-peta-pesanan" className="bg-surface border border-line rounded-lg p-4 shadow-e1">
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 id="judul-peta-pesanan" className="text-kartu font-bold text-ink">
+          Posisi pesanan
+        </h2>
+        {posisi && (
+          <span className="text-isi text-ink-2 tabular">&plusmn;{Math.round(posisi.kemajuan * 100)}% perjalanan</span>
+        )}
       </div>
-    </>
+      <Suspense fallback={<div className="mt-3 h-60 rounded-lg skeleton" />}>
+        <PetaLacak
+          titik={titik}
+          garis={garis}
+          terpilih={posisi ? 'kiriman' : null}
+          label={label}
+          className="mt-3 h-60"
+        />
+        <KeteranganPeta className="mt-3" jenis={posisi ? ['gudang', 'tujuan', 'kiriman'] : ['gudang', 'tujuan']} />
+      </Suspense>
+      <p className="mt-2 text-kecil text-ink-3 leading-relaxed">
+        {posisi
+          ? 'Posisi kiriman diperkirakan dari waktu berangkat dan perkiraan tiba, di garis lurus antara gudang dan tempat usaha. Bukan dari GPS kurir.'
+          : 'Garis menunjukkan rute dari gudang ke tempat usaha. Titik kiriman muncul begitu barang berangkat.'}
+        {gudang.cadangan && ` Lokasi gudang belum diisi distributor; peta memakai titik tengah ${gudang.kota}.`}
+      </p>
+    </section>
   )
 }

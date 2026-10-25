@@ -149,8 +149,39 @@ Catatan tahap 4 (Edge headless, 1536 × 834 dan 390 × 844):
 
 ## Tahap 5 — Lacak Pesanan
 
-- [ ] **Daftar dengan garis empat titik (Q75)**, kedua portal (Q77).
-- [ ] **Peta di rincian pesanan (Q76)** dan rincian Pesanan Masuk (Q80).
+- [x] **Daftar dengan garis empat titik (Q75)**, kedua portal (Q77).
+- [x] **Peta di rincian pesanan (Q76)** dan rincian Pesanan Masuk (Q80).
+
+Catatan tahap 5:
+- `components/domain/Lacak.tsx` ditulis ulang. `TampilanLacak` (daftar dan peta berdampingan) diganti
+  `DaftarLacak`: satu baris per pesanan.
+  - **Kiri:** logo dan nama pihak lain, nomor pesanan, status (ditambah "Lewat perkiraan tiba" bila
+    terlambat), barangnya dalam satu baris, dan perkiraan tiba atau "Sudah sampai, tinggal dihitung".
+  - **Kanan:** garis empat titik Menunggu Konfirmasi → Disiapkan → Dikirim → Selesai. Titik yang
+    sudah dilewati berwarna merek dan bertanggal dari kabar terbaru di riwayat pesanan
+    (`langkahLacak`).
+  - **Truk:** selama barang di jalan, ikon truk berdiri di antara Dikirim dan Selesai sesuai
+    `posisiKiriman`, jingga bila lewat perkiraan tiba. Barang yang sudah sampai tapi belum dihitung
+    berdiri di titik Selesai.
+  - **Tindakan:** seluruh baris bisa ditekan ke rincian lewat tautan yang direntangkan; Hitung
+    Barang duduk di atasnya.
+- **HP:** baris bertumpuk, label pendek ("Menunggu"), dan tanggal hanya di titik terakhir yang
+  dilewati. Pembaca layar tetap mendengar nama lengkap dan "sudah/belum".
+- **Portal distributor:** isinya tetap pesanan yang disiapkan dan dikirim; pesanan yang belum
+  diterima disebut di atas daftar seperti sebelumnya.
+- **Peta di rincian:** `PetaPesanan` menampilkan satu pesanan: gudang, tempat usaha, garis rute, dan
+  truk bila di jalan, dengan catatan bahwa posisinya perkiraan.
+  - Tampil selama pesanan berjalan (menunggu, disiapkan, dikirim), di puncak kolom kanan: di atas
+    Pembayaran pada portal usaha, di atas Jejak Pesanan pada portal distributor.
+  - Peta bergantung pada angka koordinat, bukan objeknya, supaya tidak kembali ke tampilan awal
+    setiap kali halaman dirender ulang.
+  - Tombol "Lacak di peta" di rincian dan parameter `?pesanan=` di halaman lacak dihapus.
+- **Diuji di Edge headless:**
+  - lima pesanan berjalan Kopi Kita tergambar dengan tanggal yang benar;
+  - truk Es Segar Mandiri di antara Dikirim dan Selesai, dan truk Manis Sejahtera (sudah sampai) di
+    titik Selesai, keduanya di lapisan teratas;
+  - peta rincian pesanan Menunggu Konfirmasi berisi dua penanda di atas Pembayaran;
+  - peta rincian Pesanan Masuk yang sedang dikirim berisi tiga penanda dan "±26% perjalanan".
 
 ## Tahap 6 — akhir
 

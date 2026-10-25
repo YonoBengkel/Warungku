@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { BarisBukti, KartuBuktiPengiriman } from '@/components/domain'
 import { LencanaPromo } from '@/components/domain/KartuPromo'
+import { PetaPesanan, useSekarang } from '@/components/domain/Lacak'
 import { Avatar, Kartu, Lencana, Pemisah, Tombol, TombolTautan } from '@/components/ui/dasar'
 import { BilahAksi, KepalaHalaman } from '@/components/ui/navigasi'
 import { KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
@@ -19,8 +20,9 @@ import {
 import { angka, cx, jam, nomorHp, rupiah, tanggalPendek, waktuLalu } from '@/lib/format'
 import { LABEL_JENIS_USAHA, LABEL_PESANAN_MASUK, NADA_PESANAN_MASUK } from '@/lib/label'
 import { umkmById } from '@/data/dummy'
+import { koordinatSah, posisiKiriman, pusatKota, titikGudang, waktuBerangkat } from '@/lib/lacak'
 import type { StatusPesananMasuk } from '@/lib/types'
-import { useAplikasi, usePenentuHarga, usePesananMasuk } from '@/store/aplikasi'
+import { useAplikasi, useDistributorAktif, usePenentuHarga, usePesananMasuk } from '@/store/aplikasi'
 import { LembarBukti, LembarTolak, totalPesananMasuk } from './PesananMasukDaftar'
 
 /**
@@ -71,6 +73,8 @@ export default function PesananMasukDetail() {
   const dariServer = useAplikasi((s) => s.pesananMasukServer !== null)
   const diproses = useAplikasi((s) => s.pesananDiproses.includes(id))
   const [lembarBukti, setLembarBukti] = useState(false)
+  const distributor = useDistributorAktif()
+  const sekarang = useSekarang()
 
   if (!pesanan) {
     return (
@@ -97,6 +101,14 @@ export default function PesananMasukDetail() {
 
   const p = pesanan
   const umkm = umkmById(p.umkmId)
+
+  /* Peta pesanan ini (revisi V3, Q80), di puncak kolom kanan selama pesanan
+     berjalan, sama dengan sisi pemilik usaha. */
+  const berpeta = p.status === 'menunggu-konfirmasi' || p.status === 'disiapkan' || p.status === 'dikirim'
+  const gudang = titikGudang(distributor)
+  const tujuan = umkm && koordinatSah(umkm.lat, umkm.lng) ? { lat: umkm.lat, lng: umkm.lng } : pusatKota(umkm?.kota)
+  const posisi =
+    p.status === 'dikirim' ? posisiKiriman(gudang, tujuan, waktuBerangkat(p.jejak), p.perkiraanTiba, sekarang) : null
   const subtotal = p.baris.reduce((a, b) => a + b.jumlah * b.hargaSatuan, 0)
   const total = totalPesananMasuk(p)
   const perluDijawab = p.status === 'menunggu-konfirmasi'
@@ -270,6 +282,15 @@ export default function PesananMasukDetail() {
         </div>
 
         <div className="lg:col-span-5 space-y-4">
+          {berpeta && (
+            <PetaPesanan
+              gudang={{ ...gudang, kunci: 'gudang', judul: `Gudang ${distributor.nama}`, kota: distributor.kota }}
+              tujuan={{ ...tujuan, kunci: 'tujuan', judul: umkm?.nama ?? 'Tempat usaha pemesan' }}
+              posisi={posisi}
+              label={`Peta pesanan ${p.nomor}: gudangmu dan tempat usaha ${umkm?.nama ?? 'pemesan'}`}
+            />
+          )}
+
           {/* 3. Jejak: satu baris per kejadian, ikon + teks, bukan warna saja */}
           <section aria-labelledby="judul-jejak">
             <Kartu>

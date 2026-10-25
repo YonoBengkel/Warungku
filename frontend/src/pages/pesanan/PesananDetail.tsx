@@ -2,6 +2,7 @@ import { useRef, useState, type ChangeEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ChipPesanan, KartuBuktiPengiriman, TombolTerkunci, useTerkunci } from '@/components/domain'
 import { KALIMAT_PROMO, LencanaPromo } from '@/components/domain/KartuPromo'
+import { PetaPesanan, useSekarang } from '@/components/domain/Lacak'
 import { Avatar, Kartu, Lencana, Pemisah, Tombol, TombolIkon, TombolTautan } from '@/components/ui/dasar'
 import { BarisChip, BilahAksi, Chip, KepalaHalaman } from '@/components/ui/navigasi'
 import { Lembar } from '@/components/ui/lembar'
@@ -10,7 +11,6 @@ import {
   IkonBintang,
   IkonCentang,
   IkonKontrak,
-  IkonLokasi,
   IkonMata,
   IkonNota,
   IkonPasokan,
@@ -21,7 +21,8 @@ import {
 } from '@/icons'
 import { angka, cx, jam, rupiah, tanggalPendek, tanggalRingkas, waktuLalu, waktuNanti } from '@/lib/format'
 import { BANTUAN, LABEL_PESANAN } from '@/lib/label'
-import { distributorById } from '@/data/dummy'
+import { ID_UMKM_SENDIRI, distributorById, umkmById } from '@/data/dummy'
+import { posisiKiriman, pusatKota, titikGudang, waktuBerangkat } from '@/lib/lacak'
 import type { BarisPesanan, StatusPesanan } from '@/lib/types'
 import { useAplikasi, usePenentuHarga } from '@/store/aplikasi'
 
@@ -68,8 +69,10 @@ export default function PesananDetail() {
   const tandaiBayarTunai = useAplikasi((s) => s.tandaiBayarTunai)
   const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
   const periksaKabarPesanan = useAplikasi((s) => s.periksaKabarPesanan)
+  const sumberData = useAplikasi((s) => s.sumberData)
   const [memeriksa, setMemeriksa] = useState(false)
   const { promoById } = usePenentuHarga()
+  const sekarang = useSekarang()
 
   const berkasRef = useRef<HTMLInputElement>(null)
   const [dialogBatal, setDialogBatal] = useState<'langsung' | 'ajukan' | null>(null)
@@ -115,6 +118,18 @@ export default function PesananDetail() {
     return i > maks ? i : maks
   }, -1)
   const langkahAktif = selesai ? 3 : indeksLangkah >= 0 ? indeksLangkah : indeksJejakTerjauh
+
+  /* Peta pesanan ini (revisi V3, Q76), di atas Pembayaran selama pesanan
+     berjalan sampai barangnya dihitung. Titik tujuan dibawa pesanan dari server;
+     data contoh memakai titik usaha contoh yang juga dilihat portal distributor. */
+  const berpeta = pesanan.status === 'menunggu-konfirmasi' || pesanan.status === 'disiapkan' || pesanan.status === 'dikirim'
+  const usahaContoh = sumberData !== 'server' ? umkmById(ID_UMKM_SENDIRI) : undefined
+  const gudang = titikGudang(distributor ?? { kota: profil.kota })
+  const tujuan = pesanan.tujuan ?? (usahaContoh ? { lat: usahaContoh.lat, lng: usahaContoh.lng } : pusatKota(profil.kota))
+  const posisi =
+    pesanan.status === 'dikirim' && !pesanan.pengiriman
+      ? posisiKiriman(gudang, tujuan, waktuBerangkat(pesanan.jejak), pesanan.perkiraanTiba, sekarang)
+      : null
 
   /**
    * Promo yang memotong satu baris, dibaca dari CATATAN pesanan (`promoId`),
@@ -267,17 +282,6 @@ export default function PesananDetail() {
                 ))}
               </dl>
             )}
-            {['menunggu-konfirmasi', 'disiapkan', 'dikirim'].includes(pesanan.status) && !pesanan.pengiriman && (
-              <TombolTautan
-                ke={`/pesanan/lacak?pesanan=${pesanan.id}`}
-                ragam="garis"
-                ukuran="kecil"
-                ikonKiri={<IkonLokasi size={15} />}
-                className="mb-4"
-              >
-                Lacak di peta
-              </TombolTautan>
-            )}
 
             {pesanan.status === 'draf' ? (
               <p className="text-isi text-ink-2 leading-relaxed bg-sunken rounded-md p-3.5 max-w-[68ch]">
@@ -424,6 +428,15 @@ export default function PesananDetail() {
         </div>
 
         <div className="lg:col-span-5 space-y-4">
+          {berpeta && (
+            <PetaPesanan
+              gudang={{ ...gudang, kunci: 'gudang', judul: `Gudang ${distributor?.nama ?? 'distributor'}`, kota: distributor?.kota ?? profil.kota }}
+              tujuan={{ ...tujuan, kunci: 'tujuan', judul: profil.namaUsaha || 'Tempat usahamu' }}
+              posisi={posisi}
+              label={`Peta pesanan ${pesanan.nomor}: gudang ${distributor?.nama ?? 'distributor'} dan tempat usahamu`}
+            />
+          )}
+
           {/* 2b. Jalur pembayaran: sengaja berbentuk kotak, bukan garis waktu */}
           <section
             aria-labelledby="judul-pembayaran"
