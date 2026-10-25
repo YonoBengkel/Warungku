@@ -26,6 +26,31 @@ export function useLebarWadah<T extends HTMLElement>() {
   return [ref, lebar] as const
 }
 
+/**
+ * Tinggi wadah grafik yang memanjang mengisi sisa kolomnya (revisi V3, Q68).
+ * Wadahnya harus tidak ikut ditinggikan oleh grafiknya sendiri (isinya
+ * `absolute`), kalau tidak tinggi lama grafik menahan wadahnya dan grafik tidak
+ * pernah bisa memendek lagi saat layar mengecil.
+ */
+export function useTinggiWadah<T extends HTMLElement>() {
+  const ref = useRef<T>(null)
+  const [tinggi, setTinggi] = useState(0)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const ro = new ResizeObserver((entri) => {
+      const h = entri[0]?.contentRect.height ?? 0
+      setTinggi((sebelum) => (Math.abs(sebelum - h) > 1 ? h : sebelum))
+    })
+    ro.observe(el)
+    setTinggi(el.getBoundingClientRect().height)
+    return () => ro.disconnect()
+  }, [])
+
+  return [ref, tinggi] as const
+}
+
 /** Membulatkan batas atas sumbu ke angka yang enak dibaca (0 / 50 / 100 / 250). */
 export function batasRapi(maks: number): number {
   if (maks <= 0) return 1

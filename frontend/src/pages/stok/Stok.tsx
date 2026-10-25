@@ -353,14 +353,17 @@ export default function Stok() {
         {/* HP: judul dan Tambah Barang sebaris, lalu kolom cari, lalu tiga angka.
             Desktop: keempatnya sebaris, supaya tabel mendapat dua-tiga baris lebih
             di layar acuan (revisi V2, Q63). Kolom cari selebar layar hanya membuang
-            ruang: yang diketik ke dalamnya paling panjang tiga kata. */}
+            ruang: yang diketik ke dalamnya paling panjang tiga kata.
+            Kolom cari, tiga angka, dan Tambah Barang setinggi 56px (revisi V3, Q65):
+            rata-rata kelimanya dulu 54,6px (48, 63, dan 36px), dibulatkan ke
+            kelipatan 8. Di HP Tambah Barang tetap kecil di samping judul. */}
         <div className={cx('flex flex-wrap items-center gap-x-3 gap-y-3', RUANG_LONCENG)}>
           <h1 className="text-judul font-extrabold text-ink tracking-tight mr-auto lg:mr-0">Stok</h1>
           <TombolTautan
             ke="/stok/baru"
             ukuran="kecil"
             ikonKiri={<IkonTambah size={15} />}
-            className="lg:order-last lg:ml-auto"
+            className="lg:order-last lg:ml-auto lg:h-14 lg:px-5 lg:text-kartu lg:rounded-md"
           >
             Tambah Barang
           </TombolTautan>
@@ -379,7 +382,7 @@ export default function Stok() {
               onChange={(e) => aturParam({ cari: e.target.value })}
               placeholder="Cari barang, misal: gula aren"
               className={cx(
-                'w-full h-12 pl-11 pr-11 rounded-md bg-surface text-ink text-kartu',
+                'w-full h-14 pl-11 pr-11 rounded-md bg-surface text-ink text-kartu',
                 'border border-line-strong placeholder:text-ink-3/70',
                 'focus:border-brand focus:outline-none focus:ring-4 focus:ring-[var(--c-brand-ring)]',
                 '[&::-webkit-search-cancel-button]:appearance-none',
@@ -795,14 +798,14 @@ function TombolAngka({
         aktif ? 'Ketuk untuk melepas penyaring ini.' : 'Ketuk untuk menyaring daftar.'
       }`}
       className={cx(
-        'min-h-[3rem] rounded-md border px-3 py-2 text-center transition-colors lg:w-[7.5rem]',
+        'h-14 rounded-md border px-3 py-1.5 text-center transition-colors lg:w-[7.5rem]',
         aktif ? 'border-brand bg-brand-soft/50' : 'border-line bg-surface hover:border-line-strong',
       )}
     >
-      <span aria-hidden="true" className={cx('block text-[1.5rem] font-bold leading-none', warna)}>
+      <span aria-hidden="true" className={cx('block text-[1.375rem] font-bold leading-none', warna)}>
         {angka(nilai)}
       </span>
-      <span aria-hidden="true" className="block text-kecil font-semibold text-ink-2 mt-1">
+      <span aria-hidden="true" className="block text-kecil font-semibold text-ink-2 mt-0.5">
         {label}
       </span>
     </button>

@@ -2,8 +2,8 @@ import { useMemo, useState } from 'react'
 import type { PointerEvent } from 'react'
 import type { TitikTren } from '@/lib/types'
 import { useAplikasi } from '@/store/aplikasi'
-import { angka, bulanRingkas, bulanTahun, tanggalRingkas, tanggalLengkapHari } from '@/lib/format'
-import { useLebarWadah, batasRapi, tandaSumbu, garisHalus } from './dasarGrafik'
+import { angka, bulanRingkas, bulanTahun, cx, tanggalRingkas, tanggalLengkapHari } from '@/lib/format'
+import { useLebarWadah, useTinggiWadah, batasRapi, tandaSumbu, garisHalus } from './dasarGrafik'
 
 /**
  * Tren pemakaian: yang sudah terjadi dan yang diperkirakan akan terjadi.
@@ -42,6 +42,7 @@ export function GrafikTren({
   lebarSumbu = SISI.kiri,
   bulanan = false,
   labelBatas,
+  isiTinggi = false,
 }: {
   data: TitikTren[]
   satuan: string
@@ -58,6 +59,12 @@ export function GrafikTren({
   bulanan?: boolean
   /** Tulisan di garis pemisah riwayat dan perkiraan. */
   labelBatas?: string
+  /**
+   * Grafik memanjang mengisi sisa tinggi wadahnya (revisi V3, Q68); `tinggi`
+   * menjadi tinggi paling pendek. Wadahnya harus kolom flex yang tingginya
+   * sudah tertentu. Di luar itu grafiknya setinggi `tinggi`.
+   */
+  isiTinggi?: boolean
 }) {
   // Data server berhenti di hari terakhir yang tercatat, belum tentu hari ini.
   const sumberServer = useAplikasi((s) => s.sumberData === 'server')
@@ -68,13 +75,15 @@ export function GrafikTren({
   const tulisTanggalPanjang = bulanan ? bulanTahun : tanggalLengkapHari
   const sisi = { ...SISI, kiri: lebarSumbu }
   const [wadahRef, lebar] = useLebarWadah<HTMLDivElement>()
+  const [tinggiRef, tinggiTersedia] = useTinggiWadah<HTMLDivElement>()
+  const tinggiGambar = isiTinggi ? Math.max(tinggi, Math.floor(tinggiTersedia)) : tinggi
   const [sorot, setSorot] = useState<number | null>(null)
   const [tampilTabel, setTampilTabel] = useState(false)
 
   const g = useMemo(() => {
     const w = Math.max(lebar, 260)
     const pw = w - sisi.kiri - sisi.kanan
-    const ph = tinggi - sisi.atas - sisi.bawah
+    const ph = tinggiGambar - sisi.atas - sisi.bawah
 
     const semuaNilai = data.flatMap((d) => [d.aktual, d.prediksi, d.batasAtas].filter((n): n is number => n != null))
     const maks = batasRapi(Math.max(1, ...semuaNilai) * 1.08)
@@ -138,7 +147,7 @@ export function GrafikTren({
       ujungPrediksi: titikDepan[titikDepan.length - 1] ?? titikLalu[titikLalu.length - 1],
     }
     // `sisi` lahir dari `lebarSumbu`, jadi cukup itu yang dipantau.
-  }, [data, lebar, tinggi, lebarSumbu])
+  }, [data, lebar, tinggiGambar, lebarSumbu])
 
   const nilaiTerakhirPrediksi = [...data].reverse().find((d) => d.prediksi != null)?.prediksi
   const adaPita = data.some((t) => t.batasBawah != null && t.batasAtas != null)
@@ -159,180 +168,197 @@ export function GrafikTren({
 
   const d = sorot != null ? data[sorot] : null
 
-  return (
-    <div>
-      <div ref={wadahRef} className="relative select-none">
-        <svg
-          width={g.w}
-          height={tinggi}
-          role="img"
-          aria-label={`Grafik tren pemakaian dalam ${satuan}. ${labelAktual} dan ${labelPrediksi}. Nilai lengkap tersedia pada tampilan tabel di bawah grafik.`}
-          className="touch-pan-y"
-          onPointerMove={saatGerak}
-          onPointerLeave={() => setSorot(null)}
-        >
-          {/* Garis bantu: hairline, solid, satu langkah dari permukaan */}
-          {tandaSumbu(g.maks).map((t) => (
-            <g key={t}>
-              <line
-                x1={sisi.kiri}
-                x2={g.w - sisi.kanan}
-                y1={g.y(t)}
-                y2={g.y(t)}
-                stroke="var(--c-grid)"
-                strokeWidth="1"
-              />
-              <text
-                x={sisi.kiri - 8}
-                y={g.y(t) + 4}
-                textAnchor="end"
-                className="tabular"
-                fontSize="10.5"
-                fill="var(--c-sumbu)"
-              >
-                {formatSumbu(t)}
-              </text>
-            </g>
-          ))}
-
-          {/* Pita ketidakpastian prediksi */}
-          {g.jalurPita && <path d={g.jalurPita} fill="var(--c-pita-perkiraan)" />}
-
-          {/* Batas hari ini */}
-          {g.indeksSambung >= 0 && g.indeksSambung < data.length - 1 && (
-            <>
-              <line
-                x1={g.x(g.indeksSambung)}
-                x2={g.x(g.indeksSambung)}
-                y1={sisi.atas}
-                y2={sisi.atas + g.ph}
-                stroke="var(--c-sumbu)"
-                strokeWidth="1"
-                strokeDasharray="3 3"
-                opacity="0.65"
-              />
-              {/* Dekat tepi kanan (grafik bulanan) tulisan pindah ke kiri garis supaya tidak terpotong. */}
-              <text
-                x={g.x(g.indeksSambung) + (g.x(g.indeksSambung) > g.w - sisi.kanan - 75 ? -5 : 5)}
-                y={sisi.atas + 9}
-                textAnchor={g.x(g.indeksSambung) > g.w - sisi.kanan - 75 ? 'end' : 'start'}
-                fontSize="10"
-                fontWeight="700"
-                fill="var(--c-sumbu)"
-              >
-                {tulisBatas}
-              </text>
-            </>
-          )}
-
-          {/* Garis tercatat */}
-          <path
-            d={g.jalurAktual}
-            fill="none"
-            stroke="var(--c-seri-1)"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-
-          {/* Garis perkiraan di atas garis tercatat: celah putus-putusnya
-              membiarkan garis tercatat tetap terlihat saat tumpang tindih. */}
-          <path
-            d={g.jalurPrediksi}
-            fill="none"
-            stroke="var(--c-seri-perkiraan)"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeDasharray="5 4"
-          />
-
-          {/* Penanda ujung dengan cincin permukaan supaya tetap terbaca */}
-          {g.ujungPrediksi && (
-            <circle
-              cx={g.ujungPrediksi[0]}
-              cy={g.ujungPrediksi[1]}
-              r="4.5"
-              fill="var(--c-seri-perkiraan)"
-              stroke="var(--c-surface)"
-              strokeWidth="2"
+  /* Gambar dan keterangan sentuhnya. Di mode `isiTinggi` keduanya duduk di
+     lapisan `absolute`, supaya wadahnya diukur dari sisa kolom, bukan dari
+     tinggi gambar yang sedang tampil. */
+  const gambar = (
+    <>
+      <svg
+        width={g.w}
+        height={tinggiGambar}
+        role="img"
+        aria-label={`Grafik tren pemakaian dalam ${satuan}. ${labelAktual} dan ${labelPrediksi}. Nilai lengkap tersedia pada tampilan tabel di bawah grafik.`}
+        className="touch-pan-y"
+        onPointerMove={saatGerak}
+        onPointerLeave={() => setSorot(null)}
+      >
+        {/* Garis bantu: hairline, solid, satu langkah dari permukaan */}
+        {tandaSumbu(g.maks).map((t) => (
+          <g key={t}>
+            <line
+              x1={sisi.kiri}
+              x2={g.w - sisi.kanan}
+              y1={g.y(t)}
+              y2={g.y(t)}
+              stroke="var(--c-grid)"
+              strokeWidth="1"
             />
-          )}
+            <text
+              x={sisi.kiri - 8}
+              y={g.y(t) + 4}
+              textAnchor="end"
+              className="tabular"
+              fontSize="10.5"
+              fill="var(--c-sumbu)"
+            >
+              {formatSumbu(t)}
+            </text>
+          </g>
+        ))}
 
-          {/* Garis bidik saat disentuh */}
-          {sorot != null && data[sorot] && (
-            <>
-              <line
-                x1={g.x(sorot)}
-                x2={g.x(sorot)}
-                y1={sisi.atas}
-                y2={sisi.atas + g.ph}
-                stroke="var(--c-ink-3)"
-                strokeWidth="1"
-              />
-              {data[sorot].prediksi != null && (
-                <circle
-                  cx={g.x(sorot)}
-                  cy={g.y(data[sorot].prediksi!)}
-                  r="5"
-                  fill="var(--c-seri-perkiraan)"
-                  stroke="var(--c-surface)"
-                  strokeWidth="2"
-                />
-              )}
-              {data[sorot].aktual != null && (
-                <circle
-                  cx={g.x(sorot)}
-                  cy={g.y(data[sorot].aktual!)}
-                  r="5"
-                  fill="var(--c-seri-1)"
-                  stroke="var(--c-surface)"
-                  strokeWidth="2"
-                />
-              )}
-            </>
-          )}
+        {/* Pita ketidakpastian prediksi */}
+        {g.jalurPita && <path d={g.jalurPita} fill="var(--c-pita-perkiraan)" />}
 
-          {/* Label sumbu tanggal, dijarangkan supaya tidak bertabrakan */}
-          {data.map((t, i) =>
-            tampilLabel(i) ? (
-              <text
-                key={t.tanggal}
-                x={g.x(i)}
-                y={tinggi - 8}
-                textAnchor={i === 0 ? 'start' : i === data.length - 1 ? 'end' : 'middle'}
-                fontSize="10.5"
-                fill="var(--c-sumbu)"
-              >
-                {tulisTanggal(t.tanggal)}
-              </text>
-            ) : null,
-          )}
-        </svg>
-
-        {/* Keterangan angka saat disentuh */}
-        {d && (
-          <div
-            className="absolute top-0 pointer-events-none bg-ink text-ink-inverse rounded-sm px-2.5 py-1.5 shadow-e2 text-kecil leading-tight"
-            style={{
-              left: Math.min(Math.max(g.x(sorot!) - 60, 0), Math.max(0, g.w - 130)),
-            }}
-          >
-            <div className="font-bold">{tulisTanggalPanjang(d.tanggal)}</div>
-            {d.aktual != null && (
-              <div className="mt-0.5 opacity-90 tabular">{`${labelAktual}: ${tulis(d.aktual)}`}</div>
-            )}
-            {d.prediksi != null && (
-              <div className="mt-0.5 opacity-90 tabular">{`${labelPrediksi}: ${tulis(d.prediksi)}`}</div>
-            )}
-            {d.batasBawah != null && d.batasAtas != null && (
-              <div className="opacity-70 tabular">
-                Rentang {tulis(d.batasBawah)}&ndash;{tulis(d.batasAtas)}
-              </div>
-            )}
-          </div>
+        {/* Batas hari ini */}
+        {g.indeksSambung >= 0 && g.indeksSambung < data.length - 1 && (
+          <>
+            <line
+              x1={g.x(g.indeksSambung)}
+              x2={g.x(g.indeksSambung)}
+              y1={sisi.atas}
+              y2={sisi.atas + g.ph}
+              stroke="var(--c-sumbu)"
+              strokeWidth="1"
+              strokeDasharray="3 3"
+              opacity="0.65"
+            />
+            {/* Dekat tepi kanan (grafik bulanan) tulisan pindah ke kiri garis supaya tidak terpotong. */}
+            <text
+              x={g.x(g.indeksSambung) + (g.x(g.indeksSambung) > g.w - sisi.kanan - 75 ? -5 : 5)}
+              y={sisi.atas + 9}
+              textAnchor={g.x(g.indeksSambung) > g.w - sisi.kanan - 75 ? 'end' : 'start'}
+              fontSize="10"
+              fontWeight="700"
+              fill="var(--c-sumbu)"
+            >
+              {tulisBatas}
+            </text>
+          </>
         )}
-      </div>
+
+        {/* Garis tercatat */}
+        <path
+          d={g.jalurAktual}
+          fill="none"
+          stroke="var(--c-seri-1)"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+
+        {/* Garis perkiraan di atas garis tercatat: celah putus-putusnya
+            membiarkan garis tercatat tetap terlihat saat tumpang tindih. */}
+        <path
+          d={g.jalurPrediksi}
+          fill="none"
+          stroke="var(--c-seri-perkiraan)"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeDasharray="5 4"
+        />
+
+        {/* Penanda ujung dengan cincin permukaan supaya tetap terbaca */}
+        {g.ujungPrediksi && (
+          <circle
+            cx={g.ujungPrediksi[0]}
+            cy={g.ujungPrediksi[1]}
+            r="4.5"
+            fill="var(--c-seri-perkiraan)"
+            stroke="var(--c-surface)"
+            strokeWidth="2"
+          />
+        )}
+
+        {/* Garis bidik saat disentuh */}
+        {sorot != null && data[sorot] && (
+          <>
+            <line
+              x1={g.x(sorot)}
+              x2={g.x(sorot)}
+              y1={sisi.atas}
+              y2={sisi.atas + g.ph}
+              stroke="var(--c-ink-3)"
+              strokeWidth="1"
+            />
+            {data[sorot].prediksi != null && (
+              <circle
+                cx={g.x(sorot)}
+                cy={g.y(data[sorot].prediksi!)}
+                r="5"
+                fill="var(--c-seri-perkiraan)"
+                stroke="var(--c-surface)"
+                strokeWidth="2"
+              />
+            )}
+            {data[sorot].aktual != null && (
+              <circle
+                cx={g.x(sorot)}
+                cy={g.y(data[sorot].aktual!)}
+                r="5"
+                fill="var(--c-seri-1)"
+                stroke="var(--c-surface)"
+                strokeWidth="2"
+              />
+            )}
+          </>
+        )}
+
+        {/* Label sumbu tanggal, dijarangkan supaya tidak bertabrakan */}
+        {data.map((t, i) =>
+          tampilLabel(i) ? (
+            <text
+              key={t.tanggal}
+              x={g.x(i)}
+              y={tinggiGambar - 8}
+              textAnchor={i === 0 ? 'start' : i === data.length - 1 ? 'end' : 'middle'}
+              fontSize="10.5"
+              fill="var(--c-sumbu)"
+            >
+              {tulisTanggal(t.tanggal)}
+            </text>
+          ) : null,
+        )}
+      </svg>
+
+      {/* Keterangan angka saat disentuh */}
+      {d && (
+        <div
+          className="absolute top-0 pointer-events-none bg-ink text-ink-inverse rounded-sm px-2.5 py-1.5 shadow-e2 text-kecil leading-tight"
+          style={{
+            left: Math.min(Math.max(g.x(sorot!) - 60, 0), Math.max(0, g.w - 130)),
+          }}
+        >
+          <div className="font-bold">{tulisTanggalPanjang(d.tanggal)}</div>
+          {d.aktual != null && (
+            <div className="mt-0.5 opacity-90 tabular">{`${labelAktual}: ${tulis(d.aktual)}`}</div>
+          )}
+          {d.prediksi != null && (
+            <div className="mt-0.5 opacity-90 tabular">{`${labelPrediksi}: ${tulis(d.prediksi)}`}</div>
+          )}
+          {d.batasBawah != null && d.batasAtas != null && (
+            <div className="opacity-70 tabular">
+              Rentang {tulis(d.batasBawah)}&ndash;{tulis(d.batasAtas)}
+            </div>
+          )}
+        </div>
+      )}
+    </>
+  )
+
+  return (
+    <div className={cx(isiTinggi && 'flex-1 min-h-0 flex flex-col')}>
+      {isiTinggi ? (
+        <div ref={tinggiRef} className="relative flex-1" style={{ minHeight: tinggi }}>
+          <div ref={wadahRef} className="absolute inset-0 select-none">
+            {gambar}
+          </div>
+        </div>
+      ) : (
+        <div ref={wadahRef} className="relative select-none">
+          {gambar}
+        </div>
+      )}
 
       {/* Kunci baca: dua warna dan dua gaya garis, ditambah pita rentang */}
       <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-kecil text-ink-3">

@@ -129,8 +129,11 @@ export default function StokDetail() {
         : { nada: 'menipis' as const, teks: `Bawaan ${BATAS_AMAN_BAWAAN}` }
 
   return (
-    /* Di desktop tanpa jarak bawah sendiri: <main> sudah memberinya. */
-    <div className="pb-8 lg:pb-0">
+    /* Di desktop tanpa jarak bawah sendiri: <main> sudah memberinya. Mulai
+       1280px halaman ini setinggi layar dikurangi jarak atas-bawah <main>
+       (1,5rem + 2rem), dan grafik Tren memanjang mengisi sisanya, jadi tidak ada
+       ruang kosong di layar yang lebih tinggi dari 730 (revisi V3, Q68). */
+    <div className="pb-8 lg:pb-0 xl:flex xl:flex-col xl:min-h-[calc(100dvh-3.5rem)]">
       <KepalaHalaman
         judul={barang.nama}
         keterangan={barang.deskripsi ? `${barang.deskripsi} · ${barang.kategori}` : barang.kategori}
@@ -148,10 +151,11 @@ export default function StokDetail() {
 
       {/* Mulai 1280px tiga kolom: angka dan tombol, perkiraan dan Tren, saran
           distributor. Sisa stok, grafik Tren, dan kartu saran lalu muat satu
-          layar acuan 1536 × 730 (revisi V2, Q63). Di 1024–1279px dua kolom
+          layar acuan 1536 × 730 (revisi V2, Q63), dan di layar yang lebih tinggi
+          kolom tengahnya memanjang sampai dasar layar. Di 1024–1279px dua kolom
           dengan saran di bawah kolom kiri; di HP urutannya tetap: angka, saran,
           lalu penjelasan. */}
-      <div className="mt-4 lg:grid lg:grid-cols-12 lg:grid-rows-[auto_1fr] lg:gap-6 lg:items-start xl:grid-rows-1">
+      <div className="mt-4 lg:grid lg:grid-cols-12 lg:grid-rows-[auto_1fr] lg:gap-6 lg:items-start xl:grid-rows-1 xl:flex-1 xl:items-stretch">
         {/* ============ Kolom kiri: angka dan keputusan ============ */}
         <div className="lg:col-start-1 lg:col-span-5 lg:row-start-1 xl:col-span-4 space-y-4">
           {/* ---- Angka sisa ---- */}
@@ -349,7 +353,7 @@ export default function StokDetail() {
         )}
 
         {/* ============ Kolom tengah (kanan di 1024–1279px): penjelasan ============ */}
-        <div className="mt-6 lg:mt-0 lg:col-start-6 lg:col-span-7 lg:row-start-1 lg:row-span-2 xl:col-start-5 xl:col-span-5 xl:row-span-1">
+        <div className="mt-6 lg:mt-0 lg:col-start-6 lg:col-span-7 lg:row-start-1 lg:row-span-2 xl:col-start-5 xl:col-span-5 xl:row-span-1 xl:flex xl:flex-col">
           <TabSegmen<TabDetail>
             tab={[
               { nilai: 'ringkasan', label: 'Ringkasan' },
@@ -360,7 +364,7 @@ export default function StokDetail() {
           />
 
           {tab === 'ringkasan' ? (
-            <div role="tabpanel" aria-label="Ringkasan barang" className="mt-4 space-y-4">
+            <div role="tabpanel" aria-label="Ringkasan barang" className="mt-4 space-y-4 xl:flex-1 xl:flex xl:flex-col">
               {mesin.status === 'memuat' ? (
                 <Kartu padat aria-busy="true">
                   <p className="text-kartu font-bold text-ink">{barang.nama}</p>
@@ -375,7 +379,7 @@ export default function StokDetail() {
                   id="judul-tren"
                   judul="Tren pemakaian"
                   keterangan="14 hari terakhir dan 7 hari ke depan"
-                  className="lg:p-4"
+                  className="lg:p-4 xl:flex-1 xl:flex xl:flex-col"
                   /* Label metode di kanan judul bersama Rapor perkiraan (revisi V2,
                      Q42); keduanya turun ke bawah judul kalau tidak muat. */
                   bungkus
@@ -396,6 +400,7 @@ export default function StokDetail() {
                     data={trenTampil(barang, tren)}
                     satuan={satuanTampil(barang).nama}
                     tinggi={150}
+                    isiTinggi
                   />
                   {/* Nama garis pembatas sama dengan yang tertulis di grafik. */}
                   <Penjelasan label="Cara membaca grafik" className="mt-1">

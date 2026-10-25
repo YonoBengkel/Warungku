@@ -53,9 +53,35 @@ Catatan tahap 1:
 
 ## Tahap 2 — Stok
 
-- [ ] **Bagian atas Stok (Q65):** kolom cari, tiga kotak angka, dan Tambah Barang setinggi 56px.
-- [ ] **Tambah dan Ubah Barang dua kolom (Q67)**, Simpan dan Batal di bilah bawah.
-- [ ] **Rincian barang mengisi tinggi layar (Q68):** grafik Tren memanjang.
+- [x] **Bagian atas Stok (Q65):** kolom cari, tiga kotak angka, dan Tambah Barang setinggi 56px.
+- [x] **Tambah dan Ubah Barang dua kolom (Q67)**, Simpan dan Batal di bilah bawah.
+- [x] **Rincian barang mengisi tinggi layar (Q68):** grafik Tren memanjang.
+
+Catatan tahap 2:
+- **Stok, diukur di Edge headless:** kolom cari, ketiga kotak angka, dan Tambah Barang masing-masing
+  56px di 1536px. Di 390px kolom cari dan kotak angka 56px, Tambah Barang 36px di samping judul.
+  Angka di kotak kini 22px dengan jarak dalam yang lebih tipis.
+- **Tambah dan Ubah Barang:**
+  - mulai 1024px dua kolom selebar halaman; di 1536 × 834 tinggi kolom kiri 1067px dan kanan 936px;
+  - tinggi halaman 1318px (dulu 2248px), jadi di layar Ilham masih menggulir sekitar 480px; perkiraan
+    150–250px di Q67 terlalu kecil;
+  - kolom yang belum beres kini disebut di kiri bilah bawah, menggantikan kotak peringatan di atas
+    tombol; di desktop, tanpa galat, kiri bilah berisi "Kolom bertanda * wajib diisi";
+  - di HP tombol Simpan dan Batal berdampingan supaya bilahnya pendek.
+- **Rincian barang:** mulai 1280px halaman setinggi layar, dan kolom tengah memanjang sampai dasar.
+  `GrafikTren` mendapat `isiTinggi`: grafiknya mengisi sisa tinggi wadahnya, dengan `tinggi` sebagai
+  batas bawah. Gambar duduk di lapisan `absolute` supaya wadahnya diukur dari sisa kolom, bukan
+  ditahan tinggi gambar lama (`useTinggiWadah` di `dasarGrafik.ts`). Hasilnya, tanpa gulir di kedua
+  ukuran:
+
+  | Layar | Tinggi grafik Tren |
+  |---|---|
+  | 1536 × 834 | 281px |
+  | 1536 × 730 | 177px |
+
+  Di bawah 1280px grafiknya tetap 150px.
+- **Pane peramban:** pane yang tersembunyi tidak menggambar bingkai, sehingga `ResizeObserver` tidak
+  berjalan dan ukuran grafik di sana basi. Pengukuran memakai Edge headless.
 
 ## Tahap 3 — Prediksi
 

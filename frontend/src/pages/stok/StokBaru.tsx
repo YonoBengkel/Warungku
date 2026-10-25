@@ -3,9 +3,9 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import type { Barang, Kemasan, SumberBatasAman } from '@/lib/types'
 import { Kartu, Lencana, Pemisah, Tombol, TombolIkon, TombolTautan } from '@/components/ui/dasar'
 import { AreaTeks, Kolom, Pilihan, Sakelar } from '@/components/ui/formulir'
-import { KepalaHalaman, useKembali } from '@/components/ui/navigasi'
+import { BilahAksi, KepalaHalaman, useKembali } from '@/components/ui/navigasi'
 import { Konfirmasi } from '@/components/ui/lembar'
-import { Penjelasan, Peringatan } from '@/components/ui/umpanBalik'
+import { Penjelasan } from '@/components/ui/umpanBalik'
 import { IkonPanahKanan, IkonSampah, IkonSilang, IkonTambah } from '@/icons'
 import { angka, cx } from '@/lib/format'
 import {
@@ -316,423 +316,437 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
   }
 
   return (
-    <div className="mt-4 max-w-2xl mx-auto space-y-4 pb-8">
-      {/* ---------------- Identitas barang ---------------- */}
-      <Kartu>
-        <h2 className="text-kartu font-bold text-ink mb-3">Nama dan kategori</h2>
+    <div className="mt-4 pb-8 max-w-2xl mx-auto lg:max-w-none">
+      {/* Mulai 1024px dua kolom selebar halaman (revisi V3, Q67): kiri nama dan
+          satuan, kanan stok dan pengingat. Urutan isiannya tetap 1-2-3-4, karena
+          kolom stok memakai satuan yang dipilih di bagian Satuan. Dulu satu kolom
+          sempit di tengah dengan ruang kosong lebar di kiri-kanannya. */}
+      <div className="space-y-4 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-5 lg:items-start [&>*]:min-w-0">
+        <div className="space-y-4">
+          {/* ---------------- Identitas barang ---------------- */}
+          <Kartu>
+            <h2 className="text-kartu font-bold text-ink mb-3">Nama dan kategori</h2>
 
-        <Kolom
-          label="Nama barang"
-          wajib
-          value={nama}
-          onChange={(e) => setNama(e.target.value)}
-          placeholder="Contoh: Gula Aren Cair"
-          galat={galat.nama}
-          bantuan="Pakai nama yang kamu sebut sehari-hari, bukan nama di faktur distributor."
-        />
-
-        <div className="mt-4">
-          <Kolom
-            label="Deskripsi"
-            value={deskripsi}
-            onChange={(e) => setDeskripsi(e.target.value)}
-            placeholder="Contoh: Botol 1 liter"
-            bantuan="Ukuran, jenis, atau tipenya. Ukuran lain dicatat sebagai barang sendiri: minyak 1 liter dan minyak jerigen jadi dua baris."
-          />
-        </div>
-
-        {/* Cegat duplikat sebelum lahir, bukan sesudah stoknya terlanjur pecah dua. */}
-        {kembar && (
-          <div className="mt-2.5 flex items-start gap-3 rounded-md border border-menipis/40 bg-menipis-soft text-menipis-ink p-3">
-            <div className="min-w-0 grow">
-              <p className="text-isi font-bold leading-snug">
-                Sudah ada &lsquo;{kembar.nama}&rsquo;. Maksud kamu ini?
-              </p>
-              <p className="mt-0.5 text-isi opacity-90">
-                Sisa {jumlahTampil(kembar, Math.max(0, kembar.stok))} &middot; {kembar.kategori}
-              </p>
-            </div>
-            <Link
-              to={`/stok/${kembar.id}`}
-              className="shrink-0 inline-flex items-center gap-1 h-9 px-3 rounded-sm bg-surface text-isi font-bold text-ink hover:bg-sunken"
-            >
-              Pakai yang sudah ada
-              <IkonPanahKanan size={15} />
-            </Link>
-          </div>
-        )}
-
-        <div className="mt-4">
-          <label htmlFor="sebutan" className="block text-isi font-semibold text-ink-2 mb-1.5">
-            Nama lain / sebutan di warung{' '}
-            <span className="text-ink-3 font-normal">(boleh dikosongkan)</span>
-          </label>
-          <div className="flex gap-2">
-            <input
-              id="sebutan"
-              value={sebutanBaru}
-              onChange={(e) => setSebutanBaru(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault()
-                  tambahSebutan()
-                }
-              }}
-              placeholder="Contoh: gula aren"
-              className={cx(
-                'w-full h-12 px-3.5 rounded-md bg-surface text-ink text-kartu',
-                'border border-line-strong placeholder:text-ink-3/70',
-                'focus:border-brand focus:outline-none focus:ring-4 focus:ring-[var(--c-brand-ring)]',
-              )}
-            />
-            <Tombol ragam="garis" onClick={tambahSebutan} ikonKiri={<IkonTambah size={16} />}>
-              Tambah
-            </Tombol>
-          </div>
-          <p className="mt-1.5 text-isi text-ink-3 leading-snug">
-            Sebutan lain ikut dicari, misalnya &ldquo;skm&rdquo; atau &ldquo;telor&rdquo;.
-          </p>
-          {namaLain.length > 0 && (
-            <ul className="mt-2 flex flex-wrap gap-2">
-              {namaLain.map((n) => (
-                <li key={n}>
-                  <span className="inline-flex items-center gap-1 h-9 pl-3 pr-1 rounded-full bg-sunken text-isi font-semibold text-ink-2">
-                    {n}
-                    <button
-                      type="button"
-                      aria-label={`Hapus sebutan ${n}`}
-                      onClick={() => setNamaLain((lama) => lama.filter((x) => x !== n))}
-                      className="size-7 grid place-items-center rounded-full hover:bg-line"
-                    >
-                      <IkonSilang size={14} />
-                    </button>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <div className="mt-4 grid sm:grid-cols-2 gap-4">
-          <Pilihan
-            label="Kategori"
-            wajib
-            value={kategori}
-            onChange={(e) => setKategori(e.target.value)}
-            galat={galat.kategori}
-          >
-            <option value="">Pilih kategori</option>
-            {daftarKategori.map((k) => (
-              <option key={k} value={k}>
-                {k}
-              </option>
-            ))}
-            <option value={KATEGORI_BARU}>+ Kategori baru</option>
-          </Pilihan>
-
-          <Kolom
-            label="Kode barang"
-            value={kode}
-            onChange={(e) => setKode(e.target.value)}
-            placeholder="Contoh: GA-003"
-            bantuan="Isi kalau kamu punya penomoran sendiri. Tidak wajib."
-          />
-        </div>
-
-        {kategori === KATEGORI_BARU && (
-          <div className="mt-4">
             <Kolom
-              label="Nama kategori baru"
+              label="Nama barang"
               wajib
-              value={kategoriBaru}
-              onChange={(e) => setKategoriBaru(e.target.value)}
-              placeholder="Contoh: Bumbu Dapur"
-              bantuan="Kategori hanya dipakai sebagai penyaring di daftar Stok, bukan folder."
+              value={nama}
+              onChange={(e) => setNama(e.target.value)}
+              placeholder="Contoh: Gula Aren Cair"
+              galat={galat.nama}
+              bantuan="Pakai nama yang kamu sebut sehari-hari, bukan nama di faktur distributor."
             />
-          </div>
-        )}
-      </Kartu>
 
-      {/* ---------------- Satuan & kemasan ---------------- */}
-      <Kartu>
-        <h2 className="text-kartu font-bold text-ink">Satuan</h2>
-        <p className="mt-1 text-isi text-ink-3 leading-relaxed">
-          Stok disimpan dalam satuan pakai, satuan terkecil yang dikurangi kasir.
-        </p>
-        <Penjelasan label="Apa bedanya?">
-          Satuan pakai adalah takaran yang dikurangi kasir per porsi. Yang kamu baca di daftar Stok adalah
-          satuan tampil di bawah.
-        </Penjelasan>
+            <div className="mt-4">
+              <Kolom
+                label="Deskripsi"
+                value={deskripsi}
+                onChange={(e) => setDeskripsi(e.target.value)}
+                placeholder="Contoh: Botol 1 liter"
+                bantuan="Ukuran, jenis, atau tipenya. Ukuran lain dicatat sebagai barang sendiri: minyak 1 liter dan minyak jerigen jadi dua baris."
+              />
+            </div>
 
-        <div className="mt-3.5">
-          <Pilihan label="Satuan pakai" wajib value={satuan} onChange={(e) => setSatuan(e.target.value)}>
-            {SATUAN_PAKAI.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </Pilihan>
-        </div>
-
-        <Pemisah className="my-4" />
-
-        <Sakelar
-          aktif={pakaiKemasan}
-          ubah={(v) => {
-            setPakaiKemasan(v)
-            if (v && kemasan.length === 0) setKemasan([{ nama: '', isi: '' }])
-          }}
-          label="Beli dalam kemasan?"
-          keterangan={`Nyalakan kalau kamu membelinya per dus, karung, atau jerigen. Di daftar Stok akan muncul baris kecil "= 3 dus + 2 ${satuan}".`}
-        />
-
-        {pakaiKemasan && (
-          <div className="mt-3 space-y-2.5">
-            {kemasan.map((k, i) => (
-              <div key={i} className="rounded-md border border-line bg-surface-2 p-3">
-                <div className="flex flex-wrap items-end gap-2">
-                  <span className="h-12 grid place-items-center text-kartu font-bold text-ink-2 shrink-0">
-                    1
-                  </span>
-                  <Kolom
-                    label="Nama kemasan"
-                    wajib
-                    className="min-w-[7rem] flex-1"
-                    value={k.nama}
-                    onChange={(e) =>
-                      setKemasan((lama) =>
-                        lama.map((x, j) => (j === i ? { ...x, nama: e.target.value } : x)),
-                      )
-                    }
-                    placeholder="dus"
-                  />
-                  <span className="h-12 grid place-items-center text-isi text-ink-2 shrink-0">isi</span>
-                  <Kolom
-                    label="Isi"
-                    wajib
-                    className="w-32"
-                    type="number"
-                    inputMode="numeric"
-                    min={1}
-                    value={k.isi}
-                    onChange={(e) =>
-                      setKemasan((lama) => lama.map((x, j) => (j === i ? { ...x, isi: e.target.value } : x)))
-                    }
-                    placeholder="24"
-                    akhiran={satuan}
-                  />
-                  <TombolIkon
-                    label={`Hapus kemasan ${k.nama || i + 1}`}
-                    onClick={() => setKemasan((lama) => lama.filter((_, j) => j !== i))}
-                    className="mb-0"
-                  >
-                    <IkonSampah size={18} />
-                  </TombolIkon>
-                </div>
-                {Number(k.isi) > 0 && k.nama.trim() && (
-                  <p className="mt-2 text-isi text-ink-2">
-                    1 {k.nama.trim()} = {angka(Number(k.isi))} {satuan}
+            {/* Cegat duplikat sebelum lahir, bukan sesudah stoknya terlanjur pecah dua. */}
+            {kembar && (
+              <div className="mt-2.5 flex items-start gap-3 rounded-md border border-menipis/40 bg-menipis-soft text-menipis-ink p-3">
+                <div className="min-w-0 grow">
+                  <p className="text-isi font-bold leading-snug">
+                    Sudah ada &lsquo;{kembar.nama}&rsquo;. Maksud kamu ini?
                   </p>
-                )}
+                  <p className="mt-0.5 text-isi opacity-90">
+                    Sisa {jumlahTampil(kembar, Math.max(0, kembar.stok))} &middot; {kembar.kategori}
+                  </p>
+                </div>
+                <Link
+                  to={`/stok/${kembar.id}`}
+                  className="shrink-0 inline-flex items-center gap-1 h-9 px-3 rounded-sm bg-surface text-isi font-bold text-ink hover:bg-sunken"
+                >
+                  Pakai yang sudah ada
+                  <IkonPanahKanan size={15} />
+                </Link>
               </div>
-            ))}
-
-            {galat.kemasan && (
-              <p className="text-isi text-kritis font-medium leading-snug">{galat.kemasan}</p>
             )}
 
-            <Tombol
-              ragam="garis"
-              ukuran="kecil"
-              ikonKiri={<IkonTambah size={15} />}
-              onClick={() => setKemasan((lama) => [...lama, { nama: '', isi: '' }])}
-            >
-              Tambah kemasan lain
-            </Tombol>
-          </div>
-        )}
-
-        <Pemisah className="my-4" />
-
-        {/* Satuan tampil dipilih di kartu yang sama dengan kemasan, karena
-            pilihannya memang lahir dari kemasan yang baru saja diisi. */}
-        <Pilihan
-          label="Ditampilkan sebagai"
-          value={satuanTampilDipilih}
-          onChange={(e) => gantiSatuanTampil(e.target.value)}
-          bantuan={`Angka sisa, batas aman, dan pemakaian dibaca dalam satuan ini. Penyimpanannya tetap dalam ${satuan}.`}
-        >
-          <option value="">{satuanTampilBawaan({ satuan }).nama} (otomatis)</option>
-          {pilihanTampil
-            .filter((s) => s.nama !== satuanTampilBawaan({ satuan }).nama)
-            .map((s) => (
-              <option key={s.nama} value={s.nama}>
-                {s.isi === 1 ? s.nama : `${s.nama} (isi ${angka(s.isi)} ${satuan})`}
-              </option>
-            ))}
-        </Pilihan>
-      </Kartu>
-
-      {/* ---------------- Angka ---------------- */}
-      <Kartu>
-        <h2 className="text-kartu font-bold text-ink mb-3">Stok dan batas aman</h2>
-
-        {barang ? (
-          /* Angka stok sengaja tidak bisa diedit di sini: setiap perubahan stok
-             harus tercatat di riwayat, dan itu tugas Koreksi Stok. */
-          <div className="flex items-center gap-3 rounded-md border border-line bg-surface-2 p-3.5">
-            {/* Latar surface-2 menaikkan ambang keterbacaan: ink-3 di atasnya
-                jatuh di bawah 4,5:1, jadi teks di dalam panel ini pakai ink-2. */}
-            <div className="min-w-0 grow">
-              <p className="text-isi text-ink-2">Stok tercatat</p>
-              <p className="mt-0.5 text-[1.125rem] font-bold text-ink">
-                {jumlahTampil(barang, Math.max(0, barang.stok))}
+            <div className="mt-4">
+              <label htmlFor="sebutan" className="block text-isi font-semibold text-ink-2 mb-1.5">
+                Nama lain / sebutan di warung{' '}
+                <span className="text-ink-3 font-normal">(boleh dikosongkan)</span>
+              </label>
+              <div className="flex gap-2">
+                <input
+                  id="sebutan"
+                  value={sebutanBaru}
+                  onChange={(e) => setSebutanBaru(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      tambahSebutan()
+                    }
+                  }}
+                  placeholder="Contoh: gula aren"
+                  className={cx(
+                    'w-full h-12 px-3.5 rounded-md bg-surface text-ink text-kartu',
+                    'border border-line-strong placeholder:text-ink-3/70',
+                    'focus:border-brand focus:outline-none focus:ring-4 focus:ring-[var(--c-brand-ring)]',
+                  )}
+                />
+                <Tombol ragam="garis" onClick={tambahSebutan} ikonKiri={<IkonTambah size={16} />}>
+                  Tambah
+                </Tombol>
+              </div>
+              <p className="mt-1.5 text-isi text-ink-3 leading-snug">
+                Sebutan lain ikut dicari, misalnya &ldquo;skm&rdquo; atau &ldquo;telor&rdquo;.
               </p>
-              <p className="mt-1 text-isi text-ink-2 leading-snug">
-                Angka stok diubah lewat Koreksi Stok supaya perubahannya tercatat di riwayat.
-              </p>
+              {namaLain.length > 0 && (
+                <ul className="mt-2 flex flex-wrap gap-2">
+                  {namaLain.map((n) => (
+                    <li key={n}>
+                      <span className="inline-flex items-center gap-1 h-9 pl-3 pr-1 rounded-full bg-sunken text-isi font-semibold text-ink-2">
+                        {n}
+                        <button
+                          type="button"
+                          aria-label={`Hapus sebutan ${n}`}
+                          onClick={() => setNamaLain((lama) => lama.filter((x) => x !== n))}
+                          className="size-7 grid place-items-center rounded-full hover:bg-line"
+                        >
+                          <IkonSilang size={14} />
+                        </button>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
-            <TombolTautan ke={`/stok/${barang.id}/koreksi`} ragam="garis" ukuran="kecil">
-              Koreksi Stok
-            </TombolTautan>
-          </div>
-        ) : (
-          <Kolom
-            label="Stok awal"
-            type="number"
-            inputMode={modeAngka}
-            step="any"
-            min={0}
-            value={stokAwal}
-            onChange={(e) => setStokAwal(e.target.value)}
-            akhiran={tampil.nama}
-            galat={galat.stok}
-            bantuan="Berapa yang ada di gudang sekarang. Boleh 0 kalau barangnya belum datang."
-          />
-        )}
 
-        <div className="mt-4 grid sm:grid-cols-2 gap-4">
-          <Kolom
-            label="Biasanya terpakai per hari"
-            type="number"
-            inputMode={modeAngka}
-            step="any"
-            min={0}
-            value={pemakaian}
-            onChange={(e) => setPemakaian(e.target.value)}
-            akhiran={tampil.nama}
-            bantuan="Kira-kira saja. Angka ini dipakai menyusun saran batas aman sampai riwayat penjualannya terkumpul."
-          />
-          <Kolom
-            label="Biasanya barang sampai berapa hari?"
-            type="number"
-            inputMode="numeric"
-            min={0}
-            value={hariKirim}
-            onChange={(e) => setHariKirim(e.target.value)}
-            akhiran="hari"
-            bantuan="Dihitung dari tanggal memesan sampai barangnya benar-benar sampai."
-          />
-        </div>
+            <div className="mt-4 grid sm:grid-cols-2 gap-4">
+              <Pilihan
+                label="Kategori"
+                wajib
+                value={kategori}
+                onChange={(e) => setKategori(e.target.value)}
+                galat={galat.kategori}
+              >
+                <option value="">Pilih kategori</option>
+                {daftarKategori.map((k) => (
+                  <option key={k} value={k}>
+                    {k}
+                  </option>
+                ))}
+                <option value={KATEGORI_BARU}>+ Kategori baru</option>
+              </Pilihan>
 
-        <div className="mt-4">
-          <Kolom
-            label="Batas aman"
-            type="number"
-            inputMode={modeAngka}
-            step="any"
-            min={0}
-            value={batasAman}
-            onChange={(e) => setBatasAman(e.target.value)}
-            akhiran={tampil.nama}
-            galat={galat.batas}
-            bantuan={`${BANTUAN.batasAman} Kalau dikosongkan, dipakai angka bawaan ${BATAS_AMAN_BAWAAN} ${tampil.nama}.`}
-          />
-          {saranBatas > 0 && !ikutSaran && (
-            <button
-              type="button"
-              onClick={() => setBatasAman(teksAngka(keTampil(sumberSatuan, saranBatas)))}
-              className="mt-2 inline-flex items-center min-h-11 text-isi font-bold text-brand hover:underline"
-            >
-              Pakai saran {jumlahTampil(sumberSatuan, saranBatas)}
-            </button>
-          )}
-          {ikutSaran && (
-            <Lencana nada="info" className="mt-2">
-              Mengikuti saran sistem
-            </Lencana>
-          )}
-        </div>
-      </Kartu>
+              <Kolom
+                label="Kode barang"
+                value={kode}
+                onChange={(e) => setKode(e.target.value)}
+                placeholder="Contoh: GA-003"
+                bantuan="Isi kalau kamu punya penomoran sendiri. Tidak wajib."
+              />
+            </div>
 
-      {/* ---------------- Sakelar ---------------- */}
-      <Kartu>
-        <h2 className="text-kartu font-bold text-ink mb-1">Pengingat</h2>
+            {kategori === KATEGORI_BARU && (
+              <div className="mt-4">
+                <Kolom
+                  label="Nama kategori baru"
+                  wajib
+                  value={kategoriBaru}
+                  onChange={(e) => setKategoriBaru(e.target.value)}
+                  placeholder="Contoh: Bumbu Dapur"
+                  bantuan="Kategori hanya dipakai sebagai penyaring di daftar Stok, bukan folder."
+                />
+              </div>
+            )}
+          </Kartu>
 
-        <Sakelar
-          aktif={ingatkanKedaluwarsa}
-          ubah={setIngatkanKedaluwarsa}
-          label="Ingatkan tanggal kedaluwarsa"
-          keterangan="Nyalakan untuk susu, daging, sayur, dan roti. Hanya satu tanggal dicatat, tidak per batch."
-        />
+          {/* ---------------- Satuan & kemasan ---------------- */}
+          <Kartu>
+            <h2 className="text-kartu font-bold text-ink">Satuan</h2>
+            <p className="mt-1 text-isi text-ink-3 leading-relaxed">
+              Stok disimpan dalam satuan pakai, satuan terkecil yang dikurangi kasir.
+            </p>
+            <Penjelasan label="Apa bedanya?">
+              Satuan pakai adalah takaran yang dikurangi kasir per porsi. Yang kamu baca di daftar Stok adalah
+              satuan tampil di bawah.
+            </Penjelasan>
 
-        {ingatkanKedaluwarsa && (
-          <div className="mt-2 mb-2">
-            <Kolom
-              label="Tanggal kedaluwarsa terdekat"
-              wajib
-              type="date"
-              value={tanggalKedaluwarsa}
-              onChange={(e) => setTanggalKedaluwarsa(e.target.value)}
-              galat={galat.kedaluwarsa}
-              bantuan="Tanggal dari kiriman yang paling cepat kedaluwarsa. Bisa diperbarui setiap kali barang datang."
+            <div className="mt-3.5">
+              <Pilihan label="Satuan pakai" wajib value={satuan} onChange={(e) => setSatuan(e.target.value)}>
+                {SATUAN_PAKAI.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </Pilihan>
+            </div>
+
+            <Pemisah className="my-4" />
+
+            <Sakelar
+              aktif={pakaiKemasan}
+              ubah={(v) => {
+                setPakaiKemasan(v)
+                if (v && kemasan.length === 0) setKemasan([{ nama: '', isi: '' }])
+              }}
+              label="Beli dalam kemasan?"
+              keterangan={`Nyalakan kalau kamu membelinya per dus, karung, atau jerigen. Di daftar Stok akan muncul baris kecil "= 3 dus + 2 ${satuan}".`}
             />
-          </div>
-        )}
 
-        <Pemisah className="my-2" />
+            {pakaiKemasan && (
+              <div className="mt-3 space-y-2.5">
+                {kemasan.map((k, i) => (
+                  <div key={i} className="rounded-md border border-line bg-surface-2 p-3">
+                    <div className="flex flex-wrap items-end gap-2">
+                      <span className="h-12 grid place-items-center text-kartu font-bold text-ink-2 shrink-0">
+                        1
+                      </span>
+                      <Kolom
+                        label="Nama kemasan"
+                        wajib
+                        className="min-w-[7rem] flex-1"
+                        value={k.nama}
+                        onChange={(e) =>
+                          setKemasan((lama) =>
+                            lama.map((x, j) => (j === i ? { ...x, nama: e.target.value } : x)),
+                          )
+                        }
+                        placeholder="dus"
+                      />
+                      <span className="h-12 grid place-items-center text-isi text-ink-2 shrink-0">isi</span>
+                      <Kolom
+                        label="Isi"
+                        wajib
+                        className="w-32"
+                        type="number"
+                        inputMode="numeric"
+                        min={1}
+                        value={k.isi}
+                        onChange={(e) =>
+                          setKemasan((lama) => lama.map((x, j) => (j === i ? { ...x, isi: e.target.value } : x)))
+                        }
+                        placeholder="24"
+                        akhiran={satuan}
+                      />
+                      <TombolIkon
+                        label={`Hapus kemasan ${k.nama || i + 1}`}
+                        onClick={() => setKemasan((lama) => lama.filter((_, j) => j !== i))}
+                        className="mb-0"
+                      >
+                        <IkonSampah size={18} />
+                      </TombolIkon>
+                    </div>
+                    {Number(k.isi) > 0 && k.nama.trim() && (
+                      <p className="mt-2 text-isi text-ink-2">
+                        1 {k.nama.trim()} = {angka(Number(k.isi))} {satuan}
+                      </p>
+                    )}
+                  </div>
+                ))}
 
-        <Sakelar
-          aktif={dicatatManual}
-          ubah={setDicatatManual}
-          label="Barang ini memang dicatat manual"
-          keterangan="Untuk gas, tisu, dan barang di luar kasir: tanpa chip peringatan dan tanpa perkiraan."
-        />
+                {galat.kemasan && (
+                  <p className="text-isi text-kritis font-medium leading-snug">{galat.kemasan}</p>
+                )}
 
-        <div className="mt-3">
-          <AreaTeks
-            label="Catatan"
-            value={catatan}
-            onChange={(e) => setCatatan(e.target.value)}
-            placeholder="Contoh: Giling halus untuk espresso."
-            bantuan="Hal yang perlu diingat saat memakai atau memesan barang ini. Muncul di Detail Barang."
-          />
+                <Tombol
+                  ragam="garis"
+                  ukuran="kecil"
+                  ikonKiri={<IkonTambah size={15} />}
+                  onClick={() => setKemasan((lama) => [...lama, { nama: '', isi: '' }])}
+                >
+                  Tambah kemasan lain
+                </Tombol>
+              </div>
+            )}
+
+            <Pemisah className="my-4" />
+
+            {/* Satuan tampil dipilih di kartu yang sama dengan kemasan, karena
+                pilihannya memang lahir dari kemasan yang baru saja diisi. */}
+            <Pilihan
+              label="Ditampilkan sebagai"
+              value={satuanTampilDipilih}
+              onChange={(e) => gantiSatuanTampil(e.target.value)}
+              bantuan={`Angka sisa, batas aman, dan pemakaian dibaca dalam satuan ini. Penyimpanannya tetap dalam ${satuan}.`}
+            >
+              <option value="">{satuanTampilBawaan({ satuan }).nama} (otomatis)</option>
+              {pilihanTampil
+                .filter((s) => s.nama !== satuanTampilBawaan({ satuan }).nama)
+                .map((s) => (
+                  <option key={s.nama} value={s.nama}>
+                    {s.isi === 1 ? s.nama : `${s.nama} (isi ${angka(s.isi)} ${satuan})`}
+                  </option>
+                ))}
+            </Pilihan>
+          </Kartu>
         </div>
-      </Kartu>
 
-      {dicoba && adaGalat && (
-        <Peringatan
-          nada="kritis"
-          judul={
-            kolomBelum.length === 1
-              ? `${kolomBelum[0]} belum beres`
-              : `${kolomBelum.length} kolom belum beres`
-          }
-        >
-          Yang masih perlu diperbaiki: {kolomBelum.join(', ')}. Keterangannya ada tepat di bawah masing-masing
-          kolom itu, lalu simpan sekali lagi.
-        </Peringatan>
-      )}
+        <div className="space-y-4">
+          {/* ---------------- Angka ---------------- */}
+          <Kartu>
+            <h2 className="text-kartu font-bold text-ink mb-3">Stok dan batas aman</h2>
 
-      {/* ---------------- Simpan ---------------- */}
-      <div className="flex flex-col sm:flex-row gap-2.5">
-        <Tombol penuh ukuran="besar" onClick={kirim}>
-          {mengubah ? 'Simpan Perubahan' : 'Simpan Barang'}
-        </Tombol>
-        <Tombol ragam="garis" ukuran="besar" penuh onClick={() => kembali(barang ? `/stok/${barang.id}` : '/stok')}>
-          Batal
-        </Tombol>
+            {barang ? (
+              /* Angka stok sengaja tidak bisa diedit di sini: setiap perubahan stok
+                 harus tercatat di riwayat, dan itu tugas Koreksi Stok. */
+              <div className="flex items-center gap-3 rounded-md border border-line bg-surface-2 p-3.5">
+                {/* Latar surface-2 menaikkan ambang keterbacaan: ink-3 di atasnya
+                    jatuh di bawah 4,5:1, jadi teks di dalam panel ini pakai ink-2. */}
+                <div className="min-w-0 grow">
+                  <p className="text-isi text-ink-2">Stok tercatat</p>
+                  <p className="mt-0.5 text-[1.125rem] font-bold text-ink">
+                    {jumlahTampil(barang, Math.max(0, barang.stok))}
+                  </p>
+                  <p className="mt-1 text-isi text-ink-2 leading-snug">
+                    Angka stok diubah lewat Koreksi Stok supaya perubahannya tercatat di riwayat.
+                  </p>
+                </div>
+                <TombolTautan ke={`/stok/${barang.id}/koreksi`} ragam="garis" ukuran="kecil">
+                  Koreksi Stok
+                </TombolTautan>
+              </div>
+            ) : (
+              <Kolom
+                label="Stok awal"
+                type="number"
+                inputMode={modeAngka}
+                step="any"
+                min={0}
+                value={stokAwal}
+                onChange={(e) => setStokAwal(e.target.value)}
+                akhiran={tampil.nama}
+                galat={galat.stok}
+                bantuan="Berapa yang ada di gudang sekarang. Boleh 0 kalau barangnya belum datang."
+              />
+            )}
+
+            <div className="mt-4 grid sm:grid-cols-2 gap-4">
+              <Kolom
+                label="Biasanya terpakai per hari"
+                type="number"
+                inputMode={modeAngka}
+                step="any"
+                min={0}
+                value={pemakaian}
+                onChange={(e) => setPemakaian(e.target.value)}
+                akhiran={tampil.nama}
+                bantuan="Kira-kira saja. Angka ini dipakai menyusun saran batas aman sampai riwayat penjualannya terkumpul."
+              />
+              <Kolom
+                label="Biasanya barang sampai berapa hari?"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                value={hariKirim}
+                onChange={(e) => setHariKirim(e.target.value)}
+                akhiran="hari"
+                bantuan="Dihitung dari tanggal memesan sampai barangnya benar-benar sampai."
+              />
+            </div>
+
+            <div className="mt-4">
+              <Kolom
+                label="Batas aman"
+                type="number"
+                inputMode={modeAngka}
+                step="any"
+                min={0}
+                value={batasAman}
+                onChange={(e) => setBatasAman(e.target.value)}
+                akhiran={tampil.nama}
+                galat={galat.batas}
+                bantuan={`${BANTUAN.batasAman} Kalau dikosongkan, dipakai angka bawaan ${BATAS_AMAN_BAWAAN} ${tampil.nama}.`}
+              />
+              {saranBatas > 0 && !ikutSaran && (
+                <button
+                  type="button"
+                  onClick={() => setBatasAman(teksAngka(keTampil(sumberSatuan, saranBatas)))}
+                  className="mt-2 inline-flex items-center min-h-11 text-isi font-bold text-brand hover:underline"
+                >
+                  Pakai saran {jumlahTampil(sumberSatuan, saranBatas)}
+                </button>
+              )}
+              {ikutSaran && (
+                <Lencana nada="info" className="mt-2">
+                  Mengikuti saran sistem
+                </Lencana>
+              )}
+            </div>
+          </Kartu>
+
+          {/* ---------------- Sakelar ---------------- */}
+          <Kartu>
+            <h2 className="text-kartu font-bold text-ink mb-1">Pengingat</h2>
+
+            <Sakelar
+              aktif={ingatkanKedaluwarsa}
+              ubah={setIngatkanKedaluwarsa}
+              label="Ingatkan tanggal kedaluwarsa"
+              keterangan="Nyalakan untuk susu, daging, sayur, dan roti. Hanya satu tanggal dicatat, tidak per batch."
+            />
+
+            {ingatkanKedaluwarsa && (
+              <div className="mt-2 mb-2">
+                <Kolom
+                  label="Tanggal kedaluwarsa terdekat"
+                  wajib
+                  type="date"
+                  value={tanggalKedaluwarsa}
+                  onChange={(e) => setTanggalKedaluwarsa(e.target.value)}
+                  galat={galat.kedaluwarsa}
+                  bantuan="Tanggal dari kiriman yang paling cepat kedaluwarsa. Bisa diperbarui setiap kali barang datang."
+                />
+              </div>
+            )}
+
+            <Pemisah className="my-2" />
+
+            <Sakelar
+              aktif={dicatatManual}
+              ubah={setDicatatManual}
+              label="Barang ini memang dicatat manual"
+              keterangan="Untuk gas, tisu, dan barang di luar kasir: tanpa chip peringatan dan tanpa perkiraan."
+            />
+
+            <div className="mt-3">
+              <AreaTeks
+                label="Catatan"
+                value={catatan}
+                onChange={(e) => setCatatan(e.target.value)}
+                placeholder="Contoh: Giling halus untuk espresso."
+                bantuan="Hal yang perlu diingat saat memakai atau memesan barang ini. Muncul di Detail Barang."
+              />
+            </div>
+          </Kartu>
+        </div>
       </div>
+
+      {/* ---------------- Simpan ----------------
+          Di bilah bawah yang selalu di dasar layar. Formulirnya panjang, jadi
+          kolom yang belum beres disebut namanya di samping tombol simpan:
+          menyuruh pemilik "cari yang bertanda merah" berarti menyuruhnya
+          menggulir balik menebak. */}
+      <BilahAksi
+        ringkasan={
+          dicoba && adaGalat ? (
+            <p className="text-isi font-semibold text-kritis leading-snug">
+              {kolomBelum.length === 1 ? `${kolomBelum[0]} belum beres` : `${kolomBelum.length} kolom belum beres`}:{' '}
+              {kolomBelum.join(', ')}. Keterangannya ada tepat di bawah kolomnya.
+            </p>
+          ) : (
+            // Di HP bilahnya cukup berisi tombol: setiap baris di sana memakan layar.
+            <p className="hidden lg:block text-isi text-ink-3">Kolom bertanda * wajib diisi.</p>
+          )
+        }
+      >
+        <div className="grid grid-cols-[2fr_1fr] gap-2.5">
+          <Tombol penuh ukuran="besar" onClick={kirim}>
+            {mengubah ? 'Simpan Perubahan' : 'Simpan Barang'}
+          </Tombol>
+          <Tombol ragam="garis" ukuran="besar" penuh onClick={() => kembali(barang ? `/stok/${barang.id}` : '/stok')}>
+            Batal
+          </Tombol>
+        </div>
+      </BilahAksi>
 
       <Konfirmasi
         terbuka={konfirmasiKemasan}
