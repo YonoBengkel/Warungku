@@ -76,9 +76,41 @@ Catatan tahap 2 (Edge headless, 1536 × 834 dan 390 × 844):
 
 ## Tahap 3 — Promo
 
-- [ ] **Logo promo per kategori barang (Q92)**, berwarna menurut jenis promo.
-- [ ] **Kotak promo utuh (Q90)** yang membuka halaman promo.
-- [ ] **Halaman promo dan Buat Promo (Q91).**
+- [x] **Logo promo per kategori barang (Q92)**, berwarna menurut jenis promo.
+- [x] **Kotak promo utuh (Q90)** yang membuka halaman promo.
+- [x] **Halaman promo dan Buat Promo (Q91).**
+
+Catatan tahap 3 (Edge headless, 1536 × 834 dan 390 × 844, terang dan gelap):
+- **Logo (Q92):** delapan glyph digambar dengan skill logo-design: Kopi, Teh & Matcha, Susu & Olahan, Pemanis,
+  Kemasan, Bahan Makanan, Pendukung, Campuran.
+  - Gambarnya: biji kopi, pucuk teh, kotak susu, permen, gelas bawa pulang, mangkuk nasi, tetes air berisi es,
+    dan kisi empat siluet mini.
+  - Geometrinya dihitung oleh `tools/buat_logo_promo.py`, yang menulis `frontend/src/data/glyphPromo.ts` dan
+    master SVG di `docs/desain/logo-promo/`. Lembar ujinya `docs/desain/logo-promo/lembar-logo-promo.png`.
+  - Lolos audit skill (100/100): satu warna, tanpa sudut nyaris-lurus. Masih terbaca di ubin 24px.
+  - Rancangan pertama kubus gula diganti permen, karena kubus tiga muka terbaca sebagai ikon "paket".
+- **Pemilihan logo** (`components/domain/logoPromo.tsx`):
+  - kategori katalog dipetakan ke glyph; "Kopi & Teh" dipecah lewat nama barang, Protein ikut Bahan Makanan;
+  - logo sebuah promo = kelompok barang terbanyak di dalamnya; seri atau belum ada barang memakai Campuran;
+  - `LogoPromo` di `KartuPromo.tsx` menggambarnya putih di ubin warna jenis promo (redup bila promo berakhir).
+    Dipakai di kartu Beranda UMKM, kepala halaman promo UMKM, dan kotak promo distributor. Lencana kecil di
+    jalur beli tetap memakai ikon jenis.
+- **Daftar promo (Q90):** satu kotak utuh per promo, tiga sebaris mulai 1280px. Isinya:
+  - logo, jenis, judul;
+  - potongan atau "Tanpa potongan", dan masa berlaku ("Sampai 30 Okt · 5 hari lagi");
+  - barang ikut (tiga nama, sisanya "+N").
+
+  Kotak "Sudah berakhir" bentuknya sama tapi redup. Tombol Ubah, Akhiri Sekarang, dan pop-up dihapus.
+- **Halaman promo (Q91):** `/distributor-portal/promo/<id>` dan `/promo/baru` (`PromoUbah.tsx`), dengan
+  formulir lama yang sama.
+  - **Desktop:** dua kolom. Kiri jenis, isi kartu, dan masa berlaku; kanan pratinjau dan barang ikut.
+    Tingkat keanggotaan selebar halaman, tiga sebaris.
+  - **HP:** pratinjau paling atas.
+  - **Tombol:** Pasang Promo, Simpan Promo, atau Pasang Lagi di bilah bawah. Akhiri Sekarang merah bergaris
+    di dasar halaman, dengan konfirmasi.
+  - **Tinggi halaman:** 1.404px untuk Cuci Gudang dan 1.791px untuk keanggotaan; dulu satu kolom 2.366px.
+- **Uji alur:** di basis data uji, promo baru dipasang, logonya berganti ke permen saat Gula Pasir dicentang,
+  lalu promonya diakhiri dan pindah ke "Sudah berakhir".
 
 ## Tahap 4 — Beranda dan Sebaran distributor
 

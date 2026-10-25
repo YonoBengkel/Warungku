@@ -1,16 +1,15 @@
-import { useMemo, useState } from 'react'
-import { KartuPromo } from '@/components/domain/KartuPromo'
-import { JudulBagian, Kartu, Tombol } from '@/components/ui/dasar'
+import { useMemo } from 'react'
+import { Link } from 'react-router-dom'
+import { LogoPromo, TEMPLATE_PROMO } from '@/components/domain/KartuPromo'
+import { JudulBagian, Kartu, TombolTautan } from '@/components/ui/dasar'
 import { RUANG_LONCENG } from '@/components/ui/navigasi'
-import { AreaTeks, Kolom, KotakCentang, PilihanKartu } from '@/components/ui/formulir'
-import { Konfirmasi, Lembar } from '@/components/ui/lembar'
 import { KeadaanKosong } from '@/components/ui/umpanBalik'
-import { IkonBintang, IkonPena, IkonTambah } from '@/icons'
-import { bacaAngkaIndonesia, tanggalRingkas } from '@/lib/format'
+import { IkonBintang, IkonJam, IkonPanahKanan, IkonTambah } from '@/icons'
+import { cx, hariLagi, persen, tanggalRingkas } from '@/lib/format'
 import { LABEL_PROMO } from '@/lib/label'
-import { distributorAktif, promoMasihBerlaku } from '@/data/dummy'
-import type { JenisPromo, Promo, TingkatKeanggotaan } from '@/lib/types'
-import { useAplikasi } from '@/store/aplikasi'
+import { promoMasihBerlaku } from '@/data/dummy'
+import type { Promo } from '@/lib/types'
+import { useAplikasi, useDistributorAktif } from '@/store/aplikasi'
 
 /**
  * Promo di portal distributor (catatan B2, ON-Dist 4).
@@ -19,306 +18,100 @@ import { useAplikasi } from '@/store/aplikasi'
  * potongannya masuk ke harga BELI SEKALI lewat `rincianHarga`. Harga kontrak
  * tidak ikut terpotong: kontrak adalah kesepakatan yang sudah dikunci.
  *
- * Promo tidak pernah dihapus, hanya diakhiri. Pesanan yang sudah memakai
- * potongannya masih perlu menyebut promo mana asalnya.
+ * Sejak revisi V4 (Q90) tiap promo satu kotak utuh, tiga per baris, yang
+ * membuka halamannya sendiri (`PromoUbah`). Tombol Ubah dan Akhiri Sekarang di
+ * bawah kartu serta jendela pop-up-nya sudah tidak ada. Nama toko tidak
+ * ditulis: semua promo di sini milik toko ini sendiri.
  */
 
-const URUTAN_JENIS: JenisPromo[] = ['cuci-gudang', 'produk-baru', 'membership']
+/** Barang ikut yang ditulis di kotak; sisanya cukup "+N". */
+const MAKS_NAMA_BARANG = 3
 
-const PENJELASAN_JENIS: Record<JenisPromo, string> = {
-  'cuci-gudang': 'Stok yang menumpuk dilepas lebih murah sampai gudang lega. Paling pas dengan tanggal berakhir.',
-  'produk-baru': 'Kabar barang yang baru masuk gudang. Potongan boleh ada, boleh tidak.',
-  membership: 'Harga lebih ringan untuk pelanggan yang berlangganan kiriman rutin.',
-}
-
-const MAKS_JUDUL = 60
-
-function tanggalInput(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
-/** Tiga tingkat bawaan untuk promo keanggotaan baru; isinya diubah sendiri oleh distributor. */
-const TINGKAT_BAWAAN: TingkatKeanggotaan[] = [
-  { nama: 'Perunggu', syarat: '', manfaat: '' },
-  { nama: 'Perak', syarat: '', manfaat: '' },
-  { nama: 'Emas', syarat: '', manfaat: '' },
-]
-
-function duaMingguLagi(): string {
-  return tanggalInput(new Date(Date.now() + 14 * 86_400_000))
-}
-
-/* ================================================================== */
-/* Formulir promo                                                     */
-/* ================================================================== */
-
-function FormPromo({ promo, tutup }: { promo: Promo | null; tutup: () => void }) {
-  const simpanPromo = useAplikasi((s) => s.simpanPromo)
-  const semuaPromo = useAplikasi((s) => s.katalogDistributorServer?.promo ?? s.promo)
-  const katalog = useAplikasi((s) => s.katalogDistributorServer?.penawaran ?? s.katalog)
-  const penawaranSaya = katalog.filter((p) => p.distributorId === distributorAktif.id && p.aktif !== false)
-  const masihBerlaku = promo ? promoMasihBerlaku(promo) : true
-
-  const [jenis, setJenis] = useState<JenisPromo>(promo?.jenis ?? 'cuci-gudang')
-  const [judul, setJudul] = useState(promo?.judul ?? '')
-  const [keterangan, setKeterangan] = useState(promo?.keterangan ?? '')
-  const [potongan, setPotongan] = useState(promo?.potonganPersen != null ? String(promo.potonganPersen) : '')
-  const [barang, setBarang] = useState<string[]>(promo?.penawaranIds ?? [])
-  const [tanpaTenggat, setTanpaTenggat] = useState(promo ? promo.berakhir == null : false)
-  /* Promo yang sudah berakhir dibuka dengan tanggal baru, supaya "pasang lagi"
-     tidak langsung tersimpan sebagai promo yang sudah lewat. */
-  const [tanggal, setTanggal] = useState(
-    promo?.berakhir && masihBerlaku ? tanggalInput(new Date(promo.berakhir)) : duaMingguLagi(),
-  )
-  const [tingkat, setTingkat] = useState<TingkatKeanggotaan[]>(
-    promo?.tingkat && promo.tingkat.length > 0 ? promo.tingkat : TINGKAT_BAWAAN,
-  )
-  const [dicoba, setDicoba] = useState(false)
-
-  function ubahTingkat(i: number, ubahan: Partial<TingkatKeanggotaan>) {
-    setTingkat((lama) => lama.map((t, j) => (j === i ? { ...t, ...ubahan } : t)))
-  }
-
-  const hariIni = tanggalInput(new Date())
-  /** Promo lain milik toko ini yang sedang berjalan dan sudah memuat barang yang sama. */
-  const promoLain = (penawaranId: string) =>
-    semuaPromo.find(
-      (x) =>
-        x.id !== promo?.id &&
-        x.distributorId === distributorAktif.id &&
-        promoMasihBerlaku(x) &&
-        x.penawaranIds.includes(penawaranId),
-    )
-  const angkaPotongan = potongan.trim() === '' ? null : bacaAngkaIndonesia(potongan)
-
-  const galat = {
-    judul: !judul.trim()
-      ? 'Judul promo belum diisi. Tulis satu kalimat pendek tanpa nama tokomu. Contoh: Cuci Gudang Teh Hitam.'
-      : judul.trim().length > MAKS_JUDUL
-        ? `Judul kepanjangan ${judul.trim().length - MAKS_JUDUL} huruf. Potong supaya muat di kartu. Contoh: Panen Baru Dataran Gayo.`
-        : undefined,
-    keterangan:
-      keterangan.trim().length < 10
-        ? keterangan.trim().length === 0
-          ? 'Keterangan belum diisi. Ceritakan singkat kenapa ada promo ini. Contoh: Stok panen bulan lalu masih banyak.'
-          : 'Keterangan terlalu pendek. Tulis paling sedikit 10 huruf. Contoh: Stok panen bulan lalu masih banyak.'
-        : undefined,
-    potongan:
-      angkaPotongan != null && (!Number.isInteger(angkaPotongan) || angkaPotongan < 1 || angkaPotongan > 90)
-        ? 'Potongan harus angka bulat 1 sampai 90 persen, atau dikosongkan kalau promo ini hanya kabar. Contoh: 10.'
-        : undefined,
-    barang: barang.length === 0 ? 'Pilih minimal satu barang yang ikut promo ini.' : undefined,
-    tanggal:
-      !tanpaTenggat && (!tanggal || tanggal < hariIni)
-        ? `Tanggal berakhir sudah lewat. Pilih hari ini atau sesudahnya. Contoh: ${tanggalRingkas(new Date(Date.now() + 14 * 86_400_000).toISOString())}.`
-        : undefined,
-  }
-  const adaGalat = Object.values(galat).some(Boolean)
-
-  const draf: Promo = {
-    id: promo?.id ?? 'pratinjau',
-    jenis,
-    distributorId: distributorAktif.id,
-    judul: judul.trim() || 'Judul promo kamu',
-    keterangan: keterangan.trim(),
-    berakhir: tanpaTenggat || !tanggal ? null : new Date(`${tanggal}T23:59:00`).toISOString(),
-    penawaranIds: barang,
-    potonganPersen: angkaPotongan != null && Number.isFinite(angkaPotongan) && angkaPotongan > 0 ? angkaPotongan : null,
-    // Tingkat yang belum diisi keuntungannya tidak ikut disimpan: pemilik usaha
-    // tidak perlu membaca tingkat kosong.
-    tingkat:
-      jenis === 'membership'
-        ? tingkat
-            .map((t) => ({ nama: t.nama.trim(), syarat: t.syarat.trim(), manfaat: t.manfaat.trim() }))
-            .filter((t) => t.nama && t.manfaat)
-        : undefined,
-  }
-
-  function simpan() {
-    setDicoba(true)
-    if (adaGalat) return
-    simpanPromo({ ...draf, id: promo?.id ?? `pr-${Date.now()}`, judul: judul.trim() })
-    tutup()
-  }
+function KotakPromo({ promo, namaBarang, berakhir }: { promo: Promo; namaBarang: string[]; berakhir?: boolean }) {
+  const template = TEMPLATE_PROMO[promo.jenis]
+  const sisaHari = promo.berakhir ? Math.ceil((+new Date(promo.berakhir) - Date.now()) / 86_400_000) : null
+  const tampil = namaBarang.slice(0, MAKS_NAMA_BARANG)
+  const sisa = namaBarang.length - tampil.length
 
   return (
-    <Lembar
-      terbuka
-      tutup={tutup}
-      judul={promo ? 'Ubah promo' : 'Buat promo'}
-      keterangan="Kartunya tampil di Beranda pemilik usaha dengan rupa sesuai jenis promonya."
-      kunciLatar
-      kaki={
-        <div className="flex gap-2.5">
-          <Tombol ragam="garis" penuh onClick={tutup}>
-            Batal
-          </Tombol>
-          <Tombol penuh onClick={simpan}>
-            {promo ? 'Simpan Promo' : 'Pasang Promo'}
-          </Tombol>
-        </div>
-      }
+    // Seluruh kotak satu tautan: target sentuhnya sebesar kotaknya.
+    <Link
+      to={`/distributor-portal/promo/${promo.id}`}
+      className="group h-full flex flex-col gap-3 rounded-lg border border-line bg-surface p-4 shadow-e1 transition-[border-color,box-shadow] duration-150 hover:border-line-strong hover:shadow-e2"
     >
-      <div className="pb-4 space-y-5">
-        {/* Pratinjau di atas: yang sedang disusun langsung terlihat persis
-            seperti yang akan dilihat pemilik usaha. */}
-        <div>
-          <p className="text-isi font-semibold text-ink-3 mb-2">Pratinjau di Beranda pemilik usaha</p>
-          <div className="max-w-[22rem]">
-            <KartuPromo promo={draf} lebar pratinjau />
-          </div>
+      <div className="flex items-start gap-3">
+        <LogoPromo promo={promo} ukuran={48} redup={berakhir} />
+        <div className="min-w-0 grow">
+          <span
+            className={cx(
+              'inline-flex items-center rounded-sm px-2 py-[3px] text-[0.6875rem] font-bold',
+              berakhir ? 'bg-sunken text-ink-2' : template.aksen,
+            )}
+          >
+            {LABEL_PROMO[promo.jenis]}
+          </span>
+          <p className="mt-1 text-subjudul font-extrabold text-ink leading-snug line-clamp-2">{promo.judul}</p>
         </div>
-
-        <fieldset>
-          <legend className="text-isi font-semibold text-ink-2 mb-2">Jenis promo</legend>
-          <div role="radiogroup" className="space-y-2">
-            {URUTAN_JENIS.map((j) => (
-              <PilihanKartu
-                key={j}
-                nilai={j}
-                terpilih={jenis === j}
-                ubah={(v) => setJenis(v as JenisPromo)}
-                judul={LABEL_PROMO[j]}
-                keterangan={PENJELASAN_JENIS[j]}
-              />
-            ))}
-          </div>
-        </fieldset>
-
-        <Kolom
-          label="Judul promo"
-          wajib
-          value={judul}
-          onChange={(e) => setJudul(e.target.value)}
-          galat={dicoba ? galat.judul : undefined}
-          bantuan="Nama tokomu tidak perlu ditulis, kartunya sudah menampilkannya."
-        />
-        <AreaTeks
-          label="Keterangan"
-          wajib
-          rows={3}
-          value={keterangan}
-          onChange={(e) => setKeterangan(e.target.value)}
-          galat={dicoba ? galat.keterangan : undefined}
-          bantuan="Dibaca pemilik usaha di halaman promo, di atas daftar barangnya."
-        />
-        <Kolom
-          label="Potongan harga (persen)"
-          inputMode="numeric"
-          akhiran="%"
-          value={potongan}
-          onChange={(e) => setPotongan(e.target.value)}
-          galat={dicoba ? galat.potongan : undefined}
-          bantuan="Berlaku untuk beli sekali, tidak untuk harga kontrak. Kosongkan kalau promo ini hanya kabar."
-        />
-
-        {/* Keanggotaan: keuntungan per tingkat (catatan C3). Potongan di atas
-            tetap berlaku untuk semua anggota; tingkat menambah keuntungan lain. */}
-        {jenis === 'membership' && (
-          <fieldset>
-            <legend className="text-isi font-semibold text-ink-2 mb-1">Keuntungan per tingkat</legend>
-            <p className="text-isi text-ink-3 leading-snug mb-2.5">
-              Boleh dikosongkan. Tingkat tanpa keuntungan tidak ditampilkan ke pemilik usaha.
-            </p>
-            <div className="space-y-3">
-              {tingkat.map((t, i) => (
-                <div key={i} className="rounded-md border border-line p-3 space-y-2.5">
-                  <Kolom
-                    label={`Nama tingkat ${i + 1}`}
-                    value={t.nama}
-                    onChange={(e) => ubahTingkat(i, { nama: e.target.value })}
-                  />
-                  <Kolom
-                    label="Syarat"
-                    value={t.syarat}
-                    placeholder="Belanja minimal Rp 1,5 jt per bulan"
-                    onChange={(e) => ubahTingkat(i, { syarat: e.target.value })}
-                  />
-                  <Kolom
-                    label="Keuntungan"
-                    value={t.manfaat}
-                    placeholder="Gratis ongkos kirim"
-                    onChange={(e) => ubahTingkat(i, { manfaat: e.target.value })}
-                  />
-                </div>
-              ))}
-            </div>
-          </fieldset>
-        )}
-
-        <fieldset>
-          <legend className="text-isi font-semibold text-ink-2 mb-1">
-            Barang yang ikut <span className="text-kritis" aria-hidden="true">*</span>
-          </legend>
-          <div className="space-y-0.5">
-            {penawaranSaya.map((p) => (
-              <KotakCentang
-                key={p.id}
-                dicentang={barang.includes(p.id)}
-                ubah={(v) => setBarang((lama) => (v ? [...lama, p.id] : lama.filter((x) => x !== p.id)))}
-                galat={dicoba && !!galat.barang}
-              >
-                {p.nama}
-                {promoLain(p.id) && (
-                  <span className="block text-kecil font-normal text-ink-3">
-                    Sudah ikut &ldquo;{promoLain(p.id)!.judul}&rdquo;. Kalau dua-duanya memotong harga, yang dipakai
-                    potongan terbesar.
-                  </span>
-                )}
-              </KotakCentang>
-            ))}
-          </div>
-          {dicoba && galat.barang && (
-            <p className="mt-1.5 text-isi text-kritis font-medium leading-snug">{galat.barang}</p>
-          )}
-        </fieldset>
-
-        <div>
-          <Kolom
-            label="Berlaku sampai"
-            type="date"
-            min={hariIni}
-            value={tanggal}
-            disabled={tanpaTenggat}
-            onChange={(e) => setTanggal(e.target.value)}
-            galat={dicoba ? galat.tanggal : undefined}
-          />
-          <div className="mt-1.5">
-            <KotakCentang dicentang={tanpaTenggat} ubah={setTanpaTenggat}>
-              Tanpa tanggal berakhir
-            </KotakCentang>
-          </div>
-        </div>
+        <IkonPanahKanan size={18} className="shrink-0 mt-1 text-ink-3 group-hover:text-ink transition-colors" />
       </div>
-    </Lembar>
+
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+        {promo.potonganPersen != null ? (
+          <span
+            className={cx(
+              'inline-flex items-center rounded-sm px-2 py-[3px] text-kecil font-bold',
+              berakhir ? 'bg-sunken text-ink-2' : cx(template.latar, template.teks),
+            )}
+          >
+            Potongan {persen(promo.potonganPersen)}
+          </span>
+        ) : (
+          <span className="text-kecil font-semibold text-ink-3">Tanpa potongan</span>
+        )}
+        <span className="inline-flex items-center gap-1 text-kecil font-semibold text-ink-2">
+          <IkonJam size={13} className="shrink-0" />
+          {berakhir && promo.berakhir
+            ? `Berakhir ${tanggalRingkas(promo.berakhir)}`
+            : promo.berakhir && sisaHari != null
+              ? `Sampai ${tanggalRingkas(promo.berakhir)} · ${hariLagi(sisaHari)}`
+              : 'Tanpa tanggal berakhir'}
+        </span>
+      </div>
+
+      <p className="mt-auto pt-3 border-t border-line text-isi text-ink-2 leading-snug">
+        <span className="text-ink-3">Barang ikut:</span>{' '}
+        {tampil.length > 0 ? tampil.join(', ') : 'belum ada'}
+        {sisa > 0 && <span className="font-semibold text-ink"> +{sisa}</span>}
+      </p>
+    </Link>
   )
 }
-
-/* ================================================================== */
-/* Halaman                                                            */
-/* ================================================================== */
 
 export default function PromoDistributor() {
   const semuaPromo = useAplikasi((s) => s.katalogDistributorServer?.promo ?? s.promo)
-  const akhiriPromo = useAplikasi((s) => s.akhiriPromo)
   const katalog = useAplikasi((s) => s.katalogDistributorServer?.penawaran ?? s.katalog)
-
-  const [form, setForm] = useState<{ promo: Promo | null } | null>(null)
-  const [akanDiakhiri, setAkanDiakhiri] = useState<Promo | null>(null)
+  const distributor = useDistributorAktif()
 
   const { berjalan, berakhir } = useMemo(() => {
-    const milikSaya = semuaPromo.filter((p) => p.distributorId === distributorAktif.id)
+    const milikSaya = semuaPromo.filter((p) => p.distributorId === distributor.id)
     return {
       berjalan: milikSaya.filter((p) => promoMasihBerlaku(p)),
       berakhir: milikSaya.filter((p) => !promoMasihBerlaku(p)),
     }
-  }, [semuaPromo])
+  }, [semuaPromo, distributor.id])
 
   const namaBarang = (ids: string[]) =>
-    ids
-      .map((id) => katalog.find((p) => p.id === id)?.nama)
-      .filter(Boolean)
-      .join(', ')
+    ids.map((id) => katalog.find((p) => p.id === id)?.nama).filter((n): n is string => !!n)
+
+  const kisi = (daftar: Promo[], sudahBerakhir?: boolean) => (
+    <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 [&>*]:min-w-0">
+      {daftar.map((p) => (
+        <li key={p.id}>
+          <KotakPromo promo={p} namaBarang={namaBarang(p.penawaranIds)} berakhir={sudahBerakhir} />
+        </li>
+      ))}
+    </ul>
+  )
 
   return (
     <div className="pb-6">
@@ -329,9 +122,9 @@ export default function PromoDistributor() {
             Promo tampil di Beranda pemilik usaha. Potongan hanya untuk beli sekali.
           </p>
         </div>
-        <Tombol ikonKiri={<IkonTambah size={17} />} onClick={() => setForm({ promo: null })}>
+        <TombolTautan ke="/distributor-portal/promo/baru" ikonKiri={<IkonTambah size={17} />}>
           Buat Promo
-        </Tombol>
+        </TombolTautan>
       </div>
 
       <section aria-labelledby="judul-promo-berjalan" className="mt-5">
@@ -346,33 +139,11 @@ export default function PromoDistributor() {
               ikon={<IkonBintang size={26} />}
               judul="Belum ada promo yang berjalan"
               pesan="Pasang promo untuk mengabarkan barang baru atau melepas stok yang menumpuk."
-              aksi={<Tombol onClick={() => setForm({ promo: null })}>Buat Promo</Tombol>}
+              aksi={<TombolTautan ke="/distributor-portal/promo/baru">Buat Promo</TombolTautan>}
             />
           </Kartu>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 [&>*]:min-w-0">
-            {berjalan.map((p) => (
-              <div key={p.id} className="flex flex-col gap-2">
-                <KartuPromo promo={p} lebar pratinjau />
-                <p className="text-isi text-ink-2 leading-snug">
-                  <span className="text-ink-3">Barang ikut:</span> {namaBarang(p.penawaranIds)}
-                </p>
-                <div className="flex gap-2">
-                  <Tombol
-                    ragam="garis"
-                    ukuran="kecil"
-                    ikonKiri={<IkonPena size={15} />}
-                    onClick={() => setForm({ promo: p })}
-                  >
-                    Ubah
-                  </Tombol>
-                  <Tombol ragam="sunyi" ukuran="kecil" onClick={() => setAkanDiakhiri(p)}>
-                    Akhiri Sekarang
-                  </Tombol>
-                </div>
-              </div>
-            ))}
-          </div>
+          kisi(berjalan)
         )}
       </section>
 
@@ -381,44 +152,11 @@ export default function PromoDistributor() {
           <JudulBagian
             id="judul-promo-berakhir"
             judul="Sudah berakhir"
-            keterangan="Tidak tampil lagi di Beranda. Pesanan yang sempat memakai potongannya tetap mencatatnya."
+            keterangan="Tidak tampil lagi di Beranda. Buka promonya untuk memasangnya lagi dengan tanggal baru."
           />
-          <Kartu>
-            <ul className="divide-y divide-line">
-              {berakhir.map((p) => (
-                <li key={p.id} className="py-2.5 flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-kartu font-semibold text-ink leading-snug">{p.judul}</p>
-                    <p className="text-isi text-ink-3">
-                      {LABEL_PROMO[p.jenis]}
-                      {p.berakhir && ` · berakhir ${tanggalRingkas(p.berakhir)}`}
-                    </p>
-                  </div>
-                  <Tombol ragam="garis" ukuran="kecil" onClick={() => setForm({ promo: p })}>
-                    Pasang Lagi
-                  </Tombol>
-                </li>
-              ))}
-            </ul>
-          </Kartu>
+          {kisi(berakhir, true)}
         </section>
       )}
-
-      {form && <FormPromo promo={form.promo} tutup={() => setForm(null)} />}
-
-      <Konfirmasi
-        terbuka={akanDiakhiri !== null}
-        tutup={() => setAkanDiakhiri(null)}
-        judul="Akhiri promo sekarang?"
-        labelSetuju="Akhiri Promo"
-        labelBatal="Belum"
-        ragamSetuju="bahaya"
-        onSetuju={() => akanDiakhiri && akhiriPromo(akanDiakhiri.id)}
-        pesan={
-          akanDiakhiri &&
-          `Kartu "${akanDiakhiri.judul}" hilang dari Beranda dan harga kembali normal; pesanan lama tetap memakai harga promo.`
-        }
-      />
     </div>
   )
 }

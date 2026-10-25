@@ -5,6 +5,7 @@ import { distributorById } from '@/data/dummy'
 import { LABEL_PROMO } from '@/lib/label'
 import { cx, hariLagi, persen, rupiah, tanggalRingkas } from '@/lib/format'
 import type { JenisPromo, Promo, RincianHarga } from '@/lib/types'
+import { GlyphPromo, useKategoriLogoPromo } from './logoPromo'
 
 /**
  * Kartu promo distributor.
@@ -28,9 +29,10 @@ type Ikon = ComponentType<{ size?: number; className?: string }>
  * kontrasnya di tema terang DAN gelap, sedangkan warna baru harus diuji ulang
  * dua kali untuk keuntungan yang tidak dirasakan siapa pun.
  *
- * `aksen` dipakai untuk medali ikon dan lencana jenis promo: warna padat
+ * `aksen` dipakai untuk ubin logo dan lencana jenis promo: warna padat
  * dengan `text-ink-inverse`, bukan `text-white`, supaya tetap terbaca saat
- * token warnanya berubah terang di tema gelap.
+ * token warnanya berubah terang di tema gelap. `Ikon` kini hanya untuk
+ * lencana kecil di jalur beli; kartu dan halaman promo memakai `LogoPromo`.
  */
 export const TEMPLATE_PROMO: Record<
   JenisPromo,
@@ -54,6 +56,32 @@ export const TEMPLATE_PROMO: Record<
     aksen: 'bg-info text-ink-inverse',
     Ikon: IkonSinkron,
   },
+}
+
+/**
+ * Logo promo (revisi V4, Q92): glyph kategori barangnya di ubin berwarna jenis
+ * promo. Dua promo Cuci Gudang kini berbeda rupa bila barangnya berbeda, tapi
+ * tetap sama-sama jingga. `redup` untuk promo yang sudah berakhir.
+ */
+export function LogoPromo({
+  promo,
+  ukuran = 44,
+  redup,
+}: {
+  promo: Pick<Promo, 'jenis' | 'penawaranIds'>
+  ukuran?: number
+  redup?: boolean
+}) {
+  const kategori = useKategoriLogoPromo(promo)
+  return (
+    <span
+      aria-hidden="true"
+      style={{ width: ukuran, height: ukuran, borderRadius: Math.round(ukuran * 0.27) }}
+      className={cx('shrink-0 grid place-items-center', redup ? 'bg-sunken text-ink-3' : TEMPLATE_PROMO[promo.jenis].aksen)}
+    >
+      <GlyphPromo kategori={kategori} size={Math.round(ukuran * 0.6)} />
+    </span>
+  )
 }
 
 export function KartuPromo({
@@ -82,10 +110,8 @@ export function KartuPromo({
 
   const isi = (
     <>
-      <div className="flex items-center gap-2">
-        <span className={cx('shrink-0 size-9 rounded-md grid place-items-center', template.aksen)}>
-          <template.Ikon size={18} />
-        </span>
+      <div className="flex items-center gap-2.5">
+        <LogoPromo promo={promo} ukuran={40} />
         <span
           className={cx(
             'inline-flex items-center rounded-sm px-2 py-[3px] text-[0.6875rem] font-bold',

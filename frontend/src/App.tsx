@@ -104,6 +104,7 @@ const PesananMasukDaftar = lazy(() => import('@/pages/distributor-portal/Pesanan
 const PesananMasukDetail = lazy(() => import('@/pages/distributor-portal/PesananMasukDetail'))
 const KontrakDistributor = lazy(() => import('@/pages/distributor-portal/KontrakDistributor'))
 const PromoDistributor = lazy(() => import('@/pages/distributor-portal/PromoDistributor'))
+const PromoUbah = lazy(() => import('@/pages/distributor-portal/PromoUbah'))
 const PetaSebaran = lazy(() => import('@/pages/distributor-portal/PetaSebaran'))
 const ProfilDistributor = lazy(() => import('@/pages/distributor-portal/ProfilDistributor'))
 const ProfilToko = lazy(() => import('@/pages/distributor-portal/ProfilToko'))
@@ -223,6 +224,8 @@ export default function App() {
           <Route path="pesanan/:id" element={<PesananMasukDetail />} />
           <Route path="kontrak" element={<KontrakDistributor />} />
           <Route path="promo" element={<PromoDistributor />} />
+          <Route path="promo/baru" element={<PromoUbah />} />
+          <Route path="promo/:id" element={<PromoUbah />} />
           <Route path="pelanggan" element={<SegmenPelanggan />} />
           <Route path="pemberitahuan" element={<PemberitahuanDistributor />} />
           <Route path="sebaran" element={<PetaSebaran />} />

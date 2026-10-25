@@ -2,7 +2,7 @@ import { Link, useParams } from 'react-router-dom'
 import { Avatar, JudulBagian, Kartu, KartuTautan, Lencana, TombolTautan } from '@/components/ui/dasar'
 import { KepalaHalaman } from '@/components/ui/navigasi'
 import { KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
-import { HargaBeli, TEMPLATE_PROMO } from '@/components/domain/KartuPromo'
+import { HargaBeli, LogoPromo, TEMPLATE_PROMO } from '@/components/domain/KartuPromo'
 import { IkonJam, IkonPanahKanan, IkonSilang, IkonToko } from '@/icons'
 import { cx, hariLagi, jumlahSatuan, persen, tanggalPanjang } from '@/lib/format'
 import { LABEL_PROMO } from '@/lib/label'
@@ -24,7 +24,7 @@ import { usePenentuHarga } from '@/store/aplikasi'
  * empat kolom, bukan satu kolom panjang yang melebar sampai 1.400 piksel.
  *
  * Blok kepalanya memakai template yang sama persis dengan kartunya supaya
- * pemilik warung yakin ia mendarat di promo yang tadi ditekan: warna, ikon,
+ * pemilik warung yakin ia mendarat di promo yang tadi ditekan: warna, logo,
  * dan lencana jenisnya tidak berubah, yang bertambah hanya isinya.
  *
  * Harga yang tampil di sini adalah harga BELI dari distributor, lewat
@@ -185,10 +185,8 @@ export default function PromoDetail() {
         )}
       >
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <span className={cx('shrink-0 size-10 rounded-md grid place-items-center', template.aksen)}>
-              <template.Ikon size={20} />
-            </span>
+          <div className="flex items-center gap-2.5">
+            <LogoPromo promo={promo} ukuran={48} />
             <span className={cx('inline-flex items-center rounded-sm px-2.5 py-1 text-isi font-bold', template.aksen)}>
               {LABEL_PROMO[promo.jenis]}
             </span>
