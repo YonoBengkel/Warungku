@@ -521,7 +521,7 @@ turnify-flow/
 | GET | `/distributor/{distributor_id}/profil` | Profil distributor sendiri: tentang toko, info usaha, kategori, area kirim, dan titik gudang |
 | PUT | `/distributor/{distributor_id}/profil` | Simpan tentang toko dan info usaha (alamat gudang, nomor HP, jam operasional, minimum pesanan); titik gudang tidak ikut berubah |
 | PUT | `/distributor/{distributor_id}/layanan` | Simpan kategori barang dan area kirim; hanya pilihan dari daftar di formulir yang diterima |
-| PUT | `/distributor/{distributor_id}/lokasi` | Simpan titik gudang untuk peta Lacak Pesanan (kosongkan keduanya untuk kembali ke titik tengah kota) |
+| PUT | `/distributor/{distributor_id}/lokasi` | Simpan titik gudang untuk peta di rincian pesanan (kosongkan keduanya untuk kembali ke titik tengah kota) |
 | GET | `/distributor/{distributor_id}/ringkasan-penjualan?dari=&sampai=` | Ringkasan penjualan dari pesanan selesai: pendapatan (nilai barang + ongkos kirim), pesanan, pelanggan, terlaris; tanpa pesanan variasi demo |
 | POST, PUT, DELETE | `/distributor/{distributor_id}/paket[/{paket_id}]` | Kelola paket kontrak; kontrak berjalan tidak ikut berubah |
 | GET | `/distributor/{distributor_id}/kontrak` | Kontrak pelanggan |
@@ -653,8 +653,9 @@ Daftar ini ada supaya tidak ada yang menyangka bagian ini sudah selesai.
   pindah perangkat.
 - **Pemberitahuan** dihitung di peramban dari data yang sudah dimuat (stok, pesanan,
   kontrak, promo); server belum mengirim pemberitahuan sendiri.
-- **Posisi kiriman** di Lacak Pesanan masih perkiraan di garis lurus dari gudang ke
-  tempat usaha; belum ada pelacakan kurir sungguhan.
+- **Posisi kiriman** (truk di garis status Lacak Pesanan dan di peta rincian pesanan)
+  masih perkiraan di garis lurus dari gudang ke tempat usaha; belum ada pelacakan kurir
+  sungguhan.
 - **Ringkasan Penjualan** tanpa laba kotor, karena harga pokok per menu belum ada.
 - **Halaman depan:** nomor kontaknya masih 08xxx-xxxx-xxxx, dan kedua fotonya (dari
   Downpic, hanya 390 × 260) perlu diganti foto berlisensi beresolusi lebih tinggi

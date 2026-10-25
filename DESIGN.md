@@ -166,8 +166,25 @@ terpisah dari angkanya di 360px.
 - **`KepalaHalaman`** (halaman detail) menempel tepat di bawah bilah global lewat
   `top-[var(--kepala-global)]`. Variabel itu bernilai 0 di desktop. Elemen yang digulir otomatis
   ke bawah kepala memakai `scroll-mt-[calc(var(--kepala-global,0px)_+_4.5rem)]`.
-- **`BilahAksi`** (satu aksi utama, misalnya kirim pesanan) menempel tepat di atas navigasi
-  bawah, bukan di `bottom-0`. Di desktop tombolnya berkumpul di kanan, paling lebar `max-w-md`.
+  - Sejak revisi V3 kepala ini mulai rapat ke atas (`-mt-4 lg:-mt-6`, sebesar jarak atas
+    `<main>`), di posisi yang sama dengan saat menempel, jadi tidak bergeser saat digulir.
+    Kepala lengket buatan sendiri (Stok di HP) mengikuti aturan yang sama.
+  - Panah kembalinya mundur ke halaman sebelumnya (`useKembali`), persis tombol Back
+    peramban. `kembaliKe` hanya cadangan bila halaman dibuka langsung, dan cadangan itu
+    mengganti entri riwayat.
+  - Tombol Batal di formulir juga memakai `useKembali`. Halaman yang muncul sesudah Simpan atau
+    Kirim mengganti formulirnya di riwayat (`navigate(…, { replace: true })`), supaya Back tidak
+    membuka lagi formulir yang sudah terkirim. Tombol yang menyebut tujuannya ("Kembali ke Susu &
+    Olahan") tetap ke tempat yang disebutnya.
+- **`BilahAksi`** (satu aksi utama, misalnya kirim pesanan) selalu di dasar layar (`fixed`),
+  berapa pun panjang halamannya (revisi V3):
+  - di desktop sejajar blok akun di dasar navigasi samping; di HP tepat di atas navigasi bawah,
+    bukan di `bottom-0`;
+  - pengganti setinggi bilah di alur halaman menjaga baris terakhir tetap terlihat, dan
+    `--tinggi-bilah` mengangkat toast ke atasnya;
+  - isinya selebar isi `<main>`; tombolnya berkumpul di kanan, paling lebar `max-w-md`;
+  - `lebarAksi="lebar"` untuk kelompok aksi yang lebih lebar, seperti pengatur jumlah ditambah
+    tombol.
 - **Tidak boleh ada geseran horizontal di 360px.**
   - Tabel dan grafik lebar menggulir di dalam wadahnya sendiri.
   - Setiap grid berisi kartu diberi `[&>*]:min-w-0`.
@@ -178,12 +195,23 @@ terpisah dari angkanya di 360px.
 - **Daftar tugas Beranda** ("Yang perlu kamu urus hari ini") adalah `Korsel` di semua ukuran:
   3 kartu per halaman mulai 1280px, 2 di 1024–1279px, 1 di HP (revisi V2). Petak Perlu Tindakan
   menaruh ikon dan angka di tengah dengan nama di bawah, kisi 2 × 2 di HP.
-- **Layar acuan dasbor** (revisi V2): area halaman 1536 × 730 piksel CSS (laptop 1920 × 1080
-  skala 125%). Di sana Prediksi, Stok, dan rincian barang muat tanpa menggulir halaman; Ringkasan
-  Penjualan dan Produksi menaruh angka utamanya di layar pertama. Daftar panjang di dalam dasbor
-  menampilkan yang muat ditambah "Lihat semua ›", atau menggulir di kotaknya sendiri. Halaman lain
-  cukup rapi dan seimbang, boleh menggulir. Halaman yang menghitung tinggi layar tidak memberi
-  jarak bawah sendiri di desktop (`lg:pb-0`), karena `<main>` sudah memberinya.
+- **Layar acuan dasbor** (revisi V2, diubah revisi V3): dua ukuran area halaman, **1536 × 834**
+  piksel CSS (laptop Ilham, 1920 × 1200 skala 125%) dan **1536 × 730** (laptop 1920 × 1080).
+  - Prediksi, Stok, dan rincian barang mengisi tinggi layar berapa pun. Halamannya setinggi layar
+    dikurangi jarak atas-bawah `<main>` (`min-h-[calc(100dvh-3.5rem)]`), dan bagian bawahnya
+    memanjang mengisi sisanya: tanpa gulir di 730 dan tanpa ruang kosong di 834.
+  - Grafik yang memanjang memakai `isiTinggi` (`GrafikTren`, `GrafikBatang`); `tinggi` menjadi
+    tinggi paling pendek. Gambar dan daftar yang memanjang duduk di lapisan `absolute`, supaya
+    tingginya sendiri tidak menahan wadahnya.
+  - Ringkasan Penjualan dan Produksi menaruh angka utamanya di layar pertama.
+  - Daftar panjang di dalam dasbor menampilkan yang muat ditambah "Lihat semua ›", atau menggulir
+    di kotaknya sendiri.
+  - Halaman lain cukup rapi dan seimbang, boleh menggulir.
+  - Halaman yang menghitung tinggi layar tidak memberi jarak bawah sendiri di desktop
+    (`lg:pb-0`), karena `<main>` sudah memberinya.
+- **Formulir panjang** (Tambah dan Ubah Barang, revisi V3) memakai dua kolom selebar halaman
+  mulai 1024px, dengan urutan isian tetap dari atas kiri ke bawah kanan. Simpan dan Batal ada di
+  `BilahAksi`, dan kolom yang belum beres disebut namanya di kiri bilah.
 - **Bagian atas beku** (`BagianAtasBeku`) di halaman daftar Distributor dan Pesanan: di desktop
   judul sampai tab/chip tetap terlihat; di HP hanya kotak cari dan tab, atau tab dan chip. Garis
   bawah muncul begitu halaman digulir.
@@ -235,7 +263,7 @@ Cari komponen yang sudah ada sebelum menulis yang baru. Komponen dasar ada di
 | Judul bagian dengan aksi di kanan | `JudulBagian` |
 | Kotak satu bagian halaman, dengan atau tanpa judul | `Bagian` (`KELAS_BAGIAN` untuk kotak serupa) |
 | Deretan kartu yang digeser | `Korsel`; dengan `judul` panahnya di pojok kanan atas, `nada="aksen"` di wadah coral |
-| Pemberitahuan di desktop | `LoncengMelayang`: langsung membuka halaman pemberitahuan, yang tampil tanpa menu samping dengan tombol kembali (`KepalaHalaman kembaliRiwayat`) |
+| Pemberitahuan di desktop | `LoncengMelayang`: langsung membuka halaman pemberitahuan, yang tampil tanpa menu samping dengan tombol kembali |
 | Penyaring dan urutan yang membuka pilihan | `MenuTarik` di perangkat bertetikus (`usePakaiMenuTarik`), `Lembar` di HP; satu keadaan buka dan satu isi untuk keduanya. Chip pemicunya memakai `bukaMenu`. Jangan taruh pemicunya di dalam wadah yang menggulir ke samping: menunya terpotong |
 | Status pendek | `Lencana nada=...` dengan ikon, atau `Titik` yang selalu disertai teks |
 | Kotak peringatan dan informasi | `Peringatan` (ikon dan warna mengikuti nada) |
@@ -244,12 +272,14 @@ Cari komponen yang sudah ada sebelum menulis yang baru. Komponen dasar ada di
 | Hasil aksi | Toast lewat `tampilkanRacun(teks, nada)`; aksi massal cukup satu toast ringkasan |
 | Lembar bawah dan konfirmasi | `Lembar`, `Konfirmasi` |
 | Kolom isian | `Kolom`, `AreaTeks`, `Pilihan`, `PengaturJumlah`; bingkai galat lewat `kelasBingkai(galat)` |
-| Nama metode analitik | `LabelMetode` di kanan judul halaman atau bagian yang dijelaskannya (revisi V2); bagian memakai `bungkus` supaya label turun ke bawah judul bila tidak muat. Nama metode saja, penjelasan 2–3 kalimat di gelembung (hover, ketuk, atau fokus), yang dirata kanan sendiri bila dari kiri ia keluar layar. LightGBM di Prediksi dan Tren, Thompson Sampling + fuzzy di saran distributor dan Rekomendasi, K-Prototypes di Pelanggan |
+| Nama metode analitik | `LabelMetode` di kanan judul halaman atau bagian yang dijelaskannya (revisi V2); bagian memakai `bungkus` supaya label turun ke bawah judul bila tidak muat. Nama metode saja, penjelasan 2–3 kalimat di gelembung (hover, ketuk, atau fokus), yang dirata kanan sendiri bila dari kiri ia keluar layar. LightGBM di Prediksi dan Tren, Thompson Sampling + fuzzy di saran distributor dan Rekomendasi, K-Prototypes di Pelanggan. Di halaman Distributor (desktop) label Rekomendasi duduk rata kanan di baris tab, hanya saat bagian itu tampil |
+| Asal angka saran beli | `HitunganSaran`: perkiraan bulan depan dikurangi sisa, dibagi isi kemasan, dibulatkan ke atas (`jumlahBeliUntuk`, rumus yang sama dengan `rekomendasiDari`). Di Prediksi per barang bersama "Dipesan dari"; di rincian penawaran ringkas, dalam kemasan jual distributor |
 | Logo toko dan gambar produk | `Avatar`, yang mencari gambar lewat `gambarUntuk(nama)` dengan huruf awal sebagai cadangan |
 | Tanda merek Turnify Flow | `TandaMerek`: `logo-mark.png` di tema terang, `logo-mark-gelap.png` (ungu terang) di tema gelap |
-| Peta Lacak Pesanan | `TampilanLacak` (daftar + peta), `PetaLacak`, `KeteranganPeta`: Leaflet dengan ubin OpenStreetMap, dimuat malas. Posisi kiriman selalu disebut "perkiraan posisi", dan daftar teks di sebelahnya memuat informasi yang sama |
+| Lacak Pesanan | `DaftarLacak` (revisi V3): satu baris per pesanan dengan garis empat status Menunggu Konfirmasi → Disiapkan → Dikirim → Selesai, bertanggal dari riwayat; truk di antara Dikirim dan Selesai selama di jalan. Dibuka lewat `TombolLacak` (berangka) di halaman Pesanan |
+| Peta satu pesanan | `PetaPesanan` di rincian pesanan selama pesanan berjalan (di atas Pembayaran atau Jejak Pesanan), memakai `PetaLacak` dan `KeteranganPeta`: Leaflet dengan ubin OpenStreetMap, dimuat malas. Posisi kiriman selalu disebut "perkiraan posisi" |
 | Memilih satu titik di peta | `PetaPilihTitik`: ketuk peta, atau geser dengan tombol panah lalu "Pakai titik tengah peta" |
-| Tautan kecil di navigasi samping desktop | `TautanSamping` (keranjang, Lacak Pesanan, Ringkasan Penjualan), dengan angka opsional |
+| Tautan kecil di navigasi samping desktop | `TautanSamping` (keranjang, Ringkasan Penjualan), dengan angka opsional. Lacak Pesanan tidak di sini sejak revisi V3 |
 | Ringkasan penjualan | `TampilanRingkasan` (halaman) dan `KartuRingkasanPenjualan` (Beranda, Dashboard). Tanpa laba kotor; angka utama dibandingkan dengan periode sebelumnya yang sama panjang, dengan ikon dan kata |
 
 **Ikon** dibuat sendiri di `frontend/src/icons/`: garis 1,75px, kotak 24px, dan selalu

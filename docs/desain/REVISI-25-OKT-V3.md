@@ -185,6 +185,45 @@ Catatan tahap 5:
 
 ## Tahap 6 — akhir
 
-- [ ] DESIGN.md: kepala halaman, bilah aksi, tombol kembali, layar acuan, Lacak Pesanan.
-- [ ] Perbandingan sebelum–sesudah di 1536 × 834 dan 1536 × 730.
-- [ ] Lingkungan uji dibersihkan. Image backend tidak dibangun karena V3 hanya mengubah frontend.
+- [x] DESIGN.md: kepala halaman, bilah aksi, tombol kembali, layar acuan, Lacak Pesanan.
+- [x] Perbandingan sebelum–sesudah di 1536 × 834 dan 1536 × 730.
+- [x] Lingkungan uji dibersihkan. Image backend tidak dibangun karena V3 hanya mengubah frontend.
+
+Catatan tahap 6:
+- **DESIGN.md** memuat aturan baru dan komponen barunya:
+  - kepala halaman rapat ke atas dan `useKembali`;
+  - formulir sesudah kirim diganti di riwayat;
+  - `BilahAksi` yang selalu di dasar layar;
+  - layar acuan dua ukuran dengan pola `isiTinggi`;
+  - formulir panjang dua kolom;
+  - `HitunganSaran`, `DaftarLacak`, `PetaPesanan`, dan `TombolLacak`.
+
+  README menyebut posisi kiriman di garis status dan di peta rincian.
+- **Tinggi halaman (px), Edge headless, tema terang, basis data uji.** Angka sama dengan tinggi layar
+  berarti muat tanpa gulir:
+
+  | Halaman | 834: sebelum → sesudah | 730: sebelum → sesudah |
+  |---|---|---|
+  | Stok | 834 → 834 | 730 → 730 |
+  | Tambah Barang | 2.248 → 1.318 | 2.248 → 1.318 |
+  | Prediksi · Kemasan | 834 → 834 (kini tanpa ruang kosong) | 730 → 730 |
+  | Prediksi · Susu Kental Manis | 834 → 834 (kini tanpa ruang kosong) | 730 → 730 |
+  | Rincian barang | 834 → 834 (grafik Tren 281px) | 730 → 730 |
+  | Distributor · Daftar Distributor | 1.158 → 1.038 | 1.158 → 1.038 |
+  | Rincian penawaran Matcha Bubuk | 834 → 834 | 732 → 730 |
+  | Pesanan | 991 → 943 | 991 → 943 |
+  | Lacak Pesanan | 1.246 → 967 | 1.246 → 967 |
+  | Rincian pesanan | 1.149 → 1.221 (ada peta) | 1.149 → 1.221 |
+  | Lacak Pesanan distributor | 1.331 → 1.061 | 1.331 → 1.061 |
+  | Rincian Pesanan Masuk | 834 → 939 (ada peta) | 828 → 939 |
+- **Sapuan regresi:** 33 rute kedua portal × 1536 × 834 dan 390 × 844 = 66 pemeriksaan. Hasilnya:
+  - tanpa galat konsol dan tanpa pesan galat di halaman;
+  - tanpa geseran horizontal;
+  - tepat satu `h1` per halaman;
+  - tanpa tombol atau tautan tak bernama.
+
+  Tema gelap dicek di Lacak Pesanan, Prediksi per barang, dan Tambah Barang.
+- **Lingkungan uji dibersihkan:**
+  - basis data `uji-db-v3` beserta volumenya;
+  - server uji 8010 dan 5180;
+  - dua entri sementara di `.claude/launch.json` (tidak dilacak git).
