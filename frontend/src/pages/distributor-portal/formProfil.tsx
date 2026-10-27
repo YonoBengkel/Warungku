@@ -467,7 +467,7 @@ export function FormLokasiGudang({ distributor, tutup }: { distributor: Distribu
       terbuka
       tutup={tutup}
       judul="Lokasi gudang"
-      keterangan="Ketuk peta di titik gudangmu. Pemilik usaha yang memesan darimu melihatnya di peta Lacak Pesanan."
+      keterangan="Ketuk peta di titik gudangmu. Pemilik usaha yang memesan darimu melihatnya di peta rincian pesanannya."
       kunciLatar
       kaki={
         <div className="flex gap-2.5">

@@ -30,11 +30,11 @@ import { cx } from '@/lib/format'
  * di kanan yang dibatasi satu lengkung; tiga blok fitur; satu blok untuk
  * distributor; kontak dan kaki halaman.
  *
- * Foto kasir di hero dan blok distributor diambil dari folder referensi tim
- * (unduhan Downpic.cc, tanpa lisensi). Memakainya di repo publik adalah
- * keputusan Ilham selama proyek belum dikomersialkan; ganti dengan foto
- * berlisensi sebelum itu. Resolusinya hanya 390 × 260, jadi wadahnya sengaja
- * tidak dibuat lebar.
+ * Foto hero adalah gambar warung dari Ilham (27 Okt 2026, 1536 × 1024), jadi
+ * ia boleh mengisi panel kanan setinggi hero. Foto blok distributor masih dari
+ * folder referensi tim (unduhan Downpic.cc, tanpa lisensi, hanya 390 × 260);
+ * memakainya di repo publik adalah keputusan Ilham selama proyek belum
+ * dikomersialkan, dan wadahnya sengaja tidak dibuat lebar.
  */
 
 const BAGIAN = [
@@ -123,18 +123,23 @@ export default function Hero() {
                 <p className="mt-4 text-isi">Belum punya akun? Pendaftarannya tiga langkah, dan bisa dilanjutkan nanti.</p>
               </div>
 
-              {/* Foto sumbernya hanya 390 × 260, jadi ia tidak dibentangkan setinggi
-                  panel (akan buram): lebarnya dibatasi dan bentuknya kapsul yang muncul
-                  dari tepi kanan. Lengkung kirinya menjadi potongan lengkung acuan. Di HP
-                  foto turun ke bawah teks dengan sudut atas melengkung. */}
-              <div className="relative lg:col-span-5 lg:flex lg:items-center lg:justify-end lg:py-10">
+              {/* Foto 1536 × 1024 mengisi panel kanan setinggi hero sampai tepi atas,
+                  kanan, dan bawah, dibatasi satu lengkung di kirinya (potongan lengkung
+                  acuan). Potongannya digeser ke kiri tengah supaya pemilik warung, layar
+                  kasirnya, dan belanjaan yang diserahkan tetap terlihat. Di HP foto utuh
+                  3:2 turun ke bawah teks dengan sudut atas melengkung. */}
+              <div className="relative lg:col-span-5">
                 <img
-                  src="/gambar/landing/kasir-swalayan.jpg"
-                  alt="Pembeli menyerahkan belanjaan di meja kasir swalayan."
-                  width={390}
-                  height={260}
+                  src="/gambar/landing/kasir-warung-ramah.jpg"
+                  srcSet="/gambar/landing/kasir-warung-ramah-960.jpg 960w, /gambar/landing/kasir-warung-ramah.jpg 1536w"
+                  // Di desktop gambar dilebarkan mengikuti tinggi panel (object-cover):
+                  // lebar penuhnya sekitar 1,5 × tinggi hero, bukan selebar panelnya.
+                  sizes="(min-width: 1024px) 880px, 100vw"
+                  alt="Pemilik warung tersenyum menyerahkan kerupuk kepada pembeli di meja kasir, di samping layar kasir yang menampilkan struk belanja."
+                  width={1536}
+                  height={1024}
                   fetchPriority="high"
-                  className="block w-full aspect-[3/2] object-cover rounded-t-[2.5rem] lg:max-w-[27rem] lg:rounded-t-none lg:rounded-l-full"
+                  className="block w-full aspect-[3/2] object-cover rounded-t-[2.5rem] lg:absolute lg:inset-0 lg:h-full lg:aspect-auto lg:rounded-t-none lg:rounded-l-[38%_50%] lg:object-[38%_50%]"
                 />
               </div>
             </div>

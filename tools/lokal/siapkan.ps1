@@ -298,18 +298,20 @@ if ($LASTEXITCODE -eq 0) {
     Awas 'Deskripsi barang belum dirapikan; aplikasi tetap bisa dipakai.'
 }
 
-# Variasi demo untuk Kopi Kita dan Bu Ratmi: pesanan di setiap tahap, kontrak
-# di setiap status, dan stok habis/menipis/kedaluwarsa. Basis data 0.2.0 belum
-# memuatnya. Tanggalnya relatif terhadap hari ini, jadi disegarkan kalau
-# umurnya lebih dari tiga hari, sama dengan nyalakan.cmd.
+# Variasi demo untuk Kopi Kita dan Bu Ratmi (pesanan di setiap tahap, kontrak
+# di setiap status, stok habis/menipis/kedaluwarsa) dan untuk portal
+# distributor1 (pesanan masuk, kontrak termasuk dua yang minta berhenti, promo).
+# Basis data 0.2.0 belum memuatnya. Tanggalnya relatif terhadap hari ini, jadi
+# disegarkan kalau umurnya lebih dari tiga hari, atau kalau image backend
+# membawa variasi yang lebih baru (mis. 0.11.0), sama dengan nyalakan.cmd.
 $keluaranVariasi = cmd /c "docker exec turnify-api python -m dataset.variasi_demo --jika-basi 2>&1"
 if ($LASTEXITCODE -ne 0) {
     $keluaranVariasi | Select-Object -Last 5 | ForEach-Object { Write-Host "    $_" }
     Awas 'Variasi demo belum terpasang; aplikasi tetap bisa dipakai.'
 } elseif ($keluaranVariasi -match 'masih segar') {
-    Oke 'Variasi demo (pesanan, kontrak, stok, menu kasir) masih segar'
+    Oke 'Variasi demo (pesanan, kontrak, stok, menu kasir, portal distributor) masih segar'
 } else {
-    Oke 'Variasi demo (pesanan, kontrak, stok, menu kasir) dipasang dengan tanggal hari ini'
+    Oke 'Variasi demo (pesanan, kontrak, stok, menu kasir, portal distributor) dipasang dengan tanggal hari ini'
 }
 
 # --------------------------------------------------------------------------

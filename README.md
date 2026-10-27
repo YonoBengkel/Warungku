@@ -62,8 +62,9 @@ Yang dikerjakan skrip itu:
 - menyiapkan `deployment/.env` dengan rahasia login acak;
 - merapikan deskripsi kemasan barang dan memasang variasi demo untuk akun Kopi
   Kita dan Bu Ratmi (pesanan di setiap tahap, kontrak, stok habis dan menipis, resep
-  dan menu kasir yang belum dipasangkan),
-  bertanggal hari ini dan disegarkan kalau umurnya lebih dari tiga hari;
+  dan menu kasir yang belum dipasangkan) serta portal distributor (pesanan masuk,
+  kontrak termasuk yang minta berhenti, promo), bertanggal hari ini dan disegarkan
+  kalau umurnya lebih dari tiga hari atau image backend membawa variasi yang lebih baru;
 - memasang paket frontend dan menyalakannya di jendela yang diperkecil ke taskbar;
 - membuka peramban di halaman Masuk.
 
@@ -112,8 +113,8 @@ dikerjakan sekaligus:
 - paket Python dan frontend dipasang bila belum ada;
 - `backend\.env` disiapkan, termasuk rahasia login acak;
 - skema dinaikkan dan UMKM produsen ditambahkan bila belum ada;
-- variasi demo untuk kedua akun simulasi disegarkan bila umurnya lebih dari tiga
-  hari (lihat [Akun simulasi](#akun-simulasi));
+- variasi demo untuk akun simulasi disegarkan bila umurnya lebih dari tiga hari
+  atau skripnya lebih baru dari yang terpasang (lihat [Akun simulasi](#akun-simulasi));
 - API, layanan model, dan frontend dibuka di tiga jendela;
 - ketiga mesin dijalankan bila keluarannya belum lengkap;
 - peramban dibuka di halaman Masuk.
@@ -293,6 +294,12 @@ Get-Content backend\skrip\02_periksa_konsistensi.sql | docker exec -i warungku-d
 - **Gambar produk dan logo toko** (ilustrasi SVG) dibangkitkan ulang dengan
   `python tools/buat_gambar.py`. Ganti berkas di `frontend/public/gambar/` dengan
   foto sungguhan kapan saja; nama berkasnya tetap.
+- **Logo promo** (delapan glyph per kategori barang) dibangkitkan ulang dengan
+  `python tools/buat_logo_promo.py`, yang menulis `frontend/src/data/glyphPromo.ts`
+  dan master SVG di `docs/desain/logo-promo/`.
+- **Foto halaman depan** ada di `frontend/public/gambar/landing/`: foto hero
+  `kasir-warung-ramah.jpg` (1536 piksel, dengan versi 960 piksel untuk layar kecil)
+  dan foto blok distributor `kasir-topi-merah.jpg`.
 - **API di alamat lain:** isi `VITE_API_URL` (bawaan `http://localhost:8000`)
   sebelum `npm run dev`.
 
@@ -308,7 +315,7 @@ ketiga mesin, masuk dengan salah satu akun berikut. API (port 8000) harus menyal
 | --- | --- | --- | --- |
 | `umkm1@warungku.test` | Pemilik usaha | Kopi Kita Jogja (kedai kopi) | Stok, grafik pemakaian aktual vs perkiraan, Prediksi, saran distributor, belanja, pesanan, kontrak, promo, Lacak Pesanan, Ringkasan Penjualan |
 | `produksi1@warungku.test` | Pemilik usaha produsen | Dapur Sambal Bu Ratmi | Semua yang di atas, ditambah tab **Produksi**: resep, catat sesi masak, kiriman ke Indomaret, swalayan, toko oleh-oleh, dan katering |
-| `distributor1@warungku.test` | Distributor | Sumber Tani Nusantara | Pesanan masuk, kontrak dan paket, promo, segmen pelanggan (Mesin 3), Lacak Pesanan, Ringkasan Penjualan, profil dan titik gudang |
+| `distributor1@warungku.test` | Distributor | Sumber Tani Nusantara | Pesanan masuk, kontrak dan paket (termasuk pengajuan berhenti), promo dan halaman ubah promo, peta Sebaran pemesan, segmen pelanggan (Mesin 3), Lacak Pesanan, Ringkasan Penjualan, halaman akun (profil toko, barang yang dijual, penilaian, titik gudang) |
 
 **Cara masuk tanpa mengetik:**
 
@@ -330,8 +337,10 @@ menunggu persetujuan, selesai, dihentikan atau ditolak), serta stok yang mengisi
 setiap penyaring di halaman Stok: habis, menipis, perlu dibeli, segera kedaluwarsa,
 masih batas bawaan, dan tidak bergerak (barang yang dibeli tapi belum terpakai).
 Portal `distributor1` diberi pesanan masuk dari lima kedai simulasi di setiap tahap,
-kontrak di setiap status, dan promo yang beragam. Tanggal pesanan dan kontraknya relatif terhadap hari ini, jadi
-`nyalakan.cmd` menyegarkannya bila umurnya lebih dari tiga hari. Memasangnya ulang
+kontrak di setiap status (termasuk dua yang minta berhenti dan belum dijawab), dan
+promo yang beragam. Tanggal pesanan dan kontraknya relatif terhadap hari ini, jadi
+`nyalakan.cmd` dan `siapkan.cmd` menyegarkannya bila umurnya lebih dari tiga hari, atau
+bila skrip variasinya lebih baru dari yang terpasang. Memasangnya ulang
 dengan tangan (mengembalikan pesanan dan kontrak demo ke keadaan awal):
 `python -m dataset.variasi_demo`. Rinciannya di
 [`data/dataset/variasi_demo.py`](data/dataset/variasi_demo.py).
@@ -451,7 +460,7 @@ turnify-flow/
 ├── data/          # Pembangkit dataset simulasi dan data nyata pihak luar
 ├── docs/          # Laporan, dokumen proses bisnis, desain, aset, arsip
 ├── deployment/    # docker-compose (PostgreSQL, API, layanan model) dan Dockerfile backend
-├── tools/         # Pembangkit gambar produk dan logo, penangkap layar
+├── tools/         # Pembangkit gambar produk, logo toko, dan logo promo; penangkap layar
 ├── pyproject.toml # Satu proyek Python untuk backend, ml, dan data
 ├── requirements.txt           # Lingkungan lengkap: produksi + eksperimen (Chronos, PyMC)
 └── requirements-produksi.txt  # Hanya yang dipakai model produksi; dipakai image Docker
@@ -460,7 +469,7 @@ turnify-flow/
 | Folder | Isi |
 | --- | --- |
 | `frontend/src/` | Halaman (`pages/`), komponen, kerangka, store Zustand, klien API (`lib/api*.ts`), dan data contoh (`data/dummy.ts`) |
-| `frontend/public/gambar/` | Ilustrasi produk dan logo toko (SVG), dibangkitkan `tools/buat_gambar.py` |
+| `frontend/public/gambar/` | Ilustrasi produk dan logo toko (SVG), dibangkitkan `tools/buat_gambar.py`, dan foto halaman depan (`landing/`) |
 | `backend/api/` | Endpoint REST. Hanya membaca keluaran model, tidak pernah memanggilnya |
 | `backend/warungku/` | Model tabel (SQLModel), enum, koneksi. Nama paketnya belum diganti |
 | `backend/migrations/` | Migrasi Alembic |
@@ -658,9 +667,10 @@ Daftar ini ada supaya tidak ada yang menyangka bagian ini sudah selesai.
   masih perkiraan di garis lurus dari gudang ke tempat usaha; belum ada pelacakan kurir
   sungguhan.
 - **Ringkasan Penjualan** tanpa laba kotor, karena harga pokok per menu belum ada.
-- **Halaman depan:** nomor kontaknya masih 08xxx-xxxx-xxxx, dan kedua fotonya (dari
-  Downpic, hanya 390 × 260) perlu diganti foto berlisensi beresolusi lebih tinggi
-  sebelum proyek dipakai di luar kuliah.
+- **Halaman depan:** nomor kontaknya masih 08xxx-xxxx-xxxx, dan foto blok distributornya
+  (dari Downpic, hanya 390 × 260) perlu diganti foto berlisensi beresolusi lebih tinggi
+  sebelum proyek dipakai di luar kuliah. Foto hero sudah diganti gambar warung dari Ilham
+  (27 Okt 2026, 1536 × 1024).
 - **UMKM produsen** belum bisa menambah produk, resep, atau pembeli dari layar;
   ketiganya dibuat oleh pembangkit data. Perkiraan pesanannya masih rata-rata hari
   yang sama dalam 4 pekan terakhir, belum memakai Mesin 1.

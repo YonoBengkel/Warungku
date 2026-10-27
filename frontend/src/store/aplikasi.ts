@@ -797,7 +797,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
       const baru = await simpanLokasiGudang(sesi, isi)
       set({ profilDistributorServer: baru })
       get().tampilkanRacun(
-        lokasi ? 'Lokasi gudang tersimpan. Pemilik usaha melihatnya di peta Lacak Pesanan.' : 'Lokasi gudang dikosongkan. Peta memakai titik tengah kotamu.',
+        lokasi ? 'Lokasi gudang tersimpan. Pemilik usaha melihatnya di peta rincian pesanan.' : 'Lokasi gudang dikosongkan. Peta memakai titik tengah kotamu.',
         'aman',
       )
       return true

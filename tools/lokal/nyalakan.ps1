@@ -11,7 +11,8 @@ Yang dikerjakan, berurutan:
      tidak hangus setiap API dinyalakan ulang.
   4. Skema basis data dinaikkan ke versi terbaru (alembic upgrade head),
      UMKM produsen ditambahkan bila belum ada, dan variasi demo (pesanan,
-     kontrak, stok) disegarkan bila umurnya lebih dari tiga hari.
+     kontrak, stok, portal distributor) disegarkan bila umurnya lebih dari
+     tiga hari atau skrip variasinya lebih baru dari yang terpasang.
   5. API (8000), layanan model (8001), dan frontend (5173), masing-masing di
      jendela sendiri. Layanan yang sudah menyala tidak dinyalakan dua kali,
      kecuali API dan layanan model yang menyala sebelum kodenya berubah: jendela
@@ -182,16 +183,18 @@ if ($LASTEXITCODE -ne 0) {
 $produsenBaru = [bool]($keluaranProdusen -match '^Selesai')
 if ($produsenBaru) { Oke 'UMKM produsen (Dapur Sambal Bu Ratmi) ditambahkan' } else { Oke 'Skema terbaru, UMKM produsen sudah ada' }
 
-# Variasi pesanan, kontrak, dan stok untuk dua akun demo. Tanggalnya relatif
-# terhadap hari ini, jadi disegarkan kalau umurnya lebih dari tiga hari.
+# Variasi pesanan, kontrak, dan stok untuk dua akun demo dan portal
+# distributor1 (termasuk dua kontrak yang minta berhenti). Tanggalnya relatif
+# terhadap hari ini, jadi disegarkan kalau umurnya lebih dari tiga hari, atau
+# kalau skrip variasinya lebih baru dari yang terpasang di basis data.
 $keluaranVariasi = cmd /c "`"$Python`" -m dataset.variasi_demo --jika-basi 2>&1"
 if ($LASTEXITCODE -ne 0) {
     $keluaranVariasi | Select-Object -Last 5 | ForEach-Object { Write-Host "    $_" }
     Write-Host '    Variasi demo belum terpasang; aplikasi tetap bisa dipakai.' -ForegroundColor Yellow
 } elseif ($keluaranVariasi -match 'masih segar') {
-    Oke 'Variasi demo (pesanan, kontrak, stok) masih segar'
+    Oke 'Variasi demo (pesanan, kontrak, stok, portal distributor) masih segar'
 } else {
-    Oke 'Variasi demo (pesanan, kontrak, stok) dipasang ulang dengan tanggal hari ini'
+    Oke 'Variasi demo (pesanan, kontrak, stok, portal distributor) dipasang ulang dengan tanggal hari ini'
 }
 
 # Deskripsi barang dari pembangkit lama ("20000 gram per karung") ditulis ulang

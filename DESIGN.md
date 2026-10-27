@@ -240,7 +240,10 @@ terpisah dari angkanya di 360px.
 - **Tombol selebar wadah hanya di HP:** `penuh="hp"` membuat tombol selebar wadah di HP dan
   selebar isinya mulai 640px. Tombol selebar 1.000px terbaca seperti spanduk.
 - **Foto tidak dibentangkan** lebih dari sekitar 1,1 kali ukuran aslinya. Foto kecil diberi
-  bentuk (kapsul, bingkai) alih-alih diperbesar, seperti kedua foto halaman depan (390 × 260).
+  bentuk (kapsul, bingkai) alih-alih diperbesar, seperti foto blok distributor di halaman depan
+  (390 × 260). Foto hero (1536 × 1024, sejak 27 Okt 2026) cukup besar untuk mengisi panel kanan
+  hero setinggi kartunya sampai tepi kanan, dengan satu lengkung di kiri; `sizes`-nya mengikuti
+  lebar gambar setelah `object-cover` (±1,5 × tinggi hero), bukan lebar panelnya.
 
 ## 6. Komponen
 
