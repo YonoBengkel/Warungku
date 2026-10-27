@@ -59,6 +59,9 @@ Yang dikerjakan skrip itu:
 - clone repo (branch `Rombak#4`) ke folder `turnify-flow` di sebelah berkas itu;
 - menyalakan Docker Desktop, mengunduh image dari Docker Hub (sekitar 400 MB
   pertama kali), lalu menyalakan kontainer basis data, API, dan layanan model;
+- kalau laptop itu sudah punya basis data dari image lama, menawarkan menggantinya
+  dengan data terbaru, yaitu salinan basis data tim (selalu ditanya dulu, karena data
+  lama hilang);
 - menyiapkan `deployment/.env` dengan rahasia login acak;
 - merapikan deskripsi kemasan barang dan memasang variasi demo untuk akun Kopi
   Kita dan Bu Ratmi (pesanan di setiap tahap, kontrak, stok habis dan menipis, resep
@@ -201,7 +204,7 @@ python -m alembic -c backend/alembic.ini upgrade head
   API membuat rahasia baru setiap kali dinyalakan, dan semua orang harus masuk ulang.
 
 **B3. Lengkapi data** bila basis datamu berasal dari image lama `turnify-flow-db:0.1.0`
-(belum ada UMKM produsen). Volume yang dipulihkan dari `0.2.0` sudah lengkap:
+(belum ada UMKM produsen). Volume yang dipulihkan dari `0.2.0` atau `0.3.0` sudah lengkap:
 
 ```powershell
 python -m dataset.umkm_produksi
@@ -572,7 +575,9 @@ dijadwalkan dari luar. Metode Mesin 1 yang dipakai penjadwal diatur lewat
 Ada dua image di Docker Hub, keduanya publik (tidak perlu `docker login` untuk
 mengunduh). **Unduh tag yang tertulis di tabel ini**: tag inilah yang dipakai
 [`deployment/docker-compose.yml`](deployment/docker-compose.yml). Tag yang lebih
-lama jangan dipakai: backend `0.10.0` belum memuat variasi demo revisi V4 (dua kontrak
+lama jangan dipakai: basis data `0.2.0` adalah data simulasi 16 Oktober 2026 tanpa variasi
+demo, sedangkan `0.3.0` salinan basis data tim per 27 Oktober 2026 (lihat tabel);
+backend `0.10.0` belum memuat variasi demo revisi V4 (dua kontrak
 kedai yang minta berhenti di portal distributor), backend `0.9.0` belum memuat revisi 23 Oktober 2026 (Lacak Pesanan
 dengan titik gudang, Ringkasan Penjualan, profil distributor yang tersimpan, saran Mesin 2
 untuk semua barang), backend `0.8.0` belum punya resep menu kasir (`/menu-kasir`), dan nota
@@ -583,14 +588,15 @@ kasirnya gagal seluruhnya kalau satu bahan stoknya habis; backend `0.7.0` masih 
 backend `0.5.0` menganggap semua barang "tidak bergerak" di halaman Stok, backend `0.4.0` belum menggambar garis perkiraan masa lalu di grafik
 bulanan, dan backend `0.3.0` ke bawah serta basis data `0.1.0` belum memuat
 perubahan 16 Oktober 2026 (Mesin 1 LightGBM, UMKM produsen, gambar produk).
-Backend `0.11.0` membutuhkan basis data `0.2.0`, karena tabel produksinya baru ada di
-sana. Kolom yang ditambahkan sesudahnya (titik gudang distributor) dipasang sendiri oleh
-kontainer API saat menyala (lihat di bawah). Saat pertama menyala di atas basis data `0.2.0`, layanan model menjalankan
-Mesin 1 sekali (sekitar 4 menit) untuk mengisi uji balik bulanan.
+Backend `0.11.0` membutuhkan basis data `0.2.0` atau lebih baru, karena tabel
+produksinya baru ada sejak itu. Kolom yang ditambahkan sesudahnya (titik gudang
+distributor) dipasang sendiri oleh kontainer API saat menyala (lihat di bawah). Di atas
+basis data `0.3.0` uji balik bulanan sudah ada, jadi layanan model tidak perlu jalan awal;
+di atas `0.2.0` ia menjalankan Mesin 1 sekali (sekitar 4 menit) untuk mengisinya.
 
 | Image | Tag yang dipakai | Isi | Halaman Docker Hub |
 | --- | --- | --- | --- |
-| `yonobengkel/turnify-flow-db` | **`0.2.0`** | PostgreSQL 16 yang memulihkan data simulasi (70 UMKM, 1 UMKM produsen, 8 distributor, 400 hari) beserta keluaran ketiga mesin saat pertama kali dinyalakan | https://hub.docker.com/r/yonobengkel/turnify-flow-db/tags |
+| `yonobengkel/turnify-flow-db` | **`0.3.0`** | PostgreSQL 16 yang memulihkan data simulasi (70 UMKM, 1 UMKM produsen, 8 distributor, 400 hari) saat pertama kali dinyalakan. Isinya salinan basis data tim per 27 Oktober 2026: deskripsi barang sudah dirapikan, variasi demo revisi V4 (termasuk dua kontrak yang minta berhenti), dan keluaran ketiga mesin termasuk uji balik bulanan | https://hub.docker.com/r/yonobengkel/turnify-flow-db/tags |
 | `yonobengkel/turnify-flow-backend` | **`0.11.0`** | Satu image untuk API (port 8000) dan layanan model (port 8001). Isinya hanya model produksi (LightGBM, Beta-Bernoulli + fuzzy, K-Prototypes), lihat [`requirements-produksi.txt`](requirements-produksi.txt); tanpa Chronos atau PyMC | https://hub.docker.com/r/yonobengkel/turnify-flow-backend/tags |
 
 **Tidak perlu mengunduh dengan tangan.** Perintah `docker compose ... up -d` di
@@ -599,7 +605,7 @@ otomatis. Kalau ingin mengunduh lebih dulu (misalnya sebelum ke kampus dengan
 internet lambat):
 
 ```powershell
-docker pull yonobengkel/turnify-flow-db:0.2.0
+docker pull yonobengkel/turnify-flow-db:0.3.0
 docker pull yonobengkel/turnify-flow-backend:0.11.0
 ```
 
@@ -610,6 +616,18 @@ Hal yang perlu diketahui:
 
 - **Data hanya dipulihkan ke volume yang belum pernah dipakai.** Kalau sebelumnya
   pernah menyalakan basis data versi lama, data di volume itu tetap dipakai.
+  - **`siapkan.cmd`** mengenali volume itu dari komentar basis data, yang sejak `0.3.0`
+    berisi "turnify-flow-db 0.3.0". Bila asalnya bukan image di tabel ini, ia bertanya
+    dulu sebelum mengganti datamu dengan data terbaru (data lama hilang).
+  - **`nyalakan.cmd`** dan jalur B tidak pernah mengganti datamu. Kontainer
+    `warungku-db` memakai image baru, tetapi volumenya tetap. Untuk mengambil data
+    terbaru: jalankan `matikan.cmd`, lalu
+    `docker compose -f deployment/docker-compose.yml down -v`, lalu nyalakan lagi.
+- **Salinan data berlaku untuk hari pembuatannya.** Data demo bertanggal
+  relatif. Bila basis data baru dinyalakan lebih dari tiga hari sesudah image dibuat,
+  variasi demo dipasang ulang dengan tanggal hari itu. Ketiga mesin juga tetap berjalan
+  sesuai jadwal (Mesin 2 dan 3 tiap 4 jam, Mesin 1 pukul 02.00), jadi angka saran,
+  segmen, dan ramalan bisa bergeser tipis sesudahnya.
 - **Skema dinaikkan sendiri.** Sejak backend `0.10.0`, kontainer `turnify-api`
   menjalankan `alembic upgrade head` setiap kali menyala, sebelum API dibuka. Kalau
   migrasinya gagal, API tidak menyala; penyebabnya terbaca di
@@ -636,6 +654,12 @@ docker exec warungku-db rm /tmp/warungku_dev.dump
 docker build -t yonobengkel/turnify-flow-db:<versi> deployment/db
 docker push yonobengkel/turnify-flow-db:<versi>
 ```
+
+Samakan `TURNIFY_DATA_VERSI` di `deployment/db/Dockerfile` dengan `<versi>`. Nilai itu
+ditulis sebagai komentar basis data saat pemulihan, dan `siapkan.cmd` memakainya untuk
+mengenali data lama. Sebelum push, periksa bahwa basis datanya hanya berisi data
+simulasi: semua akun `@warungku.test`, tanpa nomor HP, alamat, atau catatan sungguhan.
+Image ini publik.
 
 Image backend dibangun dari akar repo:
 

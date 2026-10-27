@@ -18,8 +18,10 @@
 #
 # Basis data memakai yonobengkel/turnify-flow-db: PostgreSQL 16 yang berisi data
 # simulasi (akun umkm1 Kopi Kita Jogja, distributor1 Sumber Tani Nusantara, dan
-# keluaran ketiga mesin). Data hanya dipulihkan ke volume yang masih KOSONG, jadi
-# volume yang sudah berisi data tidak pernah ditimpa.
+# keluaran ketiga mesin). Sejak 0.3.0 isinya salinan basis data Ilham per 27 Okt
+# 2026, termasuk variasi demo revisi V4. Data hanya dipulihkan ke volume yang
+# masih KOSONG, jadi volume yang sudah berisi data tidak pernah ditimpa;
+# siapkan.cmd menawarkan menggantinya bila datanya dari image lama.
 #
 # Port 5433 (bukan 5432) supaya tidak bentrok dengan PostgreSQL yang mungkin
 # sudah berjalan di komputermu.
@@ -52,7 +54,7 @@ x-backend: &backend
 
 services:
   db:
-    image: yonobengkel/turnify-flow-db:0.2.0
+    image: yonobengkel/turnify-flow-db:0.3.0
     build:
       context: db
     container_name: warungku-db

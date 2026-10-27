@@ -264,13 +264,20 @@ $volumeLama = Diam 'docker volume inspect backend_warungku_data'
 if (-not (Tampil "$Compose up -d db")) { Gagal 'Basis data tidak bisa dinyalakan. Lihat pesan docker di atas.' }
 Tunggu-Basis-Data
 
-# Data hanya dipulihkan dari image ke volume yang masih kosong. Volume dari
-# versi sebelum 16 Okt 2026 belum punya tabel produksi; backend sekarang
-# membutuhkannya.
+# Data hanya dipulihkan dari image ke volume yang masih kosong, jadi volume
+# yang sudah ada tetap memakai data image lama. Sejak 0.3.0 image menulis asal
+# datanya sebagai komentar basis data ("turnify-flow-db 0.3.0"); volume tanpa
+# komentar itu, atau dengan versi lain, ditawari data terbaru. Volume dari
+# sebelum 16 Okt 2026 bahkan belum punya tabel produksi.
+$imageDb = $image | Where-Object { $_ -match 'turnify-flow-db:' } | Select-Object -First 1
+$versiImageDb = ($imageDb -split ':')[-1]
+$asalData = cmd /c 'docker exec warungku-db psql -U warungku -d warungku_dev -tAc "SELECT shobj_description(oid, ''pg_database'') FROM pg_database WHERE datname = current_database()" 2>nul'
 $adaProduksi = cmd /c 'docker exec warungku-db psql -U warungku -d warungku_dev -tAc "SELECT to_regclass(''public.produksi'') IS NOT NULL" 2>nul'
-if ($volumeLama -and ($adaProduksi -ne 't')) {
-    Awas 'Basis data di komputer ini berasal dari versi lama (sebelum 16 Oktober 2026).'
-    Awas 'Sebagian fitur (UMKM produsen, tab Produksi) tidak akan jalan dengan data ini.'
+if ($volumeLama -and $versiImageDb -and ($asalData -ne "turnify-flow-db $versiImageDb")) {
+    if ($asalData) { $asal = $asalData } else { $asal = 'image basis data sebelum 0.3.0' }
+    Awas "Basis data di komputer ini berasal dari: $asal."
+    Awas "Data terbaru ada di image turnify-flow-db $versiImageDb (salinan data tim yang dipakai untuk demo)."
+    if ($adaProduksi -ne 't') { Awas 'Data ini juga sebelum 16 Oktober 2026: UMKM produsen dan tab Produksi tidak akan jalan.' }
     if (Tanya 'Ganti dengan data terbaru dari image? Data lama di basis data akan HILANG') {
         if (-not (Tampil "$Compose down -v")) { Gagal 'Data lama tidak bisa dihapus. Lihat pesan docker di atas.' }
         if (-not (Tampil "$Compose up -d db")) { Gagal 'Basis data tidak bisa dinyalakan.' }
@@ -288,7 +295,7 @@ foreach ($l in @(@{ Nama = 'API'; Url = 'http://localhost:8000/sehat' }, @{ Nama
     Oke "$($l.Nama) siap: $($l.Url)"
 }
 
-# Deskripsi barang di basis data 0.2.0 masih ditulis pembangkit lama
+# Deskripsi barang di basis data 0.2.0 ke bawah masih ditulis pembangkit lama
 # ("20000 gram per karung"). Skripnya ada di image backend dan menulis ulang
 # hanya pola lama menjadi "1 karung = 20 kg", jadi aman dijalankan berulang.
 $keluaranDeskripsi = cmd /c "docker exec turnify-api python -m dataset.rapikan_deskripsi 2>&1"
@@ -301,7 +308,7 @@ if ($LASTEXITCODE -eq 0) {
 # Variasi demo untuk Kopi Kita dan Bu Ratmi (pesanan di setiap tahap, kontrak
 # di setiap status, stok habis/menipis/kedaluwarsa) dan untuk portal
 # distributor1 (pesanan masuk, kontrak termasuk dua yang minta berhenti, promo).
-# Basis data 0.2.0 belum memuatnya. Tanggalnya relatif terhadap hari ini, jadi
+# Basis data 0.2.0 ke bawah belum memuatnya (0.3.0 sudah). Tanggalnya relatif terhadap hari ini, jadi
 # disegarkan kalau umurnya lebih dari tiga hari, atau kalau image backend
 # membawa variasi yang lebih baru (mis. 0.11.0), sama dengan nyalakan.cmd.
 $keluaranVariasi = cmd /c "docker exec turnify-api python -m dataset.variasi_demo --jika-basi 2>&1"
