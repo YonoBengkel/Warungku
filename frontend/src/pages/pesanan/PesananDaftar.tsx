@@ -278,13 +278,13 @@ export default function PesananDaftar() {
   }
 
   return (
-    <div className="pb-6">
+    <div className="pb-6 lg:pb-0">
       {/* Dari judul sampai chip penyaring tetap terlihat saat daftar digulir; di
           HP hanya tab dan chip (revisi V2, Q52). */}
       <BagianAtasBeku
         atas={
           <>
-            <div className={cx('flex items-baseline justify-between gap-3', RUANG_LONCENG)}>
+            <div data-sejajar-lonceng className={cx('flex items-baseline justify-between gap-3', RUANG_LONCENG)}>
               <h1 className="text-judul font-extrabold text-ink tracking-tight">Pesanan</h1>
               <Link to="/belanja" className="text-isi font-bold text-brand hover:underline shrink-0">
                 Cari barang di Distributor

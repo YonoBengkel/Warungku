@@ -58,7 +58,7 @@ export default function JenisUsaha() {
   }
 
   return (
-    <div className="pb-6">
+    <div className="pb-6 lg:pb-0">
       <KepalaHalaman judul={JUDUL.caraHitung} kembaliKe="/akun" />
 
       <div className="mt-4 lg:grid lg:grid-cols-12 lg:gap-6 lg:items-start">

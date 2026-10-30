@@ -20,7 +20,7 @@ export default function RingkasanPenjualanDistributor() {
   )
 
   return (
-    <div className="pb-6">
+    <div className="pb-6 lg:pb-0">
       <KepalaHalaman judul="Ringkasan Penjualan" kembaliKe="/distributor-portal" />
       {sesi ? (
         <TampilanRingkasan ambil={ambil} />

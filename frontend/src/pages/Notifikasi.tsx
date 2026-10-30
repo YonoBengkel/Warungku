@@ -193,7 +193,7 @@ export default function Notifikasi() {
     )
 
   return (
-    <div className="pb-6">
+    <div className="pb-6 lg:pb-0">
       <KepalaHalaman
         judul={JUDUL.notifikasi}
         keterangan={belumDibaca > 0 ? `${belumDibaca} belum dibaca` : 'Semua sudah dibaca'}

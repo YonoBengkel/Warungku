@@ -438,12 +438,73 @@ export function BarisButir({
 const KANAN_LONCENG = 'max(1.5rem, calc((100vw - var(--rail-w) - 1400px) / 2 + 1.5rem))'
 /** Paling banyak butir di panel; sisanya lewat "Lihat semua" (Q100). */
 const BATAS_PANEL = 6
+/** Tinggi tombol lonceng (`size-11`) dan jarak atasnya bila halaman tidak menandai acuan. */
+const TINGGI_LONCENG = 44
+const ATAS_BAWAAN = 16
+
+function dalamPenempel(el: HTMLElement): boolean {
+  for (let n: HTMLElement | null = el; n && n !== document.body; n = n.parentElement) {
+    if (getComputedStyle(n).position === 'sticky') return true
+  }
+  return false
+}
+
+/**
+ * Jarak atas lonceng supaya rata tengah dengan elemen bertanda
+ * `data-sejajar-lonceng` di baris kepala halaman (revisi V6, Q125 dan Q132):
+ * pil tanggal di Beranda, label metode di Prediksi, baris `KepalaHalaman`, dan
+ * seterusnya. Lonceng tetap melayang: diukur saat halaman berganti atau isinya
+ * berubah ukuran, lalu diam di tempat saat digulir. Hanya bila acuannya ada di
+ * dalam kepala yang menempel, lonceng ikut bergeser sampai kepala itu menempel.
+ */
+function useAtasLonceng(pathname: string): number {
+  const [atas, setAtas] = useState(ATAS_BAWAAN)
+  useEffect(() => {
+    let rangka = 0
+    let menempel = false
+    const ukur = () => {
+      cancelAnimationFrame(rangka)
+      rangka = requestAnimationFrame(() => {
+        const el = document.querySelector<HTMLElement>('#konten [data-sejajar-lonceng]')
+        const kotak = el?.getBoundingClientRect()
+        if (!el || !kotak || kotak.height === 0) {
+          menempel = false
+          setAtas(ATAS_BAWAAN)
+          return
+        }
+        menempel = dalamPenempel(el)
+        // Posisi dalam dokumen, kecuali yang menempel: itu dibaca dari layar.
+        const tengah = (menempel ? kotak.top : kotak.top + window.scrollY) + kotak.height / 2
+        setAtas(Math.max(8, Math.round(tengah - TINGGI_LONCENG / 2)))
+      })
+    }
+    ukur()
+    const isi = document.getElementById('konten')
+    const pengamat = isi ? new MutationObserver(ukur) : null
+    if (isi) pengamat?.observe(isi, { childList: true, subtree: true })
+    const saatGulir = () => {
+      if (menempel) ukur()
+    }
+    window.addEventListener('resize', ukur)
+    window.addEventListener('scroll', saatGulir, { passive: true })
+    document.fonts?.ready.then(ukur).catch(() => {})
+    return () => {
+      cancelAnimationFrame(rangka)
+      pengamat?.disconnect()
+      window.removeEventListener('resize', ukur)
+      window.removeEventListener('scroll', saatGulir)
+    }
+  }, [pathname])
+  return atas
+}
 
 type TabPanel = 'perlu' | 'semua'
 
 /**
  * Lonceng pemberitahuan di desktop: tombol bulat yang melayang di pojok kanan
  * atas area halaman dan tetap di tempat saat halaman digulir (revisi V2, Q53).
+ * Sejak revisi V6 tingginya rata tengah dengan elemen di baris kepala tiap
+ * halaman (`useAtasLonceng`), bukan lagi selalu 16px dari atas.
  * Sejak revisi V5 (Q99, Q100) menekannya membuka panel ala Tokopedia tepat di
  * bawahnya, bukan langsung pindah halaman. Panel tertutup oleh ketukan di luar,
  * Esc, pindah halaman, atau memilih butir. Di HP lonceng tetap di bilah atas dan
@@ -470,6 +531,7 @@ export function LoncengMelayang({
   const tombolRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const { pathname } = useLocation()
+  const atas = useAtasLonceng(pathname)
 
   const perlu = useMemo(() => butir.filter((b) => b.perluTindakan), [butir])
   const belumDibaca = butir.filter((b) => b.dibaca === false).length
@@ -523,10 +585,10 @@ export function LoncengMelayang({
         aria-expanded={buka}
         aria-controls="panel-pemberitahuan"
         className={cx(
-          'hidden lg:grid fixed top-4 z-40 size-11 place-items-center rounded-full bg-surface border shadow-e2 transition-colors',
+          'hidden lg:grid fixed z-40 size-11 place-items-center rounded-full bg-surface border shadow-e2 transition-colors',
           buka ? 'text-brand border-brand' : 'text-ink-2 border-line hover:text-ink hover:border-line-strong',
         )}
-        style={{ right: KANAN_LONCENG }}
+        style={{ right: KANAN_LONCENG, top: atas }}
       >
         <IkonLonceng size={22} />
         {jumlah > 0 && (
@@ -545,7 +607,7 @@ export function LoncengMelayang({
           tabIndex={-1}
           className="hidden lg:flex fixed z-50 flex-col rounded-xl border border-line bg-surface shadow-e3 outline-none anim-muncul"
           style={{
-            top: '4.25rem',
+            top: atas + TINGGI_LONCENG + 8,
             right: KANAN_LONCENG,
             width: 'min(25rem, calc(100vw - var(--rail-w) - 3rem))',
             maxHeight: 'calc(100dvh - 5.5rem)',

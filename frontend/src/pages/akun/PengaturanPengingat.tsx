@@ -122,7 +122,7 @@ export default function PengaturanPengingat() {
   }
 
   return (
-    <div className="pb-6">
+    <div className="pb-6 lg:pb-0">
       <KepalaHalaman
         judul="Pengaturan Pengingat"
         keterangan="Pilih yang perlu kamu dengar, matikan yang mengganggu"

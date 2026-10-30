@@ -5,7 +5,7 @@ import { Kolom } from '@/components/ui/formulir'
 import { BarisChip, Chip } from '@/components/ui/navigasi'
 import { KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
 import { GrafikBatang } from '@/components/grafik/GrafikBatang'
-import { IkonGrafik, IkonNota, IkonPanahKanan, IkonTrenNaik, IkonTrenTurun, IkonUang } from '@/icons'
+import { IkonGrafik, IkonPanahKanan, IkonTrenNaik, IkonTrenTurun } from '@/icons'
 import { angka, cx, rupiah, rupiahRingkas, rupiahSumbu, tanggalPendek, tanggalRingkas } from '@/lib/format'
 import type { RentangTanggal, RingkasanPenjualan, SumberPenjualan } from '@/lib/apiPenjualan'
 
@@ -512,6 +512,9 @@ function BatangPerHari({ perHari }: { perHari: RingkasanPenjualan['perHari'] }) 
  * Ringkasan Penjualan di Beranda kedua portal (revisi V5, butir 4A, mockup
  * yang disetujui Ilham): tiga petak berikon dengan chip naik atau turun
  * dibanding periode sebelumnya yang sama panjang, lalu batang per hari.
+ *
+ * Sejak revisi V6 (Q128) ikon petaknya ilustrasi Flaticon di
+ * `public/gambar/penjualan/`, tampil polos seperti ikon Perlu Tindakan.
  */
 export function KartuRingkasanPenjualan({
   ambil,
@@ -571,18 +574,18 @@ export function KartuRingkasanPenjualan({
         <>
           <ul className="grid gap-3 sm:grid-cols-3 [&>*]:min-w-0">
             {[
-              { label: istilah.total, nilai: rupiahRingkas(data.total), Ikon: IkonUang, sekarang: data.total, lalu: data.pembandingTotal },
+              { label: istilah.total, nilai: rupiahRingkas(data.total), gambar: 'ikon-penjualan-total.png', sekarang: data.total, lalu: data.pembandingTotal },
               {
                 label: `Jumlah ${istilah.transaksi}`,
                 nilai: angka(data.jumlahTransaksi),
-                Ikon: IkonNota,
+                gambar: 'ikon-penjualan-nota.png',
                 sekarang: data.jumlahTransaksi,
                 lalu: data.pembandingJumlah,
               },
               {
                 label: `Rata-rata per ${istilah.transaksi}`,
                 nilai: rupiahRingkas(data.rataRata),
-                Ikon: IkonGrafik,
+                gambar: 'ikon-penjualan-rata.png',
                 sekarang: data.rataRata,
                 lalu: rataLalu,
               },
@@ -593,9 +596,13 @@ export function KartuRingkasanPenjualan({
                 className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 rounded-lg border border-line bg-surface-2 px-3.5 py-3 sm:block sm:p-4"
               >
                 <p className="flex items-center gap-2.5 min-w-0">
-                  <span className="size-10 shrink-0 rounded-full bg-brand-soft text-brand grid place-items-center">
-                    <p.Ikon size={20} />
-                  </span>
+                  <img
+                    src={`${import.meta.env.BASE_URL}gambar/penjualan/${p.gambar}`}
+                    alt=""
+                    width={40}
+                    height={40}
+                    className="size-10 shrink-0"
+                  />
                   <span className="text-isi font-semibold text-ink-2 leading-snug">{p.label}</span>
                 </p>
                 <p className="text-right sm:text-left sm:mt-3 text-angka font-extrabold text-ink tracking-tight">{p.nilai}</p>

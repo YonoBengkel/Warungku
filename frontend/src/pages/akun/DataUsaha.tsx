@@ -144,7 +144,7 @@ export default function DataUsaha() {
   const tampilkan = (k: KunciKolom) => (sudahDicoba ? galat[k] : undefined)
 
   return (
-    <div className="pb-8">
+    <div className="pb-8 lg:pb-0">
       <KepalaHalaman
         judul="Data Usaha & Legalitas"
         kembaliKe="/akun"

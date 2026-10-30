@@ -316,7 +316,7 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
   }
 
   return (
-    <div className="mt-4 pb-8 max-w-2xl mx-auto lg:max-w-none">
+    <div className="mt-4 pb-8 lg:pb-0 max-w-2xl mx-auto lg:max-w-none">
       {/* Mulai 1024px dua kolom selebar halaman (revisi V3, Q67): kiri nama dan
           satuan, kanan stok dan pengingat. Urutan isiannya tetap 1-2-3-4, karena
           kolom stok memakai satuan yang dipilih di bagian Satuan. Dulu satu kolom
@@ -783,7 +783,7 @@ export default function StokBaru() {
   const namaAwal = param.get('nama') ?? ''
 
   return (
-    <div className="pb-8">
+    <div className="pb-8 lg:pb-0">
       <KepalaHalaman
         judul="Tambah Barang"
         keterangan={namaAwal ? `Dari pencarian "${namaAwal}"` : 'Barang baru di daftar stok'}

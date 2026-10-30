@@ -25,7 +25,7 @@ export default function ProfilToko() {
   )
 
   return (
-    <div className="pb-8">
+    <div className="pb-8 lg:pb-0">
       <KepalaHalaman judul="Profil Toko" keterangan={distributor.nama} kembaliKe="/distributor-portal/profil" />
 
       <div className="mt-4 lg:grid lg:grid-cols-2 lg:gap-5 lg:items-start space-y-6 lg:space-y-0">

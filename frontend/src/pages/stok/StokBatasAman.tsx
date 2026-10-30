@@ -124,7 +124,7 @@ export default function StokBatasAman() {
   }
 
   return (
-    <div className="pb-8">
+    <div className="pb-8 lg:pb-0">
       <KepalaHalaman judul={JUDUL.batasAman} keterangan={barang.nama} kembaliKe={`/stok/${barang.id}`} />
 
       <div className="mt-4 max-w-2xl mx-auto space-y-4">

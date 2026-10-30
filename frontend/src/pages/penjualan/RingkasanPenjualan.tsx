@@ -21,7 +21,7 @@ export default function RingkasanPenjualan() {
   )
 
   return (
-    <div className="pb-6">
+    <div className="pb-6 lg:pb-0">
       <KepalaHalaman judul="Ringkasan Penjualan" kembaliKe="/beranda" />
       {sesi ? (
         <TampilanRingkasan ambil={ambil} />

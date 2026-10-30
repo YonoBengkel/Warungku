@@ -344,7 +344,7 @@ export default function Stok() {
        + 2rem). Bilah global disembunyikan di desktop, jadi tidak ikut dikurangi.
        Dengan begitu halaman pas satu layar, dan satu-satunya yang bisa digulir
        adalah wadah tabel. */
-    <div className="pb-6 lg:pb-0 lg:h-[calc(100dvh-3.5rem)] lg:flex lg:flex-col">
+    <div className="pb-6 lg:pb-0 lg:h-[calc(100dvh-2.75rem)] lg:flex lg:flex-col">
       {/* ---------------- Kepala lengket ----------------
           Di HP mulai rapat di bawah bilah global, di posisi yang sama dengan saat
           menempel, supaya tidak bergeser ketika daftar digulir (revisi V3, Q66).
@@ -354,18 +354,18 @@ export default function Stok() {
             Desktop: keempatnya sebaris, supaya tabel mendapat dua-tiga baris lebih
             di layar acuan (revisi V2, Q63). Kolom cari selebar layar hanya membuang
             ruang: yang diketik ke dalamnya paling panjang tiga kata.
-            Kolom cari, tiga angka, dan Tambah Barang setinggi 56px (revisi V3, Q65):
-            rata-rata kelimanya dulu 54,6px (48, 63, dan 36px), dibulatkan ke
-            kelipatan 8. Di HP Tambah Barang tetap kecil di samping judul.
-            Hurufnya ikut dibesarkan sebanding kotak 56px (revisi V4, Q83): judul
-            28px di desktop, isi kolom cari dan Tambah Barang 17px. */}
-        <div className={cx('flex flex-wrap items-center gap-x-3 gap-y-3', RUANG_LONCENG)}>
-          <h1 className="text-judul lg:text-[1.75rem] font-extrabold text-ink tracking-tight mr-auto lg:mr-0">Stok</h1>
+            Sejak revisi V6 kolom cari, tiga angka, dan Tambah Barang setinggi pil
+            tanggal di Beranda (40px di desktop, 44px di HP untuk jempol), dengan
+            huruf sebanding kotaknya: judul 22px seperti halaman lain, isi 14 sampai
+            15px. Dulu (V3, V4) 56px dengan judul 28px, yang terasa terlalu besar.
+            Di HP Tambah Barang tetap kecil di samping judul. */}
+        <div data-sejajar-lonceng className={cx('flex flex-wrap items-center gap-x-3 gap-y-3', RUANG_LONCENG)}>
+          <h1 className="text-judul font-extrabold text-ink tracking-tight mr-auto lg:mr-0">Stok</h1>
           <TombolTautan
             ke="/stok/baru"
             ukuran="kecil"
-            ikonKiri={<IkonTambah size={15} className="lg:size-[18px]" />}
-            className="lg:order-last lg:ml-auto lg:h-14 lg:px-5 lg:text-subjudul lg:rounded-md"
+            ikonKiri={<IkonTambah size={16} />}
+            className="lg:order-last lg:ml-auto lg:h-10 lg:px-4 lg:rounded-md"
           >
             Tambah Barang
           </TombolTautan>
@@ -374,8 +374,8 @@ export default function Stok() {
               Cari barang di daftar stok
             </label>
             <IkonCari
-              size={20}
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-3 pointer-events-none"
+              size={18}
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-3 pointer-events-none"
             />
             <input
               id="cari-stok"
@@ -384,7 +384,8 @@ export default function Stok() {
               onChange={(e) => aturParam({ cari: e.target.value })}
               placeholder="Cari barang, misal: gula aren"
               className={cx(
-                'w-full h-14 pl-12 pr-11 rounded-md bg-surface text-ink text-subjudul',
+                // 16px di HP supaya Safari iOS tidak memperbesar halaman saat diketuk.
+                'w-full h-11 lg:h-10 pl-10 pr-10 rounded-md bg-surface text-ink text-base lg:text-kartu',
                 'border border-line-strong placeholder:text-ink-3/70',
                 'focus:border-brand focus:outline-none focus:ring-4 focus:ring-[var(--c-brand-ring)]',
                 '[&::-webkit-search-cancel-button]:appearance-none',
@@ -395,9 +396,9 @@ export default function Stok() {
                 type="button"
                 onClick={() => aturParam({ cari: null })}
                 aria-label="Hapus kata pencarian"
-                className="absolute right-2 top-1/2 -translate-y-1/2 size-9 grid place-items-center rounded-md text-ink-3 hover:bg-sunken hover:text-ink"
+                className="absolute right-1 top-1/2 -translate-y-1/2 size-9 lg:size-8 grid place-items-center rounded-md text-ink-3 hover:bg-sunken hover:text-ink"
               >
-                <IkonSilang size={18} />
+                <IkonSilang size={16} />
               </button>
             )}
           </div>
@@ -800,14 +801,15 @@ function TombolAngka({
         aktif ? 'Ketuk untuk melepas penyaring ini.' : 'Ketuk untuk menyaring daftar.'
       }`}
       className={cx(
-        'h-14 rounded-md border px-3 py-1.5 text-center transition-colors lg:w-[7.5rem]',
+        // Setinggi pil tanggal Beranda (revisi V6): angka dan label sebaris.
+        'h-11 lg:h-10 inline-flex items-center justify-center gap-1.5 rounded-md border px-3 lg:px-3.5 transition-colors',
         aktif ? 'border-brand bg-brand-soft/50' : 'border-line bg-surface hover:border-line-strong',
       )}
     >
-      <span aria-hidden="true" className={cx('block text-[1.375rem] font-bold leading-none', warna)}>
+      <span aria-hidden="true" className={cx('text-subjudul font-extrabold leading-none tabular', warna)}>
         {angka(nilai)}
       </span>
-      <span aria-hidden="true" className="block text-kecil font-semibold text-ink-2 mt-0.5">
+      <span aria-hidden="true" className="text-isi font-semibold text-ink-2 leading-none">
         {label}
       </span>
     </button>

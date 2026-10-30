@@ -128,7 +128,7 @@ export default function AkunKasir() {
   }
 
   return (
-    <div className="pb-8">
+    <div className="pb-8 lg:pb-0">
       <KepalaHalaman
         judul={JUDUL.dataKasir}
         kembaliKe="/akun"

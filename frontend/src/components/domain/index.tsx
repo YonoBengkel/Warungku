@@ -21,11 +21,8 @@ import {
   IkonSilang,
   IkonJam,
   IkonPasokan,
-  IkonSinkron,
-  IkonTanpaSinyal,
   IkonPanahKanan,
   IkonKunci,
-  IkonPena,
   IkonPetir,
   IkonKotak,
 } from '@/icons'
@@ -96,10 +93,14 @@ export function ChipKedaluwarsa({ tanggal }: { tanggal: string }) {
 /* ================================================================== */
 
 /**
- * Satu baris setinggi 32px di paling atas Beranda.
+ * Baris ketiga kepala Beranda: dari mana angka stok datang dan seberapa baru.
  *
- * Keadaan sehat sengaja dibuat paling tidak menonjol: kalau semuanya normal,
- * pita ini tidak boleh merebut perhatian dari daftar yang perlu diurus.
+ * Sejak revisi V6 (Q124, Q131) semua keadaan memakai satu gaya, seperti
+ * "Data kasir masuk 12 menit lalu" di gambar referensi: ikon bulat bergradien
+ * dan teks kecil, tanpa pita berwarna. Ikonnya di `public/gambar/status/`:
+ * centang dari Ilham untuk data yang baru, dan tiga ikon sejenis untuk data
+ * yang sudah lama (amber), produsen dan catat manual (ungu), serta kasir yang
+ * belum tersambung atau sedang menyinkron (biru). Maknanya selalu dibawa teks.
  */
 export function PitaDataKasir() {
   const kasir = useAplikasi((s) => s.kasir)
@@ -108,43 +109,30 @@ export function PitaDataKasir() {
   // Usaha produsen tidak memakai kasir: pemakaian bahan datang dari sesi masak.
   if (produsen) {
     return (
-      <PitaDasar nada="netral" ikon={<IkonPena size={15} />}>
-        <span>Pemakaian bahan baku dicatat dari sesi masak</span>
-        <Link to="/produksi" className="font-bold underline underline-offset-2 shrink-0">
-          Buka Produksi
-        </Link>
-      </PitaDasar>
+      <BarisStatus ikon="produksi" tautan={{ ke: '/produksi', label: 'Buka Produksi' }}>
+        Pemakaian bahan baku dicatat dari sesi masak
+      </BarisStatus>
     )
   }
 
   if (kasir.sumber === 'belum-dipilih' || kasir.status === 'belum-terhubung') {
     return (
-      <PitaDasar nada="info" ikon={<IkonSinkron size={15} />}>
-        <span>Aplikasi kasir belum tersambung &mdash; stok tidak berkurang otomatis</span>
-        <Link to="/akun/kasir" className="font-bold underline underline-offset-2 shrink-0">
-          Hubungkan
-        </Link>
-      </PitaDasar>
+      <BarisStatus ikon="info" tautan={{ ke: '/akun/kasir', label: 'Hubungkan' }}>
+        Aplikasi kasir belum tersambung, stok tidak berkurang otomatis
+      </BarisStatus>
     )
   }
 
   if (kasir.sumber === 'catat-manual') {
     return (
-      <PitaDasar nada="netral" ikon={<IkonPena size={15} />}>
-        <span>Kamu mencatat pemakaian manual</span>
-        <Link to="/stok/pemakaian" className="font-bold underline underline-offset-2 shrink-0">
-          Catat hari ini
-        </Link>
-      </PitaDasar>
+      <BarisStatus ikon="produksi" tautan={{ ke: '/stok/pemakaian', label: 'Catat hari ini' }}>
+        Kamu mencatat pemakaian manual
+      </BarisStatus>
     )
   }
 
   if (kasir.status === 'menyinkron') {
-    return (
-      <PitaDasar nada="netral" ikon={<IkonSinkron size={15} className="animate-spin" />}>
-        <span>Sedang mengambil data dari kasir&hellip;</span>
-      </PitaDasar>
-    )
+    return <BarisStatus ikon="info">Sedang mengambil data dari kasir&hellip;</BarisStatus>
   }
 
   const terakhir = kasir.terakhirMasuk ? new Date(kasir.terakhirMasuk) : null
@@ -152,52 +140,52 @@ export function PitaDataKasir() {
 
   if (jamBerlalu > 18) {
     return (
-      <PitaDasar nada="menipis" ikon={<IkonTanpaSinyal size={15} />}>
-        <span>
-          Belum ada data baru dari kasir sejak {terakhir ? waktuLalu(terakhir) : 'lama'}. Angka stok di bawah
-          mungkin sudah tidak sesuai.
-        </span>
-        <Link to="/akun/kasir" className="font-bold underline underline-offset-2 shrink-0">
-          Cek Koneksi Kasir
-        </Link>
-      </PitaDasar>
+      <BarisStatus ikon="amber" tautan={{ ke: '/akun/kasir', label: 'Cek Koneksi Kasir' }}>
+        Data kasir terakhir masuk <b className="font-bold text-ink">{terakhir ? waktuLalu(terakhir) : 'sudah lama'}</b>,
+        angka stok mungkin belum sesuai
+      </BarisStatus>
     )
   }
 
   return (
-    <p className="text-isi text-ink-3 flex items-center gap-1.5 h-8">
-      <IkonCentangLingkaran size={14} className="text-aman shrink-0" />
-      Data kasir masuk {terakhir ? waktuLalu(terakhir) : 'baru saja'}
-    </p>
+    <BarisStatus ikon="centang">
+      Data kasir masuk <b className="font-bold text-ink">{terakhir ? waktuLalu(terakhir) : 'baru saja'}</b>
+    </BarisStatus>
   )
 }
 
-function PitaDasar({
-  nada,
+const IKON_STATUS = {
+  centang: 'centang.png',
+  amber: 'amber.svg',
+  produksi: 'produksi.svg',
+  info: 'info.svg',
+} as const
+
+function BarisStatus({
   ikon,
+  tautan,
   children,
 }: {
-  nada: 'info' | 'menipis' | 'netral'
-  ikon: ReactNode
+  ikon: keyof typeof IKON_STATUS
+  tautan?: { ke: string; label: string }
   children: ReactNode
 }) {
-  const gaya = {
-    info: 'bg-info-soft text-info-ink',
-    menipis: 'bg-menipis-soft text-menipis-ink',
-    netral: 'bg-netral-soft text-netral-ink',
-  }[nada]
   return (
-    <div
-      className={cx(
-        'flex items-center gap-2 px-3 min-h-8 py-1.5 rounded-sm text-isi leading-snug',
-        gaya,
+    <p className="flex flex-wrap items-center gap-x-2 gap-y-1 min-h-8 text-isi text-ink-2 leading-snug">
+      <img
+        src={`${import.meta.env.BASE_URL}gambar/status/${IKON_STATUS[ikon]}`}
+        alt=""
+        width={18}
+        height={18}
+        className="size-[1.125rem] shrink-0"
+      />
+      <span>{children}</span>
+      {tautan && (
+        <Link to={tautan.ke} className="font-bold text-brand hover:underline underline-offset-2">
+          {tautan.label}
+        </Link>
       )}
-    >
-      <span className="shrink-0" aria-hidden="true">
-        {ikon}
-      </span>
-      <span className="flex-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">{children}</span>
-    </div>
+    </p>
   )
 }
 

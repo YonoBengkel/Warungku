@@ -99,7 +99,7 @@ export default function Akun() {
   const belumDipasangkan = kasir.menuBelumDipasangkan.length
 
   return (
-    <div className="pb-8">
+    <div className="pb-8 lg:pb-0">
       <KepalaHalaman judul={JUDUL.akun} kembaliKe="/beranda" />
 
       {/* Kepala identitas usaha */}
@@ -170,36 +170,6 @@ export default function Akun() {
               keterangan="Stok dihitung per barang utuh atau per racikan"
             />
           </Kelompok>
-
-          {/* Tampilan ikut masuk kolom kiri supaya di layar lebar halaman ini
-              tidak berakhir sebagai ekor panjang di bawah dua kolom menu. */}
-          <section aria-labelledby="judul-tampilan">
-            <h2
-              id="judul-tampilan"
-              className="text-kecil font-bold uppercase tracking-wide text-ink-3 mb-2"
-            >
-              Tampilan
-            </h2>
-            <p className="text-isi text-ink-3 mb-2.5 leading-snug">
-              Berlaku di perangkat ini saja.
-            </p>
-            <div className="flex gap-2.5">
-              <TombolPilihan
-                aktif={tema === 'terang'}
-                onClick={() => aturTema('terang')}
-                ikon={<IkonMatahari size={17} />}
-              >
-                Terang
-              </TombolPilihan>
-              <TombolPilihan
-                aktif={tema === 'gelap'}
-                onClick={() => aturTema('gelap')}
-                ikon={<IkonBulan size={17} />}
-              >
-                Gelap
-              </TombolPilihan>
-            </div>
-          </section>
         </div>
 
         <div className="space-y-6 mt-6 lg:mt-0">
@@ -232,17 +202,6 @@ export default function Akun() {
               keterangan="Pertanyaan yang sering ditanyakan dan kontak kami"
             />
           </Kelompok>
-
-          {/* Keluar */}
-          <Tombol
-            ragam="garis"
-            penuh
-            ikonKiri={<IkonKeluar size={17} />}
-            onClick={() => setTanyaKeluar(true)}
-            className="!text-kritis !border-kritis/40"
-          >
-            Keluar
-          </Tombol>
         </div>
       </div>
 
@@ -318,6 +277,35 @@ export default function Akun() {
           </div>
         </section>
       </div>
+
+      {/* Tampilan dan Keluar paling bawah, di bawah Alat uji purwarupa (revisi V6,
+          Q126): tiga tombol sebaris. Keluar di luar kelompok pilihan tema supaya
+          pembaca layar tidak menganggapnya salah satu tema. */}
+      <section aria-labelledby="judul-tampilan" className="mt-6">
+        <h2 id="judul-tampilan" className="text-kecil font-bold uppercase tracking-wide text-ink-3 mb-2">
+          Tampilan
+        </h2>
+        <p className="text-isi text-ink-3 mb-2.5 leading-snug">Berlaku di perangkat ini saja.</p>
+        <div className="grid grid-cols-3 gap-2.5">
+          <div role="group" aria-label="Tema tampilan" className="col-span-2 flex gap-2.5">
+            <TombolPilihan aktif={tema === 'terang'} onClick={() => aturTema('terang')} ikon={<IkonMatahari size={17} />}>
+              Terang
+            </TombolPilihan>
+            <TombolPilihan aktif={tema === 'gelap'} onClick={() => aturTema('gelap')} ikon={<IkonBulan size={17} />}>
+              Gelap
+            </TombolPilihan>
+          </div>
+          <Tombol
+            ragam="bahaya-garis"
+            penuh
+            ikonKiri={<IkonKeluar size={17} />}
+            onClick={() => setTanyaKeluar(true)}
+            className="!h-12 !border-2"
+          >
+            Keluar
+          </Tombol>
+        </div>
+      </section>
 
       <p className="mt-8 text-center text-kecil text-ink-3">
         Turnify Flow untuk Pemilik Usaha &middot; versi purwarupa

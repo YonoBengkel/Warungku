@@ -207,7 +207,7 @@ export default function Dashboard() {
   const jumlahBerjalan = BERJALAN.reduce((a, s) => a + jumlahPerTahap[s], 0)
 
   return (
-    <div className="pb-6">
+    <div className="pb-6 lg:pb-0">
       {/* 1. Sambutan, sama dengan Beranda UMKM tanpa baris data kasir (Q106) */}
       <KepalaSambutan nama={distributor.nama} />
 

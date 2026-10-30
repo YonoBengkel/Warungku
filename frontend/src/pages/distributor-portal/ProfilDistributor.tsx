@@ -39,7 +39,7 @@ export default function ProfilDistributor() {
   }
 
   return (
-    <div className="pb-8">
+    <div className="pb-8 lg:pb-0">
       <KepalaHalaman judul="Akun" kembaliKe="/distributor-portal" />
 
       {/* Kepala identitas toko */}
@@ -85,21 +85,6 @@ export default function ProfilDistributor() {
               keterangan={`${angka(jumlahDijual)} barang dijual · harga dan stok yang dilihat pemilik usaha`}
             />
           </Kelompok>
-
-          <section aria-labelledby="judul-tampilan">
-            <h2 id="judul-tampilan" className="text-kecil font-bold uppercase tracking-wide text-ink-3 mb-2">
-              Tampilan
-            </h2>
-            <p className="text-isi text-ink-3 mb-2.5 leading-snug">Berlaku di perangkat ini saja.</p>
-            <div className="flex gap-2.5">
-              <TombolPilihan aktif={tema === 'terang'} onClick={() => aturTema('terang')} ikon={<IkonMatahari size={17} />}>
-                Terang
-              </TombolPilihan>
-              <TombolPilihan aktif={tema === 'gelap'} onClick={() => aturTema('gelap')} ikon={<IkonBulan size={17} />}>
-                Gelap
-              </TombolPilihan>
-            </div>
-          </section>
         </div>
 
         <div className="space-y-6 mt-6 lg:mt-0">
@@ -170,6 +155,24 @@ export default function ProfilDistributor() {
               </Tombol>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Tampilan paling bawah, di bawah Alat uji purwarupa, urutannya sama
+          dengan Akun pemilik usaha (revisi V6, Q126). Keluar dari akun
+          distributor ada di dalam kotak alat uji, jadi barisnya hanya dua tema. */}
+      <section aria-labelledby="judul-tampilan" className="mt-6">
+        <h2 id="judul-tampilan" className="text-kecil font-bold uppercase tracking-wide text-ink-3 mb-2">
+          Tampilan
+        </h2>
+        <p className="text-isi text-ink-3 mb-2.5 leading-snug">Berlaku di perangkat ini saja.</p>
+        <div role="group" aria-label="Tema tampilan" className="flex gap-2.5">
+          <TombolPilihan aktif={tema === 'terang'} onClick={() => aturTema('terang')} ikon={<IkonMatahari size={17} />}>
+            Terang
+          </TombolPilihan>
+          <TombolPilihan aktif={tema === 'gelap'} onClick={() => aturTema('gelap')} ikon={<IkonBulan size={17} />}>
+            Gelap
+          </TombolPilihan>
         </div>
       </section>
 

@@ -2,7 +2,7 @@ import { Suspense, lazy, useEffect } from 'react'
 import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom'
 import KerangkaAplikasi from '@/layouts/KerangkaAplikasi'
 import KerangkaDistributor from '@/layouts/KerangkaDistributor'
-import { KerangkaBaris } from '@/components/ui/dasar'
+import { MemuatHalaman } from '@/layouts/IsiHalaman'
 import { BatasGalat } from '@/components/BatasGalat'
 import { useAplikasi } from '@/store/aplikasi'
 
@@ -118,23 +118,24 @@ const RingkasanPenjualanDistributor = lazy(() => import('@/pages/distributor-por
 
 const TidakDitemukan = lazy(() => import('@/pages/TidakDitemukan'))
 
-/**
- * Penanda muat berbentuk baris, bukan pemutar di tengah layar.
- * Bentuknya menyerupai isi yang akan datang, sehingga perpindahan halaman
- * tidak terasa seperti layar kosong yang menggantung.
- */
-function SedangMemuat() {
-  return (
-    <div className="py-6">
-      <KerangkaBaris jumlah={4} />
-    </div>
-  )
-}
+/** Rute di luar kedua kerangka portal: landing page, otentikasi, dan pendaftaran. */
+const RUTE_TANPA_KERANGKA = new Set([
+  '/',
+  '/masuk',
+  '/masuk/distributor',
+  '/daftar',
+  '/daftar/usaha',
+  '/daftar/legalitas',
+  '/lupa-sandi',
+  '/mulai/batas-aman',
+])
 
 export default function App() {
-  // Batas galat dipasang ulang tiap kali rute berubah, sehingga berpindah
-  // halaman selalu memulihkan keadaan tanpa perlu memuat ulang aplikasi.
+  // Batas galat di sini dipasang ulang per alamat hanya untuk rute tanpa
+  // kerangka. Di dalam kerangka, halamannya dijaga `IsiHalaman`, supaya menu
+  // samping tidak ikut dipasang ulang setiap pindah halaman (revisi V6, Q121).
   const { pathname } = useLocation()
+  const kunciBatas = RUTE_TANPA_KERANGKA.has(pathname) ? pathname : 'kerangka'
   const tema = useAplikasi((s) => s.tema)
 
   // Kelas tema dipasang di sini, satu kali untuk semua rute. Dulu ia hidup di
@@ -145,8 +146,8 @@ export default function App() {
   }, [tema])
 
   return (
-    <BatasGalat key={pathname}>
-      <Suspense fallback={<SedangMemuat />}>
+    <BatasGalat key={kunciBatas}>
+      <Suspense fallback={<MemuatHalaman />}>
       <Routes>
         {/* Di luar kerangka: landing page, otentikasi, dan pendaftaran punya
             tata letaknya sendiri */}

@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { cx } from '@/lib/format'
 import { NAV } from '@/lib/label'
 import {
@@ -19,6 +19,7 @@ import { TandaMerek } from '@/components/ui/Merek'
 import { Avatar } from '@/components/ui/dasar'
 import { LoncengMelayang, usePemberitahuanUsaha } from '@/components/domain/Pemberitahuan'
 import { MenuSamping } from '@/components/ui/MenuSamping'
+import { IsiHalaman } from '@/layouts/IsiHalaman'
 
 /**
  * Kerangka lima tab.
@@ -174,9 +175,9 @@ export default function KerangkaAplikasi() {
 
         <main
           id="konten"
-          className="flex-1 px-4 sm:px-6 pb-[calc(var(--nav-h)+1rem)] lg:pb-8 pt-4 lg:pt-6 max-w-[1400px] mx-auto w-full"
+          className="flex-1 px-4 sm:px-6 pb-[calc(var(--nav-h)+1rem)] lg:pb-5 pt-4 lg:pt-6 max-w-[1400px] mx-auto w-full"
         >
-          <Outlet />
+          <IsiHalaman />
         </main>
       </div>
 

@@ -590,13 +590,13 @@ export default function Belanja() {
   )
 
   return (
-    <div className="pb-6">
+    <div className="pb-6 lg:pb-0">
       {/* Dari judul sampai tab tetap terlihat saat daftar digulir; di HP hanya
           kotak cari dan tab (revisi V2, Q52). */}
       <BagianAtasBeku
         atas={
           <>
-            <h1 className="text-judul font-extrabold text-ink tracking-tight">{JUDUL.belanja}</h1>
+            <h1 data-sejajar-lonceng className="text-judul font-extrabold text-ink tracking-tight">{JUDUL.belanja}</h1>
             {/* Halaman ini berjudul sama dengan salah satu sub-tabnya, jadi kalimat
                 pembuka harus langsung menerangkan apa yang bisa dikerjakan di sini. */}
             <p className="mt-1 text-isi text-ink-2 leading-relaxed max-w-[62ch]">

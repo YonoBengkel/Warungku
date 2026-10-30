@@ -36,7 +36,7 @@ export default function AkunPratinjau() {
     )
 
   return (
-    <div className="pb-8">
+    <div className="pb-8 lg:pb-0">
       <KepalaHalaman judul="Lihat sebagai Distributor" kembaliKe="/akun/profil" />
 
       {/* Di layar lebar kartu pratinjau dan penjelasannya berdiri berdampingan:

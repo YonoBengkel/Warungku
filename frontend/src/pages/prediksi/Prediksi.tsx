@@ -176,7 +176,7 @@ export default function Prediksi() {
        halaman ini setinggi layar dikurangi jarak atas-bawah <main>, dan bagian
        bawahnya memanjang mengisi sisanya: tetap muat di 730, tanpa ruang kosong
        di layar yang lebih tinggi (revisi V3, Q68). */
-    <div className="pb-8 lg:pb-0 lg:flex lg:flex-col lg:min-h-[calc(100dvh-3.5rem)]">
+    <div className="pb-8 lg:pb-0 lg:flex lg:flex-col lg:min-h-[calc(100dvh-2.75rem)]">
       {/* Label metode di kanan judul, menggantikan "Perkiraan untuk bulan depan"
           (revisi V2, Q42). Di desktop kalimat peringatannya ikut sebaris supaya
           isi halaman muat satu layar; di layar sempit ia turun ke bawah. */}
@@ -185,7 +185,10 @@ export default function Prediksi() {
         <p className="order-last w-full text-isi text-ink-2 leading-relaxed max-w-[62ch] lg:order-none lg:w-auto lg:max-w-none lg:grow lg:basis-0">
           {KALIMAT_MELESET}
         </p>
-        <LabelMetode {...metodePrediksi(modelBulananServer())} />
+        {/* Lonceng sejajar dengan label metode ini (revisi V6, Q125). */}
+        <div data-sejajar-lonceng className="shrink-0">
+          <LabelMetode {...metodePrediksi(modelBulananServer())} />
+        </div>
       </div>
 
       {barangMentah && !barangTerpilih ? (
@@ -362,7 +365,7 @@ function SemuaBarangKategori({
   kembaliKe: string
 }) {
   return (
-    <div className="pb-8">
+    <div className="pb-8 lg:pb-0">
       <KepalaHalaman
         judul={`Prediksi · ${kategori}`}
         keterangan={`${daftar.length} barang. Tekan salah satu untuk melihat grafiknya dan memesan.`}

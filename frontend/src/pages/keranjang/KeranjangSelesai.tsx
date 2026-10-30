@@ -133,7 +133,7 @@ export default function KeranjangSelesai() {
   )
 
   return (
-    <div className="pb-4">
+    <div className="pb-4 lg:pb-0">
       <KepalaHalaman
         judul="Belanja Terkirim"
         keterangan={

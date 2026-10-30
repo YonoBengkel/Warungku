@@ -94,7 +94,7 @@ export default function KontrakDetail() {
 
   if (!kontrak) {
     return (
-      <div className="pb-6">
+      <div className="pb-6 lg:pb-0">
         <KepalaHalaman judul="Kontrak" kembaliKe="/pesanan?tab=kontrak" />
         <section aria-labelledby="judul-tidak-ada">
           <h2 id="judul-tidak-ada" className="sr-only">
@@ -160,7 +160,7 @@ export default function KontrakDetail() {
   }
 
   return (
-    <div className="pb-6">
+    <div className="pb-6 lg:pb-0">
       <KepalaHalaman
         judul={kontrak.namaBarang}
         keterangan={`${distributor?.nama ?? 'Distributor'} · kontrak ${kontrak.durasiBulan} bulan`}

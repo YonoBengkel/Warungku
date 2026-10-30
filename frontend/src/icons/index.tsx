@@ -336,15 +336,6 @@ export const IkonNota = (p: Props) => (
   </Svg>
 )
 
-/** Lembar uang: total penjualan di kartu Ringkasan Penjualan Beranda. */
-export const IkonUang = (p: Props) => (
-  <Svg {...p}>
-    <path d="M3 7h18v10H3z" />
-    <circle cx="12" cy="12" r="2.5" />
-    <path d="M6 10v4M18 10v4" />
-  </Svg>
-)
-
 export const IkonKirim = (p: Props) => (
   <Svg {...p}>
     <path d="M21 3 10.5 13.5" />

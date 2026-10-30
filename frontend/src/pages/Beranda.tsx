@@ -480,7 +480,7 @@ export default function Beranda() {
   }
 
   return (
-    <div className="pb-6">
+    <div className="pb-6 lg:pb-0">
       {/* Sambutan ditulis biasa, bukan HURUF BESAR SEMUA: pengguna sasaran
           aplikasi ini berumur 40 tahun ke atas, dan teks kapital seluruhnya
           lebih lambat dibaca. Lonceng, keranjang, dan logo tinggal di

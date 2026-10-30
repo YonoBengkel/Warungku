@@ -215,7 +215,7 @@ export default function PesananMasukDaftar() {
   const IkonKosong = IKON_TAHAP[tahap]
 
   return (
-    <div className="pb-6">
+    <div className="pb-6 lg:pb-0">
       <div className={cx('flex flex-wrap items-start justify-between gap-3', RUANG_LONCENG)}>
         <div className="min-w-0">
           <h1 className="text-judul font-extrabold text-ink tracking-tight">Pesanan</h1>
@@ -224,7 +224,9 @@ export default function PesananMasukDaftar() {
             {dariServer ? '' : ' Saat ini memakai data contoh.'}
           </p>
         </div>
-        <TombolLacak ke="/distributor-portal/lacak" jumlah={perStatus.dikirim.length} />
+        <div data-sejajar-lonceng className="shrink-0">
+          <TombolLacak ke="/distributor-portal/lacak" jumlah={perStatus.dikirim.length} />
+        </div>
       </div>
       {!dariServer && (
         <p className="mt-3 text-isi text-ink-2">

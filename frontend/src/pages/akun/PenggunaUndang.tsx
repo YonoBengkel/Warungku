@@ -104,7 +104,7 @@ export default function PenggunaUndang() {
   if (terkirim) {
     const pesanWa = `Halo ${terkirim.nama}, ini tautan buat masuk ke aplikasi stok ${namaUsaha}: https://${terkirim.tautan}`
     return (
-      <div className="pb-6">
+      <div className="pb-6 lg:pb-0">
         <KepalaHalaman judul="Tambah Pengguna" kembaliKe="/akun/pengguna" />
 
         <div className="mt-4 max-w-xl mx-auto">
@@ -176,7 +176,7 @@ export default function PenggunaUndang() {
 
   /* ---------------- Formulir ---------------- */
   return (
-    <div className="pb-6">
+    <div className="pb-6 lg:pb-0">
       <KepalaHalaman
         judul="Tambah Pengguna"
         keterangan="Undang lewat nomor HP"

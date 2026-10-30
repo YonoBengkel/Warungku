@@ -8,12 +8,14 @@ import { TandaMerek } from '@/components/ui/Merek'
  * Menu samping desktop untuk kedua portal (revisi V5, Q111): rancangan teman
  * Ilham (`referensi/Revisi 30 Oct V5/SIdebar.html`) yang disesuaikan ke token.
  *
- * - Latar gradien dari keluarga ungu merek (Q112) dengan teks putih.
- * - Menu aktif adalah satu penanda yang bergeser halus antarmenu: tab berwarna
- *   latar halaman yang menyambung ke isi lewat lengkung cekung, dengan pil coral
- *   di dalamnya (Q115). Posisinya diukur dari menu aktif, jadi menu tambahan di
- *   bawah garis pemisah ikut terjangkau.
- * - Kartu akun kaca di dasar menu.
+ * - Sejak revisi V6 (Q122, Q129) latarnya lavender terang dengan teks ungu tua,
+ *   dan menu aktif ditandai pil jingga terang bertinta gelap di dalam tab
+ *   sewarna latar halaman yang berlengkung cekung, bentuk dari rancangan itu.
+ * - Tab dan pil itu satu penanda yang bergeser antarmenu, meniru saklar situs
+ *   portofolio Ilham (Q121): posisinya diukur dari menu tujuan, dan ia sudah
+ *   berangkat begitu menu diklik, sebelum halaman barunya siap. Menu tambahan di
+ *   bawah garis pemisah ikut terjangkau. Gerak dikurangi mematikan geraknya.
+ * - Kartu akun di dasar menu.
  *
  * Di HP menu ini tidak tampil; kedua kerangka tetap memakai bilah bawah.
  */
@@ -54,12 +56,19 @@ export function MenuSamping({
   const [posisi, setPosisi] = useState<{ y: number; tinggi: number } | null>(null)
   const [gerak, setGerak] = useState(false)
   const keAktif = [...utama, ...tambahan].find((b) => b.aktif)?.ke ?? null
+  /* Menu yang baru diklik. Penanda langsung berangkat ke sana; begitu alamatnya
+     berganti (atau klik itu batal), menu aktif dari kerangka yang dipakai lagi. */
+  const [tujuan, setTujuan] = useState<{ ke: string; dari: string | null } | null>(null)
+  const keTampil = tujuan && tujuan.dari === keAktif ? tujuan.ke : keAktif
+  // Tujuan lama dibuang begitu menu aktif berganti, supaya tidak hidup lagi
+  // saat pengguna kembali ke halaman asal lewat tautan lain.
+  useEffect(() => setTujuan(null), [keAktif])
 
   useLayoutEffect(() => {
     const wadah = wadahRef.current
     if (!wadah) return
     const ukur = () => {
-      const el = keAktif ? butirRef.current.get(keAktif) : null
+      const el = keTampil ? butirRef.current.get(keTampil) : null
       if (!el) {
         setPosisi(null)
         return
@@ -73,7 +82,7 @@ export function MenuSamping({
     const pengamat = new ResizeObserver(ukur)
     pengamat.observe(wadah)
     return () => pengamat.disconnect()
-  }, [keAktif, sembunyi])
+  }, [keTampil, sembunyi])
 
   // Posisi pertama dipasang tanpa gerak; sesudahnya penanda bergeser halus.
   useEffect(() => {
@@ -83,44 +92,56 @@ export function MenuSamping({
   }, [posisi, gerak])
 
   const daftar = (isi: ButirMenuSamping[]) =>
-    isi.map((b) => (
-      <li key={b.ke}>
-        <Link
-          to={b.ke}
-          ref={(el) => {
-            if (el) butirRef.current.set(b.ke, el)
-            else butirRef.current.delete(b.ke)
-          }}
-          aria-current={b.aktif ? 'page' : undefined}
-          aria-label={b.angka ? `${b.label}, ${b.labelAngka ?? b.angka}` : undefined}
-          className="group relative z-10 block py-1 pl-1 rounded-l-xl focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-samping-ink"
-        >
-          <span
-            className={cx(
-              'flex items-center gap-3.5 h-9 px-3.5 rounded-lg text-kartu text-samping-ink transition-[background-color,transform] duration-200',
-              b.aktif ? 'font-bold' : 'font-semibold group-hover:bg-samping-hover group-hover:translate-x-[3px]',
-            )}
+    isi.map((b) => {
+      // Rupa aktif mengikuti penanda (termasuk menu yang baru diklik); yang
+      // dibacakan sebagai halaman ini tetap alamat sebenarnya.
+      const tampilAktif = b.ke === keTampil
+      return (
+        <li key={b.ke}>
+          <Link
+            to={b.ke}
+            ref={(el) => {
+              if (el) butirRef.current.set(b.ke, el)
+              else butirRef.current.delete(b.ke)
+            }}
+            onClick={(e) => {
+              // Klik dengan tombol pengubah membuka tab baru: halaman ini tetap.
+              if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+              setTujuan({ ke: b.ke, dari: keAktif })
+            }}
+            aria-current={b.aktif ? 'page' : undefined}
+            aria-label={b.angka ? `${b.label}, ${b.labelAngka ?? b.angka}` : undefined}
+            className="group relative z-10 block py-1 pl-1 rounded-l-xl focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-samping-ink"
           >
-            <b.Ikon
-              size={21}
-              className={cx('shrink-0 transition-transform duration-200', !b.aktif && 'group-hover:scale-110')}
-            />
-            <span className="grow min-w-0 truncate">{b.label}</span>
-            {b.angka !== undefined && b.angka > 0 && (
-              <span
-                aria-hidden="true"
-                className={cx(
-                  'min-w-5 h-5 px-1.5 rounded-full text-[0.6875rem] font-bold grid place-items-center tabular',
-                  b.nadaAngka === 'kritis' ? 'bg-kritis text-ink-inverse' : 'bg-surface text-brand',
-                )}
-              >
-                {b.angka > 99 ? '99+' : b.angka}
-              </span>
-            )}
-          </span>
-        </Link>
-      </li>
-    ))
+            <span
+              className={cx(
+                'flex items-center gap-3.5 h-9 px-3.5 rounded-lg text-kartu transition-[background-color,color,translate] duration-200',
+                tampilAktif
+                  ? 'font-bold text-pil-ink'
+                  : 'font-semibold text-samping-ink group-hover:bg-samping-hover group-hover:translate-x-[3px]',
+              )}
+            >
+              <b.Ikon
+                size={21}
+                className={cx('shrink-0 transition-[scale] duration-200', !tampilAktif && 'group-hover:scale-110')}
+              />
+              <span className="grow min-w-0 truncate">{b.label}</span>
+              {b.angka !== undefined && b.angka > 0 && (
+                <span
+                  aria-hidden="true"
+                  className={cx(
+                    'min-w-5 h-5 px-1.5 rounded-full text-[0.6875rem] font-bold grid place-items-center tabular',
+                    b.nadaAngka === 'kritis' ? 'bg-kritis text-ink-inverse' : 'bg-brand text-ink-inverse',
+                  )}
+                >
+                  {b.angka > 99 ? '99+' : b.angka}
+                </span>
+              )}
+            </span>
+          </Link>
+        </li>
+      )
+    })
 
   return (
     <nav

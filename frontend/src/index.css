@@ -49,28 +49,30 @@
   --c-kuning: #ffcc00;
   --c-kuning-ink: #111a23;
 
-  /* Menu samping desktop (revisi V5, Q111, Q112, Q115): gradien dari keluarga
-     ungu merek, bukan ungu kebiruan referensi, dengan cahaya coral di kiri bawah.
-     Teks putih di atasnya 8,05:1 (atas) sampai 11,86:1 (bawah), di sorotan hover
-     5,78:1. Pil menu aktif memakai coral yang digelapkan supaya teks putih tetap
-     lolos: 5,34:1 sampai 4,78:1 (coral referensi #E55A1C hanya 3,6:1). */
-  --c-samping-atas: #6431b0;
-  --c-samping-bawah: #4a148c;
-  --c-samping-cahaya: rgb(255 138 76 / 0.28);
-  --c-samping-ink: #ffffff;
-  --c-samping-ink-2: rgb(255 255 255 / 0.78);
-  --c-samping-hover: rgb(255 255 255 / 0.14);
-  --c-samping-garis: rgb(255 255 255 / 0.26);
-  --c-pil-1: #bf3f0b;
-  --c-pil-2: #c9470f;
-  --c-pil-bayang: rgb(191 63 11 / 0.38);
-  /* Kartu akun kaca di dasar menu: nama 10,3:1, "Lihat akun" 5,6:1. */
-  --c-akun-samping: rgb(255 255 255 / 0.82);
-  --c-akun-samping-hover: rgb(255 255 255 / 0.92);
-  --c-akun-samping-garis: rgb(255 255 255 / 0.7);
-  --c-akun-samping-bayang: rgb(36 14 92 / 0.22);
-  --c-akun-samping-ink: #3a0a73;
-  --c-akun-samping-ink-2: #5b4a7a;
+  /* Menu samping desktop. Sejak revisi V6 (Q122, Q129) terang lembut: latar
+     lavender dengan teks ungu tua (9,8 sampai 10,8:1, keterangan 6,1 sampai
+     6,7:1), garis tepi kanan tipis supaya terpisah dari latar halaman, dan pil
+     menu aktif jingga terang #FF9A3C bertinta gelap (8,7:1). Dulu (V5) gradien
+     ungu pekat dengan pil coral gelap dan teks putih, yang terasa terlalu kuat. */
+  --c-samping-atas: #f4effb;
+  --c-samping-bawah: #ebe3f7;
+  --c-samping-cahaya: transparent;
+  --c-samping-tepi: #e2dbef;
+  --c-samping-ink: #3b2d5c;
+  --c-samping-ink-2: #5b4c7d;
+  --c-samping-hover: rgb(59 45 92 / 0.07);
+  --c-samping-garis: rgb(59 45 92 / 0.14);
+  --c-pil-1: #ff9a3c;
+  --c-pil-2: #ff9a3c;
+  --c-pil-ink: #1f1208;
+  --c-pil-bayang: rgb(255 154 60 / 0.32);
+  /* Kartu akun putih di dasar menu. */
+  --c-akun-samping: #ffffff;
+  --c-akun-samping-hover: #fbf9fe;
+  --c-akun-samping-garis: #e2dbef;
+  --c-akun-samping-bayang: rgb(59 45 92 / 0.08);
+  --c-akun-samping-ink: #3b2d5c;
+  --c-akun-samping-ink-2: #5b4c7d;
 
   /* Kartu promo berfoto (revisi V5, Q107): bayangan warna jenis promo di atas
      foto, sama di kedua tema karena fotonya pun sama. Teks putih di bagian
@@ -178,24 +180,24 @@
   --c-aksen: #e9744b;
   --c-aksen-ink: #0b1116;
 
-  /* Menu samping tema gelap: ungu merek yang dipekatkan, teks 13,78:1 sampai
-     15,89:1, teks redup 9,93:1. Pil coral sama dengan tema terang, karena teks di
-     atasnya tetap putih. Kartu akun menjadi kaca gelap (nama 11,58:1, "Lihat
-     akun" 7,23:1). */
-  --c-samping-atas: #2d1258;
-  --c-samping-bawah: #1d0b3a;
-  --c-samping-cahaya: rgb(233 116 75 / 0.16);
-  --c-samping-ink: #f3eefc;
-  --c-samping-ink-2: #c9b8ea;
-  --c-samping-hover: rgb(255 255 255 / 0.08);
-  --c-samping-garis: rgb(255 255 255 / 0.14);
-  --c-pil-bayang: rgb(0 0 0 / 0.45);
-  --c-akun-samping: rgb(255 255 255 / 0.1);
-  --c-akun-samping-hover: rgb(255 255 255 / 0.16);
-  --c-akun-samping-garis: rgb(255 255 255 / 0.14);
+  /* Menu samping gelap (revisi V6, Q130): ungu sangat gelap, teks lavender muda
+     14,3 sampai 15,1:1, keterangan 8,3 sampai 8,8:1, pil jingga yang sama dengan
+     tema terang. Kartu akun kaca gelap ("Lihat akun" 7,6:1). */
+  --c-samping-atas: #1d1729;
+  --c-samping-bawah: #17121f;
+  --c-samping-cahaya: transparent;
+  --c-samping-tepi: rgb(255 255 255 / 0.06);
+  --c-samping-ink: #ece6f7;
+  --c-samping-ink-2: #b9aed0;
+  --c-samping-hover: rgb(255 255 255 / 0.06);
+  --c-samping-garis: rgb(255 255 255 / 0.1);
+  --c-pil-bayang: rgb(0 0 0 / 0.35);
+  --c-akun-samping: rgb(255 255 255 / 0.06);
+  --c-akun-samping-hover: rgb(255 255 255 / 0.1);
+  --c-akun-samping-garis: rgb(255 255 255 / 0.1);
   --c-akun-samping-bayang: rgb(0 0 0 / 0.35);
-  --c-akun-samping-ink: #f3eefc;
-  --c-akun-samping-ink-2: #c9b8ea;
+  --c-akun-samping-ink: #ece6f7;
+  --c-akun-samping-ink-2: #b9aed0;
   /* Lebih tipis di tema gelap: ungu terang di atasnya tetap 3,9:1 (teks besar). */
   --c-stabilo: rgb(233 116 75 / 0.22);
 
@@ -264,6 +266,7 @@
   --color-samping-ink-2: var(--c-samping-ink-2);
   --color-samping-hover: var(--c-samping-hover);
   --color-samping-garis: var(--c-samping-garis);
+  --color-pil-ink: var(--c-pil-ink);
   --color-akun-samping-ink: var(--c-akun-samping-ink);
   --color-akun-samping-ink-2: var(--c-akun-samping-ink-2);
   --color-promo-cuci: var(--c-promo-cuci);
@@ -313,6 +316,9 @@
 
   --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
     'Helvetica Neue', Arial, sans-serif;
+  /* Kepala Beranda saja (revisi V6, Q123), dicocokkan dengan gambar referensi. */
+  --font-sapaan: 'Schibsted Grotesk', 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-nama-usaha: 'Fraunces', Georgia, 'Times New Roman', serif;
 }
 
 /* Skala teks (kurasi Rombak#4): enam peran menggantikan 20 ukuran text-[Nrem].
@@ -464,26 +470,37 @@ body {
 /* ============================================================
    Menu samping desktop (revisi V5, Q111): rancangan teman Ilham
    (referensi/Revisi 30 Oct V5/SIdebar.html), disesuaikan ke token.
+   Warna dan penanda aktifnya diganti di revisi V6 (Q121, Q122).
    ============================================================ */
 
 .menu-samping {
   background:
     radial-gradient(circle at 10% 108%, var(--c-samping-cahaya) 0, transparent 42%),
     linear-gradient(180deg, var(--c-samping-atas) 0%, var(--c-samping-bawah) 100%);
+  box-shadow: inset -1px 0 0 var(--c-samping-tepi);
 }
 
-/* Penanda menu aktif: satu tab yang bergeser antarmenu. Latarnya warna halaman,
-   memanjang 1px melewati tepi menu supaya menyambung ke isi, dengan lengkung
-   cekung di atas dan bawahnya. Di dalamnya pil coral. */
+/* Penanda menu aktif, bentuk dari SIdebar.html: tab sewarna latar halaman yang
+   menyambung ke halaman, dengan lengkung cekung 28px di atas dan bawahnya, dan
+   pil jingga di dalamnya. Seluruhnya bergeser antarmenu (revisi V6, Q121).
+   Warnanya tetap warna V6 (Q122, Q129, Q130). Di menu terang latar halaman
+   hanya berbeda ΔE 2 sampai 4 dari lavender, jadi tab dan lengkungnya diberi
+   garis 1px sewarna garis tepi menu: garis tepi itu seolah membelok mengitari
+   tab. Lingkaran garis di lengkung berjari-jari 27 sampai 28px dari titik
+   yang digeser 1px ke dalam, supaya ujungnya tepat menyambung garis tepi menu
+   di kanan dan garis atas atau bawah tab di kiri. */
 .penanda-samping {
   position: absolute;
   top: 0;
   left: 0;
-  right: -1px;
+  right: 0;
   z-index: 0;
+  pointer-events: none;
+  border: 1px solid var(--c-samping-tepi);
+  border-right: 0;
   border-radius: var(--r-xl) 0 0 var(--r-xl);
   background: var(--c-bg);
-  pointer-events: none;
+  background-clip: padding-box;
 }
 .penanda-samping::before,
 .penanda-samping::after {
@@ -495,18 +512,29 @@ body {
 }
 .penanda-samping::before {
   top: -28px;
-  background: radial-gradient(circle at 0 0, transparent 27.5px, var(--c-bg) 28px);
+  background: radial-gradient(
+    circle at 0 0,
+    transparent 26.5px,
+    var(--c-samping-tepi) 27px 28px,
+    var(--c-bg) 28.5px
+  );
 }
 .penanda-samping::after {
   bottom: -28px;
-  background: radial-gradient(circle at 0 100%, transparent 27.5px, var(--c-bg) 28px);
+  background: radial-gradient(
+    circle at 0 100%,
+    transparent 26.5px,
+    var(--c-samping-tepi) 27px 28px,
+    var(--c-bg) 28.5px
+  );
 }
-/* Bergeser halus sesudah posisi pertama terpasang. Gerak dikurangi mematikannya
+/* Gerak seperti saklar situs portofolio Ilham: 420 ms, pelan di awal dan di
+   akhir. Posisi pertama dipasang tanpa gerak; gerak dikurangi mematikannya
    lewat aturan prefers-reduced-motion di bawah. */
 .penanda-samping-gerak {
   transition:
-    transform 320ms cubic-bezier(0.22, 1, 0.36, 1),
-    height 320ms cubic-bezier(0.22, 1, 0.36, 1);
+    transform 420ms cubic-bezier(0.76, 0, 0.24, 1),
+    height 420ms cubic-bezier(0.76, 0, 0.24, 1);
 }
 .penanda-samping-pil {
   position: absolute;
@@ -516,12 +544,10 @@ body {
   box-shadow: 0 6px 14px var(--c-pil-bayang);
 }
 
-/* Kartu akun kaca di dasar menu */
+/* Kartu akun di dasar menu */
 .kartu-akun-samping {
   background: var(--c-akun-samping);
   border: 1px solid var(--c-akun-samping-garis);
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
   box-shadow: 0 8px 20px var(--c-akun-samping-bayang);
   transition:
     background-color 200ms ease,

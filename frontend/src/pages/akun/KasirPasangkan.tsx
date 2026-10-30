@@ -88,7 +88,7 @@ export default function KasirPasangkan() {
 
   if (!menu) {
     return (
-      <div className="pb-8">
+      <div className="pb-8 lg:pb-0">
         <KepalaHalaman judul="Pasangkan Menu ke Bahan" kembaliKe="/akun/kasir?tab=beres" />
         {/* KeadaanKosong memakai h3; tanpa h2 di antaranya tingkat judul
             halaman ini melompat dari h1 ke h3. */}
@@ -145,7 +145,7 @@ export default function KasirPasangkan() {
   const bahanById = (id: string) => barang.find((b) => b.id === id)
 
   return (
-    <div className="pb-8">
+    <div className="pb-8 lg:pb-0">
       <KepalaHalaman
         judul={ubahResep ? 'Ubah Resep Menu' : 'Pasangkan Menu ke Bahan'}
         keterangan={menu.namaMenu}

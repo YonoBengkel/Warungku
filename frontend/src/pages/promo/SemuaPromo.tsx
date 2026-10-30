@@ -50,7 +50,7 @@ export default function SemuaPromo() {
   const jumlah = (j: JenisPromo | null) => (j ? berlaku.filter((p) => p.jenis === j).length : berlaku.length)
 
   return (
-    <div className="pb-6">
+    <div className="pb-6 lg:pb-0">
       <KepalaHalaman
         judul="Promo dari Distributor"
         keterangan={berlaku.length > 0 ? `${berlaku.length} promo masih berlaku` : 'Belum ada promo yang berlaku'}

@@ -32,7 +32,7 @@ export default function StokUbah() {
   }
 
   return (
-    <div className="pb-8">
+    <div className="pb-8 lg:pb-0">
       <KepalaHalaman judul="Ubah Barang" keterangan={barang.nama} kembaliKe={`/stok/${barang.id}`} />
       <FormulirBarang barang={barang} />
     </div>

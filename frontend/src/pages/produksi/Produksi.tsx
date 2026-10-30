@@ -96,7 +96,7 @@ export default function Produksi() {
 
   if (!sesi || jenis !== 'produksi-makanan') {
     return (
-      <div className="pb-8">
+      <div className="pb-8 lg:pb-0">
         <h1 className="text-judul font-extrabold text-ink tracking-tight">{NAV.produksi}</h1>
         <KeadaanKosong
           ikon={<IkonPanci size={26} />}
@@ -111,8 +111,8 @@ export default function Produksi() {
   const muatUlang = () => setVersi((v) => v + 1)
 
   return (
-    <div className="pb-8">
-      <div className={`flex items-baseline justify-between gap-3 flex-wrap ${RUANG_LONCENG}`}>
+    <div className="pb-8 lg:pb-0">
+      <div data-sejajar-lonceng className={`flex items-baseline justify-between gap-3 flex-wrap ${RUANG_LONCENG}`}>
         <h1 className="text-judul font-extrabold text-ink tracking-tight">{NAV.produksi}</h1>
         {data && (
           <p className="text-isi text-ink-3">Data sampai {tanggalPanjang(data.ringkasan.tanggalAcuan)}</p>

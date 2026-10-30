@@ -147,7 +147,7 @@ export default function CatatPemakaian() {
 
   if (tersimpan != null) {
     return (
-      <div className="pb-6">
+      <div className="pb-6 lg:pb-0">
         <KepalaHalaman
           judul="Catat Pemakaian Harian"
           keterangan={tanggalLengkapHari(new Date())}
@@ -210,7 +210,7 @@ export default function CatatPemakaian() {
 
   if (barang.length === 0) {
     return (
-      <div className="pb-6">
+      <div className="pb-6 lg:pb-0">
         <KepalaHalaman judul="Catat Pemakaian Harian" kembaliKe="/stok" />
         {/* KeadaanKosong menulis judulnya sebagai h3, jadi tanpa h2 ini urutan
             judul halaman melompat dari h1 langsung ke h3. */}
@@ -247,7 +247,7 @@ export default function CatatPemakaian() {
   )
 
   return (
-    <div className="pb-6">
+    <div className="pb-6 lg:pb-0">
       <KepalaHalaman
         judul="Catat Pemakaian Harian"
         keterangan={tanggalLengkapHari(new Date())}

@@ -25,7 +25,7 @@ export default function BarangDijual() {
   const jumlahDijual = penawaranSaya.filter((p) => p.aktif !== false).length
 
   return (
-    <div className="pb-8">
+    <div className="pb-8 lg:pb-0">
       <KepalaHalaman
         judul="Barang yang Dijual"
         keterangan={`${angka(jumlahDijual)} barang dijual · harga dan stok yang dilihat pemilik usaha`}

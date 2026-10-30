@@ -91,7 +91,7 @@ export default function KasirPanduan() {
   }
 
   return (
-    <div className="pb-8">
+    <div className="pb-8 lg:pb-0">
       <KepalaHalaman
         judul="Panduan Sambungkan Kasir"
         keterangan={POS_TUNGGAL.nama}

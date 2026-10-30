@@ -77,7 +77,7 @@ export default function LacakPesanan() {
   const diJalan = baris.filter((b) => b.posisi).length
 
   return (
-    <div className="pb-6">
+    <div className="pb-6 lg:pb-0">
       <KepalaHalaman
         judul="Lacak Pesanan"
         keterangan={

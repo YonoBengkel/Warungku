@@ -107,7 +107,7 @@ export default function PeriksaKesepakatan() {
 
   if (!penawaran || !paket || !distributor || paket.penawaranId !== penawaran.id) {
     return (
-      <div className="pb-6">
+      <div className="pb-6 lg:pb-0">
         <KepalaHalaman judul="Periksa Kesepakatan" kembaliKe={penawaran ? `/penawaran/${id}/kontrak` : '/belanja'} />
         <Kartu className="mt-6">
           <h2 className="sr-only">Paket kontrak tidak ditemukan</h2>
@@ -189,7 +189,7 @@ export default function PeriksaKesepakatan() {
   /* ---------------- Keadaan sesudah diajukan ---------------- */
   if (diajukanPada) {
     return (
-      <div className="pb-6">
+      <div className="pb-6 lg:pb-0">
         <KepalaHalaman judul="Pengajuan Kontrak" keterangan={penawaran.nama} kembaliKe="/pesanan?tab=kontrak" />
 
         <div className="mt-4 max-w-2xl mx-auto space-y-4">
@@ -277,7 +277,7 @@ export default function PeriksaKesepakatan() {
 
   /* ---------------- Keadaan sebelum diajukan ---------------- */
   return (
-    <div className="pb-6">
+    <div className="pb-6 lg:pb-0">
       <KepalaHalaman
         judul="Periksa Kesepakatan"
         keterangan={`${paket.kode} · ${penawaran.nama}`}

@@ -181,7 +181,7 @@ export function KepalaHalaman({
   const kembali = useKembali()
   return (
     <header className="sticky top-[var(--kepala-global,0px)] z-30 bg-bg/95 backdrop-blur-sm border-b border-line -mx-4 px-4 sm:-mx-6 sm:px-6 -mt-4 lg:-mt-6">
-      <div className={cx('flex items-center gap-2 min-h-14 py-2', RUANG_LONCENG)}>
+      <div data-sejajar-lonceng className={cx('flex items-center gap-2 min-h-14 py-2', RUANG_LONCENG)}>
         {kembaliKe && (
           <button
             type="button"

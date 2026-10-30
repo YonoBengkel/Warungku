@@ -107,7 +107,7 @@ export default function AkunProfil() {
   const tampilkan = (kunci: string) => (sudahDicoba ? galat[kunci] : undefined)
 
   return (
-    <div className="pb-8">
+    <div className="pb-8 lg:pb-0">
       <KepalaHalaman judul="Profil Usaha" kembaliKe="/akun" />
 
       <div className="mt-4 lg:grid lg:grid-cols-12 lg:gap-6 lg:items-start">

@@ -112,7 +112,7 @@ export default function DistributorProfil() {
 
   if (!distributor) {
     return (
-      <div className="pb-6">
+      <div className="pb-6 lg:pb-0">
         <KepalaHalaman judul="Distributor" kembaliKe="/belanja?tab=distributor" />
         <Kartu className="mt-6">
           <h2 className="sr-only">Distributor tidak ditemukan</h2>
@@ -131,7 +131,7 @@ export default function DistributorProfil() {
   const satuanJual = Array.from(new Set(penawaran.map((p) => p.satuan)))
 
   return (
-    <div className="pb-6">
+    <div className="pb-6 lg:pb-0">
       <KepalaHalaman judul={distributor.nama} keterangan={distributor.kota} kembaliKe="/belanja?tab=distributor" />
 
       <div className="mt-4 lg:grid lg:grid-cols-12 lg:gap-6 lg:items-start">

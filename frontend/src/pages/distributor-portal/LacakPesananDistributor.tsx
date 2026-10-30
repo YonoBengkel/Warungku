@@ -78,7 +78,7 @@ export default function LacakPesananDistributor() {
   }
 
   return (
-    <div className="pb-6">
+    <div className="pb-6 lg:pb-0">
       <KepalaHalaman
         judul="Lacak Pesanan"
         keterangan={

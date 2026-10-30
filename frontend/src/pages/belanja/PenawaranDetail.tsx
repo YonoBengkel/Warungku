@@ -76,7 +76,7 @@ export default function PenawaranDetail() {
 
   if (!penawaran || !distributor) {
     return (
-      <div className="pb-6">
+      <div className="pb-6 lg:pb-0">
         <KepalaHalaman judul="Penawaran" kembaliKe="/belanja" />
         <Kartu className="mt-6">
           <h2 className="sr-only">Penawaran tidak ditemukan</h2>
@@ -155,7 +155,7 @@ export default function PenawaranDetail() {
   }
 
   return (
-    <div className="pb-6">
+    <div className="pb-6 lg:pb-0">
       <KepalaHalaman judul={penawaran.nama} keterangan={distributor.nama} kembaliKe="/belanja" />
 
       {tidakDijual && (

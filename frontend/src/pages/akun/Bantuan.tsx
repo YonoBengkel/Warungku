@@ -258,7 +258,7 @@ export default function Bantuan() {
   }
 
   return (
-    <div className="pb-6">
+    <div className="pb-6 lg:pb-0">
       {/* Nomor versi sengaja tidak ditaruh di sini: ia sudah punya tempat tetap
           di kartu Tentang, dan menulisnya dua kali cuma memakan baris. */}
       <KepalaHalaman

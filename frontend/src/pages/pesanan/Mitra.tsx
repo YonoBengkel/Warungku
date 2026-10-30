@@ -70,7 +70,7 @@ export default function Mitra() {
 
   if (!distributor) {
     return (
-      <div className="pb-6">
+      <div className="pb-6 lg:pb-0">
         <KepalaHalaman judul="Kerja Sama" kembaliKe="/pesanan?tab=kontrak&kelompok=pemasok" />
         <section aria-labelledby="judul-tidak-ada">
           <h2 id="judul-tidak-ada" className="sr-only">
@@ -112,7 +112,7 @@ export default function Mitra() {
   }
 
   return (
-    <div className="pb-6">
+    <div className="pb-6 lg:pb-0">
       <KepalaHalaman
         judul={`Kerja Sama dengan ${distributor.nama}`}
         keterangan={`${kontrakAktif.length} kontrak berjalan · ${distributor.kota}`}

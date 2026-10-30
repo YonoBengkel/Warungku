@@ -46,8 +46,8 @@ Daftar; kerangka halaman tidak memasangnya sendiri.
 | Merek lembut | `bg-brand-soft` + `text-brand-soft-ink` | `#f3ecfb` / `#3a0a73` | `#1d0f33` / `#c4a3f2` | Keadaan terpilih, tombol sekunder |
 | Aksen coral | `bg-aksen` + `text-aksen-ink` | `#ff7f50` / `#111a23` | `#e9744b` / `#0b1116` | Isian sorotan: pil potongan di kartu promo berfoto, garis sorot ubin Perlu Tindakan |
 | Aksen kuning | `bg-kuning` + `text-kuning-ink` | `#ffcc00` / `#111a23` | sama | Isian sorotan kecil (landing page) |
-| Menu samping | `.menu-samping` + `text-samping-ink` / `text-samping-ink-2` | gradien `#6431b0` ke `#4a148c`, teks `#ffffff` | gradien `#2d1258` ke `#1d0b3a`, teks `#f3eefc` | Hanya menu samping desktop (revisi V5, Q111 dan Q112) |
-| Pil menu aktif | `.penanda-samping-pil` (`--c-pil-1`, `--c-pil-2`) | `#bf3f0b` ke `#c9470f`, teks putih 5,34 sampai 4,78:1 | sama | Hanya butir menu samping yang aktif (Q115) |
+| Menu samping | `.menu-samping` + `text-samping-ink` / `text-samping-ink-2` | lavender `#f4effb` ke `#ebe3f7`, garis tepi kanan `#e2dbef` (juga membingkai tab menu aktif), teks `#3b2d5c` (9,8 sampai 10,8:1) / `#5b4c7d` (6,1 sampai 6,7:1) | `#1d1729` ke `#17121f`, teks `#ece6f7` (14,3 sampai 15,1:1) / `#b9aed0` (8,3 sampai 8,8:1) | Hanya menu samping desktop (revisi V6, Q122 dan Q130) |
+| Pil menu aktif | `.penanda-samping-pil` (`--c-pil-1`, `--c-pil-2`) + `text-pil-ink` | `#ff9a3c` polos, teks `#1f1208` 8,7:1 | sama | Hanya butir menu samping yang aktif (revisi V6, Q129). Batas pil terhadap tab dan latar menu hanya sekitar 1,9:1, jadi butir aktif juga ditandai teks tebal dan `aria-current` |
 | Jenis promo | `bg-promo-cuci` / `-baru` / `-anggota` / `-redup`, `.bayang-promo-*` | `#8a3408`, `#4a148c`, `#2d1258`, `#3a4854` | sama | Bayangan foto kartu promo dan tinta lencana jenisnya (revisi V5, Q107) |
 | Teks di atas foto | `text-foto-ink` / `text-foto-ink-2`, `bg-foto-pil` | `#ffffff`, putih 90%, pil putih | sama | Hanya di atas foto berbayang; teks putih paling sedikit 4,8:1 di bagian bawah kartu |
 | Stabilo | `.stabilo` (`--c-stabilo`) | coral 32% | coral 22% | Sapuan di bawah nama usaha di kepala Beranda (Q106) |
@@ -83,10 +83,9 @@ Daftar; kerangka halaman tidak memasangnya sendiri.
 
 **Aturan warna:**
 1. **Ungu penuh hanya untuk tombol utama** (dan cincin fokus). Keadaan terpilih memakai
-   ungu lembut atau putih terangkat (lihat bagian 6). Satu-satunya pengecualian adalah menu
-   samping desktop (revisi V5): bidang navigasi bergradien ungu dengan pil aktif coral gelap.
-   Di dalamnya tombol ungu tidak dipakai, angka Keranjang putih bertinta ungu, dan cincin fokus
-   putih 3px karena ungu tidak terlihat di atas ungu.
+   ungu lembut atau putih terangkat (lihat bagian 6). Menu samping desktop memakai warnanya
+   sendiri (revisi V6, Q122): latar lavender, pil aktif jingga bertinta gelap, angka Keranjang
+   ungu penuh, dan cincin fokus 3px sewarna teks menu. Gradien ungu pekat V5 sudah tidak dipakai.
 2. **Teks di atas warna penuh** (`bg-brand`, `bg-kritis`, `bg-menipis`, `bg-info`) memakai
    `text-ink-inverse`, bukan `text-white`. Di tema gelap `text-white` di atas ungu muda hanya
    3,6:1, di bawah ambang 4,5:1.
@@ -102,7 +101,9 @@ Daftar; kerangka halaman tidak memasangnya sendiri.
 
 ## 3. Tipografi
 
-- **Huruf:** Plus Jakarta Sans 400–800 dari Google Fonts, dengan cadangan `system-ui`.
+- **Huruf:** Plus Jakarta Sans 400–800 dari Google Fonts, dengan cadangan `system-ui`. Kepala
+  Beranda saja memuat dua huruf tambahan (revisi V6, Q123): Schibsted Grotesk 800
+  (`font-sapaan`) dan Fraunces 700 miring (`font-nama-usaha`).
 - **Dasar:** `html` 16px dan tidak boleh dikecilkan. Kolom isian 16px supaya Safari iOS tidak
   memperbesar halaman saat kolom disentuh.
 - **Enam peran ukuran.** Ukuran `text-[Nrem]` tidak dipakai lagi. Token hanya membawa ukuran
@@ -118,13 +119,16 @@ Daftar; kerangka halaman tidak memasangnya sendiri.
 | `text-angka` | 26px / 1 | Satu angka besar (sisa stok, total) | `font-extrabold` |
 
 - **Satu-satunya ukuran di bawah 12px:** lencana kecil dan penghitung di tab, 11px tebal.
-- **Pengecualian halaman Stok** (revisi V4, Q83): di desktop judulnya 28px (`lg:text-[1.75rem]`),
-  dan isi kolom cari serta Tambah Barang 17px (`text-subjudul`), supaya bagian atas yang paling
-  sering dipakai terbaca dari jauh. Halaman lain tetap memakai tabel di atas.
+- **Baris kepala Stok** (tambahan revisi V6): pengecualian 28px dari revisi V4 (Q83) dicabut.
+  Judulnya kembali `text-judul`, dan semua kotak di baris itu (kolom cari, Habis, Menipis, Aman,
+  Tambah Barang) setinggi 40px di desktop, sama dengan pil tanggal Beranda. Hurufnya mengikuti
+  kotaknya: kolom cari `text-kartu` (16px di HP supaya Safari tidak memperbesar), angka chip
+  `text-subjudul` dengan label `text-isi`, Tambah Barang `text-kartu`.
 - **Pengecualian Beranda** (revisi V5, Q106 dan Q108, mengikuti rancangannya): sapaan
-  "Selamat datang," dan nama usaha 30px di HP dan 40px di desktop, nama usaha miring 800
-  (satu-satunya huruf miring yang dimuat); angka Perlu Tindakan 30/36px, angka "hal menunggu
-  keputusanmu" 36px, dan angka tengah donat 30px. Judul kartu Beranda `text-subjudul
+  "Selamat datang," dan nama usaha 30px di HP dan 40px di desktop. Sejak revisi V6 (Q123)
+  hurufnya sama dengan gambar referensi: sapaan Schibsted Grotesk 800, nama usaha Fraunces 700
+  miring (satu-satunya huruf miring yang dimuat). Angka Perlu Tindakan 30/36px, angka "hal
+  menunggu keputusanmu" 36px, dan angka tengah donat 30px. Judul kartu Beranda `text-subjudul
   font-extrabold text-brand-soft-ink` (`Bagian besar`).
 - **Keterangan di bawah judul halaman:** `mt-1 text-isi text-ink-2 leading-relaxed max-w-[62ch]`.
 - **Satu angka besar per baris.** `tabular` (tabular-nums) hanya untuk kolom angka yang harus
@@ -174,8 +178,9 @@ terpisah dari angkanya di 360px.
 |---|---|---|
 | Bilah atas | 56px, menempel, berisi lonceng dan keranjang | Disembunyikan |
 | Navigasi | Bilah bawah setinggi `--nav-h` (4,5rem) | `MenuSamping` selebar `--rail-w` (16,5rem), termasuk Keranjang dengan lencana |
-| Pemberitahuan | Lonceng di bilah atas, membuka halaman pemberitahuan | Lonceng bulat yang melayang di pojok kanan atas isi (`LoncengMelayang`), tetap di tempat saat digulir, dan membuka panel di bawahnya; baris judul yang berisi di kanan memberi ruang lewat `RUANG_LONCENG` |
+| Pemberitahuan | Lonceng di bilah atas, membuka halaman pemberitahuan | Lonceng bulat yang melayang di kanan isi (`LoncengMelayang`), tetap di tempat saat digulir, dan membuka panel di bawahnya. Sejak revisi V6 (Q125, Q132) titik tengahnya sejajar dengan elemen baris kepala yang ditandai `data-sejajar-lonceng` (pil tanggal Beranda, label metode Prediksi, baris judul halaman lain); halaman tanpa tanda memakai 16px dari atas. Baris judul yang berisi di kanan memberi ruang lewat `RUANG_LONCENG` |
 | Jarak atas `<main>` | `pt-4` | `lg:pt-6` |
+| Jarak bawah | `<main>` `pb-[calc(var(--nav-h)+1rem)]`, ditambah `pb-4`/`pb-6`/`pb-8` akar halaman | `<main>` `lg:pb-5` (20px), akar halaman `lg:pb-0` (revisi V6, Q127) |
 
 - **Tab navigasi:**
   - pemilik usaha: lima tab (Beranda · Stok · Prediksi · Distributor · Pesanan);
@@ -225,7 +230,7 @@ terpisah dari angkanya di 360px.
 - **Layar acuan dasbor** (revisi V2, diubah revisi V3): dua ukuran area halaman, **1536 × 834**
   piksel CSS (laptop Ilham, 1920 × 1200 skala 125%) dan **1536 × 730** (laptop 1920 × 1080).
   - Prediksi dan Stok mengisi tinggi layar berapa pun. Halamannya setinggi layar dikurangi jarak
-    atas-bawah `<main>` (`min-h-[calc(100dvh-3.5rem)]`), dan bagian bawahnya memanjang mengisi
+    atas-bawah `<main>` (`min-h-[calc(100dvh-2.75rem)]` sejak revisi V6), dan bagian bawahnya memanjang mengisi
     sisanya: tanpa gulir di 730 dan tanpa ruang kosong di 834.
   - Rincian barang (revisi V5, Q102) di desktop dua baris dan boleh digulir: tiga kartu sama
     tinggi di atas (sisa tercatat dengan sedang dikirim, batas aman, dan kedua tombolnya;
@@ -333,14 +338,14 @@ Cari komponen yang sudah ada sebelum menulis yang baru. Komponen dasar ada di
 | Peta satu pesanan | `PetaPesanan` di rincian pesanan selama pesanan berjalan (di atas Pembayaran atau Jejak Pesanan), memakai `PetaLacak` dan `KeteranganPeta`: Leaflet dengan ubin OpenStreetMap, dimuat malas. Posisi kiriman selalu disebut "perkiraan posisi" |
 | Peta sebaran pemesan | `PetaSebaran` (revisi V4, Q87): Leaflet + OpenStreetMap lewat `buatPeta` yang sama dengan `PetaLacak`, penanda cincin bernomor per kondisi (merah utuh, jingga putus-putus, biru ganda). Bentuk cincinnya `Cincin` dan `TandaTitik` di `TandaTitik.tsx`, berkas tanpa Leaflet, supaya petak Beranda tidak memuat pustaka peta. Di desktop kolom peta setinggi layar |
 | Kartu promo | `KartuPromo` (revisi V5, Q107): satu foto per jenis promo (`FotoPromo`) dengan bayangan warna jenisnya, lencana jenis pil putih (`LencanaJenisPromo`, ikon label, kilau, mahkota), judul, nama toko, pil potongan, dan tanggal. Dipakai Beranda, `/promo`, daftar promo distributor (`redup` untuk yang berakhir), dan pratinjaunya; spanduk rincian promo memakai `FotoPromo pekat`. Logo per kategori barang V4 sudah tidak dipakai, masternya diarsipkan di `docs/desain/logo-promo/`. Lencana kecil di jalur beli (`LencanaPromo`) memakai ikon jenis yang sama |
-| Kepala Beranda | `KepalaSambutan` (Q106): sapaan, nama usaha miring ungu berstabilo, keterangan opsional (pita data kasir UMKM), pil tanggal di kanan sebelah lonceng; di HP ditumpuk |
+| Kepala Beranda | `KepalaSambutan` (Q106, Q123): sapaan, nama usaha miring ungu berstabilo, keterangan opsional, pil tanggal di kanan sebelah lonceng; di HP ditumpuk. Keterangan UMKM adalah baris status data kasir (`PitaDataKasir`, revisi V6, Q124 dan Q131): satu gaya untuk semua keadaan, ikon bulat 18px dari `public/gambar/status/` (centang hijau dari Ilham, seru amber, pensil ungu, info biru), teks kecil, dan tautan tebal bila ada tindakan. Tanpa pita berwarna |
 | Pintasan Perlu Tindakan | `PerluTindakan` (Q108): empat ubin tanpa bingkai berikon ilustrasi dari rancangan (`public/gambar/tindakan/`), angka di samping ikon, nama di bawah; disorot: terangkat, ikon membesar, garis coral di bawah (tanpa gerak bila gerak dikurangi) |
 | Daftar urusan | `KartuUrusan` dan `BarisUrusan` (Q109): angka besar "N hal menunggu keputusanmu", tiga baris teratas, "Lihat semua" membuka sisanya di kartu itu juga. Satu tombol per baris; hanya baris teratas yang tombolnya ungu penuh, dan latar merah hanya untuk baris yang genting |
 | Donat status | `DonatStatus` (Q109, Q118): total di tengah, keterangan berangka di kanan (bisa jadi tautan), celah 2px antarpotongan, keterangan pembaca layar lewat `label` |
-| Menu halaman akun | `Kelompok`, `BarisMenu`, `TombolPilihan` (`components/ui/menuAkun.tsx`), dipakai Akun pemilik usaha dan Akun distributor (revisi V4, Q94). Alat uji purwarupa (masuk/keluar akun simulasi, ganti peran) selalu di kotak bergaris putus paling bawah halaman akun; sejak revisi V5 (Q103) satu baris tiga kolom di desktop (pengantar, lalu dua alat) dengan tombol sejajar di dasar kolom. Simulasi turun derajat perkiraan sudah dihapus |
+| Menu halaman akun | `Kelompok`, `BarisMenu`, `TombolPilihan` (`components/ui/menuAkun.tsx`), dipakai Akun pemilik usaha dan Akun distributor (revisi V4, Q94). Alat uji purwarupa (masuk/keluar akun simulasi, ganti peran) selalu di kotak bergaris putus paling bawah halaman akun; sejak revisi V5 (Q103) satu baris tiga kolom di desktop (pengantar, lalu dua alat) dengan tombol sejajar di dasar kolom. Simulasi turun derajat perkiraan sudah dihapus. Sejak revisi V6 (Q126) bagian Tampilan paling bawah, di bawah alat uji: Terang, Gelap, dan Keluar (`bahaya-garis`, minta konfirmasi) sebaris di semua ukuran. Akun distributor hanya Terang dan Gelap, karena keluar dari akun distributor ada di alat uji |
 | Memilih satu titik di peta | `PetaPilihTitik`: ketuk peta, atau geser dengan tombol panah lalu "Pakai titik tengah peta" |
-| Menu samping desktop | `MenuSamping` (revisi V5, Q111): tanda merek, daftar utama, garis, daftar tambahan (Keranjang, Ringkasan Penjualan) dengan angka opsional, dan kartu akun kaca di dasar. Penanda aktif (`.penanda-samping`) satu tab sewarna latar halaman dengan lengkung cekung 28px, diukur dari butir aktif lalu digeser 320ms; mati bila gerak dikurangi. Halaman di luar daftar (Akun) tanpa penanda. Lacak Pesanan tidak di sini sejak revisi V3 |
-| Ringkasan penjualan | `TampilanRingkasan` (halaman) dan `KartuRingkasanPenjualan` (Beranda, Dashboard). Tanpa laba kotor; angka utama dibandingkan dengan periode sebelumnya yang sama panjang, dengan ikon dan kata. Di Beranda (revisi V5, butir 4A): tiga petak berikon bulat dengan chip naik (hijau) atau turun (jingga), lalu batang per hari `seri-1` dengan batang tertinggi diberi angka |
+| Menu samping desktop | `MenuSamping` (revisi V5, Q111; warna dan gerak revisi V6): tanda merek, daftar utama, garis, daftar tambahan (Keranjang, Ringkasan Penjualan) dengan angka opsional, dan kartu akun putih di dasar. Penanda aktif (`.penanda-samping`) berbentuk seperti `SIdebar.html` dengan warna V6: tab sewarna latar halaman yang menyambung ke halaman, lengkung cekung 28px di atas dan bawahnya, dan pil jingga di dalamnya. Karena latar halaman nyaris sewarna lavender (ΔE 2 sampai 4), tab dan lengkungnya diberi garis 1px sewarna garis tepi menu. Penanda diukur dari butir aktif lalu digeser 420ms, dan sudah berangkat saat butir diklik, sebelum halaman berganti (Q121). Supaya pil bisa bergeser, kerangka tidak dipasang ulang saat pindah halaman: batas galat dan `Suspense` hanya membungkus isi halaman (`IsiHalaman`). Mati bila gerak dikurangi. Halaman di luar daftar (Akun) tanpa penanda. Lacak Pesanan tidak di sini sejak revisi V3 |
+| Ringkasan penjualan | `TampilanRingkasan` (halaman) dan `KartuRingkasanPenjualan` (Beranda, Dashboard). Tanpa laba kotor; angka utama dibandingkan dengan periode sebelumnya yang sama panjang, dengan ikon dan kata. Di Beranda (revisi V5, butir 4A): tiga petak berikon ilustrasi Flaticon 40px (`public/gambar/penjualan/`, revisi V6, Q128) dengan chip naik (hijau) atau turun (jingga), lalu batang per hari `seri-1` dengan batang tertinggi diberi angka |
 
 **Ikon** dibuat sendiri di `frontend/src/icons/`: garis 1,75px, kotak 24px, dan selalu
 `aria-hidden`. Maknanya dibawa oleh teks di sebelahnya. Pustaka ikon tidak dipakai, demi
@@ -355,6 +360,7 @@ ukuran bundel.
 | Muncul halus | 220ms dengan kurva yang sama |
 | Latar memudar | 180ms |
 | Geser korsel satu halaman | 300ms, kurva keluar |
+| Pil menu samping | 420ms `cubic-bezier(0.76, 0, 0.24, 1)`, berangkat saat diklik (revisi V6, Q121) |
 | Menu tarik-turun: buka saat disorot / tutup saat kursor pergi | jeda 150ms / 250ms |
 
 - **Gerak dikurangi:** dengan `prefers-reduced-motion`, semua animasi dan transisi dimatikan.

@@ -26,7 +26,7 @@ export default function PemberitahuanDistributor() {
   ].filter((k) => k.isi.length > 0)
 
   return (
-    <div className="pb-6">
+    <div className="pb-6 lg:pb-0">
       <KepalaHalaman
         judul={JUDUL.notifikasi}
         keterangan={perlu.length > 0 ? `${perlu.length} butuh tindakan` : 'Tidak ada yang menunggu tindakan'}

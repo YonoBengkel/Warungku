@@ -131,7 +131,7 @@ export default function KelolaKategori() {
   }
 
   return (
-    <div className="pb-6">
+    <div className="pb-6 lg:pb-0">
       <KepalaHalaman
         judul="Kelola Kategori"
         keterangan={`${angka(daftar.length)} kategori untuk ${angka(barang.length)} barang`}

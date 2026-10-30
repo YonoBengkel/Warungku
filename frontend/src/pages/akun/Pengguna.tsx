@@ -132,7 +132,7 @@ export default function Pengguna() {
   }
 
   return (
-    <div className="pb-6">
+    <div className="pb-6 lg:pb-0">
       <KepalaHalaman
         judul="Pengguna & Hak Akses"
         keterangan={`${daftar.length} orang punya akses`}

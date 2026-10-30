@@ -73,7 +73,7 @@ export default function RincianPaket() {
 
   if (!penawaran || !paket || !distributor || paket.penawaranId !== penawaran.id) {
     return (
-      <div className="pb-6">
+      <div className="pb-6 lg:pb-0">
         <KepalaHalaman judul="Rincian Paket Kontrak" kembaliKe={penawaran ? `/penawaran/${id}/kontrak` : '/belanja'} />
         <Kartu className="mt-6">
           <h2 className="sr-only">Paket kontrak tidak ditemukan</h2>
@@ -113,7 +113,7 @@ export default function RincianPaket() {
           : { label: 'Di atas pemakaian', nada: 'menipis' as const, teks: `Kuota ${angkaJumlah(kuota)} ${satuan} lebih besar dari pemakaianmu ${angkaJumlah(pemakaian)} ${satuan} per bulan. Selisih ${angkaJumlah(kuota - pemakaian)} ${satuan} tiap bulan tetap wajib kamu ambil.` }
 
   return (
-    <div className="pb-6">
+    <div className="pb-6 lg:pb-0">
       <KepalaHalaman
         judul="Rincian Paket Kontrak"
         keterangan={`${paket.kode} · ${penawaran.nama} · ${distributor.nama}`}

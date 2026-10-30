@@ -25,7 +25,7 @@ export default function PenilaianUlasan() {
   )
 
   return (
-    <div className="pb-8">
+    <div className="pb-8 lg:pb-0">
       <KepalaHalaman judul="Penilaian & Ulasan" keterangan={distributor.nama} kembaliKe="/distributor-portal/profil" />
 
       <div className="mt-4 lg:grid lg:grid-cols-12 lg:gap-5 lg:items-start space-y-6 lg:space-y-0">

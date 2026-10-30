@@ -43,7 +43,7 @@ export default function KontrakRutin() {
 
   if (!kontrak) {
     return (
-      <div className="pb-6">
+      <div className="pb-6 lg:pb-0">
         <KepalaHalaman judul="Atur Pesanan Rutin" kembaliKe="/pesanan?tab=kontrak" />
         <section aria-labelledby="judul-tidak-ada">
           <h2 id="judul-tidak-ada" className="sr-only">
@@ -85,7 +85,7 @@ export default function KontrakRutin() {
   }
 
   return (
-    <div className="pb-6">
+    <div className="pb-6 lg:pb-0">
       <KepalaHalaman
         judul="Atur Pesanan Rutin"
         keterangan={`${kontrak.namaBarang} · ${distributor?.nama ?? 'Distributor'}`}

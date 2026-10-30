@@ -156,7 +156,7 @@ export default function DistributorUlasan() {
 
   if (!distributor) {
     return (
-      <div className="pb-6">
+      <div className="pb-6 lg:pb-0">
         <KepalaHalaman judul="Ulasan" kembaliKe="/belanja?tab=distributor" />
         <Kartu className="mt-6">
           <h2 className="sr-only">Distributor tidak ditemukan</h2>
@@ -172,7 +172,7 @@ export default function DistributorUlasan() {
   }
 
   return (
-    <div className="pb-6">
+    <div className="pb-6 lg:pb-0">
       <KepalaHalaman
         judul="Ulasan"
         keterangan={distributor.nama}

@@ -50,7 +50,7 @@ export default function UlasanSaya() {
   )
 
   return (
-    <div className="pb-6">
+    <div className="pb-6 lg:pb-0">
       <KepalaHalaman
         judul="Ulasan Saya"
         keterangan={`${belumDinilai.length} belum dinilai · ${sudahDinilai.length} sudah ditulis`}

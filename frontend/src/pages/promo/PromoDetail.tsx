@@ -144,7 +144,7 @@ export default function PromoDetail() {
 
   if (!promo) {
     return (
-      <div className="pb-6">
+      <div className="pb-6 lg:pb-0">
         <KepalaHalaman judul="Promo" kembaliKe="/beranda" />
         <Kartu className="mt-6">
           <KeadaanKosong
@@ -170,7 +170,7 @@ export default function PromoDetail() {
     promo.jenis === 'cuci-gudang' ? [...penawaran].sort((a, b) => a.stokTersedia - b.stokTersedia) : penawaran
 
   return (
-    <div className="pb-6">
+    <div className="pb-6 lg:pb-0">
       <KepalaHalaman judul={promo.judul} keterangan={namaToko} kembaliKe="/beranda" />
 
       {/* Spanduk promo (revisi V5, Q117): foto jenis promo yang sama dengan

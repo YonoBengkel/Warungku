@@ -168,7 +168,7 @@ export default function KeranjangRingkasan() {
     ) : null
 
   return (
-    <div className="pb-4">
+    <div className="pb-4 lg:pb-0">
       <KepalaHalaman
         judul="Periksa Belanja"
         keterangan="Belum terkirim. Periksa dulu, baru kirim."

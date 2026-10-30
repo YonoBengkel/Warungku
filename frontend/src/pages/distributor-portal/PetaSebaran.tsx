@@ -124,7 +124,7 @@ export default function PetaSebaranBarang() {
 
   if (barangTidakAda) {
     return (
-      <div className="pb-6">
+      <div className="pb-6 lg:pb-0">
         <KepalaHalaman judul="Barang tidak ditemukan" keterangan="Sebaran pemesan" kembaliKe="/distributor-portal/sebaran" />
         <KeadaanKosong
           ikon={<IkonKotak size={26} />}
@@ -140,7 +140,7 @@ export default function PetaSebaranBarang() {
     // Desktop: tinggi halaman dikunci ke layar dikurangi jarak atas-bawah
     // <main> (1,5rem + 2rem; bilah portal disembunyikan di desktop), lalu
     // isinya menggulir di dalam kotaknya sendiri-sendiri.
-    <div className="pb-6 lg:pb-0 lg:h-[calc(100dvh-3.5rem)] lg:flex lg:flex-col">
+    <div className="pb-6 lg:pb-0 lg:h-[calc(100dvh-2.75rem)] lg:flex lg:flex-col">
       <KepalaHalaman
         judul={penawaran ? penawaran.nama : 'Sebaran pemesan'}
         keterangan={penawaran ? 'Sebaran UMKM yang memesan barang ini' : 'Semua barang yang sedang dipesan'}

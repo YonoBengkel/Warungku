@@ -75,7 +75,7 @@ export default function StokKoreksi() {
   }
 
   return (
-    <div className="pb-8">
+    <div className="pb-8 lg:pb-0">
       <KepalaHalaman judul="Koreksi Stok" keterangan={barang.nama} kembaliKe={`/stok/${barang.id}`} />
 
       <div className="mt-4 max-w-2xl mx-auto space-y-4">

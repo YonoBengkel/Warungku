@@ -134,7 +134,7 @@ export default function PilihPaket() {
 
   if (!penawaran || !distributor) {
     return (
-      <div className="pb-6">
+      <div className="pb-6 lg:pb-0">
         <KepalaHalaman judul="Pilih Paket Kontrak" kembaliKe="/belanja" />
         <Kartu className="mt-6">
           <h2 className="sr-only">Paket kontrak tidak ditemukan</h2>
@@ -151,7 +151,7 @@ export default function PilihPaket() {
 
   if (paket.length === 0) {
     return (
-      <div className="pb-6">
+      <div className="pb-6 lg:pb-0">
         <KepalaHalaman judul="Pilih Paket Kontrak" kembaliKe={`/penawaran/${id}`} />
         <Kartu className="mt-6">
           <h2 className="sr-only">Paket kontrak yang tersedia</h2>
@@ -196,7 +196,7 @@ export default function PilihPaket() {
   ]
 
   return (
-    <div className="pb-6">
+    <div className="pb-6 lg:pb-0">
       <KepalaHalaman
         judul="Pilih Paket Kontrak"
         keterangan={`${penawaran.nama} · ${distributor.nama}`}

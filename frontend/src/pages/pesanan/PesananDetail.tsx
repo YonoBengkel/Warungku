@@ -81,7 +81,7 @@ export default function PesananDetail() {
 
   if (!pesanan) {
     return (
-      <div className="pb-6">
+      <div className="pb-6 lg:pb-0">
         {/* Judul kepala dibuat netral supaya kalimat "sudah tidak ada" hanya
             terbaca sekali, dan judul tingkat dua menjaga urutan h1 → h2 → h3. */}
         <KepalaHalaman judul="Pesanan" kembaliKe="/pesanan" />
@@ -171,7 +171,7 @@ export default function PesananDetail() {
   return (
     /* Mulai 1024px setinggi layar; kotak terakhir di tiap kolom memanjang sampai
        di atas bilah bawah (revisi V4, Q88), sama dengan rincian Pesanan Masuk. */
-    <div className="pb-6 lg:pb-0 lg:flex lg:flex-col lg:min-h-[calc(100dvh-3.5rem)]">
+    <div className="pb-6 lg:pb-0 lg:flex lg:flex-col lg:min-h-[calc(100dvh-2.75rem)]">
       <KepalaHalaman
         judul={distributor?.nama ?? 'Pesanan'}
         keterangan={`${LABEL_PESANAN[pesanan.status]} · dibuat ${tanggalPendek(pesanan.dibuatPada)}`}

@@ -78,7 +78,7 @@ export default function PesananMasukDetail() {
 
   if (!pesanan) {
     return (
-      <div className="pb-6">
+      <div className="pb-6 lg:pb-0">
         <KepalaHalaman judul="Pesanan" kembaliKe="/distributor-portal/pesanan" />
         {/* Judul tingkat dua menjaga urutan h1 → h2 walaupun isinya cuma satu blok. */}
         <section aria-labelledby="judul-tidak-ada">
@@ -124,7 +124,7 @@ export default function PesananMasukDetail() {
     /* Mulai 1024px halaman ini setinggi layar dikurangi jarak atas-bawah <main>,
        dan kotak terakhir di tiap kolom memanjang sampai di atas bilah bawah,
        jadi tidak ada pita kosong di bawahnya (revisi V4, Q88). */
-    <div className="pb-6 lg:pb-0 lg:flex lg:flex-col lg:min-h-[calc(100dvh-3.5rem)]">
+    <div className="pb-6 lg:pb-0 lg:flex lg:flex-col lg:min-h-[calc(100dvh-2.75rem)]">
       <KepalaHalaman
         judul={p.nomor}
         keterangan={umkm?.nama ?? 'Pemilik usaha'}

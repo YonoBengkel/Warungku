@@ -403,7 +403,7 @@ export default function PromoUbah() {
 
   if (id && !promo) {
     return (
-      <div className="pb-6">
+      <div className="pb-6 lg:pb-0">
         <KepalaHalaman judul="Promo" kembaliKe={DAFTAR_PROMO} />
         <section aria-labelledby="judul-tidak-ada">
           <h2 id="judul-tidak-ada" className="sr-only">
@@ -422,7 +422,7 @@ export default function PromoUbah() {
   }
 
   return (
-    <div className="pb-6">
+    <div className="pb-6 lg:pb-0">
       <KepalaHalaman
         judul={promo ? 'Ubah Promo' : 'Buat Promo'}
         keterangan={promo ? promo.judul : 'Tampil di Beranda pemilik usaha begitu dipasang'}

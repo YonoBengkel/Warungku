@@ -78,10 +78,10 @@ export default function SegmenPelanggan() {
   }, [sesi, putus])
 
   return (
-    <div className="pb-6">
+    <div className="pb-6 lg:pb-0">
       {/* Label metode di kanan judul (revisi V2, Q42); cara mengelompokkan
           dijelaskan di gelembungnya. Di layar sempit ia turun ke bawah judul. */}
-      <div className={cx('flex items-center justify-between gap-x-3 gap-y-2 flex-wrap', RUANG_LONCENG)}>
+      <div data-sejajar-lonceng className={cx('flex items-center justify-between gap-x-3 gap-y-2 flex-wrap', RUANG_LONCENG)}>
         <h1 className="text-judul font-extrabold text-ink tracking-tight">Pelanggan</h1>
         <LabelMetode {...METODE_SEGMEN} />
       </div>

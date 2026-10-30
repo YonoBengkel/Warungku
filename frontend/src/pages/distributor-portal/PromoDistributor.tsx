@@ -73,7 +73,7 @@ export default function PromoDistributor() {
   )
 
   return (
-    <div className="pb-6">
+    <div className="pb-6 lg:pb-0">
       <div className={`flex flex-wrap items-start justify-between gap-3 ${RUANG_LONCENG}`}>
         <div className="min-w-0">
           <h1 className="text-judul font-extrabold text-ink tracking-tight">Promo</h1>
@@ -81,9 +81,11 @@ export default function PromoDistributor() {
             Promo tampil di Beranda pemilik usaha. Potongan hanya untuk beli sekali.
           </p>
         </div>
-        <TombolTautan ke="/distributor-portal/promo/baru" ikonKiri={<IkonTambah size={17} />}>
-          Buat Promo
-        </TombolTautan>
+        <div data-sejajar-lonceng className="shrink-0">
+          <TombolTautan ke="/distributor-portal/promo/baru" ikonKiri={<IkonTambah size={17} />}>
+            Buat Promo
+          </TombolTautan>
+        </div>
       </div>
 
       <section aria-labelledby="judul-promo-berjalan" className="mt-5">

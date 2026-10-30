@@ -115,7 +115,7 @@ export default function StokRapor() {
 
   if (!barang) {
     return (
-      <div className="pb-6">
+      <div className="pb-6 lg:pb-0">
         <KepalaHalaman judul="Rapor Perkiraan" kembaliKe="/stok" />
         {/* KeadaanKosong menulis judulnya sebagai h3; tanpa h2 di depannya
             urutan judul halaman melompat dari h1 langsung ke h3. */}
@@ -138,7 +138,7 @@ export default function StokRapor() {
 
   if (perkiraan.kematangan === 'belum-bisa' || !rapor) {
     return (
-      <div className="pb-6">
+      <div className="pb-6 lg:pb-0">
         <KepalaHalaman judul="Rapor Perkiraan" keterangan={barang.nama} kembaliKe={`/stok/${barang.id}`} />
         <div className="mt-4 max-w-xl mx-auto">
           <Kartu>
@@ -205,7 +205,7 @@ export default function StokRapor() {
   const hariHabis = tujuhTerakhir.filter((r) => r.habis)
 
   return (
-    <div className="pb-6">
+    <div className="pb-6 lg:pb-0">
       <KepalaHalaman
         judul="Rapor Perkiraan"
         keterangan={barang.nama}

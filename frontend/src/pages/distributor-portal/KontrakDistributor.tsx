@@ -392,8 +392,8 @@ export default function KontrakDistributor() {
   }, [kontrakBerjalan])
 
   return (
-    <div className="pb-6">
-      <h1 className="text-judul font-extrabold text-ink tracking-tight">Kontrak</h1>
+    <div className="pb-6 lg:pb-0">
+      <h1 data-sejajar-lonceng className="text-judul font-extrabold text-ink tracking-tight">Kontrak</h1>
       <p className="mt-1 text-isi text-ink-2 leading-relaxed max-w-[62ch]">
         Pengajuan dari pemilik usaha, kontrak yang sedang berjalan, dan paket yang kamu tawarkan.
       </p>

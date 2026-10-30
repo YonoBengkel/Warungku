@@ -153,7 +153,7 @@ export default function Keranjang() {
   )
 
   return (
-    <div className="pb-4">
+    <div className="pb-4 lg:pb-0">
       <KepalaHalaman
         judul={JUDUL.keranjang}
         keterangan={
