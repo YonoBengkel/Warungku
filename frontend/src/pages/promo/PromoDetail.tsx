@@ -2,10 +2,9 @@ import { Link, useParams } from 'react-router-dom'
 import { Avatar, JudulBagian, Kartu, KartuTautan, Lencana, TombolTautan } from '@/components/ui/dasar'
 import { KepalaHalaman } from '@/components/ui/navigasi'
 import { KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
-import { HargaBeli, LogoPromo, TEMPLATE_PROMO } from '@/components/domain/KartuPromo'
+import { FotoPromo, HargaBeli, LATAR_FOTO, LencanaJenisPromo } from '@/components/domain/KartuPromo'
 import { IkonJam, IkonPanahKanan, IkonSilang, IkonToko } from '@/icons'
 import { cx, hariLagi, jumlahSatuan, persen, tanggalPanjang } from '@/lib/format'
-import { LABEL_PROMO } from '@/lib/label'
 import type { Penawaran, Promo, RincianHarga } from '@/lib/types'
 import { distributorById, penawaranById, promoMasihBerlaku } from '@/data/dummy'
 import { usePenentuHarga } from '@/store/aplikasi'
@@ -24,7 +23,7 @@ import { usePenentuHarga } from '@/store/aplikasi'
  * empat kolom, bukan satu kolom panjang yang melebar sampai 1.400 piksel.
  *
  * Blok kepalanya memakai template yang sama persis dengan kartunya supaya
- * pemilik warung yakin ia mendarat di promo yang tadi ditekan: warna, logo,
+ * pemilik warung yakin ia mendarat di promo yang tadi ditekan: foto, warna,
  * dan lencana jenisnya tidak berubah, yang bertambah hanya isinya.
  *
  * Harga yang tampil di sini adalah harga BELI dari distributor, lewat
@@ -159,7 +158,6 @@ export default function PromoDetail() {
     )
   }
 
-  const template = TEMPLATE_PROMO[promo.jenis]
   const distributor = distributorById(promo.distributorId)
   const namaToko = distributor?.nama ?? 'Distributor'
   const sisaHari = promo.berakhir ? Math.ceil((+new Date(promo.berakhir) - Date.now()) / 86_400_000) : null
@@ -175,48 +173,48 @@ export default function PromoDetail() {
     <div className="pb-6">
       <KepalaHalaman judul={promo.judul} keterangan={namaToko} kembaliKe="/beranda" />
 
-      {/* Kepala promo: template dibaca dari jenis promo, nama toko dari datanya.
-          Di layar lebar sorotannya berdiri di kanan, di HP turun ke bawah. */}
-      <div
-        className={cx(
-          'mt-4 rounded-lg p-4 sm:p-5 lg:p-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center',
-          template.latar,
-          template.teks,
-        )}
-      >
-        <div className="min-w-0">
-          <div className="flex items-center gap-2.5">
-            <LogoPromo promo={promo} ukuran={48} />
-            <span className={cx('inline-flex items-center rounded-sm px-2.5 py-1 text-isi font-bold', template.aksen)}>
-              {LABEL_PROMO[promo.jenis]}
-            </span>
+      {/* Spanduk promo (revisi V5, Q117): foto jenis promo yang sama dengan
+          kartunya, supaya pemilik warung yakin ia mendarat di promo yang tadi
+          ditekan. Di layar lebar sorotannya berdiri di kanan, di HP turun ke bawah. */}
+      <div className={cx('relative isolate mt-4 overflow-hidden rounded-xl', LATAR_FOTO[promo.jenis])}>
+        <FotoPromo jenis={promo.jenis} pekat />
+        <div className="relative min-h-60 p-4 sm:p-5 lg:p-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+          <div className="min-w-0 flex flex-col">
+            <div>
+              <LencanaJenisPromo jenis={promo.jenis} />
+            </div>
+
+            <p className="mt-auto pt-10 flex items-center gap-1.5 text-subjudul font-extrabold text-foto-ink min-w-0">
+              <IkonToko size={18} className="shrink-0" />
+              <span className="truncate">{namaToko}</span>
+            </p>
+
+            <p className="mt-1.5 text-isi text-foto-ink-2 leading-relaxed max-w-[70ch]">{promo.keterangan}</p>
+
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              {promo.potonganPersen != null && (
+                <span
+                  className={cx(
+                    'inline-flex items-center rounded-full px-2.5 py-1 text-isi font-extrabold',
+                    promo.jenis === 'cuci-gudang' ? 'bg-foto-pil text-promo-cuci' : 'bg-aksen text-aksen-ink',
+                  )}
+                >
+                  Potongan {persen(promo.potonganPersen)}
+                </span>
+              )}
+              {promo.berakhir && sisaHari != null ? (
+                <span className="inline-flex items-center gap-1.5 text-isi font-semibold text-foto-ink">
+                  <IkonJam size={14} className="shrink-0" />
+                  Sampai {tanggalPanjang(promo.berakhir)} · {hariLagi(sisaHari)}
+                </span>
+              ) : (
+                <span className="text-isi font-semibold text-foto-ink">Tidak ada tanggal berakhir.</span>
+              )}
+            </div>
           </div>
 
-          <p className="mt-3 flex items-center gap-1.5 text-subjudul font-extrabold min-w-0">
-            <IkonToko size={18} className="shrink-0" />
-            <span className="truncate">{namaToko}</span>
-          </p>
-
-          <p className="mt-1.5 text-isi leading-relaxed max-w-[70ch]">{promo.keterangan}</p>
-
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            {promo.potonganPersen != null && (
-              <span className="inline-flex items-center rounded-sm bg-surface text-ink px-2.5 py-1 text-isi font-bold">
-                Potongan {persen(promo.potonganPersen)}
-              </span>
-            )}
-            {promo.berakhir && sisaHari != null ? (
-              <span className="inline-flex items-center gap-1.5 text-isi font-semibold">
-                <IkonJam size={14} className="shrink-0" />
-                Sampai {tanggalPanjang(promo.berakhir)} · {hariLagi(sisaHari)}
-              </span>
-            ) : (
-              <span className="text-isi font-semibold">Tidak ada tanggal berakhir.</span>
-            )}
-          </div>
+          <Sorotan promo={promo} jumlahBarang={penawaran.length} sisaHari={sisaHari} />
         </div>
-
-        <Sorotan promo={promo} jumlahBarang={penawaran.length} sisaHari={sisaHari} />
       </div>
 
       {/* Tautan lama ke promo yang sudah diakhiri tetap terbuka, tapi harganya

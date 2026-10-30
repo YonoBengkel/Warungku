@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { cx } from '@/lib/format'
+import { useKueriMedia } from '@/lib/media'
 
 /* Perangkat bertetikus dengan layar cukup lebar. Di sana penyaring memakai menu
    tarik-turun; di HP dan tablet sentuh tetap lembar bawah, karena tidak ada
@@ -7,15 +8,7 @@ import { cx } from '@/lib/format'
 const KUERI_TETIKUS = '(hover: hover) and (pointer: fine) and (min-width: 640px)'
 
 export function usePakaiMenuTarik(): boolean {
-  const [cocok, setCocok] = useState(() => window.matchMedia(KUERI_TETIKUS).matches)
-  useEffect(() => {
-    const mq = window.matchMedia(KUERI_TETIKUS)
-    const ubah = () => setCocok(mq.matches)
-    ubah()
-    mq.addEventListener('change', ubah)
-    return () => mq.removeEventListener('change', ubah)
-  }, [])
-  return cocok
+  return useKueriMedia(KUERI_TETIKUS)
 }
 
 /**

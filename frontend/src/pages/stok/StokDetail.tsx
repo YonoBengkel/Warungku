@@ -19,7 +19,7 @@ import {
   IkonPena,
   IkonPeringatan,
 } from '@/icons'
-import { cx, hariLagi, jam, tanggalRingkas, waktuLalu, waktuNanti } from '@/lib/format'
+import { angka, cx, hariLagi, jam, tanggalRingkas, waktuLalu, waktuNanti } from '@/lib/format'
 import { angkaTampil, jumlahTampil, satuanTampil, trenTampil } from '@/lib/satuan'
 import { BANTUAN } from '@/lib/label'
 import {
@@ -30,6 +30,7 @@ import {
   transaksiById,
 } from '@/data/dummy'
 import { useDataMesin } from '@/lib/dataMesin'
+import { KUERI_DESKTOP, useKueriMedia } from '@/lib/media'
 import { LabelMetode, METODE_SARAN, metodePrediksi } from '@/components/domain/LabelMetode'
 import type { SaranServer } from '@/lib/api'
 import { PESANAN_BERJALAN } from '@/lib/label'
@@ -47,6 +48,9 @@ import { useAplikasi } from '@/store/aplikasi'
  */
 type TabDetail = 'ringkasan' | 'riwayat'
 
+/** Riwayat di desktop: lima terakhir, sisanya lewat "Lihat semua" (Q102). */
+const BATAS_RIWAYAT = 5
+
 export default function StokDetail() {
   const { id = '' } = useParams()
   const barang = useAplikasi((s) => s.barang.find((b) => b.id === id))
@@ -54,6 +58,8 @@ export default function StokDetail() {
   const pesanan = useAplikasi((s) => s.pesanan)
   const kontrak = useAplikasi((s) => s.kontrak.find((k) => k.barangId === id && k.status !== 'selesai'))
   const [tab, setTab] = useState<TabDetail>('ringkasan')
+  const [riwayatSemua, setRiwayatSemua] = useState(false)
+  const lebar = useKueriMedia(KUERI_DESKTOP)
   const mesin = useDataMesin(barang)
 
   /* Dihitung di sini, bukan lewat pembaca bersama, karena pembaca itu menyusun
@@ -128,12 +134,290 @@ export default function StokDetail() {
         ? { nada: 'netral' as const, teks: 'Diatur sendiri' }
         : { nada: 'menipis' as const, teks: `Bawaan ${BATAS_AMAN_BAWAAN}` }
 
+  /* ---- Kartu sisa: angka, kapan memesan, sedang dikirim, batas aman, dan
+     dua tombolnya dalam satu kotak (revisi V5, Q102). ---- */
+  const kartuSisa = (
+    <Bagian className="h-full flex flex-col">
+      <div className="flex items-end justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-kecil font-semibold uppercase tracking-wide text-ink-3">Sisa tercatat</p>
+          <p
+            className={cx(
+              'mt-1 text-[2.25rem] font-extrabold leading-none tracking-tight',
+              status === 'habis' ? 'text-kritis' : 'text-ink',
+            )}
+          >
+            {angkaTampil(barang, stokTampil)}
+            <span className="ml-1.5 text-[1rem] font-semibold text-ink-3">{satuanTampil(barang).nama}</span>
+          </p>
+          {kemasan && <p className="mt-1.5 text-isi text-ink-2">= {kemasan}</p>}
+        </div>
+        <ChipStok status={status} besar />
+      </div>
+
+      {/* Berapa hari lagi stok cukup adalah milik Kartu Perkiraan. Mengulangnya
+          di sini cuma melahirkan dua kalimat yang bunyinya sama, dan untuk barang
+          yang sudah habis ia berbunyi "cukup untuk ±0 hari", yang tidak menolong
+          siapa pun. Kalimat di bawah menjawab pertanyaan lain: kapan waktunya memesan. */}
+      {kurangCatatan > 0 ? (
+        /* Angka minus berarti catatannya yang salah, bukan gudangnya. */
+        <div className="mt-3 rounded-md bg-kritis-soft text-kritis-ink p-3.5">
+          <p className="text-isi font-bold">
+            0 {satuanTampil(barang).nama} (catatan kurang {jumlahTampil(barang, kurangCatatan)})
+          </p>
+          <p className="mt-1 text-isi leading-relaxed opacity-90">
+            Catatannya minus. Hitung barang di rak, lalu koreksi stok.
+          </p>
+          <Penjelasan label="Kenapa?">
+            Kasir mencatat pemakaian lebih banyak daripada stok yang pernah masuk. Koreksi Stok hanya
+            membetulkan sisanya; riwayat penjualannya tidak ikut berubah.
+          </Penjelasan>
+          <TombolTautan
+            ke={`/stok/${barang.id}/koreksi`}
+            ragam="garis"
+            ukuran="kecil"
+            className="mt-2.5"
+            ikonKiri={<IkonGudang size={15} />}
+          >
+            Koreksi Stok sekarang
+          </TombolTautan>
+        </div>
+      ) : (
+        <p className="mt-3 text-kartu text-ink-2 leading-relaxed">
+          {barang.pemakaianHarian <= 0 ? (
+            barang.dicatatManual ? (
+              'Barang ini kamu catat manual, jadi pemakaian hariannya tidak kami hitung sendiri.'
+            ) : (
+              'Belum ada data pemakaian dari kasir, jadi kami belum bisa memperkirakan kapan stok ini perlu diisi lagi.'
+            )
+          ) : status === 'habis' ? (
+            <>
+              Rata-rata terpakai{' '}
+              <strong className="text-ink">{jumlahTampil(barang, barang.pemakaianHarian)}</strong>{' '}
+              per hari. Selama stoknya kosong, kira-kira sebanyak itu penjualan yang lepas setiap hari.
+            </>
+          ) : (
+            <>
+              Rata-rata terpakai{' '}
+              <strong className="text-ink">{jumlahTampil(barang, barang.pemakaianHarian)}</strong>{' '}
+              per hari.{' '}
+              {barang.batasAman <= 0 ? (
+                'Batas amannya belum diatur, jadi kami belum bisa mengingatkan sebelum stoknya habis.'
+              ) : hariSampaiBatas <= 0 ? (
+                'Sisanya sudah menyentuh batas aman, ini waktunya memesan.'
+              ) : (
+                <>
+                  Sisanya menyentuh batas aman{' '}
+                  <strong className="text-ink">{hariLagi(hariSampaiBatas)}</strong>, dan di situ kami
+                  mengingatkan kamu.
+                </>
+              )}
+            </>
+          )}
+        </p>
+      )}
+
+      <div className="mt-3 flex flex-wrap items-center gap-2 empty:hidden">
+        {barang.kedaluwarsa && barang.ingatkanKedaluwarsa && <ChipKedaluwarsa tanggal={barang.kedaluwarsa} />}
+        {!barang.terhubungKasir && !barang.dicatatManual && (
+          <Lencana nada="menipis" ikon={<IkonPeringatan size={13} />}>
+            Belum terhubung ke menu
+          </Lencana>
+        )}
+        {barang.dicatatManual && <Lencana nada="netral">Dicatat manual</Lencana>}
+        {kontrak && (
+          <Link to={`/kontrak/${kontrak.id}`} className="inline-flex">
+            <Lencana nada="merek" ikon={<IkonKontrak size={13} />}>
+              Kontrak &middot; lihat kuota
+            </Lencana>
+          </Link>
+        )}
+      </div>
+
+      {barang.catatan && (
+        <p className="mt-3 text-isi text-ink-2 leading-relaxed border-l-2 border-line-strong pl-3">{barang.catatan}</p>
+      )}
+
+      {/* Sedang dikirim: angka kedua yang tidak pernah dijumlahkan */}
+      {dikirim.jumlah > 0 && (
+        <Link
+          to={dikirim.pesananId ? `/pesanan/${dikirim.pesananId}` : '/pesanan'}
+          className="mt-3 flex items-start gap-3 rounded-md border border-info/30 bg-info-soft text-info-ink p-3.5 hover:brightness-97"
+        >
+          <IkonPasokan size={18} className="shrink-0 mt-0.5" />
+          <span className="min-w-0 grow">
+            <span className="block text-kartu font-bold">Sedang dikirim {jumlahTampil(barang, dikirim.jumlah)}</span>
+            <span className="block text-isi mt-0.5 opacity-90 leading-relaxed">
+              {pesananDikirim ? `${pesananDikirim.nomor} · ` : ''}
+              {dikirim.tiba ? `perkiraan tiba ${waktuNanti(dikirim.tiba)}` : 'jadwal tiba belum dipastikan'}.
+              Belum ditambahkan ke sisa karena kiriman bisa berubah.
+            </span>
+          </span>
+          <IkonPanahKanan size={18} className="shrink-0 mt-0.5" />
+        </Link>
+      )}
+
+      {/* Batas aman: satu baris bergaris atas di dalam kotak yang sama */}
+      <Link
+        to={`/stok/${barang.id}/batas-aman`}
+        className="group mt-3 pt-3 border-t border-line flex items-center gap-3 min-h-14"
+      >
+        <span className="min-w-0 grow">
+          <span className="flex flex-wrap items-center gap-2">
+            <span className="text-kartu font-bold text-ink group-hover:text-brand transition-colors">Batas aman</span>
+            <Lencana nada={lencanaBatas.nada}>{lencanaBatas.teks}</Lencana>
+          </span>
+          <span className="block mt-1 text-isi text-ink-3 leading-snug">{BANTUAN.batasAman}</span>
+        </span>
+        <span className="shrink-0 text-right text-[1.125rem] font-bold text-ink tabular">
+          {barang.batasAman > 0 ? jumlahTampil(barang, barang.batasAman) : 'Belum diisi'}
+        </span>
+        <IkonPanahKanan size={18} className="shrink-0 text-ink-3 group-hover:text-ink transition-colors" />
+      </Link>
+
+      {/* Satu tombol utama menurut keadaan barang: stok minus berarti angkanya
+          salah (koreksi dulu); habis atau menipis berarti pesan. "Pesan" membuka
+          saran distributor di halaman ini bila ada, dengan jumlah saran sudah
+          terisi. Data barang diubah lewat ikon pena di kepala. */}
+      <div className="mt-auto pt-4 grid grid-cols-2 gap-2.5">
+        <TombolTautan
+          ke={kePesan}
+          ragam={aksiUtama === 'pesan' ? 'utama' : 'garis'}
+          penuh
+          className={cx(aksiUtama === 'pesan' && 'col-span-2 xl:col-span-1')}
+          ikonKiri={<IkonKeranjang size={16} />}
+        >
+          {aksiUtama === 'pesan' ? 'Pesan Sekarang' : 'Pesan'}
+        </TombolTautan>
+        <TombolTautan
+          ke={`/stok/${barang.id}/koreksi`}
+          ragam={aksiUtama === 'koreksi' ? 'utama' : 'garis'}
+          penuh
+          className={cx(aksiUtama === 'pesan' && 'col-span-2 xl:col-span-1', aksiUtama === 'koreksi' && 'order-first')}
+          ikonKiri={<IkonPena size={16} />}
+        >
+          Koreksi Stok
+        </TombolTautan>
+      </div>
+    </Bagian>
+  )
+
+  /* Tiga hari pertama sesudah data terakhir, dari garis perkiraan yang sama
+     dengan grafik Tren: angka harian dan rentangnya (revisi V5, Q102). */
+  const tigaHari = trenTampil(barang, tren)
+    .filter((t) => t.aktual == null && t.prediksi != null)
+    .slice(0, 3)
+  const kartuPerkiraan =
+    mesin.status === 'memuat' ? (
+      <Kartu padat aria-busy="true" className="h-full">
+        <p className="text-kartu font-bold text-ink">{barang.nama}</p>
+        <p className="mt-1 text-isi text-ink-3">Memuat perkiraan&hellip;</p>
+      </Kartu>
+    ) : (
+      <KartuPerkiraan
+        barang={barang}
+        perkiraan={perkiraan}
+        bawah={
+          tigaHari.length > 0 && (
+            <div className="mt-4 pt-3 border-t border-line">
+              <p className="text-kecil font-semibold uppercase tracking-wide text-ink-3">Perkiraan per hari</p>
+              <ul className="mt-2 space-y-1.5">
+                {tigaHari.map((t) => (
+                  <li key={t.tanggal} className="flex items-baseline justify-between gap-3 text-isi">
+                    <span className="text-ink-2">{tanggalRingkas(t.tanggal)}</span>
+                    <span className="text-right">
+                      <strong className="font-bold text-ink tabular">
+                        {angka(t.prediksi ?? 0, 1)} {satuanTampil(barang).nama}
+                      </strong>
+                      {t.batasBawah != null && t.batasAtas != null && (
+                        <span className="ml-1.5 text-kecil text-ink-3 tabular">
+                          ({angka(t.batasBawah, 1)} sampai {angka(t.batasAtas, 1)})
+                        </span>
+                      )}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              {/* Sisa ditulis lagi di sini supaya bisa langsung dibandingkan dengan
+                  kebutuhan per hari, tanpa harus membaca grafiknya. */}
+              <p className="mt-2.5 text-kecil text-ink-3 leading-relaxed">
+                Sisa tercatat {jumlahTampil(barang, stokTampil)}. Rentang di dalam kurung adalah batas bawah dan atas
+                perkiraan.
+              </p>
+            </div>
+          )
+        }
+      />
+    )
+
+  /* Saran distributor dekat ringkasan stok (revisi 23 Okt 2026): di luar tab,
+     jadi tombol "Pesan" selalu menemukannya. */
+  const kartuSaran =
+    mesin.status === 'siap' ? (
+      <KartuSaranMesin
+        saran={mesin.saran}
+        jumlahAwal={Math.max(1, perkiraan.saranBeli)}
+        satuan={barang.kemasan[barang.kemasan.length - 1]?.nama ?? barang.satuan}
+      />
+    ) : null
+
+  const labelBatasGrafik = mesin.status === 'contoh' ? 'hari ini' : 'data terakhir'
+  const kartuTren =
+    tren.length > 0 ? (
+      <Bagian
+        id="judul-tren"
+        judul="Tren pemakaian"
+        keterangan="14 hari terakhir dan 7 hari ke depan"
+        className="h-full lg:p-4 flex flex-col"
+        /* Label metode di kanan judul bersama Rapor perkiraan (revisi V2, Q42);
+           keduanya turun ke bawah judul kalau tidak muat. */
+        bungkus
+        aksi={
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            {mesin.model && <LabelMetode {...metodePrediksi(mesin.model)} />}
+            <Link
+              to={`/stok/${barang.id}/rapor`}
+              className="inline-flex items-center gap-1 text-isi font-bold text-brand hover:underline"
+            >
+              <IkonGrafik size={15} />
+              Rapor perkiraan
+            </Link>
+          </div>
+        }
+      >
+        <GrafikTren data={trenTampil(barang, tren)} satuan={satuanTampil(barang).nama} tinggi={150} isiTinggi />
+        {/* Nama garis pembatas sama dengan yang tertulis di grafik. */}
+        <Penjelasan label="Cara membaca grafik" className="mt-1">
+          {tren.some((t) => t.aktual != null && t.prediksi != null) &&
+            `Sebelum garis “${labelBatasGrafik}”, garis merah adalah perkiraan yang dibuat 14 hari sebelumnya tanpa melihat pemakaian sesudahnya; bandingkan dengan garis pemakaian tercatat. `}
+          Sesudah garis &ldquo;{labelBatasGrafik}&rdquo;, bayangan merah adalah rentang perkiraan: sekitar 8 dari 10
+          hari jatuh di dalamnya.
+        </Penjelasan>
+      </Bagian>
+    ) : null
+
+  const riwayatKosong = (
+    <KeadaanKosong
+      padat
+      ikon={<IkonKotak size={26} />}
+      judul="Belum ada pergerakan tercatat"
+      pesan="Riwayat terisi otomatis saat kasir mencatat penjualan, saat kiriman diterima, atau saat kamu menyimpan koreksi."
+      aksi={<TombolTautan ke={`/stok/${barang.id}/koreksi`}>Koreksi Stok</TombolTautan>}
+    />
+  )
+  const daftarRiwayat = (isi: Pergerakan[]) => (
+    <ul id="daftar-riwayat" className="space-y-2">
+      {isi.map((g) => (
+        <li key={g.id}>
+          <BarisRiwayat gerak={g} barang={barang} nomorPesanan={nomorPesanan(pesanan, g)} />
+        </li>
+      ))}
+    </ul>
+  )
+
   return (
-    /* Di desktop tanpa jarak bawah sendiri: <main> sudah memberinya. Mulai
-       1280px halaman ini setinggi layar dikurangi jarak atas-bawah <main>
-       (1,5rem + 2rem), dan grafik Tren memanjang mengisi sisanya, jadi tidak ada
-       ruang kosong di layar yang lebih tinggi dari 730 (revisi V3, Q68). */
-    <div className="pb-8 lg:pb-0 xl:flex xl:flex-col xl:min-h-[calc(100dvh-3.5rem)]">
+    /* Di desktop tanpa jarak bawah sendiri: <main> sudah memberinya. */
+    <div className="pb-8 lg:pb-0">
       <KepalaHalaman
         judul={barang.nama}
         keterangan={barang.deskripsi ? `${barang.deskripsi} · ${barang.kategori}` : barang.kategori}
@@ -149,211 +433,45 @@ export default function StokDetail() {
         }
       />
 
-      {/* Mulai 1280px tiga kolom: angka dan tombol, perkiraan dan Tren, saran
-          distributor. Sisa stok, grafik Tren, dan kartu saran lalu muat satu
-          layar acuan 1536 × 730 (revisi V2, Q63), dan di layar yang lebih tinggi
-          kolom tengahnya memanjang sampai dasar layar. Di 1024–1279px dua kolom
-          dengan saran di bawah kolom kiri; di HP urutannya tetap: angka, saran,
-          lalu penjelasan. */}
-      <div className="mt-4 lg:grid lg:grid-cols-12 lg:grid-rows-[auto_1fr] lg:gap-6 lg:items-start xl:grid-rows-1 xl:flex-1 xl:items-stretch">
-        {/* ============ Kolom kiri: angka dan keputusan ============ */}
-        <div className="lg:col-start-1 lg:col-span-5 lg:row-start-1 xl:col-span-4 space-y-4">
-          {/* ---- Angka sisa ---- */}
-          <Bagian>
-            <div className="flex items-end justify-between gap-4">
-              <div className="min-w-0">
-                <p className="text-kecil font-semibold uppercase tracking-wide text-ink-3">Sisa tercatat</p>
-                <p
-                  className={cx(
-                    'mt-1 text-[2.25rem] font-extrabold leading-none tracking-tight',
-                    status === 'habis' ? 'text-kritis' : 'text-ink',
-                  )}
-                >
-                  {angkaTampil(barang, stokTampil)}
-                  <span className="ml-1.5 text-[1rem] font-semibold text-ink-3">{satuanTampil(barang).nama}</span>
-                </p>
-                {kemasan && <p className="mt-1.5 text-isi text-ink-2">= {kemasan}</p>}
-              </div>
-              <ChipStok status={status} besar />
-            </div>
-
-            {/* Berapa hari lagi stok cukup adalah milik Kartu Perkiraan di kolom
-                sebelah. Mengulangnya di sini cuma melahirkan dua kalimat yang
-                bunyinya sama — dan untuk barang yang sudah habis ia berbunyi
-                "cukup untuk ±0 hari", yang tidak menolong siapa pun. Kalimat di
-                bawah menjawab pertanyaan lain: kapan waktunya memesan. */}
-            {kurangCatatan > 0 ? (
-              /* Angka minus berarti catatannya yang salah, bukan gudangnya. */
-              <div className="mt-3 rounded-md bg-kritis-soft text-kritis-ink p-3.5">
-                <p className="text-isi font-bold">
-                  0 {satuanTampil(barang).nama} (catatan kurang {jumlahTampil(barang, kurangCatatan)})
-                </p>
-                <p className="mt-1 text-isi leading-relaxed opacity-90">
-                  Catatannya minus. Hitung barang di rak, lalu koreksi stok.
-                </p>
-                <Penjelasan label="Kenapa?">
-                  Kasir mencatat pemakaian lebih banyak daripada stok yang pernah masuk. Koreksi Stok hanya
-                  membetulkan sisanya; riwayat penjualannya tidak ikut berubah.
-                </Penjelasan>
-                <TombolTautan
-                  ke={`/stok/${barang.id}/koreksi`}
-                  ragam="garis"
+      {lebar ? (
+        /* Desktop (revisi V5, Q102): baris atas tiga kartu sama tinggi (sisa,
+           perkiraan, saran distributor), baris bawah Tren dua pertiga dan Riwayat
+           sepertiga. Tanpa tab. Di 1024 sampai 1279px dua kolom: saran, Tren, dan
+           Riwayat masing-masing selebar baris. */
+        <div className="mt-4 grid grid-cols-2 xl:grid-cols-3 gap-4 xl:gap-5 items-stretch [&>*]:min-w-0">
+          {kartuSisa}
+          <div className={cx('[&>*]:h-full', !kartuSaran && 'xl:col-span-2')}>{kartuPerkiraan}</div>
+          {kartuSaran && <div className="col-span-2 xl:col-span-1 [&>*]:h-full">{kartuSaran}</div>}
+          {kartuTren && <div className="col-span-2">{kartuTren}</div>}
+          <Bagian
+            id="judul-riwayat"
+            judul="Riwayat pergerakan"
+            keterangan={riwayat.length > 0 ? `${riwayat.length} pergerakan tercatat` : undefined}
+            aksi={
+              riwayat.length > BATAS_RIWAYAT ? (
+                <Tombol
+                  ragam="tautan"
                   ukuran="kecil"
-                  className="mt-2.5"
-                  ikonKiri={<IkonGudang size={15} />}
+                  aria-expanded={riwayatSemua}
+                  aria-controls="daftar-riwayat"
+                  onClick={() => setRiwayatSemua((s) => !s)}
                 >
-                  Koreksi Stok sekarang
-                </TombolTautan>
-              </div>
-            ) : (
-              <p className="mt-3 text-kartu text-ink-2 leading-relaxed">
-                {barang.pemakaianHarian <= 0 ? (
-                  barang.dicatatManual ? (
-                    'Barang ini kamu catat manual, jadi pemakaian hariannya tidak kami hitung sendiri.'
-                  ) : (
-                    'Belum ada data pemakaian dari kasir, jadi kami belum bisa memperkirakan kapan stok ini perlu diisi lagi.'
-                  )
-                ) : status === 'habis' ? (
-                  <>
-                    Rata-rata terpakai{' '}
-                    <strong className="text-ink">{jumlahTampil(barang, barang.pemakaianHarian)}</strong>{' '}
-                    per hari. Selama stoknya kosong, kira-kira sebanyak itu penjualan yang lepas setiap hari.
-                  </>
-                ) : (
-                  <>
-                    Rata-rata terpakai{' '}
-                    <strong className="text-ink">{jumlahTampil(barang, barang.pemakaianHarian)}</strong>{' '}
-                    per hari.{' '}
-                    {barang.batasAman <= 0 ? (
-                      'Batas amannya belum diatur, jadi kami belum bisa mengingatkan sebelum stoknya habis.'
-                    ) : hariSampaiBatas <= 0 ? (
-                      'Sisanya sudah menyentuh batas aman — ini waktunya memesan.'
-                    ) : (
-                      <>
-                        Sisanya menyentuh batas aman{' '}
-                        <strong className="text-ink">{hariLagi(hariSampaiBatas)}</strong>, dan di situ kami
-                        mengingatkan kamu.
-                      </>
-                    )}
-                  </>
-                )}
-              </p>
-            )}
-
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              {barang.kedaluwarsa && barang.ingatkanKedaluwarsa && (
-                <ChipKedaluwarsa tanggal={barang.kedaluwarsa} />
-              )}
-              {!barang.terhubungKasir && !barang.dicatatManual && (
-                <Lencana nada="menipis" ikon={<IkonPeringatan size={13} />}>
-                  Belum terhubung ke menu
-                </Lencana>
-              )}
-              {barang.dicatatManual && <Lencana nada="netral">Dicatat manual</Lencana>}
-              {kontrak && (
-                <Link to={`/kontrak/${kontrak.id}`} className="inline-flex">
-                  <Lencana nada="merek" ikon={<IkonKontrak size={13} />}>
-                    Kontrak &middot; lihat kuota
-                  </Lencana>
-                </Link>
-              )}
-            </div>
-
-            {barang.catatan && (
-              <p className="mt-3 text-isi text-ink-2 leading-relaxed border-l-2 border-line-strong pl-3">
-                {barang.catatan}
-              </p>
-            )}
-          </Bagian>
-
-          {/* ---- Sedang dikirim: angka kedua yang tidak pernah dijumlahkan ---- */}
-          {dikirim.jumlah > 0 && (
-            <Link
-              to={dikirim.pesananId ? `/pesanan/${dikirim.pesananId}` : '/pesanan'}
-              className="flex items-start gap-3 rounded-md border border-info/30 bg-info-soft text-info-ink p-3.5 hover:brightness-97"
-            >
-              <IkonPasokan size={18} className="shrink-0 mt-0.5" />
-              <span className="min-w-0 grow">
-                <span className="block text-kartu font-bold">
-                  Sedang dikirim {jumlahTampil(barang, dikirim.jumlah)}
-                </span>
-                <span className="block text-isi mt-0.5 opacity-90 leading-relaxed">
-                  {pesananDikirim ? `${pesananDikirim.nomor} · ` : ''}
-                  {dikirim.tiba ? `perkiraan tiba ${waktuNanti(dikirim.tiba)}` : 'jadwal tiba belum dipastikan'}.
-                  Belum ditambahkan ke sisa karena kiriman bisa berubah.
-                </span>
-              </span>
-              <IkonPanahKanan size={18} className="shrink-0 mt-0.5" />
-            </Link>
-          )}
-
-          {/* ---- Batas aman ---- */}
-          <Link
-            to={`/stok/${barang.id}/batas-aman`}
-            className="flex items-center gap-3 bg-surface border border-line rounded-lg p-4 min-h-[4rem] hover:border-line-strong hover:shadow-e2 transition-[border-color,box-shadow]"
+                  {riwayatSemua ? 'Lebih sedikit' : 'Lihat semua'}
+                </Tombol>
+              ) : undefined
+            }
+            className={cx('h-full lg:p-4', kartuTren ? 'col-span-2 xl:col-span-1' : 'col-span-2 xl:col-span-3')}
           >
-            <span className="min-w-0 grow">
-              <span className="flex flex-wrap items-center gap-2">
-                <span className="text-kartu font-bold text-ink">Batas aman</span>
-                <Lencana nada={lencanaBatas.nada}>{lencanaBatas.teks}</Lencana>
-              </span>
-              <span className="block mt-1 text-isi text-ink-3 leading-snug">{BANTUAN.batasAman}</span>
-            </span>
-            <span className="shrink-0 text-right">
-              <span className="block text-[1.125rem] font-bold text-ink tabular">
-                {barang.batasAman > 0 ? jumlahTampil(barang, barang.batasAman) : 'Belum diisi'}
-              </span>
-            </span>
-            <IkonPanahKanan size={18} className="shrink-0 text-ink-3" />
-          </Link>
-
-          {/* ---- Tombol aksi ----
-              Satu tombol utama menurut keadaan barang: stok minus berarti
-              angkanya salah (koreksi dulu); habis atau menipis berarti pesan.
-              "Pesan" membuka saran distributor di halaman ini bila ada, dengan
-              jumlah saran sudah terisi. Data barang diubah lewat ikon pena di kepala. */}
-          <div className="grid grid-cols-2 gap-2.5">
-            {/* Di layar tiga kolom keduanya berdampingan supaya kolom ini tetap
-                muat satu layar; tombol utamanya tetap satu. */}
-            <TombolTautan
-              ke={kePesan}
-              ragam={aksiUtama === 'pesan' ? 'utama' : 'garis'}
-              penuh
-              className={cx(aksiUtama === 'pesan' && 'col-span-2 xl:col-span-1')}
-              ikonKiri={<IkonKeranjang size={16} />}
-            >
-              {aksiUtama === 'pesan' ? 'Pesan Sekarang' : 'Pesan'}
-            </TombolTautan>
-            <TombolTautan
-              ke={`/stok/${barang.id}/koreksi`}
-              ragam={aksiUtama === 'koreksi' ? 'utama' : 'garis'}
-              penuh
-              className={cx(
-                aksiUtama === 'pesan' && 'col-span-2 xl:col-span-1',
-                aksiUtama === 'koreksi' && 'order-first',
-              )}
-              ikonKiri={<IkonPena size={16} />}
-            >
-              Koreksi Stok
-            </TombolTautan>
-          </div>
+            {riwayat.length === 0
+              ? riwayatKosong
+              : daftarRiwayat(riwayatSemua ? riwayat : riwayat.slice(0, BATAS_RIWAYAT))}
+          </Bagian>
         </div>
-
-        {/* Saran distributor dekat ringkasan stok (revisi 23 Okt 2026): dulu di
-            bawah grafik di kolom kanan dan mudah terlewat, terutama di HP. Di luar
-            tab, jadi tombol "Pesan" selalu menemukannya. */}
-        {mesin.status === 'siap' && (
-          <div className="mt-4 lg:mt-0 lg:col-start-1 lg:col-span-5 lg:row-start-2 xl:col-start-10 xl:col-span-3 xl:row-start-1">
-            <KartuSaranMesin
-              saran={mesin.saran}
-              jumlahAwal={Math.max(1, perkiraan.saranBeli)}
-              satuan={barang.kemasan[barang.kemasan.length - 1]?.nama ?? barang.satuan}
-            />
-          </div>
-        )}
-
-        {/* ============ Kolom tengah (kanan di 1024–1279px): penjelasan ============ */}
-        <div className="mt-6 lg:mt-0 lg:col-start-6 lg:col-span-7 lg:row-start-1 lg:row-span-2 xl:col-start-5 xl:col-span-5 xl:row-span-1 xl:flex xl:flex-col">
+      ) : (
+        /* HP dan tablet: angka, saran, lalu tab Ringkasan dan Riwayat. */
+        <div className="mt-4 space-y-4">
+          {kartuSisa}
+          {kartuSaran}
           <TabSegmen<TabDetail>
             tab={[
               { nilai: 'ringkasan', label: 'Ringkasan' },
@@ -362,80 +480,18 @@ export default function StokDetail() {
             aktif={tab}
             ubah={setTab}
           />
-
           {tab === 'ringkasan' ? (
-            <div role="tabpanel" aria-label="Ringkasan barang" className="mt-4 space-y-4 xl:flex-1 xl:flex xl:flex-col">
-              {mesin.status === 'memuat' ? (
-                <Kartu padat aria-busy="true">
-                  <p className="text-kartu font-bold text-ink">{barang.nama}</p>
-                  <p className="mt-1 text-isi text-ink-3">Memuat perkiraan&hellip;</p>
-                </Kartu>
-              ) : (
-                <KartuPerkiraan barang={barang} perkiraan={perkiraan} />
-              )}
-
-              {tren.length > 0 && (
-                <Bagian
-                  id="judul-tren"
-                  judul="Tren pemakaian"
-                  keterangan="14 hari terakhir dan 7 hari ke depan"
-                  className="lg:p-4 xl:flex-1 xl:flex xl:flex-col"
-                  /* Label metode di kanan judul bersama Rapor perkiraan (revisi V2,
-                     Q42); keduanya turun ke bawah judul kalau tidak muat. */
-                  bungkus
-                  aksi={
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                      {mesin.model && <LabelMetode {...metodePrediksi(mesin.model)} />}
-                      <Link
-                        to={`/stok/${barang.id}/rapor`}
-                        className="inline-flex items-center gap-1 text-isi font-bold text-brand hover:underline"
-                      >
-                        <IkonGrafik size={15} />
-                        Rapor perkiraan
-                      </Link>
-                    </div>
-                  }
-                >
-                  <GrafikTren
-                    data={trenTampil(barang, tren)}
-                    satuan={satuanTampil(barang).nama}
-                    tinggi={150}
-                    isiTinggi
-                  />
-                  {/* Nama garis pembatas sama dengan yang tertulis di grafik. */}
-                  <Penjelasan label="Cara membaca grafik" className="mt-1">
-                    {tren.some((t) => t.aktual != null && t.prediksi != null) &&
-                      `Sebelum garis “${mesin.status === 'contoh' ? 'hari ini' : 'data terakhir'}”, garis merah adalah perkiraan yang dibuat 14 hari sebelumnya tanpa melihat pemakaian sesudahnya; bandingkan dengan garis pemakaian tercatat. `}
-                    Sesudah garis &ldquo;{mesin.status === 'contoh' ? 'hari ini' : 'data terakhir'}&rdquo;, bayangan merah
-                    adalah rentang perkiraan: sekitar 8 dari 10 hari jatuh di dalamnya.
-                  </Penjelasan>
-                </Bagian>
-              )}
-
+            <div role="tabpanel" aria-label="Ringkasan barang" className="space-y-4">
+              {kartuPerkiraan}
+              {kartuTren}
             </div>
           ) : (
-            <div role="tabpanel" aria-label="Riwayat pergerakan" className="mt-4">
-              {riwayat.length === 0 ? (
-                <KeadaanKosong
-                  padat
-                  ikon={<IkonKotak size={26} />}
-                  judul="Belum ada pergerakan tercatat"
-                  pesan="Riwayat terisi otomatis saat kasir mencatat penjualan, saat kiriman diterima, atau saat kamu menyimpan koreksi."
-                  aksi={<TombolTautan ke={`/stok/${barang.id}/koreksi`}>Koreksi Stok</TombolTautan>}
-                />
-              ) : (
-                <ul className="space-y-2">
-                  {riwayat.map((g) => (
-                    <li key={g.id}>
-                      <BarisRiwayat gerak={g} barang={barang} nomorPesanan={nomorPesanan(pesanan, g)} />
-                    </li>
-                  ))}
-                </ul>
-              )}
+            <div role="tabpanel" aria-label="Riwayat pergerakan">
+              {riwayat.length === 0 ? riwayatKosong : daftarRiwayat(riwayat)}
             </div>
           )}
         </div>
-      </div>
+      )}
     </div>
   )
 }

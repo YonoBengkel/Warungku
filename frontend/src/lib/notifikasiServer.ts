@@ -3,6 +3,12 @@ import { distributorById, statusStok } from '@/data/dummy'
 import { hariLagi } from '@/lib/format'
 import { PESANAN_BERJALAN } from '@/lib/label'
 import { jumlahTampil } from '@/lib/satuan'
+import type { PetaDibaca } from '@/lib/dibaca'
+
+/** Isi yang menentukan "masih pemberitahuan yang sama": tingkat dan judulnya. */
+export function tandaNotifikasi(n: Pick<Notifikasi, 'tingkat' | 'judul'>): string {
+  return `${n.tingkat}|${n.judul}`
+}
 
 /**
  * Pemberitahuan untuk mode data server, diturunkan dari data yang sudah dimuat:
@@ -12,10 +18,13 @@ import { jumlahTampil } from '@/lib/satuan'
  *
  * Id-nya tetap per hal yang diberitahukan (`srv-stok-12`), jadi status dibaca
  * dan waktunya dipertahankan dari daftar sebelumnya setiap kali data dimuat ulang.
+ * Sesudah halaman dimuat ulang daftar sebelumnya kosong; status dibaca lalu
+ * diambil dari catatan peramban (`tersimpan`, revisi V5, Q120).
  */
 export function notifikasiDariServer(
   isi: { barang: Barang[]; pesanan: Pesanan[]; kontrak: Kontrak[] },
   sebelumnya: Notifikasi[],
+  tersimpan: PetaDibaca = {},
 ): Notifikasi[] {
   const lama = new Map(sebelumnya.filter((n) => n.id.startsWith('srv-')).map((n) => [n.id, n]))
   const sekarang = new Date().toISOString()
@@ -27,10 +36,12 @@ export function notifikasiDariServer(
     // dan naik ke atas, sesuai janji di halaman Pemberitahuan.
     const l = lama.get(n.id)
     const sama = l != null && l.tingkat === n.tingkat && l.judul === n.judul
+    const simpanan = !l ? tersimpan[n.id] : undefined
+    const samaSimpanan = simpanan != null && simpanan.tanda === tandaNotifikasi(n)
     hasil.push({
       ...n,
-      waktu: sama ? l.waktu : sekarang,
-      dibaca: sama ? l.dibaca : false,
+      waktu: sama ? l.waktu : samaSimpanan && simpanan.waktu ? simpanan.waktu : sekarang,
+      dibaca: sama ? l.dibaca : samaSimpanan,
       dibisukanSampai: null,
     })
   }

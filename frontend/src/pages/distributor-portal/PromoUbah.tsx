@@ -59,10 +59,10 @@ function Pratinjau({ draf, id }: { draf: Promo; id: string }) {
       <JudulBagian
         id={id}
         judul="Tampil di Beranda pemilik usaha"
-        keterangan="Logonya dipilih dari barang yang ikut, warnanya dari jenis promo."
+        keterangan="Foto dan warnanya mengikuti jenis promo, sama untuk semua toko."
       />
       <div className="max-w-[24rem]">
-        <KartuPromo promo={draf} lebar pratinjau />
+        <KartuPromo promo={draf} pratinjau />
       </div>
     </section>
   )

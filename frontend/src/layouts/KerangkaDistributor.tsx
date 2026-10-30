@@ -15,8 +15,8 @@ import { useAplikasi, useDistributorAktif, useJumlahPerluKonfirmasi } from '@/st
 import { Toast } from '@/components/ui/umpanBalik'
 import { Avatar } from '@/components/ui/dasar'
 import { TandaMerek } from '@/components/ui/Merek'
-import { LoncengMelayang, usePemberitahuanDistributor } from '@/components/domain/Pemberitahuan'
-import { TautanSamping } from '@/components/ui/navigasi'
+import { LoncengMelayang, useDibacaDistributor, usePemberitahuanDistributor } from '@/components/domain/Pemberitahuan'
+import { MenuSamping } from '@/components/ui/MenuSamping'
 
 /**
  * Kerangka Portal Distributor: sistem desain yang sama dengan KerangkaAplikasi.
@@ -56,7 +56,7 @@ export default function KerangkaDistributor() {
   const racun = useAplikasi((s) => s.racun)
   const tutupRacun = useAplikasi((s) => s.tutupRacun)
   const perluKonfirmasi = useJumlahPerluKonfirmasi()
-  const pemberitahuan = usePemberitahuanDistributor()
+  const { daftar: pemberitahuan, baca, bacaSemua } = useDibacaDistributor(usePemberitahuanDistributor())
   const distributor = useDistributorAktif()
   const jumlahTindakan = pemberitahuan.filter((b) => b.perluTindakan).length
   /* Sama dengan portal usaha (revisi V2, Q58): halaman pemberitahuan tanpa menu
@@ -73,87 +73,40 @@ export default function KerangkaDistributor() {
         Langsung ke isi halaman
       </a>
 
-      {/* Navigasi samping: hanya muncul di layar lebar, isinya sama persis */}
-      <nav
-        aria-label="Menu portal distributor"
-        className={cx(
-          'hidden',
-          !fokus && 'lg:flex lg:flex-col lg:shrink-0 lg:border-r lg:border-line lg:bg-surface lg:h-dvh lg:sticky lg:top-0',
-        )}
-        style={{ width: 'var(--rail-w)' }}
-      >
-        {/* Merek aplikasi di atas, nama toko di blok akun bawah (revisi V4, Q93) */}
-        <div className="px-5 py-5">
-          <Link to="/distributor-portal" className="flex items-center gap-2.5 min-w-0">
-            <TandaMerek ukuran={36} />
-            <span className="min-w-0">
-              <span className="block font-extrabold text-ink text-subjudul tracking-tight leading-tight">Turnify Flow</span>
-              <span className="block text-kecil text-ink-3">Portal Distributor</span>
-            </span>
-          </Link>
-        </div>
-
-        <div className="px-3 flex flex-col gap-1">
-          {TAB.map(({ ke, label, Ikon }) => {
-            const terpilih = tabDistributorAktif(pathname, ke)
-            return (
-              <NavLink
-                key={ke}
-                to={ke}
-                end={ke === '/distributor-portal'}
-                className={cx(
-                  'flex items-center gap-3 h-12 px-3 rounded-md font-semibold text-kartu transition-colors',
-                  terpilih
-                    ? 'bg-brand-soft text-brand-soft-ink'
-                    : 'text-ink-2 hover:bg-sunken hover:text-ink',
-                )}
-              >
-                <Ikon size={22} />
-                <span className="grow">{label}</span>
-                {/* Angka pesanan yang menunggu dijawab, langsung di menunya. */}
-                {ke === '/distributor-portal/pesanan' && perluKonfirmasi > 0 && (
-                  <span
-                    aria-label={`${perluKonfirmasi} menunggu konfirmasi`}
-                    className="min-w-[1.25rem] h-5 px-1.5 rounded-full bg-kritis text-ink-inverse text-[0.6875rem] font-bold grid place-items-center tabular"
-                  >
-                    {perluKonfirmasi}
-                  </span>
-                )}
-              </NavLink>
-            )
-          })}
-        </div>
-
-        {/* Ringkasan Penjualan (revisi 23 Okt). Pemberitahuan tidak lagi di sini:
-            lonceng melayang di pojok kanan atas (revisi V2). Lacak Pesanan juga
-            tidak: ia dibuka dari halaman Pesanan Masuk (revisi V3, Q74). */}
-        <div className="mt-3 mx-3 pt-3 border-t border-line flex flex-col gap-1">
-          <TautanSamping
-            ke="/distributor-portal/penjualan"
-            aktif={pathname.startsWith('/distributor-portal/penjualan')}
-            Ikon={IkonGrafik}
-            label="Ringkasan Penjualan"
-          />
-        </div>
-
-        {/* Blok akun seperti di portal usaha: pintu ke halaman akun, yang kini
-            juga memuat alat uji purwarupa dari pita kuning yang lama. */}
-        <div className="mt-auto p-3 border-t border-line">
-          <Link
-            to="/distributor-portal/profil"
-            className={cx(
-              'flex items-center gap-3 p-2.5 rounded-md transition-colors',
-              pathname.startsWith('/distributor-portal/profil') ? 'bg-sunken' : 'hover:bg-sunken',
-            )}
-          >
-            <Avatar nama={distributor.nama} warna={distributor.warna} ukuran={36} />
-            <span className="min-w-0">
-              <span className="block text-isi font-bold text-ink truncate">{distributor.nama}</span>
-              <span className="block text-kecil text-ink-3 truncate">Lihat akun</span>
-            </span>
-          </Link>
-        </div>
-      </nav>
+      {/* Navigasi samping: hanya muncul di layar lebar, isinya sama persis.
+          Merek aplikasi di atas, nama toko di kartu akun bawah (revisi V4, Q93),
+          dengan rancangan yang sama dengan portal usaha (revisi V5, Q111).
+          Angka pesanan yang menunggu dijawab langsung di menunya. Pemberitahuan
+          di pojok kanan atas halaman, Lacak Pesanan dibuka dari Pesanan Masuk. */}
+      <MenuSamping
+        label="Menu portal distributor"
+        merekKe="/distributor-portal"
+        subjudul="Portal Distributor"
+        sembunyi={fokus}
+        utama={TAB.map(({ ke, label, Ikon }) => ({
+          ke,
+          label,
+          Ikon,
+          aktif: tabDistributorAktif(pathname, ke),
+          ...(ke === '/distributor-portal/pesanan'
+            ? { angka: perluKonfirmasi, labelAngka: `${perluKonfirmasi} menunggu konfirmasi`, nadaAngka: 'kritis' as const }
+            : {}),
+        }))}
+        tambahan={[
+          {
+            ke: '/distributor-portal/penjualan',
+            label: 'Ringkasan Penjualan',
+            Ikon: IkonGrafik,
+            aktif: pathname.startsWith('/distributor-portal/penjualan'),
+          },
+        ]}
+        akun={{
+          ke: '/distributor-portal/profil',
+          nama: distributor.nama,
+          warna: distributor.warna,
+          aktif: pathname.startsWith('/distributor-portal/profil'),
+        }}
+      />
 
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Kepala halaman: siapa yang sedang dilihat, dan apa yang menunggu */}
@@ -199,7 +152,15 @@ export default function KerangkaDistributor() {
         </main>
       </div>
 
-      {!fokus && <LoncengMelayang ke="/distributor-portal/pemberitahuan" jumlah={jumlahTindakan} />}
+      {!fokus && (
+        <LoncengMelayang
+          butir={pemberitahuan}
+          jumlah={jumlahTindakan}
+          keSemua="/distributor-portal/pemberitahuan"
+          baca={baca}
+          bacaSemua={bacaSemua}
+        />
+      )}
 
       {/* Navigasi bawah: zona jempol, hanya di layar sempit */}
       <nav

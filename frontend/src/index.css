@@ -49,6 +49,44 @@
   --c-kuning: #ffcc00;
   --c-kuning-ink: #111a23;
 
+  /* Menu samping desktop (revisi V5, Q111, Q112, Q115): gradien dari keluarga
+     ungu merek, bukan ungu kebiruan referensi, dengan cahaya coral di kiri bawah.
+     Teks putih di atasnya 8,05:1 (atas) sampai 11,86:1 (bawah), di sorotan hover
+     5,78:1. Pil menu aktif memakai coral yang digelapkan supaya teks putih tetap
+     lolos: 5,34:1 sampai 4,78:1 (coral referensi #E55A1C hanya 3,6:1). */
+  --c-samping-atas: #6431b0;
+  --c-samping-bawah: #4a148c;
+  --c-samping-cahaya: rgb(255 138 76 / 0.28);
+  --c-samping-ink: #ffffff;
+  --c-samping-ink-2: rgb(255 255 255 / 0.78);
+  --c-samping-hover: rgb(255 255 255 / 0.14);
+  --c-samping-garis: rgb(255 255 255 / 0.26);
+  --c-pil-1: #bf3f0b;
+  --c-pil-2: #c9470f;
+  --c-pil-bayang: rgb(191 63 11 / 0.38);
+  /* Kartu akun kaca di dasar menu: nama 10,3:1, "Lihat akun" 5,6:1. */
+  --c-akun-samping: rgb(255 255 255 / 0.82);
+  --c-akun-samping-hover: rgb(255 255 255 / 0.92);
+  --c-akun-samping-garis: rgb(255 255 255 / 0.7);
+  --c-akun-samping-bayang: rgb(36 14 92 / 0.22);
+  --c-akun-samping-ink: #3a0a73;
+  --c-akun-samping-ink-2: #5b4a7a;
+
+  /* Kartu promo berfoto (revisi V5, Q107): bayangan warna jenis promo di atas
+     foto, sama di kedua tema karena fotonya pun sama. Teks putih di bagian
+     bawah paling sedikit 4,8:1 walau fotonya putih polos; lencana jenis berupa
+     pil putih bertinta warna jenisnya (8,2:1 sampai 14:1). */
+  --c-promo-cuci: #8a3408;
+  --c-promo-baru: #4a148c;
+  --c-promo-anggota: #2d1258;
+  --c-promo-redup: #3a4854;
+  --c-foto-ink: #ffffff;
+  --c-foto-ink-2: rgb(255 255 255 / 0.9);
+  --c-foto-pil: #ffffff;
+  /* Sapuan stabilo di bawah nama usaha (kepala Beranda, revisi V5, Q106):
+     coral pudar. Ungu merek di atasnya 8,7:1. */
+  --c-stabilo: rgb(255 127 80 / 0.32);
+
   /* Status stok & sistem — selalu dipasangkan dengan ikon + label,
      tidak pernah mengandalkan warna saja (WCAG 1.4.1). */
   --c-aman: #15803d;
@@ -79,6 +117,10 @@
   --c-seri-1: #0ba393;
   --c-seri-2: #eb6834;
   --c-seri-3: #4a3aa7;
+  /* Biru untuk donat status pesanan (revisi V5), berurutan seri-2, seri-1,
+     seri-4: lolos validator di semua pasangan, buta warna dE 13,0 (protan),
+     penglihatan normal dE 18,2, kontras >= 3:1. */
+  --c-seri-4: #2a78d6;
   /* Garis perkiraan Mesin 1: merah atas permintaan dosen pengampu (16 Okt 2026).
      Token grafik, BUKAN warna status kritis. Berpasangan dengan seri-1 (garis
      aktual) dan lolos validasi: pemisahan buta warna dE 10,9 (deutan),
@@ -136,6 +178,27 @@
   --c-aksen: #e9744b;
   --c-aksen-ink: #0b1116;
 
+  /* Menu samping tema gelap: ungu merek yang dipekatkan, teks 13,78:1 sampai
+     15,89:1, teks redup 9,93:1. Pil coral sama dengan tema terang, karena teks di
+     atasnya tetap putih. Kartu akun menjadi kaca gelap (nama 11,58:1, "Lihat
+     akun" 7,23:1). */
+  --c-samping-atas: #2d1258;
+  --c-samping-bawah: #1d0b3a;
+  --c-samping-cahaya: rgb(233 116 75 / 0.16);
+  --c-samping-ink: #f3eefc;
+  --c-samping-ink-2: #c9b8ea;
+  --c-samping-hover: rgb(255 255 255 / 0.08);
+  --c-samping-garis: rgb(255 255 255 / 0.14);
+  --c-pil-bayang: rgb(0 0 0 / 0.45);
+  --c-akun-samping: rgb(255 255 255 / 0.1);
+  --c-akun-samping-hover: rgb(255 255 255 / 0.16);
+  --c-akun-samping-garis: rgb(255 255 255 / 0.14);
+  --c-akun-samping-bayang: rgb(0 0 0 / 0.35);
+  --c-akun-samping-ink: #f3eefc;
+  --c-akun-samping-ink-2: #c9b8ea;
+  /* Lebih tipis di tema gelap: ungu terang di atasnya tetap 3,9:1 (teks besar). */
+  --c-stabilo: rgb(233 116 75 / 0.22);
+
   --c-aman: #4ade80;
   --c-aman-soft: #102a1a;
   --c-aman-ink: #86efac;
@@ -160,6 +223,8 @@
   --c-seri-1: #0da596;
   --c-seri-2: #e2703a;
   --c-seri-3: #8577dd;
+  /* Set gelap donat status: dE 12,7 (protan), 15,9 (normal), kontras >= 3:1. */
+  --c-seri-4: #4a8fe8;
   /* Pasangan gelap seri-1: dE 9,5 (deutan), 26,9 (normal), kontras >= 3:1. */
   --c-seri-perkiraan: #e66767;
   --c-pita-perkiraan: rgb(230 103 103 / 0.24);
@@ -195,6 +260,20 @@
   --color-kuning: var(--c-kuning);
   --color-kuning-ink: var(--c-kuning-ink);
 
+  --color-samping-ink: var(--c-samping-ink);
+  --color-samping-ink-2: var(--c-samping-ink-2);
+  --color-samping-hover: var(--c-samping-hover);
+  --color-samping-garis: var(--c-samping-garis);
+  --color-akun-samping-ink: var(--c-akun-samping-ink);
+  --color-akun-samping-ink-2: var(--c-akun-samping-ink-2);
+  --color-promo-cuci: var(--c-promo-cuci);
+  --color-promo-baru: var(--c-promo-baru);
+  --color-promo-anggota: var(--c-promo-anggota);
+  --color-promo-redup: var(--c-promo-redup);
+  --color-foto-ink: var(--c-foto-ink);
+  --color-foto-ink-2: var(--c-foto-ink-2);
+  --color-foto-pil: var(--c-foto-pil);
+
   --color-aman: var(--c-aman);
   --color-aman-soft: var(--c-aman-soft);
   --color-aman-ink: var(--c-aman-ink);
@@ -217,6 +296,7 @@
   --color-seri-1: var(--c-seri-1);
   --color-seri-2: var(--c-seri-2);
   --color-seri-3: var(--c-seri-3);
+  --color-seri-4: var(--c-seri-4);
   --color-seri-perkiraan: var(--c-seri-perkiraan);
   --color-grid: var(--c-grid);
   --color-sumbu: var(--c-sumbu);
@@ -379,6 +459,126 @@ body {
 }
 .dark .peta-lacak .leaflet-control-attribution a {
   color: var(--c-brand);
+}
+
+/* ============================================================
+   Menu samping desktop (revisi V5, Q111): rancangan teman Ilham
+   (referensi/Revisi 30 Oct V5/SIdebar.html), disesuaikan ke token.
+   ============================================================ */
+
+.menu-samping {
+  background:
+    radial-gradient(circle at 10% 108%, var(--c-samping-cahaya) 0, transparent 42%),
+    linear-gradient(180deg, var(--c-samping-atas) 0%, var(--c-samping-bawah) 100%);
+}
+
+/* Penanda menu aktif: satu tab yang bergeser antarmenu. Latarnya warna halaman,
+   memanjang 1px melewati tepi menu supaya menyambung ke isi, dengan lengkung
+   cekung di atas dan bawahnya. Di dalamnya pil coral. */
+.penanda-samping {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: -1px;
+  z-index: 0;
+  border-radius: var(--r-xl) 0 0 var(--r-xl);
+  background: var(--c-bg);
+  pointer-events: none;
+}
+.penanda-samping::before,
+.penanda-samping::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  width: 28px;
+  height: 28px;
+}
+.penanda-samping::before {
+  top: -28px;
+  background: radial-gradient(circle at 0 0, transparent 27.5px, var(--c-bg) 28px);
+}
+.penanda-samping::after {
+  bottom: -28px;
+  background: radial-gradient(circle at 0 100%, transparent 27.5px, var(--c-bg) 28px);
+}
+/* Bergeser halus sesudah posisi pertama terpasang. Gerak dikurangi mematikannya
+   lewat aturan prefers-reduced-motion di bawah. */
+.penanda-samping-gerak {
+  transition:
+    transform 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    height 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.penanda-samping-pil {
+  position: absolute;
+  inset: 4px 0 4px 4px;
+  border-radius: var(--r-lg);
+  background: linear-gradient(90deg, var(--c-pil-1), var(--c-pil-2));
+  box-shadow: 0 6px 14px var(--c-pil-bayang);
+}
+
+/* Kartu akun kaca di dasar menu */
+.kartu-akun-samping {
+  background: var(--c-akun-samping);
+  border: 1px solid var(--c-akun-samping-garis);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 8px 20px var(--c-akun-samping-bayang);
+  transition:
+    background-color 200ms ease,
+    transform 200ms ease;
+}
+.kartu-akun-samping:hover,
+.kartu-akun-samping[aria-current='page'] {
+  background: var(--c-akun-samping-hover);
+}
+.kartu-akun-samping:hover {
+  transform: translateY(-2px);
+}
+
+/* Sapuan stabilo tipis di bawah nama usaha: hanya sepertiga bawah huruf yang
+   tertutup, dan tiap baris dibungkus sendiri bila namanya turun baris. */
+.stabilo {
+  background: linear-gradient(transparent 58%, var(--c-stabilo) 58%, var(--c-stabilo) 94%, transparent 94%);
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  padding: 0 0.12em;
+  margin: 0 -0.12em;
+}
+
+/* Bayangan kartu promo berfoto: pekat di bawah tempat teks, bening di atas
+   supaya fotonya terlihat. Warnanya dari `--bayang`, dipasang per jenis promo. */
+.bayang-promo {
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--bayang) 95%, transparent) 0%,
+    color-mix(in srgb, var(--bayang) 78%, transparent) 42%,
+    color-mix(in srgb, var(--bayang) 15%, transparent) 75%,
+    transparent 100%
+  );
+}
+/* Spanduk rincian promo: teksnya lebih banyak dan naik lebih tinggi, jadi
+   bayangannya pekat sampai 60% tinggi (teks putih tetap 5,7:1 di foto putih). */
+.bayang-promo-pekat {
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--bayang) 95%, transparent) 0%,
+    color-mix(in srgb, var(--bayang) 85%, transparent) 60%,
+    color-mix(in srgb, var(--bayang) 45%, transparent) 85%,
+    color-mix(in srgb, var(--bayang) 20%, transparent) 100%
+  );
+}
+.bayang-promo-cuci {
+  --bayang: var(--c-promo-cuci);
+}
+.bayang-promo-baru {
+  --bayang: var(--c-promo-baru);
+}
+.bayang-promo-anggota {
+  --bayang: var(--c-promo-anggota);
+}
+/* Promo yang sudah berakhir (daftar promo distributor): kelabu. */
+.bayang-promo-redup {
+  --bayang: var(--c-promo-redup);
 }
 
 /* ============================================================

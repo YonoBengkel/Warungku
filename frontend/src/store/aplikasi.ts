@@ -63,7 +63,8 @@ import {
   umkmById,
   warnaTitikUntuk,
 } from '@/data/dummy'
-import { notifikasiDariServer } from '@/lib/notifikasiServer'
+import { notifikasiDariServer, tandaNotifikasi } from '@/lib/notifikasiServer'
+import { bacaPetaDibaca, kunciDibacaUsaha, simpanPetaDibaca, type PetaDibaca } from '@/lib/dibaca'
 import { jumlahTampil } from '@/lib/satuan'
 import {
   ambilBarang,
@@ -168,8 +169,6 @@ interface KeadaanAplikasi {
   /** Profil seluruh distributor. Distributor aktif mengubah kategori, area kirim, dan info usahanya. */
   distributor: Distributor[]
   tema: 'terang' | 'gelap'
-  /** Mensimulasikan layanan perkiraan yang sedang tidak sehat, untuk menguji turun derajat. */
-  layananPerkiraan: 'sehat' | 'tersimpan' | 'mati'
   masuk: boolean
   /**
    * Asal data gudang. `server`: barang, perkiraan, dan saran dibaca dari API
@@ -200,7 +199,6 @@ interface KeadaanAplikasi {
 
   /* Tampilan & sesi */
   aturTema: (t: 'terang' | 'gelap') => void
-  aturLayananPerkiraan: (v: 'sehat' | 'tersimpan' | 'mati') => void
   aturMasuk: (v: boolean) => void
   /** Masuk lewat API. Melempar GalatApi (ditolak) atau ServerTakTerjangkau (server mati). */
   masukServer: (email: string, kataSandi: string) => Promise<void>
@@ -601,7 +599,6 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
   katalog: daftarPenawaran,
   distributor: daftarDistributor,
   tema: temaAwal(),
-  layananPerkiraan: 'sehat',
   // Dimulai dari keadaan belum masuk supaya "/" benar-benar memperlihatkan
   // landing page. Rute lain tidak dijaga: ini purwarupa antarmuka, jadi
   // membuka /beranda langsung tetap boleh dan memang dipakai saat memeriksa layar.
@@ -628,7 +625,6 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
     set({ tema: t })
   },
 
-  aturLayananPerkiraan: (v) => set({ layananPerkiraan: v }),
   aturMasuk: (v) => {
     if (v) return set({ masuk: true })
     // Keluar: sesi server dilepas dan gudang kembali ke data contoh.
@@ -2036,11 +2032,6 @@ export function useBarangPerluPerhatian(): Barang[] {
   )
 }
 
-/** Badge lonceng hanya menghitung yang benar-benar butuh tindakan. */
-export function useJumlahPerluTindakan(): number {
-  return useAplikasi((s) => s.notifikasi.filter((n) => n.butuhTindakan && !n.dibaca).length)
-}
-
 export function useJumlahKeranjang(): number {
   return useAplikasi((s) => s.keranjang.reduce((a, k) => a + k.baris.length, 0))
 }
@@ -2121,11 +2112,27 @@ useAplikasi.subscribe((s, sebelum) => {
 
 // Mode data server: pemberitahuan diturunkan ulang setiap stok, pesanan, atau
 // kontrak berubah (dimuat, diterima, dipesan). Penjaga di atas mencegah
-// putaran: setState di sini hanya mengubah notifikasi.
+// putaran: setState di sini hanya mengubah notifikasi. Status dibacanya diambil
+// dari catatan peramban milik usaha ini (revisi V5, Q120).
 useAplikasi.subscribe((s, sebelum) => {
   if (s.sumberData !== 'server') return
   if (s.barang === sebelum.barang && s.pesanan === sebelum.pesanan && s.kontrak === sebelum.kontrak && s.sumberData === sebelum.sumberData) return
-  useAplikasi.setState({ notifikasi: notifikasiDariServer(s, s.notifikasi) })
+  const tersimpan = s.sesiServer ? bacaPetaDibaca(kunciDibacaUsaha(s.sesiServer.usahaId)) : {}
+  useAplikasi.setState({ notifikasi: notifikasiDariServer(s, s.notifikasi, tersimpan) })
+})
+
+// Status dibaca disimpan setiap kali daftar pemberitahuan berubah. Yang disimpan
+// hanya pemberitahuan yang masih ada, jadi barang yang pulih lalu menipis lagi
+// muncul sebagai belum dibaca. Daftar kosong (sesaat sesudah masuk, sebelum data
+// dimuat) tidak menimpa catatan.
+useAplikasi.subscribe((s, sebelum) => {
+  if (s.notifikasi === sebelum.notifikasi || s.sumberData !== 'server' || !s.sesiServer) return
+  if (s.notifikasi.length === 0) return
+  const peta: PetaDibaca = {}
+  for (const n of s.notifikasi) {
+    if (n.dibaca && n.id.startsWith('srv-')) peta[n.id] = { tanda: tandaNotifikasi(n), waktu: n.waktu }
+  }
+  simpanPetaDibaca(kunciDibacaUsaha(s.sesiServer.usahaId), peta)
 })
 
 useAplikasi.subscribe((s, sebelum) => {

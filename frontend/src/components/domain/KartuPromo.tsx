@@ -1,11 +1,10 @@
 import type { ComponentType } from 'react'
 import { Link } from 'react-router-dom'
-import { IkonJam, IkonKotak, IkonBintang, IkonSinkron, IkonToko } from '@/icons'
+import { IkonJam, IkonKilau, IkonLabel, IkonMahkota } from '@/icons'
 import { distributorById } from '@/data/dummy'
 import { LABEL_PROMO } from '@/lib/label'
 import { cx, hariLagi, persen, rupiah, tanggalRingkas } from '@/lib/format'
 import type { JenisPromo, Promo, RincianHarga } from '@/lib/types'
-import { GlyphPromo, useKategoriLogoPromo } from './logoPromo'
 
 /**
  * Kartu promo distributor.
@@ -19,128 +18,169 @@ import { GlyphPromo, useKategoriLogoPromo } from './logoPromo'
  * toko tidak pernah ada di dalam template: ia dibaca dari `distributorById`
  * saat dirender. Efeknya di layar, pemilik warung mengenali "ini cuci gudang"
  * dari bentuk kartunya sebelum sempat membaca satu kata pun.
+ *
+ * Sejak revisi V5 (Q107) rupa itu berupa satu foto per jenis promo dengan
+ * bayangan warna jenisnya, menggantikan logo per kategori barang dari V4.
  */
 
 type Ikon = ComponentType<{ size?: number; className?: string }>
 
 /**
- * Latar sengaja memakai pasangan `*-soft` + `*-ink` yang sudah dipakai di
- * seluruh aplikasi, bukan gradien karangan baru. Pasangan itu sudah diuji
- * kontrasnya di tema terang DAN gelap, sedangkan warna baru harus diuji ulang
- * dua kali untuk keuntungan yang tidak dirasakan siapa pun.
- *
- * `aksen` dipakai untuk ubin logo dan lencana jenis promo: warna padat
- * dengan `text-ink-inverse`, bukan `text-white`, supaya tetap terbaca saat
- * token warnanya berubah terang di tema gelap. `Ikon` kini hanya untuk
- * lencana kecil di jalur beli; kartu dan halaman promo memakai `LogoPromo`.
+ * - `latar` dan `teks`: pasangan `*-soft` + `*-ink` untuk lencana kecil di jalur
+ *   beli (`LencanaPromo`), sudah diuji kontrasnya di kedua tema.
+ * - `bayang` dan `tinta`: warna jenis di kartu berfoto, untuk bayangan foto dan
+ *   tinta lencana jenis di atas pil putih.
  */
 export const TEMPLATE_PROMO: Record<
   JenisPromo,
-  { latar: string; teks: string; aksen: string; Ikon: Ikon }
+  { latar: string; teks: string; bayang: string; tinta: string; Ikon: Ikon }
 > = {
   'cuci-gudang': {
     latar: 'bg-menipis-soft',
     teks: 'text-menipis-ink',
-    aksen: 'bg-menipis text-ink-inverse',
-    Ikon: IkonKotak,
+    bayang: 'bayang-promo-cuci',
+    tinta: 'text-promo-cuci',
+    Ikon: IkonLabel,
   },
   'produk-baru': {
     latar: 'bg-brand-soft',
     teks: 'text-brand-soft-ink',
-    aksen: 'bg-brand text-ink-inverse',
-    Ikon: IkonBintang,
+    bayang: 'bayang-promo-baru',
+    tinta: 'text-promo-baru',
+    Ikon: IkonKilau,
   },
   membership: {
     latar: 'bg-info-soft',
     teks: 'text-info-ink',
-    aksen: 'bg-info text-ink-inverse',
-    Ikon: IkonSinkron,
+    bayang: 'bayang-promo-anggota',
+    tinta: 'text-promo-anggota',
+    Ikon: IkonMahkota,
   },
 }
 
 /**
- * Logo promo (revisi V4, Q92): glyph kategori barangnya di ubin berwarna jenis
- * promo. Dua promo Cuci Gudang kini berbeda rupa bila barangnya berbeda, tapi
- * tetap sama-sama jingga. `redup` untuk promo yang sudah berakhir.
+ * Foto per jenis promo (revisi V5, Q114): foto Unsplash 1080 px di
+ * `public/gambar/promo/`, pemberi kreditnya di DESIGN.md. `posisi` menjaga
+ * bagian fotonya yang paling bercerita tetap terlihat di kartu yang pendek.
  */
-export function LogoPromo({
-  promo,
-  ukuran = 44,
-  redup,
-}: {
-  promo: Pick<Promo, 'jenis' | 'penawaranIds'>
-  ukuran?: number
-  redup?: boolean
-}) {
-  const kategori = useKategoriLogoPromo(promo)
+const FOTO_PROMO: Record<JenisPromo, { berkas: string; posisi: string }> = {
+  'cuci-gudang': { berkas: 'cuci-gudang.jpg', posisi: 'center 35%' },
+  'produk-baru': { berkas: 'produk-baru.jpg', posisi: 'center 40%' },
+  membership: { berkas: 'keanggotaan.jpg', posisi: 'center 55%' },
+}
+
+/** Warna jenis di bawah foto, tampil selama fotonya belum termuat. */
+export const LATAR_FOTO: Record<JenisPromo, string> = {
+  'cuci-gudang': 'bg-promo-cuci',
+  'produk-baru': 'bg-promo-baru',
+  membership: 'bg-promo-anggota',
+}
+
+/** Foto jenis promo sebagai latar: kartu promo dan spanduk rincian promo (`pekat`). */
+export function FotoPromo({ jenis, redup, pekat }: { jenis: JenisPromo; redup?: boolean; pekat?: boolean }) {
+  const foto = FOTO_PROMO[jenis]
+  return (
+    <>
+      <img
+        src={`${import.meta.env.BASE_URL}gambar/promo/${foto.berkas}`}
+        alt=""
+        loading="lazy"
+        decoding="async"
+        className={cx('absolute inset-0 size-full object-cover', redup && 'grayscale')}
+        style={{ objectPosition: foto.posisi }}
+      />
+      <span
+        aria-hidden="true"
+        className={cx(
+          'absolute inset-0',
+          pekat ? 'bayang-promo-pekat' : 'bayang-promo',
+          redup ? 'bayang-promo-redup' : TEMPLATE_PROMO[jenis].bayang,
+        )}
+      />
+    </>
+  )
+}
+
+/** Lencana jenis promo: pil putih bertinta warna jenisnya, di atas foto. */
+export function LencanaJenisPromo({ jenis, redup }: { jenis: JenisPromo; redup?: boolean }) {
+  const { Ikon, tinta } = TEMPLATE_PROMO[jenis]
   return (
     <span
-      aria-hidden="true"
-      style={{ width: ukuran, height: ukuran, borderRadius: Math.round(ukuran * 0.27) }}
-      className={cx('shrink-0 grid place-items-center', redup ? 'bg-sunken text-ink-3' : TEMPLATE_PROMO[promo.jenis].aksen)}
+      className={cx(
+        'inline-flex items-center gap-1.5 rounded-full bg-foto-pil px-2.5 py-1.5 text-kecil font-bold',
+        redup ? 'text-promo-redup' : tinta,
+      )}
     >
-      <GlyphPromo kategori={kategori} size={Math.round(ukuran * 0.6)} />
+      <Ikon size={14} className="shrink-0" />
+      {LABEL_PROMO[jenis]}
     </span>
   )
 }
 
+/**
+ * Kartu promo berfoto (revisi V5, Q107): Beranda, halaman semua promo, daftar
+ * promo distributor, dan pratinjaunya, supaya keempatnya sama persis.
+ */
 export function KartuPromo({
   promo,
-  lebar,
   pratinjau,
+  ke,
+  redup,
 }: {
   promo: Promo
-  lebar?: boolean
   /** Tampilan saja, bukan tautan: dipakai portal distributor untuk melihat kartunya sendiri. */
   pratinjau?: boolean
+  /** Tujuan kartu; bawaannya rincian promo untuk pemilik usaha. */
+  ke?: string
+  /** Promo yang sudah berakhir: foto kelabu dan tanggal berakhirnya. */
+  redup?: boolean
 }) {
-  const template = TEMPLATE_PROMO[promo.jenis]
   const namaToko = distributorById(promo.distributorId)?.nama ?? 'Distributor'
   const sisaHari = promo.berakhir
     ? Math.ceil((+new Date(promo.berakhir) - Date.now()) / 86_400_000)
     : null
-  // Kartu putih (revisi 23 Okt, pola wadah promo coral). Jenis promo tetap
-  // dikenali dari medali ikon dan lencana berwarna penuh, yang sama untuk semua
-  // toko; latar lembut jenisnya pindah ke lencana potongan.
   const kelas = cx(
-    'group flex flex-col gap-2.5 rounded-lg p-4 min-h-[9.5rem] bg-surface text-ink border border-line',
-    !pratinjau && 'transition-[border-color,box-shadow] duration-150 hover:border-line-strong hover:shadow-e2',
-    lebar ? 'w-full' : 'snap-start shrink-0 w-[85%] sm:w-[20rem] lg:w-full',
+    'relative isolate block h-60 overflow-hidden rounded-xl',
+    redup ? 'bg-promo-redup' : LATAR_FOTO[promo.jenis],
+    !pratinjau && 'transition-[transform,box-shadow] duration-200 hover:-translate-y-[3px] hover:shadow-e3',
   )
 
   const isi = (
     <>
-      <div className="flex items-center gap-2.5">
-        <LogoPromo promo={promo} ukuran={40} />
-        <span
-          className={cx(
-            'inline-flex items-center rounded-sm px-2 py-[3px] text-[0.6875rem] font-bold',
-            template.aksen,
-          )}
-        >
-          {LABEL_PROMO[promo.jenis]}
-        </span>
-      </div>
-
-      <p className="text-subjudul font-extrabold leading-snug line-clamp-2">{promo.judul}</p>
-
-      <p className="flex items-center gap-1.5 text-isi font-semibold text-ink-2 min-w-0">
-        <IkonToko size={15} className="shrink-0" />
-        <span className="truncate">{namaToko}</span>
-      </p>
-
-      <div className="mt-auto flex flex-wrap items-center gap-2">
-        {promo.potonganPersen != null && (
-          <span className={cx('inline-flex items-center rounded-sm px-2 py-[3px] text-kecil font-bold', template.latar, template.teks)}>
-            Potongan {persen(promo.potonganPersen)}
-          </span>
-        )}
-        {promo.berakhir && sisaHari != null && (
-          <span className="inline-flex items-center gap-1 text-kecil font-semibold text-ink-2">
-            <IkonJam size={13} className="shrink-0" />
-            Sampai {tanggalRingkas(promo.berakhir)} · {hariLagi(sisaHari)}
-          </span>
-        )}
+      <FotoPromo jenis={promo.jenis} redup={redup} />
+      <div className="relative h-full flex flex-col justify-between gap-3 px-[1.125rem] pt-4 pb-[1.125rem]">
+        <div className="flex items-start">
+          <LencanaJenisPromo jenis={promo.jenis} redup={redup} />
+        </div>
+        <div className="flex flex-col gap-1.5 min-w-0">
+          <p className="text-judul font-extrabold text-foto-ink leading-tight line-clamp-2">{promo.judul}</p>
+          <p className="text-isi font-semibold text-foto-ink-2 truncate">{namaToko}</p>
+          <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+            {promo.potonganPersen != null && (
+              <span
+                className={cx(
+                  'inline-flex items-center rounded-full px-2.5 py-1 text-kecil font-extrabold',
+                  // Coral di atas jingga Cuci Gudang tidak terbaca: pil putih.
+                  redup
+                    ? 'bg-foto-pil text-promo-redup'
+                    : promo.jenis === 'cuci-gudang'
+                      ? 'bg-foto-pil text-promo-cuci'
+                      : 'bg-aksen text-aksen-ink',
+                )}
+              >
+                Potongan {persen(promo.potonganPersen)}
+              </span>
+            )}
+            <span className="inline-flex items-center gap-1.5 text-kecil font-semibold text-foto-ink">
+              <IkonJam size={13} className="shrink-0" />
+              {redup && promo.berakhir
+                ? `Berakhir ${tanggalRingkas(promo.berakhir)}`
+                : promo.berakhir && sisaHari != null
+                  ? `Sampai ${tanggalRingkas(promo.berakhir)} · ${hariLagi(sisaHari)}`
+                  : 'Tanpa tanggal berakhir'}
+            </span>
+          </div>
+        </div>
       </div>
     </>
   )
@@ -150,7 +190,7 @@ export function KartuPromo({
   return (
     // Seluruh kartu adalah satu tautan: target sentuhnya sebesar kartunya,
     // bukan sebesar tulisan "Lihat promo" di pojok.
-    <Link to={`/promo/${promo.id}`} className={kelas}>
+    <Link to={ke ?? `/promo/${promo.id}`} className={kelas}>
       {isi}
     </Link>
   )

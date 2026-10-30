@@ -13,12 +13,12 @@ import {
   IkonKeranjang,
   IkonGrafik,
 } from '@/icons'
-import { useAplikasi, useJumlahKeranjang, useJumlahPerluTindakan } from '@/store/aplikasi'
+import { useAplikasi, useJumlahKeranjang } from '@/store/aplikasi'
 import { Toast } from '@/components/ui/umpanBalik'
 import { TandaMerek } from '@/components/ui/Merek'
 import { Avatar } from '@/components/ui/dasar'
-import { LoncengMelayang } from '@/components/domain/Pemberitahuan'
-import { TautanSamping } from '@/components/ui/navigasi'
+import { LoncengMelayang, usePemberitahuanUsaha } from '@/components/domain/Pemberitahuan'
+import { MenuSamping } from '@/components/ui/MenuSamping'
 
 /**
  * Kerangka lima tab.
@@ -54,7 +54,8 @@ const TAB_PRODUKSI = [TAB[0], TAB[1], { ke: '/produksi', label: NAV.produksi, Ik
 
 /** Halaman detail tetap menyorot tab induknya, supaya pengguna tidak merasa tersesat. */
 const INDUK: Array<[RegExp, string]> = [
-  [/^\/(beranda)/, '/beranda'],
+  // Promo dibuka dari Beranda (kartu promo dan "Lihat semua").
+  [/^\/(beranda|promo)/, '/beranda'],
   [/^\/stok/, '/stok'],
   [/^\/produksi/, '/produksi'],
   [/^\/prediksi/, '/prediksi'],
@@ -73,7 +74,10 @@ export default function KerangkaAplikasi() {
   const racun = useAplikasi((s) => s.racun)
   const tutupRacun = useAplikasi((s) => s.tutupRacun)
   const navigate = useNavigate()
-  const perluTindakan = useJumlahPerluTindakan()
+  const pemberitahuan = usePemberitahuanUsaha()
+  const bacaNotifikasi = useAplikasi((s) => s.bacaNotifikasi)
+  const bacaSemuaNotifikasi = useAplikasi((s) => s.bacaSemuaNotifikasi)
+  const perluTindakan = pemberitahuan.filter((b) => b.perluTindakan).length
   const isiKeranjang = useJumlahKeranjang()
   const aktif = tabInduk(pathname)
   const tab = profil.jenisUsaha === 'produksi-makanan' ? TAB_PRODUKSI : TAB
@@ -92,78 +96,31 @@ export default function KerangkaAplikasi() {
         Langsung ke isi halaman
       </a>
 
-      {/* Navigasi samping: hanya muncul di layar lebar, isinya sama persis */}
-      <nav
-        aria-label="Menu utama"
-        className={cx(
-          'hidden',
-          !fokus && 'lg:flex lg:flex-col lg:shrink-0 lg:border-r lg:border-line lg:bg-surface lg:h-dvh lg:sticky lg:top-0',
-        )}
-        style={{ width: 'var(--rail-w)' }}
-      >
-        <div className="px-5 py-5">
-          <Link to="/beranda" className="flex items-center gap-2.5">
-            <TandaMerek ukuran={36} />
-            <span className="font-extrabold text-ink text-subjudul tracking-tight">Turnify Flow</span>
-          </Link>
-        </div>
-
-        <div className="px-3 flex flex-col gap-1">
-          {tab.map(({ ke, label, Ikon }) => (
-            <NavLink
-              key={ke}
-              to={ke}
-              className={cx(
-                'flex items-center gap-3 h-12 px-3 rounded-md font-semibold text-kartu transition-colors',
-                aktif === ke
-                  ? 'bg-brand-soft text-brand-soft-ink'
-                  : 'text-ink-2 hover:bg-sunken hover:text-ink',
-              )}
-            >
-              <Ikon size={22} />
-              {label}
-            </NavLink>
-          ))}
-        </div>
-
-        {/* Di desktop keranjang ada di sini, bukan di bilah atas selebar layar
-            yang isinya hanya dua ikon. Lonceng pemberitahuan tidak lagi di menu
-            ini: ia melayang di pojok kanan atas halaman (revisi V2, Q53). Lacak
-            Pesanan juga tidak (revisi V3, Q74): ia dibuka dari halaman Pesanan,
-            dan menu Pesanan tetap menyala selama halaman lacak terbuka. */}
-        <div className="mt-3 mx-3 pt-3 border-t border-line flex flex-col gap-1">
-          <TautanSamping
-            ke="/keranjang"
-            aktif={pathname.startsWith('/keranjang')}
-            Ikon={IkonKeranjang}
-            label="Keranjang"
-            jumlah={isiKeranjang}
-            nadaJumlah="merek"
-          />
-          <TautanSamping
-            ke="/penjualan"
-            aktif={pathname.startsWith('/penjualan')}
-            Ikon={IkonGrafik}
-            label="Ringkasan Penjualan"
-          />
-        </div>
-
-        <div className="mt-auto p-3 border-t border-line">
-          <Link
-            to="/akun"
-            className={cx(
-              'flex items-center gap-3 p-2.5 rounded-md transition-colors',
-              pathname.startsWith('/akun') ? 'bg-sunken' : 'hover:bg-sunken',
-            )}
-          >
-            <Avatar nama={profil.namaUsaha} warna={profil.warna} ukuran={36} />
-            <span className="min-w-0">
-              <span className="block text-isi font-bold text-ink truncate">{profil.namaUsaha}</span>
-              <span className="block text-kecil text-ink-3 truncate">Lihat akun</span>
-            </span>
-          </Link>
-        </div>
-      </nav>
+      {/* Navigasi samping: hanya muncul di layar lebar, isinya sama persis.
+          Di desktop keranjang ada di sini, bukan di bilah atas selebar layar
+          yang isinya hanya dua ikon. Lonceng pemberitahuan tidak di menu ini:
+          ia di pojok kanan atas halaman (revisi V2, Q53; revisi V5, Q99). Lacak
+          Pesanan juga tidak (revisi V3, Q74): ia dibuka dari halaman Pesanan,
+          dan menu Pesanan tetap menyala selama halaman lacak terbuka. */}
+      <MenuSamping
+        label="Menu utama"
+        merekKe="/beranda"
+        sembunyi={fokus}
+        utama={tab.map(({ ke, label, Ikon }) => ({ ke, label, Ikon, aktif: aktif === ke }))}
+        tambahan={[
+          {
+            ke: '/keranjang',
+            label: 'Keranjang',
+            Ikon: IkonKeranjang,
+            aktif: pathname.startsWith('/keranjang'),
+            angka: isiKeranjang,
+            labelAngka: `${isiKeranjang} barang di keranjang`,
+            nadaAngka: 'merek',
+          },
+          { ke: '/penjualan', label: 'Ringkasan Penjualan', Ikon: IkonGrafik, aktif: pathname.startsWith('/penjualan') },
+        ]}
+        akun={{ ke: '/akun', nama: profil.namaUsaha, warna: profil.warna, aktif: pathname.startsWith('/akun') }}
+      />
 
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Kepala halaman global: tiga ikon tetap di semua tab */}
@@ -223,7 +180,15 @@ export default function KerangkaAplikasi() {
         </main>
       </div>
 
-      {!fokus && <LoncengMelayang ke="/notifikasi" jumlah={perluTindakan} />}
+      {!fokus && (
+        <LoncengMelayang
+          butir={pemberitahuan}
+          jumlah={perluTindakan}
+          keSemua="/notifikasi"
+          baca={bacaNotifikasi}
+          bacaSemua={bacaSemuaNotifikasi}
+        />
+      )}
 
       {/* Navigasi bawah: zona jempol, hanya di layar sempit */}
       <nav

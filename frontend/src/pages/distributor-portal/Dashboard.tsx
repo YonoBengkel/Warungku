@@ -1,15 +1,16 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { Avatar, Bagian, Lencana, type NadaLencana } from '@/components/ui/dasar'
-import { KartuTindakan } from '@/components/domain'
+import { Avatar, Bagian, Lencana } from '@/components/ui/dasar'
+import { DonatStatus, KartuUrusan, type PotonganDonat, type Urusan } from '@/components/domain/KartuBeranda'
+import { KepalaSambutan } from '@/components/domain/KepalaSambutan'
+import { usePemberitahuanDistributor, type ButirPemberitahuan } from '@/components/domain/Pemberitahuan'
 import { TandaTitik } from '@/components/domain/TandaTitik'
-import { IkonCentangLingkaran, IkonGudang, IkonJam, IkonKirim, IkonPanahKanan, IkonSilang } from '@/icons'
-import { angka, cx, rupiah, tanggalLengkapHari, waktuLalu } from '@/lib/format'
-import { RUANG_LONCENG } from '@/components/ui/navigasi'
-import { LABEL_PESANAN_MASUK, LABEL_TITIK, NADA_PESANAN_MASUK, TAHAP_PESANAN_MASUK } from '@/lib/label'
-import { distributorAktif, umkmById } from '@/data/dummy'
+import { IkonCentangLingkaran, IkonJam, IkonKirim, IkonKontrak, IkonPanahKanan } from '@/icons'
+import { angka, cx, rupiah, waktuLalu } from '@/lib/format'
+import { LABEL_PESANAN_MASUK, LABEL_TITIK, NADA_PESANAN_MASUK } from '@/lib/label'
+import { umkmById } from '@/data/dummy'
 import type { PesananMasuk, StatusPesananMasuk, WarnaTitik } from '@/lib/types'
-import { useAplikasi, useJumlahPerluKonfirmasi, usePesananMasuk, useTitikPeta } from '@/store/aplikasi'
+import { useAplikasi, useDistributorAktif, usePesananMasuk, useTitikPeta } from '@/store/aplikasi'
 import { KartuRingkasanPenjualan } from '@/components/domain/RingkasanPenjualan'
 import { ambilRingkasanDistributor } from '@/lib/apiPenjualan'
 
@@ -17,40 +18,30 @@ import { ambilRingkasanDistributor } from '@/lib/apiPenjualan'
  * Halaman pertama portal distributor.
  *
  * Urutannya mengikuti satu pertanyaan: "apa yang harus aku kerjakan sekarang".
- * Karena itu sambutan dibuat pendek, lalu langsung satu kartu tindakan, baru
- * rekap angka. Rekap yang ditaruh di atas tindakan membuat orang membaca
- * laporan dulu padahal ada pesanan yang menunggu dijawab.
+ * Karena itu sambutan dibuat pendek, lalu langsung daftar urusan, baru rekap
+ * angka. Rekap yang ditaruh di atas tindakan membuat orang membaca laporan
+ * dulu padahal ada pesanan yang menunggu dijawab.
  *
- * Sejak revisi V4 (Q95) isinya tetap, tapi kotaknya meniru Beranda pemilik
- * usaha: kotak "Yang perlu kamu urus hari ini", petak berikon bulat seperti
- * Perlu Tindakan, dan kartu pesanan seperti di daftar Pesanan pemilik usaha.
+ * Susunan revisi V5 (Q119): kepala sapaan, "Yang perlu kamu urus hari ini"
+ * berdampingan dengan donat Rekap pesanan, Ringkasan Penjualan, Sebaran
+ * pemesan, lalu Pesanan terbaru. Gaya kartunya sama dengan Beranda UMKM.
  *
  * Lonceng ber-badge sudah hidup di KerangkaDistributor, jadi di sini ia TIDAK
  * diulang. Dua lonceng dengan angka yang sama membuat orang mengira ada dua
  * daftar yang berbeda.
  */
 
-/* Ikon dan nada tiap tahap. Tiap petak selalu membawa ikon + teks + angka,
-   jadi warnanya hanya penguat, bukan satu-satunya pembeda. */
-const IKON_TAHAP: Record<StatusPesananMasuk, typeof IkonJam> = {
-  'menunggu-konfirmasi': IkonJam,
-  disiapkan: IkonGudang,
-  dikirim: IkonKirim,
-  selesai: IkonCentangLingkaran,
-  ditolak: IkonSilang,
-}
+type TahapBerjalan = Extract<StatusPesananMasuk, 'menunggu-konfirmasi' | 'disiapkan' | 'dikirim'>
 
-const CHIP_NADA: Record<NadaLencana, string> = {
-  netral: 'bg-netral-soft text-netral-ink',
-  merek: 'bg-brand-soft text-brand-soft-ink',
-  aman: 'bg-aman-soft text-aman-ink',
-  menipis: 'bg-menipis-soft text-menipis-ink',
-  kritis: 'bg-kritis-soft text-kritis-ink',
-  info: 'bg-info-soft text-info-ink',
-}
+/** Tahap yang masuk donat, urut seperti alur pesanan. */
+const BERJALAN: TahapBerjalan[] = ['menunggu-konfirmasi', 'disiapkan', 'dikirim']
 
-/** Lima petak rekap, termasuk Ditolak yang tidak punya tahap berurutan. */
-const REKAP: StatusPesananMasuk[] = [...TAHAP_PESANAN_MASUK, 'ditolak']
+/* Warna potongan donat: palet yang sama dengan donat Pesanan berjalan UMKM. */
+const WARNA_TAHAP: Record<TahapBerjalan, { garis: string; titik: string }> = {
+  'menunggu-konfirmasi': { garis: 'stroke-seri-2', titik: 'bg-seri-2' },
+  disiapkan: { garis: 'stroke-seri-1', titik: 'bg-seri-1' },
+  dikirim: { garis: 'stroke-seri-4', titik: 'bg-seri-4' },
+}
 
 const URUT_TITIK: WarnaTitik[] = ['merah', 'oren', 'biru']
 
@@ -107,15 +98,71 @@ function KartuPesananMasuk({ pesanan: p }: { pesanan: PesananMasuk }) {
   )
 }
 
+/** Nama pemesan untuk baris gabungan: dua nama, sisanya "+N". */
+function namaPemesan(butir: ButirPemberitahuan[]): string {
+  const nama = [...new Set(butir.map((b) => b.pihak).filter((n): n is string => !!n))]
+  return nama.length > 2 ? `${nama.slice(0, 2).join(', ')} +${nama.length - 2}` : nama.join(', ')
+}
+
 export default function Dashboard() {
   const sesiDistributor = useAplikasi((s) => s.sesiDistributor)
   const ambilRingkasan = useMemo(
     () => (sesiDistributor ? () => ambilRingkasanDistributor(sesiDistributor) : null),
     [sesiDistributor],
   )
+  const distributor = useDistributorAktif()
   const pesananMasuk = usePesananMasuk()
-  const perluKonfirmasi = useJumlahPerluKonfirmasi()
+  const pemberitahuan = usePemberitahuanDistributor()
   const titik = useTitikPeta()
+
+  /* "Yang perlu kamu urus hari ini" (revisi V5, Q104): butir yang sama dengan
+     tab "Perlu tindakan" di lonceng, digabung per kelompok supaya satu baris
+     satu keputusan. Kiriman yang lewat perkiraan tiba paling atas dan merah. */
+  const urusan = useMemo<Urusan[]>(() => {
+    const per = (j: ButirPemberitahuan['jenis']) => pemberitahuan.filter((b) => b.perluTindakan && b.jenis === j)
+    const hasil: Urusan[] = []
+    const telat = per('telat')
+    if (telat.length > 0)
+      hasil.push({
+        kunci: 'telat',
+        nada: 'kritis',
+        Ikon: IkonKirim,
+        judul: telat.length === 1 ? telat[0].judul : `${telat.length} kiriman lewat perkiraan tiba`,
+        detail: telat.length === 1 ? telat[0].detail : namaPemesan(telat),
+        aksi: { label: 'Lihat', ke: telat.length === 1 ? telat[0].ke : '/distributor-portal/pesanan?tahap=dikirim' },
+      })
+    const tunggu = per('tunggu')
+    if (tunggu.length > 0)
+      hasil.push({
+        kunci: 'tunggu',
+        nada: 'menipis',
+        Ikon: IkonJam,
+        judul: `${tunggu.length} pesanan menunggu kamu jawab`,
+        detail: `${namaPemesan(tunggu)} menunggu kepastian barangnya dikirim.`,
+        aksi: { label: 'Jawab', ke: '/distributor-portal/pesanan?tahap=menunggu-konfirmasi' },
+      })
+    const ajuan = per('ajuan')
+    if (ajuan.length > 0)
+      hasil.push({
+        kunci: 'ajuan',
+        nada: 'info',
+        Ikon: IkonKontrak,
+        judul: ajuan.length === 1 ? ajuan[0].judul : `${ajuan.length} pengajuan kontrak baru`,
+        detail: ajuan.length === 1 ? ajuan[0].detail : namaPemesan(ajuan),
+        aksi: { label: 'Tinjau', ke: '/distributor-portal/kontrak?tab=pengajuan' },
+      })
+    const berhenti = per('berhenti')
+    if (berhenti.length > 0)
+      hasil.push({
+        kunci: 'berhenti',
+        nada: 'menipis',
+        Ikon: IkonKontrak,
+        judul: berhenti.length === 1 ? berhenti[0].judul : `${berhenti.length} permintaan berhenti kontrak`,
+        detail: berhenti.length === 1 ? berhenti[0].detail : namaPemesan(berhenti),
+        aksi: { label: 'Tinjau', ke: '/distributor-portal/kontrak?tab=berjalan' },
+      })
+    return hasil
+  }, [pemberitahuan])
 
   const jumlahPerTahap = useMemo(() => {
     const per: Record<StatusPesananMasuk, number> = {
@@ -147,86 +194,66 @@ export default function Dashboard() {
     [pesananMasuk],
   )
 
+  /* Donat Rekap pesanan (Q118): hanya pesanan yang masih berjalan; ratusan
+     pesanan Selesai akan membuat potongan lain terlalu tipis untuk terlihat. */
+  const donat: PotonganDonat[] = BERJALAN.map((status) => ({
+    kunci: status,
+    label: LABEL_PESANAN_MASUK[status],
+    jumlah: jumlahPerTahap[status],
+    garis: WARNA_TAHAP[status].garis,
+    titik: WARNA_TAHAP[status].titik,
+    ke: `/distributor-portal/pesanan?tahap=${status}`,
+  }))
+  const jumlahBerjalan = BERJALAN.reduce((a, s) => a + jumlahPerTahap[s], 0)
+
   return (
     <div className="pb-6">
-      {/* 1. Sambutan: nama toko ditulis apa adanya, bukan huruf kapital semua */}
-      <h1 className={cx('text-judul font-extrabold text-ink tracking-tight leading-snug', RUANG_LONCENG)}>
-        Selamat datang, {distributorAktif.nama}
-      </h1>
-      <p className="mt-1 text-isi text-ink-3">{tanggalLengkapHari(new Date())}</p>
+      {/* 1. Sambutan, sama dengan Beranda UMKM tanpa baris data kasir (Q106) */}
+      <KepalaSambutan nama={distributor.nama} />
 
-      {/* 2. Satu tindakan, di kotak yang sama dengan Beranda UMKM. Kartunya
-          selebar kartu tugas di sana (setengah, lalu sepertiga baris). */}
-      <Bagian
-        id="judul-perlu-diurus"
-        judul="Yang perlu kamu urus hari ini"
-        keterangan={perluKonfirmasi > 0 ? '1 hal menunggu keputusan kamu.' : undefined}
-        className="mt-4"
-      >
-        {perluKonfirmasi > 0 ? (
-          <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3 [&>*]:min-w-0">
-            <KartuTindakan
-              utama
-              nada="menipis"
-              ikon={<IkonJam size={19} />}
-              judul={`${perluKonfirmasi} pesanan menunggu kamu jawab`}
-              detail="Pemesan menunggu kepastian barangnya jadi dikirim atau tidak."
-              aksiLabel="Lihat Pesanan Masuk"
-              aksiKe="/distributor-portal/pesanan?tahap=menunggu-konfirmasi"
-            />
-          </div>
-        ) : (
-          <p className="flex items-center gap-2 text-kartu font-semibold text-aman-ink bg-aman-soft rounded-md px-3.5 py-3">
-            <IkonCentangLingkaran size={18} />
-            Semua aman hari ini.
-          </p>
-        )}
-      </Bagian>
+      {/* 2. Urusan hari ini berdampingan dengan donat Rekap pesanan (Q104, Q119) */}
+      <div className="mt-4 grid gap-3 sm:gap-4 lg:grid-cols-[minmax(0,6fr)_minmax(0,5fr)] lg:items-stretch">
+        <KartuUrusan
+          butir={urusan}
+          kosong={
+            <p className="flex items-center gap-2 text-kartu font-semibold text-aman-ink bg-aman-soft rounded-md px-3.5 py-3">
+              <IkonCentangLingkaran size={18} />
+              Semua aman hari ini.
+            </p>
+          }
+        />
 
-      {/* 3. Rekap tahap: tiap petak adalah pintu ke tab yang sama di halaman
-          Pesanan. Di HP dua kolom, petak kelima selebar dua kolom. */}
-      <Bagian
-        id="judul-rekap"
-        judul="Rekap pesanan"
-        keterangan="Ketuk salah satu untuk membuka daftarnya."
-        className="mt-3 sm:mt-4"
-      >
-        <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-5">
-          {REKAP.map((status, i) => {
-            const Ikon = IKON_TAHAP[status]
-            const jumlah = jumlahPerTahap[status]
-            return (
+        <Bagian
+          id="judul-rekap"
+          judul="Rekap pesanan"
+          besar
+          keterangan="Pesanan yang masih berjalan. Ketuk satu status untuk membuka daftarnya."
+          aksi={<TautanLihat ke="/distributor-portal/pesanan">Lihat semua</TautanLihat>}
+          className="flex flex-col"
+        >
+          <DonatStatus
+            potongan={donat}
+            satuan="pesanan"
+            label={`Dari ${jumlahBerjalan} pesanan berjalan: ${donat
+              .map((d) => `${d.jumlah} ${d.label.toLowerCase()}`)
+              .join(', ')}`}
+          />
+          {/* Selesai dan Ditolak tidak masuk donat, tapi tetap satu ketukan dari sini. */}
+          <p className="mt-auto pt-3 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-line text-isi text-ink-2">
+            {(['selesai', 'ditolak'] as const).map((status) => (
               <Link
                 key={status}
                 to={`/distributor-portal/pesanan?tahap=${status}`}
-                aria-label={`${LABEL_PESANAN_MASUK[status]}, ${angka(jumlah)} pesanan`}
-                className={cx(
-                  KELAS_PETAK,
-                  'hover:border-line-strong transition-colors',
-                  i === REKAP.length - 1 && 'col-span-2 lg:col-span-1',
-                )}
+                className="inline-flex items-center gap-1.5 min-h-11 font-semibold hover:text-brand"
               >
-                <span aria-hidden="true" className="flex items-center justify-center gap-2.5">
-                  <span
-                    className={cx(
-                      'size-10 sm:size-12 rounded-full grid place-items-center shrink-0',
-                      CHIP_NADA[NADA_PESANAN_MASUK[status]],
-                    )}
-                  >
-                    <Ikon size={20} />
-                  </span>
-                  <span className={cx('text-angka font-extrabold tabular', jumlah > 0 ? 'text-ink' : 'text-ink-3')}>
-                    {angka(jumlah)}
-                  </span>
-                </span>
-                <span aria-hidden="true" className="text-kecil font-semibold text-ink-2 leading-tight">
-                  {LABEL_PESANAN_MASUK[status]}
-                </span>
+                {LABEL_PESANAN_MASUK[status]}
+                <span className="font-extrabold text-ink tabular">{angka(jumlahPerTahap[status])}</span>
+                <IkonPanahKanan size={14} className="text-ink-3" />
               </Link>
-            )
-          })}
-        </div>
-      </Bagian>
+            ))}
+          </p>
+        </Bagian>
+      </div>
 
       {/* Ringkasan penjualan dari pesanan selesai (revisi 23 Okt), hanya untuk portal tersambung. */}
       {ambilRingkasan && (
@@ -241,6 +268,7 @@ export default function Dashboard() {
       <Bagian
         id="judul-sebaran"
         judul="Sebaran pemesan"
+        besar
         keterangan="Jumlah titik di peta. Satu pemilik usaha dihitung satu titik."
         aksi={<TautanLihat ke="/distributor-portal/sebaran">Buka peta</TautanLihat>}
         className="mt-3 sm:mt-4"
@@ -267,6 +295,7 @@ export default function Dashboard() {
       <Bagian
         id="judul-terbaru"
         judul="Pesanan terbaru"
+        besar
         aksi={<TautanLihat ke="/distributor-portal/pesanan">Lihat semua</TautanLihat>}
         className="mt-3 sm:mt-4"
       >

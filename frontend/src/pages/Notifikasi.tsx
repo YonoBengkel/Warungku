@@ -1,13 +1,20 @@
 import { useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import type { Notifikasi as TipeNotifikasi } from '@/lib/types'
-import { IKON_NOTIF, WARNA_NADA, nadaNotif } from '@/components/domain/Pemberitahuan'
+import {
+  IKON_NOTIF,
+  WARNA_NADA,
+  dibisukan,
+  nadaNotif,
+  petaDipesan,
+  type Dipesan,
+} from '@/components/domain/Pemberitahuan'
 import { HanyaPembacaLayar, Lencana, Tombol, TombolTautan } from '@/components/ui/dasar'
 import { KeadaanKosong } from '@/components/ui/umpanBalik'
 import { BarisChip, Chip, KepalaHalaman } from '@/components/ui/navigasi'
 import { IkonCentangLingkaran, IkonLonceng, IkonPanahKanan, IkonPasokan } from '@/icons'
 import { cx, waktuLalu, waktuNanti } from '@/lib/format'
-import { JUDUL, LABEL_KATEGORI_NOTIF, PESANAN_BERJALAN } from '@/lib/label'
+import { JUDUL, LABEL_KATEGORI_NOTIF } from '@/lib/label'
 import { useAplikasi } from '@/store/aplikasi'
 
 /**
@@ -44,12 +51,6 @@ function warnaIkon(n: TipeNotifikasi): string {
 const KEPALA = ['Hari Ini', 'Kemarin', 'Minggu Ini', 'Lebih Lama'] as const
 type Kepala = (typeof KEPALA)[number]
 
-/** Barang yang sudah dipesan: dipakai untuk menurunkan baris jadi pasif. */
-interface Dipesan {
-  pesananId: string
-  tiba: string | null
-}
-
 function kelompok(waktu: string): Kepala {
   const t = new Date(waktu)
   const ms = 86_400_000
@@ -61,10 +62,6 @@ function kelompok(waktu: string): Kepala {
   if (selisih === 1) return 'Kemarin'
   if (selisih < 7) return 'Minggu Ini'
   return 'Lebih Lama'
-}
-
-function dibisukan(n: TipeNotifikasi): boolean {
-  return n.dibisukanSampai != null && +new Date(n.dibisukanSampai) > Date.now()
 }
 
 const ANTI_BANJIR =
@@ -84,17 +81,8 @@ export default function Notifikasi() {
   const belumDibaca = notifikasi.filter((n) => !n.dibaca).length
 
   /* Peta barang yang sedang dikirim. Inilah dasar aturan "begitu dipesan,
-     barisnya jadi pasif" — bukan bendera terpisah yang bisa basi sendiri. */
-  const dipesanPerBarang = useMemo(() => {
-    const peta = new Map<string, Dipesan>()
-    for (const p of pesanan) {
-      if (!PESANAN_BERJALAN.includes(p.status) || p.status === 'draf') continue
-      for (const b of p.baris) {
-        if (b.barangId && !peta.has(b.barangId)) peta.set(b.barangId, { pesananId: p.id, tiba: p.perkiraanTiba })
-      }
-    }
-    return peta
-  }, [pesanan])
+     barisnya jadi pasif", bukan bendera terpisah yang bisa basi sendiri. */
+  const dipesanPerBarang = useMemo(() => petaDipesan(pesanan), [pesanan])
 
   const hitungan = useMemo(() => {
     const h: Record<Penyaring, number> = {
@@ -366,7 +354,9 @@ function BarisNotifikasi({
           {!pasif && redup && notif.dibisukanSampai && (
             <Lencana nada="netral">Dibisukan sampai {waktuNanti(notif.dibisukanSampai)}</Lencana>
           )}
-          {!redup && !notif.dibaca && notif.butuhTindakan && <Lencana nada="menipis">Perlu tindakan</Lencana>}
+          {/* Chip ini tetap ada sesudah dibaca (revisi V5, Q120): membaca tidak
+              menyelesaikan urusannya, sama dengan angka di lonceng. */}
+          {!redup && notif.butuhTindakan && <Lencana nada="menipis">Perlu tindakan</Lencana>}
 
           {/* Label aksi ikut di baris keterangan, bukan di kolom kanan: di layar
               360px kolom kanan memakan judulnya sampai tinggal beberapa huruf. */}

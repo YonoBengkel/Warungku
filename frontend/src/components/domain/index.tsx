@@ -29,7 +29,7 @@ import {
   IkonPetir,
   IkonKotak,
 } from '@/icons'
-import { Kartu, Lencana, Tombol, TombolTautan, Avatar, type NadaLencana } from '@/components/ui/dasar'
+import { Kartu, Lencana, Tombol, TombolTautan, Avatar } from '@/components/ui/dasar'
 import { BilahProgres } from '@/components/ui/umpanBalik'
 import { Lembar } from '@/components/ui/lembar'
 import {
@@ -318,103 +318,6 @@ export function TombolTerkunci({ label, penuh }: { label: string; penuh?: boolea
 }
 
 /* ================================================================== */
-/* Kartu tindakan (Beranda)                                           */
-/* ================================================================== */
-
-/**
- * Satu kartu, satu tombol besar, dan hanya satu.
- *
- * Dengan `keKartu`, permukaan kartu ikut jadi tautan (lewat judulnya), dan
- * tombolnya mengerjakan hal yang berbeda — mis. kartu membuka Lembar Pesan
- * Cepat, tombol langsung memasukkan saran ke keranjang. Tombolnya diangkat ke
- * atas lapisan tautan supaya dua sasaran itu tidak saling rebut.
- */
-export function KartuTindakan({
-  nada = 'netral',
-  ikon,
-  judul,
-  detail,
-  aksiLabel,
-  aksiKe,
-  onAksi,
-  lencana,
-  keKartu,
-  utama,
-}: {
-  nada?: NadaLencana
-  ikon?: ReactNode
-  judul: string
-  detail: ReactNode
-  aksiLabel: string
-  aksiKe?: string
-  onAksi?: () => void
-  lencana?: ReactNode
-  keKartu?: string
-  /** Hanya kartu pertama di satu layar yang tombolnya ungu penuh; sisanya bergaris. */
-  utama?: boolean
-}) {
-  /* Bingkai netral: nada sudah dibawa ikon dan judulnya. Bingkai merah di
-     setiap kartu membuat Beranda terbaca seperti alarm terus-menerus. */
-  const garis = 'border-line'
-  const ragam = utama ? 'utama' : 'garis'
-
-  return (
-    <div
-      className={cx(
-        'relative h-full flex flex-col bg-surface border rounded-lg p-4 shadow-e1',
-        keKartu && 'hover:shadow-e2 transition-shadow',
-        garis,
-      )}
-    >
-      <div className="flex items-start gap-3">
-        {ikon && (
-          <span
-            className={cx(
-              'shrink-0 size-9 rounded-md grid place-items-center',
-              nada === 'kritis'
-                ? 'bg-kritis-soft text-kritis-ink'
-                : nada === 'menipis'
-                  ? 'bg-menipis-soft text-menipis-ink'
-                  : nada === 'info'
-                    ? 'bg-info-soft text-info-ink'
-                    : 'bg-brand-soft text-brand-soft-ink',
-            )}
-          >
-            {ikon}
-          </span>
-        )}
-        <div className="min-w-0 grow">
-          <div className="flex items-start gap-2 flex-wrap">
-            <h3 className="text-kartu font-bold text-ink leading-snug">
-              {keKartu ? (
-                <Link to={keKartu} className="after:absolute after:inset-0 after:rounded-lg hover:text-brand">
-                  {judul}
-                </Link>
-              ) : (
-                judul
-              )}
-            </h3>
-            {lencana}
-          </div>
-          <div className="mt-1 text-isi text-ink-2 leading-relaxed">{detail}</div>
-        </div>
-      </div>
-      <div className="relative z-10 mt-auto pt-3">
-        {aksiKe ? (
-          <TombolTautan ke={aksiKe} penuh="hp" ragam={ragam} ukuran="sedang">
-            {aksiLabel}
-          </TombolTautan>
-        ) : (
-          <Tombol penuh="hp" ragam={ragam} onClick={onAksi}>
-            {aksiLabel}
-          </Tombol>
-        )}
-      </div>
-    </div>
-  )
-}
-
-/* ================================================================== */
 /* Kuota Bulan Ini                                                    */
 /* ================================================================== */
 
@@ -507,57 +410,20 @@ export function KuotaBulanIni({ kontrak, ringkas }: { kontrak: Kontrak; ringkas?
 /* ================================================================== */
 
 /**
- * Tiga keadaan kematangan data dan tiga tingkat turun derajat layanan,
- * keduanya diisolasi di tingkat kartu.
- *
- * Kalau layanan perkiraan tidak sehat, hanya kartu ini yang berubah. Stok,
- * belanja, pesanan, dan kontrak tetap hidup penuh, karena satu layanan yang
- * bermasalah tidak boleh mematikan seluruh layar.
+ * Tiga keadaan kematangan data, diisolasi di tingkat kartu. Simulasi turun
+ * derajat layanan (hitungan sederhana, perkiraan tidak tampil) dihapus di
+ * revisi V5 (Q103) bersama tombolnya di Akun.
  */
-export function KartuPerkiraan({ barang, perkiraan }: { barang: Barang; perkiraan: Perkiraan }) {
-  const layanan = useAplikasi((s) => s.layananPerkiraan)
-  const cukup = hariCukup(barang)
-
-  if (layanan === 'mati') {
-    return (
-      <Kartu padat>
-        <p className="text-kartu font-bold text-ink">{barang.nama}</p>
-        <p className="mt-1 text-isi text-ink-3 leading-relaxed">
-          Perkiraan belum bisa ditampilkan sekarang. Sisa stok dan pengingat batas aman tetap berjalan seperti biasa.
-        </p>
-        <Tombol ragam="garis" ukuran="kecil" className="mt-2.5">
-          Coba lagi
-        </Tombol>
-      </Kartu>
-    )
-  }
-
-  // Tingkat kedua: layanan tidak menjawab, tapi riwayat pemakaian masih ada.
-  // Hitungan rata-rata sederhana tidak pernah memakai lencana keyakinan, karena
-  // ia memang bukan perkiraan pintar dan tidak boleh menyamar jadi itu.
-  if (layanan === 'tersimpan') {
-    return (
-      <Kartu padat>
-        <div className="flex items-start justify-between gap-2">
-          <p className="text-kartu font-bold text-ink">{barang.nama}</p>
-          <Lencana nada="netral">Hitungan sederhana</Lencana>
-        </div>
-        <p className="mt-1.5 text-subjudul font-extrabold text-ink">
-          {cukup === 0 ? (
-            <>Stok {barang.nama.split(' ')[0].toLowerCase()} tidak cukup</>
-          ) : (
-            <>
-              Stok {barang.nama.split(' ')[0].toLowerCase()} cukup untuk &plusmn;{cukup ?? '?'} hari
-            </>
-          )}
-        </p>
-        <p className="mt-1 text-kecil text-ink-3">
-          Bukan perkiraan pintar &mdash; dihitung dari rata-rata 7 hari terakhir.
-        </p>
-      </Kartu>
-    )
-  }
-
+export function KartuPerkiraan({
+  barang,
+  perkiraan,
+  bawah,
+}: {
+  barang: Barang
+  perkiraan: Perkiraan
+  /** Isi tambahan di bawah perkiraan, mis. rincian tiga hari ke depan. */
+  bawah?: ReactNode
+}) {
   if (perkiraan.kematangan === 'belum-bisa') {
     const terkumpul = barang.hariDataTerkumpul
     return (
@@ -608,6 +474,7 @@ export function KartuPerkiraan({ barang, perkiraan }: { barang: Barang; perkiraa
           Perkiraan dibuat {waktuLalu(perkiraan.dibuatPada)}.
         </p>
       )}
+      {bawah}
     </Kartu>
   )
 }

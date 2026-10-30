@@ -20,7 +20,7 @@ import {
   IkonToko,
 } from '@/icons'
 import { AKUN_DISTRIBUTOR, AKUN_SIMULASI_UMKM, type AkunSimulasi } from '@/lib/akunSimulasi'
-import { cx, tanggalPanjang } from '@/lib/format'
+import { tanggalPanjang } from '@/lib/format'
 import { JUDUL, LABEL_JENIS_USAHA } from '@/lib/label'
 import { useAplikasi } from '@/store/aplikasi'
 
@@ -38,8 +38,6 @@ export default function Akun() {
   const kasir = useAplikasi((s) => s.kasir)
   const tema = useAplikasi((s) => s.tema)
   const aturTema = useAplikasi((s) => s.aturTema)
-  const layanan = useAplikasi((s) => s.layananPerkiraan)
-  const aturLayananPerkiraan = useAplikasi((s) => s.aturLayananPerkiraan)
   const aturMasuk = useAplikasi((s) => s.aturMasuk)
   const aturPeran = useAplikasi((s) => s.aturPeran)
   const sesiServer = useAplikasi((s) => s.sesiServer)
@@ -250,66 +248,34 @@ export default function Akun() {
 
       <div className="mt-6">
         {/* Alat uji. Sengaja tidak disembunyikan: purwarupa ini dipakai untuk
-            memeriksa tiga tingkat turun derajat layanan perkiraan sekaligus sisi
-            distributor, dan menyimpannya di menu rahasia membuat penguji tidak
-            pernah menemukannya. */}
+            memeriksa dua akun simulasi sekaligus sisi distributor, dan
+            menyimpannya di menu rahasia membuat penguji tidak pernah menemukannya.
+            Sejak revisi V5 (Q103) satu baris tiga kolom di desktop: pengantar,
+            Akun simulasi, dan Peran akun, dengan tombol sejajar di dasar kolom. */}
         <section aria-labelledby="judul-alat-uji">
-          <div className="rounded-lg border border-dashed border-line-strong bg-surface-2 p-4">
-            <h2 id="judul-alat-uji" className="text-kartu font-bold text-ink">
-              Alat uji purwarupa
-            </h2>
-            <p className="mt-1 text-isi text-ink-3 leading-relaxed">
-              Hanya untuk pengembang. Yang ada di kotak ini tidak mengubah data stok, pesanan, maupun kontrakmu.
-            </p>
+          <div className="rounded-lg border border-dashed border-line-strong bg-surface-2 p-4 grid gap-5 lg:grid-cols-3 lg:gap-6">
+            <div>
+              <h2 id="judul-alat-uji" className="text-kartu font-bold text-ink">
+                Alat uji purwarupa
+              </h2>
+              <p className="mt-1 text-isi text-ink-3 leading-relaxed">
+                Hanya untuk pengembang. Yang ada di kotak ini tidak mengubah data stok, pesanan, maupun kontrakmu.
+              </p>
+            </div>
 
-            {/* Tiga bagian berdampingan di desktop (revisi V2, final touch): dulu
-                kotak ini memanjangkan kolom kanan dua kali kolom kiri. */}
-            <div className="mt-4 grid gap-5 lg:grid-cols-3 lg:gap-6">
-              <div>
-                <h3 className="text-isi font-bold text-ink">Tampilan perkiraan</h3>
+            {/* Pindah di antara dua akun simulasi tanpa keluar dan mengetik
+                ulang: kedai kopi (penjual eceran) dan dapur sambal (produsen). */}
+            {akunIni && akunLain && (
+              <div className="flex flex-col">
+                <h3 className="text-isi font-bold text-ink">Akun simulasi</h3>
                 <p className="mt-1 text-isi text-ink-3 leading-relaxed">
-                  Tombol ini mengubah tampilan blok perkiraan supaya tiga keadaannya bisa dilihat tanpa menunggu.
+                  Kamu sedang memakai {akunIni.namaUsaha}. Tombol ini membuka {akunLain.namaUsaha} tanpa keluar dan
+                  masuk lagi.
                 </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {(
-                    [
-                      { nilai: 'sehat', label: 'Perkiraan penuh' },
-                      { nilai: 'tersimpan', label: 'Hitungan sederhana' },
-                      { nilai: 'mati', label: 'Perkiraan tidak tampil' },
-                    ] as const
-                  ).map((o) => (
-                    <button
-                      key={o.nilai}
-                      type="button"
-                      aria-pressed={layanan === o.nilai}
-                      onClick={() => aturLayananPerkiraan(o.nilai)}
-                      className={cx(
-                        'h-11 px-3.5 rounded-md text-isi font-semibold border transition-colors',
-                        layanan === o.nilai
-                          ? 'bg-brand-soft text-brand-soft-ink border-brand'
-                          : 'bg-surface text-ink-2 border-line-strong hover:text-ink',
-                      )}
-                    >
-                      {o.label}
-                    </button>
-                  ))}
-              </div>
-
-              </div>
-
-              {/* Pindah di antara dua akun simulasi tanpa keluar dan mengetik
-                  ulang: kedai kopi (penjual eceran) dan dapur sambal (produsen). */}
-              {akunIni && akunLain && (
-                <div>
-                  <h3 className="text-isi font-bold text-ink">Akun simulasi</h3>
-                  <p className="mt-1 text-isi text-ink-3 leading-relaxed">
-                    Kamu sedang memakai {akunIni.namaUsaha}. Tombol ini membuka {akunLain.namaUsaha} tanpa keluar
-                    dan masuk lagi.
-                  </p>
+                <div className="mt-auto pt-3">
                   <Tombol
                     ragam="garis"
                     ikonKiri={<IkonToko size={17} />}
-                    className="mt-3"
                     memuat={berpindah}
                     onClick={() => pindahAkun(akunLain)}
                   >
@@ -321,21 +287,22 @@ export default function Akun() {
                     </p>
                   )}
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Pintu ke sisi distributor. Sengaja memakai Tombol, bukan tautan
-                  biasa: perannya harus ikut berpindah sebelum layarnya dibuka,
-                  supaya kerangka yang muncul benar sejak ketukan pertama. */}
-              <div>
-                <h3 className="text-isi font-bold text-ink">Peran akun</h3>
-                <p className="mt-1 text-isi text-ink-3 leading-relaxed">
-                  Berpindah peran adalah alat uji purwarupa. Di aplikasi yang sungguhan, satu akun hanya punya satu
-                  peran: pemilik usaha atau distributor, tidak keduanya.
-                </p>
+            {/* Pintu ke sisi distributor. Sengaja memakai Tombol, bukan tautan
+                biasa: perannya harus ikut berpindah sebelum layarnya dibuka,
+                supaya kerangka yang muncul benar sejak ketukan pertama. */}
+            <div className="flex flex-col">
+              <h3 className="text-isi font-bold text-ink">Peran akun</h3>
+              <p className="mt-1 text-isi text-ink-3 leading-relaxed">
+                Berpindah peran adalah alat uji purwarupa. Di aplikasi yang sungguhan, satu akun hanya punya satu
+                peran: pemilik usaha atau distributor, tidak keduanya.
+              </p>
+              <div className="mt-auto pt-3">
                 <Tombol
                   ragam="garis"
                   ikonKiri={<IkonGudang size={17} />}
-                  className="mt-3"
                   memuat={membukaPortal}
                   onClick={bukaPortalDistributor}
                 >

@@ -40,6 +40,7 @@ const BatasAmanAwal = lazy(() => import('@/pages/mulai/BatasAmanAwal'))
 /* Tab 1 */
 const Beranda = lazy(() => import('@/pages/Beranda'))
 const PromoDetail = lazy(() => import('@/pages/promo/PromoDetail'))
+const SemuaPromo = lazy(() => import('@/pages/promo/SemuaPromo'))
 
 /* Tab 2 */
 const Stok = lazy(() => import('@/pages/stok/Stok'))
@@ -160,6 +161,7 @@ export default function App() {
 
         <Route element={<KerangkaAplikasi />}>
           <Route path="/beranda" element={<Beranda />} />
+          <Route path="/promo" element={<SemuaPromo />} />
           <Route path="/promo/:id" element={<PromoDetail />} />
 
           <Route path="/stok" element={<Stok />} />

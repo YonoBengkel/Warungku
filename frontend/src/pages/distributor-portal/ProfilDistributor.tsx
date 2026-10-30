@@ -119,53 +119,53 @@ export default function ProfilDistributor() {
       </div>
 
       {/* Alat uji. Sengaja tidak disembunyikan, sama dengan Akun pemilik usaha:
-          purwarupa ini dipakai untuk menelusuri kedua sisi. */}
+          purwarupa ini dipakai untuk menelusuri kedua sisi. Satu baris tiga kolom
+          di desktop dengan tombol sejajar, seperti di Akun (revisi V5, Q103). */}
       <section aria-labelledby="judul-alat-uji" className="mt-6">
-        <div className="rounded-lg border border-dashed border-line-strong bg-surface-2 p-4">
-          <h2 id="judul-alat-uji" className="text-kartu font-bold text-ink">
-            Alat uji purwarupa
-          </h2>
-          <p className="mt-1 text-isi text-ink-3 leading-relaxed">
-            Hanya untuk pengembang. Yang ada di kotak ini tidak mengubah pesanan, kontrak, maupun katalogmu.
-          </p>
+        <div className="rounded-lg border border-dashed border-line-strong bg-surface-2 p-4 grid gap-5 lg:grid-cols-3 lg:gap-6">
+          <div>
+            <h2 id="judul-alat-uji" className="text-kartu font-bold text-ink">
+              Alat uji purwarupa
+            </h2>
+            <p className="mt-1 text-isi text-ink-3 leading-relaxed">
+              Hanya untuk pengembang. Yang ada di kotak ini tidak mengubah pesanan, kontrak, maupun katalogmu.
+            </p>
+          </div>
 
-          <div className="mt-4 grid gap-5 lg:grid-cols-2 lg:gap-6">
-            {/* Asal data portal ini: server (dengan akun distributor) atau data contoh. */}
-            <div>
-              <h3 className="text-isi font-bold text-ink">Akun distributor</h3>
+          {/* Asal data portal ini: server (dengan akun distributor) atau data contoh. */}
+          <div className="flex flex-col">
+            <h3 className="text-isi font-bold text-ink">Akun distributor</h3>
+            <p className="mt-1 text-isi text-ink-3 leading-relaxed">
+              {sesi
+                ? `Masuk sebagai ${sesi.namaPengguna}. Keluar mengembalikan portal ini ke data contoh.`
+                : 'Portal ini memakai data contoh. Masuk dengan akun distributor untuk melihat pesanan sungguhan.'}
+            </p>
+            <div className="mt-auto pt-3">
               {sesi ? (
-                <>
-                  <p className="mt-1 text-isi text-ink-3 leading-relaxed">
-                    Masuk sebagai {sesi.namaPengguna}. Keluar mengembalikan portal ini ke data contoh.
-                  </p>
-                  <Tombol ragam="garis" ikonKiri={<IkonKeluar size={17} />} className="mt-3" onClick={putus}>
-                    Keluar
-                  </Tombol>
-                </>
+                <Tombol ragam="garis" ikonKiri={<IkonKeluar size={17} />} onClick={putus}>
+                  Keluar
+                </Tombol>
               ) : (
-                <>
-                  <p className="mt-1 text-isi text-ink-3 leading-relaxed">
-                    Portal ini memakai data contoh. Masuk dengan akun distributor untuk melihat pesanan sungguhan.
-                  </p>
-                  <Link
-                    to="/masuk/distributor"
-                    className="mt-2 inline-flex items-center min-h-11 text-isi font-bold text-brand hover:underline"
-                  >
-                    Masuk sebagai distributor
-                  </Link>
-                </>
+                <Link
+                  to="/masuk/distributor"
+                  className="inline-flex items-center min-h-11 text-isi font-bold text-brand hover:underline"
+                >
+                  Masuk sebagai distributor
+                </Link>
               )}
             </div>
+          </div>
 
-            {/* Jalan pulang ke sisi pemilik usaha. Tombol, bukan tautan biasa:
-                perannya harus ikut berpindah sebelum layarnya dibuka. */}
-            <div>
-              <h3 className="text-isi font-bold text-ink">Peran akun</h3>
-              <p className="mt-1 text-isi text-ink-3 leading-relaxed">
-                Berpindah peran adalah alat uji purwarupa. Di aplikasi yang sungguhan, satu akun hanya punya satu
-                peran: pemilik usaha atau distributor, tidak keduanya.
-              </p>
-              <Tombol ragam="garis" className="mt-3" ikonKiri={<IkonToko size={17} />} onClick={kembaliKePortalUmkm}>
+          {/* Jalan pulang ke sisi pemilik usaha. Tombol, bukan tautan biasa:
+              perannya harus ikut berpindah sebelum layarnya dibuka. */}
+          <div className="flex flex-col">
+            <h3 className="text-isi font-bold text-ink">Peran akun</h3>
+            <p className="mt-1 text-isi text-ink-3 leading-relaxed">
+              Berpindah peran adalah alat uji purwarupa. Di aplikasi yang sungguhan, satu akun hanya punya satu
+              peran: pemilik usaha atau distributor, tidak keduanya.
+            </p>
+            <div className="mt-auto pt-3">
+              <Tombol ragam="garis" ikonKiri={<IkonToko size={17} />} onClick={kembaliKePortalUmkm}>
                 Kembali ke portal UMKM
               </Tombol>
             </div>

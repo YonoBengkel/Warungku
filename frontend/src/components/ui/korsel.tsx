@@ -50,7 +50,7 @@ export function Korsel({
   otomatis = false,
   selang = 3000,
   judul,
-  nada = 'biasa',
+  aksi,
 }: {
   /** Nama korsel untuk pembaca layar, mis. "Promo dari distributor". */
   label: string
@@ -62,8 +62,8 @@ export function Korsel({
   selang?: number
   /** Judul di kiri atas; panah lalu tampil di pojok kanan atas. */
   judul?: ReactNode
-  /** `aksen`: korsel di dalam wadah coral, panahnya bulat putih. */
-  nada?: 'biasa' | 'aksen'
+  /** Tautan di kanan judul, sebelum panah, mis. "Lihat semua". Tetap tampil walau semua kartu muat. */
+  aksi?: ReactNode
 }) {
   const wadah = useRef<HTMLDivElement>(null)
   /** Posisi gulir awal tiap halaman, dalam piksel. */
@@ -255,12 +255,7 @@ export function Korsel({
         onClick={() => ambilAlih(kiri ? aktif - 1 : aktif + 1)}
         disabled={kiri ? aktif === 0 : aktif >= jumlahHalaman - 1}
         aria-label={kiri ? 'Kartu sebelumnya' : 'Kartu berikutnya'}
-        className={cx(
-          'size-11 grid place-items-center disabled:pointer-events-none transition-colors',
-          nada === 'aksen'
-            ? 'rounded-full bg-surface text-ink shadow-e1 hover:bg-surface-2 disabled:opacity-50'
-            : 'rounded-md text-ink-2 hover:bg-sunken hover:text-ink disabled:opacity-30',
-        )}
+        className="size-11 grid place-items-center rounded-md text-ink-2 hover:bg-sunken hover:text-ink disabled:pointer-events-none disabled:opacity-30 transition-colors"
       >
         {kiri ? <IkonPanahKiri size={18} /> : <IkonPanahKanan size={18} />}
       </button>
@@ -274,9 +269,7 @@ export function Korsel({
           key={i}
           className={cx(
             'h-1.5 rounded-full transition-[width,background-color]',
-            i === aktif
-              ? cx('w-4', nada === 'aksen' ? 'bg-aksen-ink' : 'bg-brand')
-              : cx('w-1.5', nada === 'aksen' ? 'bg-aksen-ink/30' : 'bg-line-strong'),
+            i === aktif ? 'w-4 bg-brand' : 'w-1.5 bg-line-strong',
           )}
         />
       ))}
@@ -298,10 +291,17 @@ export function Korsel({
       {judul && (
         <div className="flex items-center justify-between gap-3 mb-3">
           <div className="min-w-0">{judul}</div>
-          {bisaGeser && (
-            <div className="flex shrink-0 gap-2">
-              {panah('kiri')}
-              {panah('kanan')}
+          {(aksi || bisaGeser) && (
+            <div className="flex shrink-0 items-center gap-2">
+              {aksi}
+              {/* Di HP panahnya mengalah pada judul dan `aksi`: kartu tetap bisa
+                  digeser jari, dan titiknya menunjukkan posisi. */}
+              {bisaGeser && (
+                <span className={cx('flex gap-2', aksi ? 'max-sm:hidden' : undefined)}>
+                  {panah('kiri')}
+                  {panah('kanan')}
+                </span>
+              )}
             </div>
           )}
         </div>

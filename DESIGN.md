@@ -44,8 +44,13 @@ Daftar; kerangka halaman tidak memasangnya sendiri.
 | Teks pembalik | `text-ink-inverse` | `#ffffff` | `#08121a` | Teks di atas warna penuh |
 | Merek | `bg-brand`, `text-brand` | `#4a148c` | `#a26ce5` | Tombol utama, tautan, cincin fokus |
 | Merek lembut | `bg-brand-soft` + `text-brand-soft-ink` | `#f3ecfb` / `#3a0a73` | `#1d0f33` / `#c4a3f2` | Keadaan terpilih, tombol sekunder |
-| Aksen coral | `bg-aksen` + `text-aksen-ink` | `#ff7f50` / `#111a23` | `#e9744b` / `#0b1116` | Isian wadah sorotan, mis. wadah promo Beranda |
+| Aksen coral | `bg-aksen` + `text-aksen-ink` | `#ff7f50` / `#111a23` | `#e9744b` / `#0b1116` | Isian sorotan: pil potongan di kartu promo berfoto, garis sorot ubin Perlu Tindakan |
 | Aksen kuning | `bg-kuning` + `text-kuning-ink` | `#ffcc00` / `#111a23` | sama | Isian sorotan kecil (landing page) |
+| Menu samping | `.menu-samping` + `text-samping-ink` / `text-samping-ink-2` | gradien `#6431b0` ke `#4a148c`, teks `#ffffff` | gradien `#2d1258` ke `#1d0b3a`, teks `#f3eefc` | Hanya menu samping desktop (revisi V5, Q111 dan Q112) |
+| Pil menu aktif | `.penanda-samping-pil` (`--c-pil-1`, `--c-pil-2`) | `#bf3f0b` ke `#c9470f`, teks putih 5,34 sampai 4,78:1 | sama | Hanya butir menu samping yang aktif (Q115) |
+| Jenis promo | `bg-promo-cuci` / `-baru` / `-anggota` / `-redup`, `.bayang-promo-*` | `#8a3408`, `#4a148c`, `#2d1258`, `#3a4854` | sama | Bayangan foto kartu promo dan tinta lencana jenisnya (revisi V5, Q107) |
+| Teks di atas foto | `text-foto-ink` / `text-foto-ink-2`, `bg-foto-pil` | `#ffffff`, putih 90%, pil putih | sama | Hanya di atas foto berbayang; teks putih paling sedikit 4,8:1 di bagian bawah kartu |
+| Stabilo | `.stabilo` (`--c-stabilo`) | coral 32% | coral 22% | Sapuan di bawah nama usaha di kepala Beranda (Q106) |
 
 **Status.** Ada empat warna status beserta satu netral. Masing-masing punya tiga tingkat: penuh
 (`bg-aman`), lembut (`bg-aman-soft`), dan tinta (`text-aman-ink`).
@@ -67,15 +72,21 @@ Daftar; kerangka halaman tidak memasangnya sendiri.
 - **Di semua layar,** pemakaian aktual memakai `seri-1` dan perkiraan memakai `seri-perkiraan`:
   grafik Prediksi, grafik rincian barang, dan bar "Terpakai bulan ini / Perkiraan bulan depan"
   di Beranda.
-- `seri-2` dan `seri-3` belum dipakai. Sebelum `seri-3` dipakai pertama kali, hue-nya harus
-  digeser menjauh dari ungu merek (lihat bagian 10).
+- **Donat status pesanan** (revisi V5): Menunggu Konfirmasi `seri-2`, Disiapkan `seri-1`, Dikirim
+  `seri-4` biru (`#2a78d6` terang, `#4a8fe8` gelap), draf abu-abu `line-strong`. Set itu lolos
+  validator di semua pasangan dan kedua tema; tiap potongan juga tertulis di keterangannya.
+- `seri-3` belum dipakai. Sebelum dipakai pertama kali, hue-nya harus digeser menjauh dari ungu
+  merek (lihat bagian 10).
 - `grid` dan `sumbu` dibuat redup supaya datanya yang menonjol.
 - Palet baru atau seri tambahan wajib lolos `validate_palette.js` dari skill dataviz di kedua
   tema, termasuk uji pemisahan buta warna.
 
 **Aturan warna:**
 1. **Ungu penuh hanya untuk tombol utama** (dan cincin fokus). Keadaan terpilih memakai
-   ungu lembut atau putih terangkat (lihat bagian 6).
+   ungu lembut atau putih terangkat (lihat bagian 6). Satu-satunya pengecualian adalah menu
+   samping desktop (revisi V5): bidang navigasi bergradien ungu dengan pil aktif coral gelap.
+   Di dalamnya tombol ungu tidak dipakai, angka Keranjang putih bertinta ungu, dan cincin fokus
+   putih 3px karena ungu tidak terlihat di atas ungu.
 2. **Teks di atas warna penuh** (`bg-brand`, `bg-kritis`, `bg-menipis`, `bg-info`) memakai
    `text-ink-inverse`, bukan `text-white`. Di tema gelap `text-white` di atas ungu muda hanya
    3,6:1, di bawah ambang 4,5:1.
@@ -110,6 +121,11 @@ Daftar; kerangka halaman tidak memasangnya sendiri.
 - **Pengecualian halaman Stok** (revisi V4, Q83): di desktop judulnya 28px (`lg:text-[1.75rem]`),
   dan isi kolom cari serta Tambah Barang 17px (`text-subjudul`), supaya bagian atas yang paling
   sering dipakai terbaca dari jauh. Halaman lain tetap memakai tabel di atas.
+- **Pengecualian Beranda** (revisi V5, Q106 dan Q108, mengikuti rancangannya): sapaan
+  "Selamat datang," dan nama usaha 30px di HP dan 40px di desktop, nama usaha miring 800
+  (satu-satunya huruf miring yang dimuat); angka Perlu Tindakan 30/36px, angka "hal menunggu
+  keputusanmu" 36px, dan angka tengah donat 30px. Judul kartu Beranda `text-subjudul
+  font-extrabold text-brand-soft-ink` (`Bagian besar`).
 - **Keterangan di bawah judul halaman:** `mt-1 text-isi text-ink-2 leading-relaxed max-w-[62ch]`.
 - **Satu angka besar per baris.** `tabular` (tabular-nums) hanya untuk kolom angka yang harus
   sejajar vertikal, bukan untuk angka besar yang berdiri sendiri.
@@ -157,8 +173,8 @@ terpisah dari angkanya di 360px.
 | | HP (di bawah 1024px) | Desktop (`lg`, 1024px ke atas) |
 |---|---|---|
 | Bilah atas | 56px, menempel, berisi lonceng dan keranjang | Disembunyikan |
-| Navigasi | Bilah bawah setinggi `--nav-h` (4,5rem) | Navigasi samping selebar `--rail-w` (16,5rem), termasuk Keranjang dengan lencana |
-| Pemberitahuan | Lonceng di bilah atas | Lonceng bulat yang melayang di pojok kanan atas isi (`LoncengMelayang`), tetap di tempat saat digulir; baris judul yang berisi di kanan memberi ruang lewat `RUANG_LONCENG` |
+| Navigasi | Bilah bawah setinggi `--nav-h` (4,5rem) | `MenuSamping` selebar `--rail-w` (16,5rem), termasuk Keranjang dengan lencana |
+| Pemberitahuan | Lonceng di bilah atas, membuka halaman pemberitahuan | Lonceng bulat yang melayang di pojok kanan atas isi (`LoncengMelayang`), tetap di tempat saat digulir, dan membuka panel di bawahnya; baris judul yang berisi di kanan memberi ruang lewat `RUANG_LONCENG` |
 | Jarak atas `<main>` | `pt-4` | `lg:pt-6` |
 
 - **Tab navigasi:**
@@ -208,9 +224,16 @@ terpisah dari angkanya di 360px.
     petak kelima selebar dua kolom.
 - **Layar acuan dasbor** (revisi V2, diubah revisi V3): dua ukuran area halaman, **1536 × 834**
   piksel CSS (laptop Ilham, 1920 × 1200 skala 125%) dan **1536 × 730** (laptop 1920 × 1080).
-  - Prediksi, Stok, dan rincian barang mengisi tinggi layar berapa pun. Halamannya setinggi layar
-    dikurangi jarak atas-bawah `<main>` (`min-h-[calc(100dvh-3.5rem)]`), dan bagian bawahnya
-    memanjang mengisi sisanya: tanpa gulir di 730 dan tanpa ruang kosong di 834.
+  - Prediksi dan Stok mengisi tinggi layar berapa pun. Halamannya setinggi layar dikurangi jarak
+    atas-bawah `<main>` (`min-h-[calc(100dvh-3.5rem)]`), dan bagian bawahnya memanjang mengisi
+    sisanya: tanpa gulir di 730 dan tanpa ruang kosong di 834.
+  - Rincian barang (revisi V5, Q102) di desktop dua baris dan boleh digulir: tiga kartu sama
+    tinggi di atas (sisa tercatat dengan sedang dikirim, batas aman, dan kedua tombolnya;
+    perkiraan dengan rincian per hari tiga hari ke depan; saran distributor), lalu Tren
+    pemakaian dua pertiga dan Riwayat pergerakan sepertiga (lima terakhir dan "Lihat semua").
+    Di 1024 sampai 1279px dua kolom; tab Ringkasan dan Riwayat hanya di bawah 1024px. Tata
+    letaknya dipilih lewat `useKueriMedia(KUERI_DESKTOP)` (`lib/media.ts`), jadi hanya satu
+    susunan yang dirender.
   - Grafik yang memanjang memakai `isiTinggi` (`GrafikTren`, `GrafikBatang`); `tinggi` menjadi
     tinggi paling pendek. Gambar dan daftar yang memanjang duduk di lapisan `absolute`, supaya
     tingginya sendiri tidak menahan wadahnya.
@@ -244,6 +267,11 @@ terpisah dari angkanya di 360px.
   (390 × 260). Foto hero (1536 × 1024, sejak 27 Okt 2026) cukup besar untuk mengisi panel kanan
   hero setinggi kartunya sampai tepi kanan, dengan satu lengkung di kiri; `sizes`-nya mengikuti
   lebar gambar setelah `object-cover` (±1,5 × tinggi hero), bukan lebar panelnya.
+- **Foto promo** (revisi V5, Q114) di `frontend/public/gambar/promo/`, 1080 piksel, berlisensi
+  Unsplash: `cuci-gudang.jpg` oleh CHUTTERSNAP (unsplash.com/photos/BNBA1h-NgdY),
+  `keanggotaan.jpg` oleh Claire Abdo (unsplash.com/photos/0gICDd3mAp4), dan `produk-baru.jpg`
+  oleh Tim Mossholder (unsplash.com/photos/t14ZhuQQuxE). Selalu di bawah bayangan warna jenis
+  promonya, tidak pernah polos di bawah teks.
 
 ## 6. Komponen
 
@@ -287,8 +315,8 @@ Cari komponen yang sudah ada sebelum menulis yang baru. Komponen dasar ada di
 | Kartu biasa / kartu yang seluruhnya bisa ditekan | `Kartu`, `KartuTautan` |
 | Judul bagian dengan aksi di kanan | `JudulBagian` |
 | Kotak satu bagian halaman, dengan atau tanpa judul | `Bagian` (`KELAS_BAGIAN` untuk kotak serupa) |
-| Deretan kartu yang digeser | `Korsel`; dengan `judul` panahnya di pojok kanan atas, `nada="aksen"` di wadah coral |
-| Pemberitahuan di desktop | `LoncengMelayang`: langsung membuka halaman pemberitahuan, yang tampil tanpa menu samping dengan tombol kembali |
+| Deretan kartu yang digeser | `Korsel`; dengan `judul` panahnya di pojok kanan atas, `aksi` (mis. "Lihat semua") sebelum panah. Bila ada `aksi`, panahnya hilang di bawah 640px: kartu digeser jari dan titiknya menunjukkan posisi |
+| Pemberitahuan di desktop | `LoncengMelayang` (revisi V5, Q99 sampai Q101): panel selebar paling banyak 25rem di bawah lonceng, berisi "Tandai semua dibaca", `TabSegmen` "Perlu tindakan" dan "Semua", paling banyak enam `BarisButir` dengan label aksinya, dan "Lihat semua" ke halaman pemberitahuan (tanpa menu samping, dengan tombol kembali). Tertutup oleh ketukan di luar, Esc (fokus kembali ke lonceng), pindah halaman, atau memilih butir. Angka lonceng = butir yang perlu tindakan, dibaca atau belum; membaca hanya menghapus titik biru. Status dibaca disimpan di peramban per akun (`lib/dibaca.ts`) |
 | Penyaring dan urutan yang membuka pilihan | `MenuTarik` di perangkat bertetikus (`usePakaiMenuTarik`), `Lembar` di HP; satu keadaan buka dan satu isi untuk keduanya. Chip pemicunya memakai `bukaMenu`. Jangan taruh pemicunya di dalam wadah yang menggulir ke samping: menunya terpotong |
 | Status pendek | `Lencana nada=...` dengan ikon, atau `Titik` yang selalu disertai teks |
 | Kotak peringatan dan informasi | `Peringatan` (ikon dan warna mengikuti nada) |
@@ -304,11 +332,15 @@ Cari komponen yang sudah ada sebelum menulis yang baru. Komponen dasar ada di
 | Lacak Pesanan | `DaftarLacak` (revisi V3): satu baris per pesanan dengan garis empat status Menunggu Konfirmasi → Disiapkan → Dikirim → Selesai, bertanggal dari riwayat; truk di antara Dikirim dan Selesai selama di jalan. Dibuka lewat `TombolLacak` (berangka) di halaman Pesanan |
 | Peta satu pesanan | `PetaPesanan` di rincian pesanan selama pesanan berjalan (di atas Pembayaran atau Jejak Pesanan), memakai `PetaLacak` dan `KeteranganPeta`: Leaflet dengan ubin OpenStreetMap, dimuat malas. Posisi kiriman selalu disebut "perkiraan posisi" |
 | Peta sebaran pemesan | `PetaSebaran` (revisi V4, Q87): Leaflet + OpenStreetMap lewat `buatPeta` yang sama dengan `PetaLacak`, penanda cincin bernomor per kondisi (merah utuh, jingga putus-putus, biru ganda). Bentuk cincinnya `Cincin` dan `TandaTitik` di `TandaTitik.tsx`, berkas tanpa Leaflet, supaya petak Beranda tidak memuat pustaka peta. Di desktop kolom peta setinggi layar |
-| Logo promo | `LogoPromo` (`KartuPromo.tsx`): glyph kategori barang (`GlyphPromo`, `logoPromo.tsx`) putih di ubin warna jenis promo, redup bila promo berakhir. Delapan glyph dibangkitkan `tools/buat_logo_promo.py` ke `data/glyphPromo.ts`; masternya di `docs/desain/logo-promo/`. Kategori promo = kelompok barang terbanyak di dalamnya, seri atau kosong memakai Campuran. Lencana kecil di jalur beli (`LencanaPromo`) tetap memakai ikon jenis (revisi V4, Q92) |
-| Menu halaman akun | `Kelompok`, `BarisMenu`, `TombolPilihan` (`components/ui/menuAkun.tsx`), dipakai Akun pemilik usaha dan Akun distributor (revisi V4, Q94). Alat uji purwarupa (masuk/keluar akun simulasi, ganti peran) selalu di kotak bergaris putus paling bawah halaman akun |
+| Kartu promo | `KartuPromo` (revisi V5, Q107): satu foto per jenis promo (`FotoPromo`) dengan bayangan warna jenisnya, lencana jenis pil putih (`LencanaJenisPromo`, ikon label, kilau, mahkota), judul, nama toko, pil potongan, dan tanggal. Dipakai Beranda, `/promo`, daftar promo distributor (`redup` untuk yang berakhir), dan pratinjaunya; spanduk rincian promo memakai `FotoPromo pekat`. Logo per kategori barang V4 sudah tidak dipakai, masternya diarsipkan di `docs/desain/logo-promo/`. Lencana kecil di jalur beli (`LencanaPromo`) memakai ikon jenis yang sama |
+| Kepala Beranda | `KepalaSambutan` (Q106): sapaan, nama usaha miring ungu berstabilo, keterangan opsional (pita data kasir UMKM), pil tanggal di kanan sebelah lonceng; di HP ditumpuk |
+| Pintasan Perlu Tindakan | `PerluTindakan` (Q108): empat ubin tanpa bingkai berikon ilustrasi dari rancangan (`public/gambar/tindakan/`), angka di samping ikon, nama di bawah; disorot: terangkat, ikon membesar, garis coral di bawah (tanpa gerak bila gerak dikurangi) |
+| Daftar urusan | `KartuUrusan` dan `BarisUrusan` (Q109): angka besar "N hal menunggu keputusanmu", tiga baris teratas, "Lihat semua" membuka sisanya di kartu itu juga. Satu tombol per baris; hanya baris teratas yang tombolnya ungu penuh, dan latar merah hanya untuk baris yang genting |
+| Donat status | `DonatStatus` (Q109, Q118): total di tengah, keterangan berangka di kanan (bisa jadi tautan), celah 2px antarpotongan, keterangan pembaca layar lewat `label` |
+| Menu halaman akun | `Kelompok`, `BarisMenu`, `TombolPilihan` (`components/ui/menuAkun.tsx`), dipakai Akun pemilik usaha dan Akun distributor (revisi V4, Q94). Alat uji purwarupa (masuk/keluar akun simulasi, ganti peran) selalu di kotak bergaris putus paling bawah halaman akun; sejak revisi V5 (Q103) satu baris tiga kolom di desktop (pengantar, lalu dua alat) dengan tombol sejajar di dasar kolom. Simulasi turun derajat perkiraan sudah dihapus |
 | Memilih satu titik di peta | `PetaPilihTitik`: ketuk peta, atau geser dengan tombol panah lalu "Pakai titik tengah peta" |
-| Tautan kecil di navigasi samping desktop | `TautanSamping` (keranjang, Ringkasan Penjualan), dengan angka opsional. Lacak Pesanan tidak di sini sejak revisi V3 |
-| Ringkasan penjualan | `TampilanRingkasan` (halaman) dan `KartuRingkasanPenjualan` (Beranda, Dashboard). Tanpa laba kotor; angka utama dibandingkan dengan periode sebelumnya yang sama panjang, dengan ikon dan kata |
+| Menu samping desktop | `MenuSamping` (revisi V5, Q111): tanda merek, daftar utama, garis, daftar tambahan (Keranjang, Ringkasan Penjualan) dengan angka opsional, dan kartu akun kaca di dasar. Penanda aktif (`.penanda-samping`) satu tab sewarna latar halaman dengan lengkung cekung 28px, diukur dari butir aktif lalu digeser 320ms; mati bila gerak dikurangi. Halaman di luar daftar (Akun) tanpa penanda. Lacak Pesanan tidak di sini sejak revisi V3 |
+| Ringkasan penjualan | `TampilanRingkasan` (halaman) dan `KartuRingkasanPenjualan` (Beranda, Dashboard). Tanpa laba kotor; angka utama dibandingkan dengan periode sebelumnya yang sama panjang, dengan ikon dan kata. Di Beranda (revisi V5, butir 4A): tiga petak berikon bulat dengan chip naik (hijau) atau turun (jingga), lalu batang per hari `seri-1` dengan batang tertinggi diberi angka |
 
 **Ikon** dibuat sendiri di `frontend/src/icons/`: garis 1,75px, kotak 24px, dan selalu
 `aria-hidden`. Maknanya dibawa oleh teks di sebelahnya. Pustaka ikon tidak dipakai, demi

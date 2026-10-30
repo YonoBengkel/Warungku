@@ -297,9 +297,10 @@ Get-Content backend\skrip\02_periksa_konsistensi.sql | docker exec -i warungku-d
 - **Gambar produk dan logo toko** (ilustrasi SVG) dibangkitkan ulang dengan
   `python tools/buat_gambar.py`. Ganti berkas di `frontend/public/gambar/` dengan
   foto sungguhan kapan saja; nama berkasnya tetap.
-- **Logo promo** (delapan glyph per kategori barang) dibangkitkan ulang dengan
-  `python tools/buat_logo_promo.py`, yang menulis `frontend/src/data/glyphPromo.ts`
-  dan master SVG di `docs/desain/logo-promo/`.
+- **Foto promo** (satu per jenis promo, revisi V5) ada di `frontend/public/gambar/promo/`:
+  foto Unsplash 1080 piksel, pemberi kreditnya di `DESIGN.md`. Logo promo per kategori
+  barang dari revisi V4 tidak dipakai aplikasi lagi; master SVG-nya tetap diarsipkan di
+  `docs/desain/logo-promo/` (pembangkitnya `python tools/buat_logo_promo.py`).
 - **Foto halaman depan** ada di `frontend/public/gambar/landing/`: foto hero
   `kasir-warung-ramah.jpg` (1536 piksel, dengan versi 960 piksel untuk layar kecil)
   dan foto blok distributor `kasir-topi-merah.jpg`.

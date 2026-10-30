@@ -1,35 +1,39 @@
-import { cloneElement, isValidElement, useEffect, useMemo, useState } from 'react'
-import type { ReactElement, ReactNode } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import {
-  BannerAkun,
-  KartuTindakan,
-  KartuPesanan,
-  KuotaBulanIni,
-  PitaDataKasir,
-} from '@/components/domain'
+import { BannerAkun, KuotaBulanIni, PitaDataKasir } from '@/components/domain'
 import { KartuPromo } from '@/components/domain/KartuPromo'
+import { KepalaSambutan } from '@/components/domain/KepalaSambutan'
+import {
+  DonatStatus,
+  KartuUrusan,
+  BarisUrusan,
+  PerluTindakan,
+  type Pintasan,
+  type PotonganDonat,
+  type Urusan,
+} from '@/components/domain/KartuBeranda'
 import { KartuRingkasanPenjualan } from '@/components/domain/RingkasanPenjualan'
 import { ambilRingkasanUsaha } from '@/lib/apiPenjualan'
 import { Korsel } from '@/components/ui/korsel'
-import { Bagian, Kartu, Kerangka, Lencana, Tombol } from '@/components/ui/dasar'
+import { Bagian, HanyaPembacaLayar, Kartu, Kerangka, KELAS_BAGIAN, Tombol } from '@/components/ui/dasar'
 import { PengaturJumlah } from '@/components/ui/formulir'
 import { Lembar } from '@/components/ui/lembar'
 import {
-  IkonKalender,
+  IkonCentangLingkaran,
+  IkonJam,
   IkonKeranjang,
   IkonKontrak,
+  IkonKotak,
+  IkonNota,
+  IkonPanahKanan,
   IkonPasokan,
-  IkonPeringatan,
   IkonPetir,
   IkonSilang,
-  IkonNota,
-  IkonCentangLingkaran,
+  IkonTambah,
   IkonTrenNaik,
   IkonTrenTurun,
 } from '@/icons'
-import { angka, angkaJumlah, cx, hariLagi, tanggalLengkapHari } from '@/lib/format'
-import { RUANG_LONCENG } from '@/components/ui/navigasi'
+import { angka, angkaJumlah, cx, hariLagi, waktuNanti } from '@/lib/format'
 import { jumlahTampil } from '@/lib/satuan'
 import {
   layakDiperkirakan,
@@ -43,29 +47,41 @@ import {
   sisaHariPeriode,
   distributorById,
 } from '@/data/dummy'
-import { LABEL_ARAH_PREDIKSI, NADA_ARAH_PREDIKSI, PESANAN_BERJALAN } from '@/lib/label'
-import type { RekomendasiPrediksi } from '@/lib/types'
+import { LABEL_ARAH_PREDIKSI, LABEL_PESANAN, NADA_ARAH_PREDIKSI, PESANAN_BERJALAN } from '@/lib/label'
+import type { Pesanan, RekomendasiPrediksi } from '@/lib/types'
 import { useAplikasi } from '@/store/aplikasi'
 
 /**
  * Beranda menjawab satu pertanyaan: hari ini saya harus ngapain.
  *
- * Urutan bloknya dikunci: sambutan, promo distributor, pintasan "Perlu
- * Tindakan", kartu tindakan konkret, lalu Prediksi Stok.
+ * Susunan revisi V5 (Q110): kepala sapaan, promo distributor, Perlu Tindakan,
+ * lalu "Yang perlu kamu urus hari ini" berdampingan dengan Pesanan berjalan,
+ * Ringkasan Penjualan, Prediksi Stok, dan Kuota Kontrak. Halamannya boleh
+ * digulir.
  *
  * Aturan yang dipegang: Beranda tidak pernah punya data sendiri. Tiap blok
  * adalah cermin dari Stok, Pesanan, Kontrak, atau model prediksi, dan selalu
  * menautkan balik ke sumber aslinya. Tidak ada fitur yang hanya bisa dicapai
  * dari sini.
  *
- * Sejak revisi 23 Okt 2026 ada kartu Ringkasan Penjualan, dibaca dari nota
- * kasir apa adanya (harga seperti tercetak di struk). Untung dan margin tetap
- * tidak ada: harga pokok per menu tidak diketahui aplikasi ini.
+ * Ringkasan Penjualan dibaca dari nota kasir apa adanya (harga seperti
+ * tercetak di struk). Untung dan margin tetap tidak ada: harga pokok per menu
+ * tidak diketahui aplikasi ini.
  */
 
 /** Ambang "hampir kedaluwarsa". Sama persis dengan penyaring di layar Stok,
  *  supaya angka pada lencana dan panjang daftar yang dibuka tidak pernah beda. */
 const HARI_KEDALUWARSA_DEKAT = 14
+
+/** Urutan pesanan di kartu Pesanan berjalan: yang menunggu jawaban distributor dulu. */
+const URUT_BERJALAN: Record<string, number> = { 'menunggu-konfirmasi': 0, disiapkan: 1, dikirim: 2, draf: 3 }
+
+const HARI = 86_400_000
+
+/** Kiriman yang sudah sampai: ada bukti antar, ATAU perkiraan tibanya sudah lewat. */
+function sudahSampai(p: Pesanan): boolean {
+  return p.status === 'dikirim' && (p.pengiriman != null || (p.perkiraanTiba != null && +new Date(p.perkiraanTiba) <= Date.now()))
+}
 
 export default function Beranda() {
   const sesiServer = useAplikasi((s) => s.sesiServer)
@@ -93,13 +109,12 @@ export default function Beranda() {
     return () => window.clearTimeout(t)
   }, [])
 
-  const tugas = useMemo(() => {
-    const hasil: Array<{ kunci: string; urutan: number; elemen: ReactNode }> = []
+  const urusan = useMemo(() => {
+    const hasil: Array<Urusan & { urutan: number }> = []
 
-    /* Tombol di kartu langsung memasukkan saran ke keranjang; kartunya sendiri
-       membuka Lembar Pesan Cepat untuk yang mau memeriksa dulu. Pemberitahuan
-       sesudahnya membawa tautan "Ubah jumlah", karena jumlah saran bisa saja
-       tidak cocok dengan rencana pemilik usaha hari itu. */
+    /* Tombol di baris barang habis langsung memasukkan saran ke keranjang.
+       Pemberitahuan sesudahnya membawa tautan "Ubah jumlah", karena jumlah
+       saran bisa saja tidak cocok dengan rencana pemilik usaha hari itu. */
     function masukkanSaran(
       namaBarang: string,
       isi: { penawaranId: string; jumlah: number; kontrakId: string | null },
@@ -113,19 +128,14 @@ export default function Beranda() {
       })
     }
 
-    /* Dipakai dua kali: sebagai tujuan kartu "habis" (kalau barangnya memang
-       ada di dalamnya) dan sebagai kartu saran belanja sendiri. */
     // Saran belanja contoh merujuk barang data contoh. Di mode data server
-    // barangnya tidak ada, dan kartu tanpa nama barang ("…, dan 2 lainnya")
-    // lebih membingungkan daripada tidak ada kartu sama sekali.
+    // barangnya tidak ada, dan baris tanpa nama barang ("…, dan 2 lainnya")
+    // lebih membingungkan daripada tidak ada baris sama sekali.
     const saran = saranBelanja.find((s) => s.baris.some((r) => barang.some((b) => b.id === r.barangId)))
 
-    /* 1. Stok habis dan menipis */
-    const kritis = barang
-      .filter((b) => !b.dicatatManual && (statusStok(b) === 'habis' || statusStok(b) === 'menipis'))
-      .sort((a, b) => (statusStok(a) === 'habis' ? -1 : 1) - (statusStok(b) === 'habis' ? -1 : 1))
-
-    const habis = kritis.filter((b) => statusStok(b) === 'habis')
+    /* 1. Stok habis. Yang sudah dalam perjalanan tetap tampil sebagai
+       keterangan, tapi turun ke bawah dan tidak merah: sudah diurus. */
+    const habis = barang.filter((b) => !b.dicatatManual && statusStok(b) === 'habis')
     for (const b of habis.slice(0, 2)) {
       const dikirim = pesanan
         .filter((p) => PESANAN_BERJALAN.includes(p.status) && p.status !== 'draf')
@@ -133,11 +143,9 @@ export default function Beranda() {
         .filter((x) => x.barangId === b.id)
         .reduce((a, x) => a + x.jumlah * x.isiPerSatuan, 0)
 
-      /* Tujuan "Pesan Sekarang" mengikuti barang yang habis, bukan selalu
-         saran belanja harian. Menaruh pemilik warung di daftar yang tidak
-         memuat barangnya sama saja dengan menyuruh dia mencari sendiri tanpa
-         memberi tahu. Urutannya: daftar saran kalau barangnya memang di sana,
-         lalu penawaran langsung, lalu pencarian di Distributor. */
+      /* Tujuan "Pilih Distributor" mengikuti barang yang habis: daftar saran
+         kalau barangnya memang di sana, lalu penawaran langsung, lalu pencarian
+         di Distributor. */
       const penawaranPertama = penawaranUntukBarang(b.id)[0]
       const barisSaran = saran?.baris.find((r) => r.barangId === b.id)
       const kePesan = barisSaran && saran
@@ -158,143 +166,126 @@ export default function Beranda() {
             ? { penawaranId: rekomendasi.penawaranId, jumlah: Math.max(1, rekomendasi.jumlah), kontrakId: rekomendasi.kontrakId }
             : null
 
-      hasil.push({
-        kunci: `habis-${b.id}`,
-        urutan: 0,
-        elemen: (
-          <KartuTindakan
-            nada="kritis"
-            ikon={<IkonSilang size={18} />}
-            judul={`${b.nama} sudah habis`}
-            lencana={dikirim > 0 ? <Lencana nada="info">Sedang dikirim</Lencana> : undefined}
-            detail={
-              dikirim > 0
-                ? `${jumlahTampil(b, dikirim)} dalam perjalanan.`
-                : `Biasanya terpakai ${jumlahTampil(b, b.pemakaianHarian)} per hari.`
+      hasil.push(
+        dikirim > 0
+          ? {
+              kunci: `habis-${b.id}`,
+              urutan: 7,
+              nada: 'info',
+              Ikon: IkonPasokan,
+              judul: `${b.nama} sudah habis`,
+              detail: `Sedang dikirim, ${jumlahTampil(b, dikirim)} dalam perjalanan.`,
+              aksi: { label: 'Lihat Stok', ke: `/stok/${b.id}` },
             }
-            aksiLabel={dikirim > 0 ? 'Lihat Stok' : isiPesan ? 'Masukkan ke Keranjang' : 'Pilih Distributor'}
-            aksiKe={dikirim > 0 ? `/stok/${b.id}` : isiPesan ? undefined : kePesan}
-            onAksi={isiPesan && dikirim <= 0 ? () => masukkanSaran(b.nama, isiPesan) : undefined}
-            keKartu={dikirim > 0 ? undefined : kePesan}
-          />
-        ),
-      })
+          : {
+              kunci: `habis-${b.id}`,
+              urutan: 0,
+              nada: 'kritis',
+              Ikon: IkonSilang,
+              judul: `${b.nama} sudah habis`,
+              detail: `Biasanya terpakai ${jumlahTampil(b, b.pemakaianHarian)} per hari.`,
+              aksi: isiPesan
+                ? {
+                    label: (
+                      <>
+                        <HanyaPembacaLayar>Masukkan ke </HanyaPembacaLayar>Keranjang
+                      </>
+                    ),
+                    ikon: <IkonTambah size={15} />,
+                    onClick: () => masukkanSaran(b.nama, isiPesan),
+                  }
+                : { label: 'Pilih Distributor', ke: kePesan },
+            },
+      )
     }
 
-    /* 2. Saran belanja harian */
+    /* 2. Saran belanja harian: dibuka dulu supaya jumlahnya bisa diperiksa. */
     if (saran && saran.baris.length > 0) {
+      const nama = saran.baris
+        .slice(0, 3)
+        .map((r) => barang.find((b) => b.id === r.barangId)?.nama)
+        .filter(Boolean)
+        .join(', ')
       hasil.push({
         kunci: 'saran',
         urutan: 1,
-        elemen: (
-          <KartuTindakan
-            nada="menipis"
-            ikon={<IkonKeranjang size={18} />}
-            judul={`${saran.baris.length} barang perlu dibeli minggu ini`}
-            detail={saran.baris
-              .slice(0, 3)
-              .map((r) => barang.find((b) => b.id === r.barangId)?.nama)
-              .filter(Boolean)
-              .join(', ')
-              .concat(saran.baris.length > 3 ? `, dan ${saran.baris.length - 3} lainnya` : '')}
-            aksiLabel="Masukkan Saran ke Keranjang"
-            onAksi={() => {
-              const bisa = saran.baris.filter((r) => r.penawaranId != null)
-              for (const r of bisa) {
-                const pw = penawaranById(r.penawaranId!)
-                if (pw) tambahKeKeranjang(pw.distributorId, pw.id, Math.max(1, r.jumlahSaran), r.jumlahSaran, r.kontrakId)
-              }
-              tampilkanRacun(`${bisa.length} barang dari saran belanja masuk keranjang.`, 'aman', {
-                label: 'Lihat keranjang',
-                ke: '/keranjang',
-              })
-            }}
-            keKartu={`/pesan-cepat/${saran.id}`}
-          />
-        ),
+        nada: 'menipis',
+        Ikon: IkonKeranjang,
+        judul: `${saran.baris.length} barang perlu dibeli minggu ini`,
+        detail: saran.baris.length > 3 ? `${nama} +${saran.baris.length - 3}` : nama,
+        aksi: { label: 'Lihat', ke: `/pesan-cepat/${saran.id}` },
       })
     }
 
-    /* 3. Kuota kontrak yang kurang */
-    for (const k of kontrak.filter((x) => statusKuota(x) === 'kurang')) {
-      const kurang = Math.max(0, k.periodeBerjalan.kuota - k.periodeBerjalan.diterima - k.dalamPerjalanan)
+    /* 3. Kuota kontrak yang kurang, digabung jadi satu baris kalau lebih dari satu. */
+    const kurang = kontrak
+      .filter((x) => statusKuota(x) === 'kurang')
+      .map((k) => ({ k, sisa: Math.max(0, k.periodeBerjalan.kuota - k.periodeBerjalan.diterima - k.dalamPerjalanan) }))
+    if (kurang.length === 1) {
+      const { k, sisa } = kurang[0]
       hasil.push({
         kunci: `kuota-${k.id}`,
         urutan: 2,
-        elemen: (
-          <KartuTindakan
-            nada="menipis"
-            ikon={<IkonKontrak size={18} />}
-            judul={`Kuota ${k.namaBarang} masih kurang`}
-            detail={`Kurang ${angkaJumlah(kurang)} ${k.satuan} dari kuota ${angkaJumlah(k.periodeBerjalan.kuota)} ${k.satuan} bulan ini. Sisa ${sisaHariPeriode()} hari.`}
-            aksiLabel="Lihat Kontrak"
-            aksiKe={`/kontrak/${k.id}`}
-          />
-        ),
+        nada: 'merek',
+        Ikon: IkonKontrak,
+        judul: `Kuota ${k.namaBarang} masih kurang`,
+        detail: `Kurang ${angkaJumlah(sisa)} ${k.satuan} dari kuota ${angkaJumlah(k.periodeBerjalan.kuota)} ${k.satuan} bulan ini. Sisa ${sisaHariPeriode()} hari.`,
+        aksi: { label: 'Kontrak', ke: `/kontrak/${k.id}` },
+      })
+    } else if (kurang.length > 1) {
+      const rincian = kurang
+        .slice(0, 3)
+        .map(({ k, sisa }) => `${k.namaBarang} ${angkaJumlah(sisa)} ${k.satuan}`)
+        .join(' · ')
+      hasil.push({
+        kunci: 'kuota',
+        urutan: 2,
+        nada: 'merek',
+        Ikon: IkonKontrak,
+        judul: `${kurang.length} kuota kontrak masih kurang`,
+        detail: `${rincian}${kurang.length > 3 ? ` +${kurang.length - 3}` : ''}. Sisa ${sisaHariPeriode()} hari.`,
+        aksi: { label: 'Kontrak', ke: '/pesanan?tab=kontrak' },
       })
     }
 
     /* 4. Kontrak yang akan berakhir */
     for (const k of kontrak.filter((x) => x.status === 'akan-berakhir')) {
-      const hari = Math.ceil((+new Date(k.berakhir) - Date.now()) / 86_400_000)
+      const hari = Math.ceil((+new Date(k.berakhir) - Date.now()) / HARI)
       hasil.push({
         kunci: `akhir-${k.id}`,
         urutan: 3,
-        elemen: (
-          <KartuTindakan
-            nada="info"
-            ikon={<IkonKontrak size={18} />}
-            judul={`Kontrak ${k.namaBarang} berakhir ${hariLagi(hari)}`}
-            detail={`Kalau ingin melanjutkan, perpanjangan bisa diatur sebelum masa kontrak habis.`}
-            aksiLabel="Lihat Kontrak"
-            aksiKe={`/kontrak/${k.id}`}
-          />
-        ),
+        nada: 'info',
+        Ikon: IkonKontrak,
+        judul: `Kontrak ${k.namaBarang} berakhir ${hariLagi(hari)}`,
+        detail: 'Perpanjangan bisa diatur sebelum masa kontrak habis.',
+        aksi: { label: 'Kontrak', ke: `/kontrak/${k.id}` },
       })
     }
 
     /* 5. Barang yang sudah sampai dan menunggu diperiksa. Syaratnya sama
-       dengan kartu pesanan: ada bukti antar dari distributor, ATAU perkiraan
-       tibanya sudah lewat. Dulu hanya yang kedua, jadi kiriman yang ditandai
-       sampai lebih awal tidak muncul di Beranda. */
-    for (const p of pesanan.filter(
-      (x) =>
-        x.status === 'dikirim' &&
-        (x.pengiriman != null || (x.perkiraanTiba != null && +new Date(x.perkiraanTiba) <= Date.now())),
-    )) {
-      const d = distributorById(p.distributorId)
+       dengan kartu Pesanan berjalan dan pemberitahuan. */
+    for (const p of pesanan.filter(sudahSampai)) {
       hasil.push({
         kunci: `terima-${p.id}`,
         urutan: 4,
-        elemen: (
-          <KartuTindakan
-            nada="merek"
-            ikon={<IkonPasokan size={18} />}
-            judul={`Kiriman dari ${d?.nama} sudah sampai`}
-            detail={`${p.nomor} menunggu kamu periksa. Stok baru bertambah setelah kamu konfirmasi.`}
-            aksiLabel="Barang Sudah Sampai"
-            aksiKe={`/pesanan/${p.id}/terima`}
-          />
-        ),
+        nada: 'merek',
+        Ikon: IkonPasokan,
+        judul: `Kiriman dari ${distributorById(p.distributorId)?.nama ?? 'distributor'} sudah sampai`,
+        detail: `${p.nomor} menunggu kamu periksa. Stok bertambah setelah kamu konfirmasi.`,
+        aksi: { label: 'Terima', ke: `/pesanan/${p.id}/terima` },
       })
     }
 
     /* 6. Draf pesanan rutin yang menunggu persetujuan */
     for (const p of pesanan.filter((x) => x.status === 'draf')) {
-      const d = distributorById(p.distributorId)
       hasil.push({
         kunci: `draf-${p.id}`,
         urutan: 5,
-        elemen: (
-          <KartuTindakan
-            nada="info"
-            ikon={<IkonPetir size={18} />}
-            judul="Draf pesanan rutin menunggu diperiksa"
-            detail={`${p.baris[0]?.nama} ${angka(p.baris[0]?.jumlah ?? 0)} ${p.baris[0]?.satuan} ke ${d?.nama}. Tidak akan terkirim sebelum kamu setujui.`}
-            aksiLabel="Periksa Draf"
-            aksiKe={`/pesanan/${p.id}`}
-          />
-        ),
+        nada: 'info',
+        Ikon: IkonPetir,
+        judul: 'Draf pesanan rutin menunggu diperiksa',
+        detail: `${p.baris[0]?.nama} ${angka(p.baris[0]?.jumlah ?? 0)} ${p.baris[0]?.satuan} ke ${distributorById(p.distributorId)?.nama}. Tidak terkirim sebelum kamu setujui.`,
+        aksi: { label: 'Periksa', ke: `/pesanan/${p.id}` },
       })
     }
 
@@ -307,29 +298,80 @@ export default function Beranda() {
       hasil.push({
         kunci: `bayar-${p.id}`,
         urutan: 6,
-        elemen: (
-          <KartuTindakan
-            nada="netral"
-            ikon={<IkonNota size={18} />}
-            judul={`${belumBayar.length} pesanan belum dibayar`}
-            detail={`${p.nomor} ke ${distributorById(p.distributorId)?.nama} belum ada catatan pembayarannya.`}
-            aksiLabel="Lihat Pesanan"
-            aksiKe={`/pesanan/${p.id}`}
-          />
-        ),
+        nada: 'netral',
+        Ikon: IkonNota,
+        judul: `${belumBayar.length} pesanan belum dibayar`,
+        detail: `${p.nomor} ke ${distributorById(p.distributorId)?.nama} belum ada catatan pembayarannya.`,
+        aksi: { label: 'Lihat', ke: `/pesanan/${p.id}` },
       })
     }
 
-    // Hanya kartu teratas yang tombolnya utama: di desktop dua kartu tampil
-    // berdampingan, dan dua tombol ungu penuh saling berebut perhatian.
-    return hasil
-      .sort((a, b) => a.urutan - b.urutan)
-      .slice(0, 5)
-      .map((x, i) => (i === 0 && isValidElement(x.elemen) ? { ...x, elemen: cloneElement(x.elemen as ReactElement<{ utama?: boolean }>, { utama: true }) } : x))
+    return hasil.sort((a, b) => a.urutan - b.urutan)
   }, [barang, kontrak, pesanan, tambahKeKeranjang, tampilkanRacun])
 
-  const berjalan = pesanan.filter((p) => PESANAN_BERJALAN.includes(p.status))
   const isiKeranjang = keranjang.reduce((a, k) => a + k.baris.length, 0)
+
+  /* Pesanan berjalan (Q109): donat per status kita sendiri, lalu dua pesanan
+     terpenting. Kiriman yang sudah sampai merah dengan tombol Terima. */
+  const berjalan = useMemo(() => pesanan.filter((p) => PESANAN_BERJALAN.includes(p.status)), [pesanan])
+  const donat = useMemo<PotonganDonat[]>(() => {
+    const hitung = (s: Pesanan['status']) => berjalan.filter((p) => p.status === s).length
+    const draf = hitung('draf')
+    return [
+      { kunci: 'menunggu', label: LABEL_PESANAN['menunggu-konfirmasi'], jumlah: hitung('menunggu-konfirmasi'), garis: 'stroke-seri-2', titik: 'bg-seri-2' },
+      { kunci: 'disiapkan', label: LABEL_PESANAN.disiapkan, jumlah: hitung('disiapkan'), garis: 'stroke-seri-1', titik: 'bg-seri-1' },
+      { kunci: 'dikirim', label: LABEL_PESANAN.dikirim, jumlah: hitung('dikirim'), garis: 'stroke-seri-4', titik: 'bg-seri-4' },
+      ...(draf > 0
+        ? [{ kunci: 'draf', label: 'Draf rutin', jumlah: draf, garis: 'stroke-line-strong', titik: 'bg-line-strong' }]
+        : []),
+    ]
+  }, [berjalan])
+  const pesananPenting = useMemo<Urusan[]>(() => {
+    const urut = [...berjalan].sort((a, b) =>
+      sudahSampai(a) !== sudahSampai(b) ? (sudahSampai(a) ? -1 : 1) : URUT_BERJALAN[a.status] - URUT_BERJALAN[b.status],
+    )
+    return urut.slice(0, 2).map((p): Urusan => {
+      const nama = distributorById(p.distributorId)?.nama ?? 'Distributor'
+      if (sudahSampai(p)) {
+        const lewat = p.perkiraanTiba ? Math.floor((Date.now() - +new Date(p.perkiraanTiba)) / HARI) : 0
+        return {
+          kunci: p.id,
+          nada: 'kritis',
+          Ikon: IkonPasokan,
+          judul: nama,
+          detail: (
+            <>
+              {LABEL_PESANAN.dikirim} ·{' '}
+              <strong className="font-bold text-kritis-ink">
+                {lewat >= 1 ? `terlambat ${lewat} hari` : 'sudah sampai'}
+              </strong>
+            </>
+          ),
+          aksi: { label: 'Terima', ke: `/pesanan/${p.id}/terima` },
+        }
+      }
+      return {
+        kunci: p.id,
+        nada: p.status === 'menunggu-konfirmasi' ? 'menipis' : p.status === 'draf' ? 'netral' : 'info',
+        Ikon: p.status === 'menunggu-konfirmasi' ? IkonJam : p.status === 'disiapkan' ? IkonKotak : p.status === 'draf' ? IkonPetir : IkonPasokan,
+        judul: nama,
+        detail: (
+          <>
+            {p.status === 'draf' ? 'Draf rutin' : LABEL_PESANAN[p.status]}
+            {p.statusBayar === 'belum-dibayar' && p.status !== 'draf' ? (
+              <>
+                {' · '}
+                <strong className="font-bold text-menipis-ink">belum dibayar</strong>
+              </>
+            ) : p.perkiraanTiba ? (
+              ` · tiba ${waktuNanti(p.perkiraanTiba)}`
+            ) : null}
+          </>
+        ),
+        aksi: { label: p.status === 'draf' ? 'Periksa' : 'Detail', ke: `/pesanan/${p.id}` },
+      }
+    })
+  }, [berjalan])
 
   /**
    * Angka pada empat pintasan "Perlu Tindakan".
@@ -340,65 +382,49 @@ export default function Beranda() {
    *
    * Populasinya SELURUH barang, tanpa membuang yang dicatat manual. Layar
    * Stok menyaring dari seluruh barang juga, dan lencana di sini cuma boleh
-   * menjanjikan panjang daftar yang nanti benar-benar terbuka. Lagi pula
-   * barang yang dicatat manual tetap stok gudang yang perlu diurus kalau
-   * habis — yang tidak bisa kami hitung cuma perkiraannya, bukan sisanya.
+   * menjanjikan panjang daftar yang nanti benar-benar terbuka.
    */
-  const hitungTindakan = useMemo(() => {
-    return {
-      habis: barang.filter((b) => statusStok(b) === 'habis').length,
-      menipis: barang.filter((b) => statusStok(b) === 'menipis').length,
-      kedaluwarsa: barang.filter((b) => {
-        if (!b.ingatkanKedaluwarsa || !b.kedaluwarsa) return false
-        const hari = Math.ceil((+new Date(b.kedaluwarsa) - Date.now()) / 86_400_000)
-        return hari <= HARI_KEDALUWARSA_DEKAT
-      }).length,
-      kontrak: kontrak.filter((k) => k.status === 'akan-berakhir').length,
-    }
-  }, [barang, kontrak])
-
-  /**
-   * Empat pintasan penyaring. Kata "Kedaluwarsa" dipakai konsisten dengan chip
-   * penyaring di layar Stok; satu hal yang sama tidak boleh punya dua ejaan.
-   */
-  const pintasan = [
-    {
-      kunci: 'habis',
-      label: ['Stok', 'Habis'],
-      ke: '/stok?filter=habis',
-      jumlah: hitungTindakan.habis,
-      satuan: 'barang',
-      Ikon: IkonSilang,
-      warna: 'bg-kritis-soft text-kritis-ink',
-    },
-    {
-      kunci: 'menipis',
-      label: ['Stok', 'Menipis'],
-      ke: '/stok?filter=menipis',
-      jumlah: hitungTindakan.menipis,
-      satuan: 'barang',
-      Ikon: IkonPeringatan,
-      warna: 'bg-menipis-soft text-menipis-ink',
-    },
-    {
-      kunci: 'kedaluwarsa',
-      label: ['Segera', 'Kedaluwarsa'],
-      ke: '/stok?filter=kedaluwarsa',
-      jumlah: hitungTindakan.kedaluwarsa,
-      satuan: 'barang',
-      Ikon: IkonKalender,
-      warna: 'bg-info-soft text-info-ink',
-    },
-    {
-      kunci: 'kontrak',
-      label: ['Kontrak', 'Akan Berakhir'],
-      ke: '/pesanan?tab=kontrak&status=akan-berakhir',
-      jumlah: hitungTindakan.kontrak,
-      satuan: 'kontrak',
-      Ikon: IkonKontrak,
-      warna: 'bg-brand-soft text-brand-soft-ink',
-    },
-  ]
+  const pintasan = useMemo<Pintasan[]>(
+    () => [
+      {
+        kunci: 'habis',
+        label: 'Stok Habis',
+        ke: '/stok?filter=habis',
+        jumlah: barang.filter((b) => statusStok(b) === 'habis').length,
+        satuan: 'barang',
+        gambar: 'stok-habis.png',
+      },
+      {
+        kunci: 'menipis',
+        label: 'Stok Menipis',
+        ke: '/stok?filter=menipis',
+        jumlah: barang.filter((b) => statusStok(b) === 'menipis').length,
+        satuan: 'barang',
+        gambar: 'stok-menipis.svg',
+      },
+      {
+        // "Kedaluwarsa" sama dengan chip penyaring di layar Stok: satu hal, satu ejaan.
+        kunci: 'kedaluwarsa',
+        label: 'Segera Kedaluwarsa',
+        ke: '/stok?filter=kedaluwarsa',
+        jumlah: barang.filter((b) => {
+          if (!b.ingatkanKedaluwarsa || !b.kedaluwarsa) return false
+          return Math.ceil((+new Date(b.kedaluwarsa) - Date.now()) / HARI) <= HARI_KEDALUWARSA_DEKAT
+        }).length,
+        satuan: 'barang',
+        gambar: 'segera-kedaluwarsa.png',
+      },
+      {
+        kunci: 'kontrak',
+        label: 'Kontrak Akan Berakhir',
+        ke: '/pesanan?tab=kontrak&status=akan-berakhir',
+        jumlah: kontrak.filter((k) => k.status === 'akan-berakhir').length,
+        satuan: 'kontrak',
+        gambar: 'kontrak-berakhir.svg',
+      },
+    ],
+    [barang, kontrak],
+  )
 
   /* Rekomendasi model: yang perlu ditindak dulu (tambah), lalu yang perlu
      direm (kurang). Yang "tetap" tidak ditampilkan karena tidak meminta
@@ -406,8 +432,7 @@ export default function Beranda() {
 
      Dihitung ulang dari stok yang hidup di penyimpanan, bukan dari daftar
      yang dibekukan saat aplikasi dimuat. Kalau tidak, kartu masih menyuruh
-     menambah stok yang baru saja bertambah lewat Terima Barang — dan sisi
-     kirinya sendiri sudah menampilkan angka baru. */
+     menambah stok yang baru saja bertambah lewat Terima Barang. */
   const rekomendasi = useMemo(
     () =>
       barang
@@ -456,132 +481,117 @@ export default function Beranda() {
 
   return (
     <div className="pb-6">
-      {/* Sambutan ditulis biasa, bukan HURUF BESAR SEMUA seperti di catatan
-          aslinya: pengguna sasaran aplikasi ini berumur 40 tahun ke atas, dan
-          teks kapital seluruhnya kehilangan bentuk kata sehingga lebih lambat
-          dibaca. Maknanya sama, kecepatan bacanya tidak.
-          Lonceng, keranjang, logo, dan nama aplikasi tinggal di
+      {/* Sambutan ditulis biasa, bukan HURUF BESAR SEMUA: pengguna sasaran
+          aplikasi ini berumur 40 tahun ke atas, dan teks kapital seluruhnya
+          lebih lambat dibaca. Lonceng, keranjang, dan logo tinggal di
           KerangkaAplikasi, jadi tidak diulang di sini. */}
-      <header className={cx('mb-3', RUANG_LONCENG)}>
-        <h1 className="text-[1.375rem] font-extrabold text-ink tracking-tight leading-tight">
-          Selamat datang, {profil.namaUsaha}
-        </h1>
-        <p className="mt-0.5 text-isi text-ink-3">{tanggalLengkapHari(new Date())}</p>
-      </header>
-
-      {/* Pita data kasir */}
-      <PitaDataKasir />
+      <KepalaSambutan nama={profil.namaUsaha} bawah={<PitaDataKasir />} />
 
       {/* Banner status akun */}
       <div className="mt-3 empty:mt-0">
         <BannerAkun />
       </div>
 
-      {/* Promo distributor */}
-      {/* Wadah coral berisi kartu putih, panah di pojok (revisi 23 Okt). Coral
-          hanya sebagai isian; judulnya tinta gelap, bukan putih (2,5:1). */}
+      {/* Promo distributor (revisi V5, Q107): kartu berfoto di kotak putih,
+          "Lihat semua" membuka halaman semua promo. */}
       {promoTampil.length > 0 && (
-        <section
-          aria-labelledby="judul-promo"
-          className="mt-4 bg-aksen -mx-4 px-4 py-4 sm:mx-0 sm:p-5 sm:rounded-xl sm:shadow-e1"
-        >
+        <section aria-labelledby="judul-promo" className={cx(KELAS_BAGIAN, 'mt-4')}>
           <Korsel
             label="Promo dari distributor"
             otomatis
-            nada="aksen"
             judul={
-              <h2 id="judul-promo" className="text-subjudul font-extrabold text-aksen-ink leading-tight">
-                Promo dari Distributor
-              </h2>
+              <div>
+                <h2 id="judul-promo" className="text-subjudul font-extrabold text-brand-soft-ink leading-tight">
+                  Promo dari Distributor
+                </h2>
+                <p className="mt-0.5 text-isi text-ink-3 leading-snug max-sm:hidden">
+                  Penawaran dari distributor langgananmu, pilih yang cocok untuk stok minggu ini.
+                </p>
+              </div>
+            }
+            aksi={
+              <Link to="/promo" className="inline-flex items-center gap-1 min-h-11 text-isi font-bold text-brand hover:underline">
+                Lihat semua
+                <IkonPanahKanan size={15} />
+              </Link>
             }
             kelasItem="w-[85%] sm:w-[20rem] lg:w-[calc((100%-1.5rem)/3)]"
-            isi={promoTampil.map((p) => ({ kunci: p.id, elemen: <KartuPromo promo={p} lebar /> }))}
+            isi={promoTampil.map((p) => ({ kunci: p.id, elemen: <KartuPromo promo={p} /> }))}
           />
         </section>
       )}
 
       {/* Perlu Tindakan: pintasan penyaring, bukan tindakan itu sendiri */}
-      <Bagian
-        id="judul-perlu-tindakan"
-        judul="Perlu Tindakan"
-        className="mt-3 sm:mt-4"
-      >
-        {/* Ikon dan angka berdampingan di tengah ubin, namanya di bawah (revisi
-            V2, Q44), di HP juga: kisi 2 x 2 di HP, empat sebaris mulai 640px. */}
-        <div
-          aria-label="Pintasan ke daftar stok dan kontrak yang perlu ditindak"
-          className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3"
-        >
-          {pintasan.map((p) => (
-            <Link
-              key={p.kunci}
-              to={p.ke}
-              aria-label={
-                p.jumlah > 0
-                  ? `${p.label.join(' ')}, ${p.jumlah} ${p.satuan}`
-                  : `${p.label.join(' ')}, tidak ada ${p.satuan}`
-              }
-              className="min-w-0 flex flex-col items-center gap-1.5 p-3 text-center bg-surface border border-line rounded-lg shadow-e1 hover:border-line-strong transition-colors"
-            >
-              <span aria-hidden="true" className="flex items-center justify-center gap-2.5">
-                <span className={cx('size-10 sm:size-12 rounded-full grid place-items-center shrink-0', p.warna)}>
-                  <p.Ikon size={20} />
-                </span>
-                <span className={cx('text-angka font-extrabold tabular', p.jumlah > 0 ? 'text-ink' : 'text-ink-3')}>
-                  {p.jumlah > 99 ? '99+' : p.jumlah}
-                </span>
-              </span>
-              <span aria-hidden="true" className="text-kecil font-semibold text-ink-2 leading-tight">
-                {p.label.join(' ')}
-              </span>
+      <PerluTindakan pintasan={pintasan} className="mt-3 sm:mt-4" />
+
+      {/* Urusan konkret dan pesanan berjalan berdampingan di desktop (6 : 5,
+          seperti rancangannya), bertumpuk di HP. */}
+      <div className="mt-3 sm:mt-4 grid gap-3 sm:gap-4 lg:grid-cols-[minmax(0,6fr)_minmax(0,5fr)] lg:items-stretch">
+        <KartuUrusan
+          butir={urusan}
+          kosong={
+            <p className="flex items-center gap-2 text-kartu font-semibold text-aman-ink bg-aman-soft rounded-md px-3.5 py-3">
+              <IkonCentangLingkaran size={18} />
+              Semua aman hari ini.
+            </p>
+          }
+        />
+
+        <Bagian
+          id="judul-pesanan-berjalan"
+          judul="Pesanan berjalan"
+          besar
+          aksi={
+            <Link to="/pesanan" className="inline-flex items-center gap-1 min-h-11 text-isi font-bold text-brand hover:underline">
+              Lihat semua
+              <IkonPanahKanan size={15} />
             </Link>
-          ))}
-        </div>
-      </Bagian>
+          }
+          className="flex flex-col"
+        >
+          {berjalan.length === 0 ? (
+            <p className="text-isi text-ink-3">
+              Belum ada pesanan yang sedang berjalan.{' '}
+              <Link to="/belanja" className="font-semibold text-brand hover:underline">
+                Cari barang di Distributor
+              </Link>
+              .
+            </p>
+          ) : (
+            <>
+              <DonatStatus
+                potongan={donat}
+                satuan="pesanan"
+                label={`Dari ${berjalan.length} pesanan berjalan: ${donat
+                  .filter((d) => d.jumlah > 0)
+                  .map((d) => `${d.jumlah} ${d.label.toLowerCase()}`)
+                  .join(', ')}`}
+              />
+              <ul className="mt-auto pt-3 flex flex-col gap-1">
+                {/* Merah untuk tiap kiriman yang sudah sampai, tapi tombol ungu penuh
+                    hanya satu: dua tombol utama sebelahan saling berebut perhatian. */}
+                {pesananPenting.map((u, i) => (
+                  <BarisUrusan key={u.kunci} u={u} utama={i === 0 && u.nada === 'kritis'} sorot={u.nada === 'kritis'} />
+                ))}
+              </ul>
+            </>
+          )}
+        </Bagian>
+      </div>
 
-      {/* Kartu tindakan konkret.
-          Sengaja hidup berdampingan dengan baris ikon di atas dan bukan
-          menggantikannya: baris ikon hanya membuka daftar yang sudah
-          tersaring, sedangkan kartu di bawah ini adalah satu tindakan yang
-          sudah jelas - termasuk satu-satunya jalan cepat ke "Barang Sudah
-          Sampai" dan ke Lembar Pesan Cepat. */}
-      <Bagian
-        id="judul-perlu-diurus"
-        judul={tugas.length === 0 ? 'Yang perlu kamu urus hari ini' : undefined}
-        className="mt-3 sm:mt-4"
-      >
-        {tugas.length === 0 ? (
-          <p className="flex items-center gap-2 text-kartu font-semibold text-aman-ink bg-aman-soft rounded-md px-3.5 py-3">
-            <IkonCentangLingkaran size={18} />
-            Semua aman hari ini.
-          </p>
-        ) : (
-          /* Slider seperti promo di semua ukuran: paling banyak tiga kartu
-             terlihat di desktop, sisanya di halaman berikut, panah di kanan atas
-             (revisi V2, Q45). Berputar sendiri dengan aturan promo (Q59) atas
-             keputusan Ilham; dulu sengaja manual karena kartu yang bergerak
-             sendiri bisa tertekan tanpa sengaja. Korsel berhenti selamanya begitu
-             disentuh, disorot, atau difokus, jadi tombolnya tetap aman ditekan. */
-          <Korsel
-            label="Yang perlu kamu urus hari ini"
-            otomatis
-            judul={
-              <div>
-                <h2 id="judul-perlu-diurus" className="text-kartu font-bold text-ink leading-tight">
-                  Yang perlu kamu urus hari ini
-                </h2>
-                <p className="text-isi text-ink-3 mt-0.5 leading-snug">
-                  {tugas.length} hal menunggu keputusan kamu.
-                </p>
-              </div>
-            }
-            kelasItem="w-[88%] sm:w-[22rem] lg:w-[calc((100%-0.75rem)/2)] xl:w-[calc((100%-1.5rem)/3)]"
-            isi={tugas.map((t) => ({ kunci: t.kunci, elemen: t.elemen }))}
-          />
-        )}
-      </Bagian>
+      {/* Pita belanja yang belum dikirim */}
+      {isiKeranjang > 0 && (
+        <Link
+          to="/keranjang"
+          className="mt-4 flex items-center gap-2.5 px-3.5 py-3 rounded-md bg-brand-soft text-brand-soft-ink text-isi font-semibold hover:brightness-97"
+        >
+          <IkonKeranjang size={18} className="shrink-0" />
+          <span className="grow">Belanja belum dikirim: {isiKeranjang} barang</span>
+          <span className="underline underline-offset-2 shrink-0">Lanjutkan</span>
+        </Link>
+      )}
 
-      {/* Ringkasan penjualan dari nota kasir (revisi 23 Okt), hanya untuk data server. */}
+      {/* Ringkasan penjualan dari nota kasir, hanya untuk data server. */}
       {ambilRingkasan && (
         <KartuRingkasanPenjualan ambil={ambilRingkasan} ke="/penjualan" className="mt-3 sm:mt-4" />
       )}
@@ -590,15 +600,16 @@ export default function Beranda() {
       <Bagian
         id="judul-prediksi"
         judul="Prediksi Stok"
+        besar
         keterangan="Perkiraan bisa meleset. Angka di bawah adalah saran, bukan jaminan."
         aksi={
-          <Link to="/prediksi" className="text-isi font-bold text-brand hover:underline">
+          <Link to="/prediksi" className="inline-flex items-center gap-1 min-h-11 text-isi font-bold text-brand hover:underline">
             Lihat semua
+            <IkonPanahKanan size={15} />
           </Link>
         }
         className="mt-3 sm:mt-4"
       >
-
         {!perkiraanSiap ? (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 [&>*]:min-w-0">
             <Kerangka className="h-40 w-full rounded-lg" />
@@ -624,8 +635,7 @@ export default function Beranda() {
               const IkonArah = r.arah === 'tambah' ? IkonTrenNaik : IkonTrenTurun
               const maks = Math.max(r.pemakaianBulanIni, r.perkiraanBulanDepan, 1)
               // Warnanya sama dengan grafik Prediksi: pemakaian aktual seri-1,
-              // perkiraan merah. Dulu aktual memakai seri-3 (nyaris ungu merek)
-              // dan perkiraan seri-1, jadi teal berarti dua hal di dua layar.
+              // perkiraan merah.
               const bar = [
                 { kunci: 'ini', label: 'Terpakai bulan ini', nilai: r.pemakaianBulanIni, warna: 'bg-seri-1' },
                 {
@@ -662,15 +672,9 @@ export default function Beranda() {
                       </span>
                     </p>
 
-                    {/* Proporsi pemakaian: dua bar dengan skala yang sama,
-                        masing-masing membawa angkanya sendiri supaya artinya
-                        tidak bergantung pada warna.
-
-                        Kedua bar mengukur PEMAKAIAN, bukan sisa stok. Tanpa
-                        keterangan itu, angka saran di atas bisa terbaca
-                        bertentangan dengan bar yang menurun — padahal saran
-                        "tambah" muncul justru karena stok di gudang lebih
-                        kecil daripada kebutuhan bulan depan. */}
+                    {/* Kedua bar mengukur PEMAKAIAN, bukan sisa stok: saran
+                        "tambah" muncul justru karena stok di gudang lebih kecil
+                        daripada kebutuhan bulan depan. */}
                     <p className="mt-3 text-kecil text-ink-3">Pemakaian, bukan sisa stok:</p>
                     <div className="mt-1.5 space-y-2">
                       {bar.map((x) => (
@@ -711,60 +715,20 @@ export default function Beranda() {
         )}
       </Bagian>
 
-      {/* Pesanan berjalan */}
-      <Bagian
-        id="judul-pesanan-berjalan"
-        judul="Pesanan Berjalan"
-        keterangan={berjalan.length === 0 ? undefined : `${berjalan.length} pesanan sedang diproses`}
-        aksi={
-          berjalan.length > 3 ? (
-            <Link to="/pesanan" className="text-isi font-bold text-brand hover:underline">
-              Lihat semua
-            </Link>
-          ) : undefined
-        }
-        className="mt-3 sm:mt-4"
-      >
-        {berjalan.length === 0 ? (
-          <Kartu padat>
-            <p className="text-isi text-ink-3">
-              Belum ada pesanan yang sedang berjalan.{' '}
-              <Link to="/belanja" className="font-semibold text-brand hover:underline">
-                Cari barang di Distributor
-              </Link>
-              .
-            </p>
-          </Kartu>
-        ) : (
-          <div className="grid gap-2.5 lg:grid-cols-2 [&>*]:min-w-0">
-            {berjalan.slice(0, 4).map((p) => (
-              <KartuPesanan key={p.id} pesanan={p} />
-            ))}
-          </div>
-        )}
-      </Bagian>
-
-      {/* Pita belanja yang belum dikirim */}
-      {isiKeranjang > 0 && (
-        <Link
-          to="/keranjang"
-          className="mt-4 flex items-center gap-2.5 px-3.5 py-3 rounded-md bg-brand-soft text-brand-soft-ink text-isi font-semibold hover:brightness-97"
-        >
-          <IkonKeranjang size={18} className="shrink-0" />
-          <span className="grow">Belanja belum dikirim: {isiKeranjang} barang</span>
-          <span className="underline underline-offset-2 shrink-0">Lanjutkan</span>
-        </Link>
-      )}
-
       {/* Ringkasan kontrak: cermin dari tab Pesanan, bukan data baru */}
       {kontrak.length > 0 && (
         <Bagian
           id="judul-kontrak"
           judul="Kuota Kontrak Bulan Ini"
+          besar
           keterangan={`${kontrak.length} kontrak berjalan. Setiap barang punya kontrak sendiri.`}
           aksi={
-            <Link to="/pesanan?tab=kontrak" className="text-isi font-bold text-brand hover:underline">
+            <Link
+              to="/pesanan?tab=kontrak"
+              className="inline-flex items-center gap-1 min-h-11 text-isi font-bold text-brand hover:underline"
+            >
               Lihat semua
+              <IkonPanahKanan size={15} />
             </Link>
           }
           className="mt-3 sm:mt-4 hidden lg:block"
@@ -786,7 +750,6 @@ export default function Beranda() {
           </div>
         </Bagian>
       )}
-
 
       <Lembar
         terbuka={pilihan != null}

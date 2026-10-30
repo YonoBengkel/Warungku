@@ -241,6 +241,31 @@ export const IkonBintang = (p: Props) => (
   </Svg>
 )
 
+/* Ikon jenis promo (revisi V5, Q107), mengikuti kartu promo rancangan teman Ilham. */
+
+/** Label harga: Cuci Gudang. */
+export const IkonLabel = (p: Props) => (
+  <Svg {...p}>
+    <path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z" />
+    <circle cx="7.6" cy="7.6" r="1.3" />
+  </Svg>
+)
+
+/** Kilau: Produk Baru. */
+export const IkonKilau = (p: Props) => (
+  <Svg {...p}>
+    <path d="m12 3 1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z" />
+    <path d="M19 17v4M17 19h4" />
+  </Svg>
+)
+
+/** Mahkota: Promo Keanggotaan. */
+export const IkonMahkota = (p: Props) => (
+  <Svg {...p}>
+    <path d="m3 8 4 4 5-7 5 7 4-4-2 11H5z" />
+  </Svg>
+)
+
 export const IkonBintangIsi = ({ size = 20, ...rest }: Props) => (
   <svg
     width={size}
@@ -308,6 +333,15 @@ export const IkonNota = (p: Props) => (
   <Svg {...p}>
     <path d="M5.5 3.5h13v17l-2.2-1.5-2.2 1.5-2.2-1.5-2.2 1.5-2.2-1.5z" />
     <path d="M9 8h6M9 12h6" />
+  </Svg>
+)
+
+/** Lembar uang: total penjualan di kartu Ringkasan Penjualan Beranda. */
+export const IkonUang = (p: Props) => (
+  <Svg {...p}>
+    <path d="M3 7h18v10H3z" />
+    <circle cx="12" cy="12" r="2.5" />
+    <path d="M6 10v4M18 10v4" />
   </Svg>
 )
 

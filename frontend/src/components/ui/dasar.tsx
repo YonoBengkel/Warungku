@@ -246,6 +246,7 @@ export function JudulBagian({
   keterangan,
   aksi,
   bungkus = false,
+  besar = false,
   className,
 }: {
   /** Diteruskan ke <h2> supaya aria-labelledby pada <section> punya sasaran. */
@@ -258,17 +259,26 @@ export function JudulBagian({
    * judulnya. Dipakai label metode di kanan judul (revisi V2, Q42).
    */
   bungkus?: boolean
+  /** Judul kartu Beranda (revisi V5): 17px, ungu tua, seperti rancangan kartunya. */
+  besar?: boolean
   className?: string
 }) {
   return (
     <div className={cx('flex items-start justify-between gap-x-3 gap-y-2 mb-3', bungkus && 'flex-wrap', className)}>
       <div className="min-w-0">
-        <h2 id={id} className="text-kartu font-bold text-ink leading-tight">
+        <h2
+          id={id}
+          className={cx(
+            'leading-tight',
+            besar ? 'text-subjudul font-extrabold text-brand-soft-ink' : 'text-kartu font-bold text-ink',
+          )}
+        >
           {judul}
         </h2>
         {keterangan && <p className="text-isi text-ink-3 mt-0.5 leading-snug">{keterangan}</p>}
       </div>
-      {aksi && <div className="shrink-0">{aksi}</div>}
+      {/* Judul besar: tautan setinggi 44px dipusatkan ke baris judul, bukan ke tepi atasnya. */}
+      {aksi && <div className={cx('shrink-0', besar && '-my-3')}>{aksi}</div>}
     </div>
   )
 }
@@ -298,6 +308,7 @@ export function Bagian({
   aksi,
   kepala,
   bungkus,
+  besar,
   className,
   children,
   ref,
@@ -309,6 +320,8 @@ export function Bagian({
   aksi?: ReactNode
   /** Diteruskan ke JudulBagian. */
   bungkus?: boolean
+  /** Diteruskan ke JudulBagian: judul kartu Beranda. */
+  besar?: boolean
   kepala?: ReactNode
   className?: string
   children: ReactNode
@@ -324,7 +337,10 @@ export function Bagian({
   }
   return (
     <section ref={ref} aria-labelledby={id} className={kelas} {...rest}>
-      {kepala ?? (judul && <JudulBagian id={id} judul={judul} keterangan={keterangan} aksi={aksi} bungkus={bungkus} />)}
+      {kepala ??
+        (judul && (
+          <JudulBagian id={id} judul={judul} keterangan={keterangan} aksi={aksi} bungkus={bungkus} besar={besar} />
+        ))}
       {children}
     </section>
   )

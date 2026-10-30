@@ -5,7 +5,7 @@ import { Kolom } from '@/components/ui/formulir'
 import { BarisChip, Chip } from '@/components/ui/navigasi'
 import { KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
 import { GrafikBatang } from '@/components/grafik/GrafikBatang'
-import { IkonGrafik, IkonPanahKanan, IkonTrenNaik, IkonTrenTurun } from '@/icons'
+import { IkonGrafik, IkonNota, IkonPanahKanan, IkonTrenNaik, IkonTrenTurun, IkonUang } from '@/icons'
 import { angka, cx, rupiah, rupiahRingkas, rupiahSumbu, tanggalPendek, tanggalRingkas } from '@/lib/format'
 import type { RentangTanggal, RingkasanPenjualan, SumberPenjualan } from '@/lib/apiPenjualan'
 
@@ -421,6 +421,98 @@ export function TampilanRingkasan({
  * Kartu ringkas di Beranda dan Dashboard distributor: angka 30 hari sampai data
  * terakhir, dengan tautan ke halaman lengkap. Tidak tampil untuk data contoh.
  */
+/** Chip naik/turun di petak kartu Beranda: ikon + kata + warna, tidak pernah warna saja. */
+function ChipBanding({ sekarang, lalu, hari }: { sekarang: number; lalu: number; hari: number }) {
+  if (lalu <= 0) return <span className="text-kecil text-ink-3">Belum ada pembanding</span>
+  const beda = Math.round(((sekarang - lalu) / lalu) * 100)
+  const teks = <span className="text-kecil text-ink-3">dari {hari} hari sebelumnya</span>
+  if (Math.abs(beda) < 1) return <span className="text-kecil text-ink-3">Sama dengan {hari} hari sebelumnya</span>
+  const naik = beda > 0
+  const Ikon = naik ? IkonTrenNaik : IkonTrenTurun
+  return (
+    <span className="flex flex-wrap items-center gap-1.5">
+      <span
+        className={cx(
+          'inline-flex items-center gap-1 rounded-full pl-1.5 pr-2 py-0.5 text-kecil font-bold',
+          naik ? 'bg-aman-soft text-aman-ink' : 'bg-menipis-soft text-menipis-ink',
+        )}
+      >
+        <Ikon size={13} />
+        {naik ? 'naik' : 'turun'} {Math.abs(beda)}%
+      </span>
+      {teks}
+    </span>
+  )
+}
+
+/**
+ * Batang penjualan per hari (seri-1). Batang tertinggi tegas dan diberi angka,
+ * sisanya pudar; tiap batang membawa tanggal dan nilainya sebagai gelembung
+ * keterangan saat disorot.
+ */
+function BatangPerHari({ perHari }: { perHari: RingkasanPenjualan['perHari'] }) {
+  if (perHari.length === 0) return null
+  const lebar = 960
+  const tinggi = 110
+  const atas = 22
+  const celah = 4
+  const w = (lebar - celah * (perHari.length - 1)) / perHari.length
+  const maks = Math.max(...perHari.map((h) => h.total), 1)
+  const iPuncak = perHari.findIndex((h) => h.total === maks)
+  const puncak = perHari[iPuncak]
+  const label = `${rupiahRingkas(puncak.total)} · ${tanggalRingkas(tanggalLokal(puncak.tanggal))}`
+  // Label puncak dijepit di dalam bidang supaya tidak terpotong di tepi.
+  const xLabel = Math.min(lebar - 90, Math.max(90, iPuncak * (w + celah) + w / 2))
+  return (
+    <>
+      <svg
+        viewBox={`0 0 ${lebar} ${tinggi}`}
+        width="100%"
+        height={tinggi}
+        preserveAspectRatio="none"
+        role="img"
+        aria-label={`Penjualan per hari, tertinggi ${rupiahRingkas(puncak.total)} pada ${tanggalRingkas(tanggalLokal(puncak.tanggal))}`}
+        className="block overflow-visible"
+      >
+        {perHari.map((h, i) => {
+          const t = Math.max(2, (h.total / maks) * (tinggi - atas))
+          return (
+            <rect
+              key={h.tanggal}
+              x={i * (w + celah)}
+              y={tinggi - t}
+              width={w}
+              height={t}
+              rx={2}
+              className={cx('fill-seri-1', i !== iPuncak && 'opacity-55')}
+            >
+              <title>{`${tanggalRingkas(tanggalLokal(h.tanggal))}: ${rupiahRingkas(h.total)}`}</title>
+            </rect>
+          )
+        })}
+      </svg>
+      {/* Label puncak di luar SVG: SVG yang direntang tidak boleh ikut meregangkan hurufnya. */}
+      <div className="relative h-0" aria-hidden="true">
+        <span
+          className="absolute -translate-x-1/2 whitespace-nowrap text-kecil font-bold text-ink"
+          style={{ left: `${(xLabel / lebar) * 100}%`, bottom: tinggi - atas + 3 }}
+        >
+          {label}
+        </span>
+      </div>
+      <div className="mt-1.5 flex justify-between text-kecil text-ink-3" aria-hidden="true">
+        <span>{tanggalRingkas(tanggalLokal(perHari[0].tanggal))}</span>
+        <span>{tanggalRingkas(tanggalLokal(perHari[perHari.length - 1].tanggal))}</span>
+      </div>
+    </>
+  )
+}
+
+/**
+ * Ringkasan Penjualan di Beranda kedua portal (revisi V5, butir 4A, mockup
+ * yang disetujui Ilham): tiga petak berikon dengan chip naik atau turun
+ * dibanding periode sebelumnya yang sama panjang, lalu batang per hari.
+ */
 export function KartuRingkasanPenjualan({
   ambil,
   ke,
@@ -445,14 +537,18 @@ export function KartuRingkasanPenjualan({
 
   const istilah = data ? ISTILAH[data.sumber] : null
   const panjang = data ? Math.round((+tanggalLokal(data.sampai) - +tanggalLokal(data.dari)) / 86_400_000) + 1 : 30
+  const rataLalu = data && data.pembandingJumlah > 0 ? data.pembandingTotal / data.pembandingJumlah : 0
 
   return (
     <Bagian
       id="judul-ringkasan-penjualan"
       judul="Ringkasan Penjualan"
+      besar
       keterangan={
         data
-          ? `${panjang} hari sampai ${tanggalPendek(tanggalLokal(data.sampai))}, tanggal data terakhir.`
+          ? `${panjang} hari sampai ${tanggalPendek(tanggalLokal(data.sampai))}, tanggal data terakhir${
+              data.jumlahPihak != null && istilah?.pihak ? ` · ${angka(data.jumlahPihak)} ${istilah.pihak}` : ''
+            }`
           : 'Dari data penjualan yang tersimpan.'
       }
       aksi={
@@ -466,28 +562,59 @@ export function KartuRingkasanPenjualan({
       {gagal ? (
         <p className="text-isi text-ink-3">Ringkasan belum bisa dimuat. Buka halamannya untuk mencoba lagi.</p>
       ) : !data || !istilah ? (
-        <div className="grid grid-cols-3 gap-3" aria-busy="true">
+        <div className="grid gap-3 sm:grid-cols-3" aria-busy="true">
           {[0, 1, 2].map((i) => (
-            <Kerangka key={i} className="h-14 rounded-md" />
+            <Kerangka key={i} className="h-28 rounded-lg" />
           ))}
         </div>
       ) : (
         <>
-          <dl className="grid grid-cols-3 gap-3 [&>*]:min-w-0">
+          <ul className="grid gap-3 sm:grid-cols-3 [&>*]:min-w-0">
             {[
-              [istilah.total, rupiahRingkas(data.total)],
-              [`Jumlah ${istilah.transaksi}`, angka(data.jumlahTransaksi)],
-              [`Rata-rata per ${istilah.transaksi}`, rupiahRingkas(data.rataRata)],
-            ].map(([label, nilai]) => (
-              <div key={label}>
-                <dt className="text-kecil text-ink-3 leading-snug">{label}</dt>
-                <dd className="mt-0.5 text-kartu font-extrabold text-ink tabular break-words">{nilai}</dd>
-              </div>
+              { label: istilah.total, nilai: rupiahRingkas(data.total), Ikon: IkonUang, sekarang: data.total, lalu: data.pembandingTotal },
+              {
+                label: `Jumlah ${istilah.transaksi}`,
+                nilai: angka(data.jumlahTransaksi),
+                Ikon: IkonNota,
+                sekarang: data.jumlahTransaksi,
+                lalu: data.pembandingJumlah,
+              },
+              {
+                label: `Rata-rata per ${istilah.transaksi}`,
+                nilai: rupiahRingkas(data.rataRata),
+                Ikon: IkonGrafik,
+                sekarang: data.rataRata,
+                lalu: rataLalu,
+              },
+            ].map((p) => (
+              // HP: kepala dan angka sebaris, chip di bawahnya. Desktop: bertumpuk.
+              <li
+                key={p.label}
+                className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 rounded-lg border border-line bg-surface-2 px-3.5 py-3 sm:block sm:p-4"
+              >
+                <p className="flex items-center gap-2.5 min-w-0">
+                  <span className="size-10 shrink-0 rounded-full bg-brand-soft text-brand grid place-items-center">
+                    <p.Ikon size={20} />
+                  </span>
+                  <span className="text-isi font-semibold text-ink-2 leading-snug">{p.label}</span>
+                </p>
+                <p className="text-right sm:text-left sm:mt-3 text-angka font-extrabold text-ink tracking-tight">{p.nilai}</p>
+                <div className="col-span-2 sm:mt-2.5">
+                  <ChipBanding sekarang={p.sekarang} lalu={p.lalu} hari={panjang} />
+                </div>
+              </li>
             ))}
-          </dl>
-          <div className="mt-2">
-            <Banding sekarang={data.total} lalu={data.pembandingTotal} hari={panjang} />
-          </div>
+          </ul>
+
+          {data.perHari.length > 1 && (
+            <div className="mt-4 pt-4 border-t border-line">
+              <p className="flex items-baseline justify-between gap-3 mb-2">
+                <span className="text-isi font-bold text-ink">Penjualan per hari</span>
+                <span className="text-kecil text-ink-3">batang tertinggi diberi angka</span>
+              </p>
+              <BatangPerHari perHari={data.perHari} />
+            </div>
+          )}
         </>
       )}
     </Bagian>

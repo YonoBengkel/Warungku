@@ -1,6 +1,15 @@
-import { useMemo, type ComponentType } from 'react'
-import { Link } from 'react-router-dom'
-import { HanyaPembacaLayar, Lencana } from '@/components/ui/dasar'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ComponentType,
+} from 'react'
+import { Link, useLocation } from 'react-router-dom'
+import { HanyaPembacaLayar, Lencana, Tombol } from '@/components/ui/dasar'
+import { TabSegmen } from '@/components/ui/navigasi'
 import {
   IkonBintang,
   IkonInfo,
@@ -14,21 +23,25 @@ import {
 } from '@/icons'
 import { distributorAktif, promoMasihBerlaku, umkmById } from '@/data/dummy'
 import { angka, cx, hariLagi, tanggalRingkas, waktuLalu, waktuNanti } from '@/lib/format'
-import type { KategoriNotifikasi, Notifikasi } from '@/lib/types'
+import { PESANAN_BERJALAN } from '@/lib/label'
+import { bacaPetaDibaca, kunciDibacaDistributor, simpanPetaDibaca, type PetaDibaca } from '@/lib/dibaca'
+import type { KategoriNotifikasi, Notifikasi, Pesanan } from '@/lib/types'
 import { useAplikasi, useKontrakMasuk, usePesananMasuk } from '@/store/aplikasi'
 
 /**
- * Pemberitahuan untuk kedua portal (revisi 23 Okt 2026, diubah di revisi V2).
+ * Pemberitahuan untuk kedua portal (revisi 23 Okt 2026, diubah di revisi V2 dan V5).
  *
- * Di desktop lonceng melayang di pojok kanan atas (LoncengMelayang) dan langsung
- * membuka halaman pemberitahuan, yang tampil tanpa menu samping. Panel kecil
- * yang dulu keluar dari menu samping sudah dihapus. Di HP lonceng di bilah atas
- * membuka halaman yang sama.
+ * Di desktop lonceng di pojok kanan atas (LoncengMelayang) membuka panel ala
+ * Tokopedia (revisi V5, Q99 dan Q100): tab "Perlu tindakan" dan "Semua", paling
+ * banyak enam butir, "Tandai semua dibaca", dan "Lihat semua" ke halaman
+ * pemberitahuan yang tampil tanpa menu samping. Di HP lonceng di bilah atas tetap
+ * membuka halaman itu (Q101).
  *
- * Sisi UMKM membaca daftar pemberitahuan yang tersimpan. Sisi distributor belum
- * punya daftar tersimpan, jadi isinya diturunkan dari data yang sudah dimuat:
- * pesanan menunggu jawaban, kiriman lewat perkiraan tiba, pengajuan kontrak,
- * permintaan berhenti, kontrak yang segera berakhir, dan promo yang hampir habis.
+ * Sisi UMKM membaca daftar pemberitahuan di store. Sisi distributor belum punya
+ * daftar tersimpan, jadi isinya diturunkan dari data yang sudah dimuat: pesanan
+ * menunggu jawaban, kiriman lewat perkiraan tiba, pengajuan kontrak, permintaan
+ * berhenti, kontrak yang segera berakhir, dan promo yang hampir habis. Status
+ * dibaca kedua sisi disimpan di peramban per akun (Q120).
  */
 
 type Ikon = ComponentType<{ size?: number; className?: string }>
@@ -47,8 +60,14 @@ export interface ButirPemberitahuan {
   Ikon: Ikon
   nada: NadaButir
   perluTindakan: boolean
-  /** Hanya sisi UMKM yang mencatat sudah dibaca atau belum. */
+  /** Sudah dibaca atau belum; tanpa nilai berarti tidak dicatat. */
   dibaca?: boolean
+  /** Label tombol di baris, mis. "Pesan Sekarang" atau "Lihat pesanan". */
+  aksiLabel?: string | null
+  /** Kelompok butir distributor; Beranda distributor menggabungkan per kelompok. */
+  jenis?: 'tunggu' | 'telat' | 'ajuan' | 'berhenti' | 'akhir' | 'promo'
+  /** Nama pemesan di butir distributor. */
+  pihak?: string
 }
 
 export const WARNA_NADA: Record<NadaButir, string> = {
@@ -84,6 +103,64 @@ const NADA_NOTIF: Record<KategoriNotifikasi, NadaButir> = {
 export function nadaNotif(n: Notifikasi): NadaButir {
   if (n.kategori === 'stok' && n.tingkat === 'genting') return 'kritis'
   return NADA_NOTIF[n.kategori]
+}
+
+export function dibisukan(n: Notifikasi): boolean {
+  return n.dibisukanSampai != null && +new Date(n.dibisukanSampai) > Date.now()
+}
+
+/** Barang yang sudah dipesan: dipakai untuk menurunkan baris stok jadi pasif. */
+export interface Dipesan {
+  pesananId: string
+  tiba: string | null
+}
+
+/* Peta barang yang sedang dikirim. Inilah dasar aturan "begitu dipesan, barisnya
+   jadi pasif", dipakai halaman Pemberitahuan dan panel lonceng sekaligus. */
+export function petaDipesan(pesanan: Pesanan[]): Map<string, Dipesan> {
+  const peta = new Map<string, Dipesan>()
+  for (const p of pesanan) {
+    if (!PESANAN_BERJALAN.includes(p.status) || p.status === 'draf') continue
+    for (const b of p.baris) {
+      if (b.barangId && !peta.has(b.barangId)) peta.set(b.barangId, { pesananId: p.id, tiba: p.perkiraanTiba })
+    }
+  }
+  return peta
+}
+
+/**
+ * Pemberitahuan UMKM sebagai butir panel lonceng: terbaru di atas, tanpa yang
+ * sedang dibisukan. Angka lonceng adalah jumlah butir `perluTindakan` di sini
+ * (revisi V5, Q100 dan Q120): membaca tidak menurunkannya, mengurusnya yang
+ * menurunkan. Barang yang sudah dipesan dianggap sudah diurus, sama dengan
+ * baris pasif di halaman Pemberitahuan.
+ */
+export function usePemberitahuanUsaha(): ButirPemberitahuan[] {
+  const notifikasi = useAplikasi((s) => s.notifikasi)
+  const pesanan = useAplikasi((s) => s.pesanan)
+  return useMemo(() => {
+    const dipesan = petaDipesan(pesanan)
+    return notifikasi
+      .filter((n) => !dibisukan(n))
+      .slice()
+      .sort((a, b) => +new Date(b.waktu) - +new Date(a.waktu))
+      .map((n) => {
+        const d = n.kategori === 'stok' && n.barangId ? dipesan.get(n.barangId) : undefined
+        return {
+          kunci: n.id,
+          judul: n.judul,
+          detail: n.detail,
+          waktu: waktuLalu(n.waktu),
+          urut: +new Date(n.waktu),
+          ke: d ? `/pesanan/${d.pesananId}` : (n.tautan ?? '/notifikasi'),
+          Ikon: IKON_NOTIF[n.kategori],
+          nada: nadaNotif(n),
+          perluTindakan: n.butuhTindakan && !d,
+          dibaca: n.dibaca,
+          aksiLabel: d ? 'Lihat pesanan' : n.aksiLabel,
+        }
+      })
+  }, [notifikasi, pesanan])
 }
 
 /* ------------------------------------------------------------------ */
@@ -123,6 +200,9 @@ export function usePemberitahuanDistributor(): ButirPemberitahuan[] {
           Ikon: IkonJam,
           nada: 'menipis',
           perluTindakan: true,
+          aksiLabel: 'Jawab Pesanan',
+          jenis: 'tunggu',
+          pihak: nama(p.umkmId),
         })
       } else if (p.status === 'dikirim' && p.perkiraanTiba && +new Date(p.perkiraanTiba) < sekarang) {
         butir.push({
@@ -135,6 +215,9 @@ export function usePemberitahuanDistributor(): ButirPemberitahuan[] {
           Ikon: IkonPasokan,
           nada: 'menipis',
           perluTindakan: true,
+          aksiLabel: 'Lihat Pesanan',
+          jenis: 'telat',
+          pihak: nama(p.umkmId),
         })
       }
     }
@@ -152,6 +235,9 @@ export function usePemberitahuanDistributor(): ButirPemberitahuan[] {
           Ikon: IkonKontrak,
           nada: 'info',
           perluTindakan: true,
+          aksiLabel: 'Tinjau Pengajuan',
+          jenis: 'ajuan',
+          pihak: nama(k.umkmId),
         })
       } else if (k.pengajuanBerhenti) {
         butir.push({
@@ -164,6 +250,9 @@ export function usePemberitahuanDistributor(): ButirPemberitahuan[] {
           Ikon: IkonKontrak,
           nada: 'menipis',
           perluTindakan: true,
+          aksiLabel: 'Tinjau Permintaan',
+          jenis: 'berhenti',
+          pihak: nama(k.umkmId),
         })
       } else if (
         (k.status === 'aktif' || k.status === 'akan-berakhir') &&
@@ -180,6 +269,9 @@ export function usePemberitahuanDistributor(): ButirPemberitahuan[] {
           Ikon: IkonKontrak,
           nada: 'netral',
           perluTindakan: false,
+          aksiLabel: 'Lihat Kontrak',
+          jenis: 'akhir',
+          pihak: nama(k.umkmId),
         })
       }
     }
@@ -198,6 +290,8 @@ export function usePemberitahuanDistributor(): ButirPemberitahuan[] {
         Ikon: IkonBintang,
         nada: 'merek',
         perluTindakan: false,
+        aksiLabel: 'Lihat Promo',
+        jenis: 'promo',
       })
     }
 
@@ -211,6 +305,65 @@ export function usePemberitahuanDistributor(): ButirPemberitahuan[] {
           : a.urut - b.urut,
     )
   }, [pesanan, kontrak, promo])
+}
+
+/* Status dibaca distributor (revisi V5, Q120): satu salinan per tab untuk semua
+   pemakai (panel lonceng dan halaman pemberitahuan), disimpan di peramban per
+   distributor. Isi yang berubah membuat butirnya belum dibaca lagi. */
+const pendengarDibaca = new Set<() => void>()
+const PETA_KOSONG: PetaDibaca = {}
+let petaDibaca: { kunci: string; peta: PetaDibaca } | null = null
+
+function petaDibacaUntuk(kunci: string | null): PetaDibaca {
+  if (!kunci) return PETA_KOSONG
+  if (petaDibaca?.kunci !== kunci) petaDibaca = { kunci, peta: bacaPetaDibaca(kunci) }
+  return petaDibaca.peta
+}
+
+function ubahPetaDibaca(kunci: string, peta: PetaDibaca) {
+  petaDibaca = { kunci, peta }
+  simpanPetaDibaca(kunci, peta)
+  pendengarDibaca.forEach((f) => f())
+}
+
+function dengarPetaDibaca(f: () => void) {
+  pendengarDibaca.add(f)
+  return () => {
+    pendengarDibaca.delete(f)
+  }
+}
+
+const tandaButir = (b: ButirPemberitahuan) => `${b.judul}|${b.detail}`
+
+/**
+ * Butir distributor beserta status dibacanya. Yang disimpan hanya butir yang
+ * masih ada, jadi pesanan baru dengan judul lama tidak ikut terhitung dibaca.
+ */
+export function useDibacaDistributor(butir: ButirPemberitahuan[]) {
+  const sesi = useAplikasi((s) => s.sesiDistributor)
+  const kunci = sesi ? kunciDibacaDistributor(sesi.distributorId) : null
+  const peta = useSyncExternalStore(dengarPetaDibaca, () => petaDibacaUntuk(kunci))
+
+  const daftar = useMemo(
+    () => butir.map((b) => ({ ...b, dibaca: kunci ? peta[b.kunci]?.tanda === tandaButir(b) : undefined })),
+    [butir, peta, kunci],
+  )
+
+  const tandai = useCallback(
+    (pilih: (b: ButirPemberitahuan) => boolean) => {
+      if (!kunci) return
+      const baru: PetaDibaca = {}
+      for (const b of butir) {
+        if (peta[b.kunci]?.tanda === tandaButir(b) || pilih(b)) baru[b.kunci] = { tanda: tandaButir(b) }
+      }
+      ubahPetaDibaca(kunci, baru)
+    },
+    [butir, peta, kunci],
+  )
+
+  const baca = useCallback((k: string) => tandai((b) => b.kunci === k), [tandai])
+  const bacaSemua = useCallback(() => tandai(() => true), [tandai])
+  return { daftar, baca, bacaSemua }
 }
 
 /* ------------------------------------------------------------------ */
@@ -259,6 +412,14 @@ export function BarisButir({
         <span className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
           <span className="text-kecil text-ink-3">{butir.waktu}</span>
           {butir.perluTindakan && <Lencana nada="menipis">Perlu tindakan</Lencana>}
+          {/* Label tombol yang sama dengan halaman pemberitahuan (Pesan Sekarang,
+              Lihat pesanan). Seluruh baris tetap satu tautan. */}
+          {butir.aksiLabel && (
+            <span className="ml-auto inline-flex items-center h-8 px-2.5 rounded-sm bg-sunken text-ink-2 text-kecil font-semibold whitespace-nowrap">
+              {butir.aksiLabel}
+              <IkonPanahKanan size={14} className="ml-1" />
+            </span>
+          )}
         </span>
       </span>
       {butir.dibaca === false ? (
@@ -267,36 +428,201 @@ export function BarisButir({
           <HanyaPembacaLayar>Belum dibaca</HanyaPembacaLayar>
         </>
       ) : (
-        penuh && <IkonPanahKanan size={18} className="shrink-0 mt-0.5 text-ink-3" />
+        penuh && !butir.aksiLabel && <IkonPanahKanan size={18} className="shrink-0 mt-0.5 text-ink-3" />
       )}
     </Link>
   )
 }
 
+/** Tepi kanan lonceng dan panelnya: sejajar tepi kanan isi `<main>` (paling lebar 1400px di tengah). */
+const KANAN_LONCENG = 'max(1.5rem, calc((100vw - var(--rail-w) - 1400px) / 2 + 1.5rem))'
+/** Paling banyak butir di panel; sisanya lewat "Lihat semua" (Q100). */
+const BATAS_PANEL = 6
+
+type TabPanel = 'perlu' | 'semua'
+
 /**
- * Lonceng pemberitahuan di desktop (revisi V2, Q53): tombol bulat yang melayang
- * di pojok kanan atas area halaman dan tetap di tempat saat halaman digulir.
- * Menekannya langsung membuka halaman pemberitahuan; panel kecil yang dulu keluar
- * dari menu samping sudah tidak ada. Di HP lonceng tetap di bilah atas.
+ * Lonceng pemberitahuan di desktop: tombol bulat yang melayang di pojok kanan
+ * atas area halaman dan tetap di tempat saat halaman digulir (revisi V2, Q53).
+ * Sejak revisi V5 (Q99, Q100) menekannya membuka panel ala Tokopedia tepat di
+ * bawahnya, bukan langsung pindah halaman. Panel tertutup oleh ketukan di luar,
+ * Esc, pindah halaman, atau memilih butir. Di HP lonceng tetap di bilah atas dan
+ * membuka halaman penuh (Q101).
  *
- * Tepi kanannya sejajar tepi kanan isi `<main>` (paling lebar 1400px di tengah),
- * jadi di layar sangat lebar ia tidak terlempar jauh dari isi halaman. Baris
- * judul yang punya isi di kanan memberinya ruang lewat RUANG_LONCENG.
+ * Baris judul yang punya isi di kanan memberi ruang lewat RUANG_LONCENG.
  */
-export function LoncengMelayang({ ke, jumlah }: { ke: string; jumlah: number }) {
+export function LoncengMelayang({
+  butir,
+  jumlah,
+  keSemua,
+  baca,
+  bacaSemua,
+}: {
+  butir: ButirPemberitahuan[]
+  /** Angka di lonceng: butir yang masih butuh tindakan. */
+  jumlah: number
+  keSemua: string
+  baca: (kunci: string) => void
+  bacaSemua: () => void
+}) {
+  const [buka, setBuka] = useState(false)
+  const [tab, setTab] = useState<TabPanel>('perlu')
+  const tombolRef = useRef<HTMLButtonElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
+  const { pathname } = useLocation()
+
+  const perlu = useMemo(() => butir.filter((b) => b.perluTindakan), [butir])
+  const belumDibaca = butir.filter((b) => b.dibaca === false).length
+  const tampil = (tab === 'perlu' ? perlu : butir).slice(0, BATAS_PANEL)
+
+  const tutup = useCallback((kembalikanFokus = false) => {
+    setBuka(false)
+    if (kembalikanFokus) tombolRef.current?.focus()
+  }, [])
+
+  // Pindah halaman (termasuk lewat butir panel) menutup panel.
+  useEffect(() => {
+    setBuka(false)
+  }, [pathname])
+
+  useEffect(() => {
+    if (!buka) return
+    panelRef.current?.focus()
+    const ketuk = (e: MouseEvent) => {
+      const t = e.target as Node
+      if (!panelRef.current?.contains(t) && !tombolRef.current?.contains(t)) tutup()
+    }
+    const tombol = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') tutup(true)
+    }
+    document.addEventListener('mousedown', ketuk)
+    document.addEventListener('keydown', tombol)
+    return () => {
+      document.removeEventListener('mousedown', ketuk)
+      document.removeEventListener('keydown', tombol)
+    }
+  }, [buka, tutup])
+
+  function alih() {
+    if (buka) {
+      tutup()
+      return
+    }
+    setTab(perlu.length > 0 ? 'perlu' : 'semua')
+    setBuka(true)
+  }
+
   return (
-    <Link
-      to={ke}
-      aria-label={jumlah > 0 ? `Pemberitahuan, ${jumlah} butuh tindakan` : 'Pemberitahuan'}
-      className="hidden lg:grid fixed top-4 z-40 size-11 place-items-center rounded-full bg-surface text-ink-2 border border-line shadow-e2 hover:text-ink hover:border-line-strong transition-colors"
-      style={{ right: 'max(1.5rem, calc((100vw - var(--rail-w) - 1400px) / 2 + 1.5rem))' }}
-    >
-      <IkonLonceng size={22} />
-      {jumlah > 0 && (
-        <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-kritis text-ink-inverse text-[0.6875rem] font-bold grid place-items-center tabular">
-          {jumlah > 99 ? '99+' : jumlah}
-        </span>
+    <>
+      <button
+        ref={tombolRef}
+        type="button"
+        onClick={alih}
+        aria-label={jumlah > 0 ? `Pemberitahuan, ${jumlah} butuh tindakan` : 'Pemberitahuan'}
+        aria-haspopup="dialog"
+        aria-expanded={buka}
+        aria-controls="panel-pemberitahuan"
+        className={cx(
+          'hidden lg:grid fixed top-4 z-40 size-11 place-items-center rounded-full bg-surface border shadow-e2 transition-colors',
+          buka ? 'text-brand border-brand' : 'text-ink-2 border-line hover:text-ink hover:border-line-strong',
+        )}
+        style={{ right: KANAN_LONCENG }}
+      >
+        <IkonLonceng size={22} />
+        {jumlah > 0 && (
+          <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-kritis text-ink-inverse text-[0.6875rem] font-bold grid place-items-center tabular">
+            {jumlah > 99 ? '99+' : jumlah}
+          </span>
+        )}
+      </button>
+
+      {buka && (
+        <div
+          ref={panelRef}
+          id="panel-pemberitahuan"
+          role="dialog"
+          aria-labelledby="judul-panel-pemberitahuan"
+          tabIndex={-1}
+          className="hidden lg:flex fixed z-50 flex-col rounded-xl border border-line bg-surface shadow-e3 outline-none anim-muncul"
+          style={{
+            top: '4.25rem',
+            right: KANAN_LONCENG,
+            width: 'min(25rem, calc(100vw - var(--rail-w) - 3rem))',
+            maxHeight: 'calc(100dvh - 5.5rem)',
+          }}
+        >
+          <div className="flex items-center justify-between gap-3 px-4 pt-3.5">
+            <h2 id="judul-panel-pemberitahuan" className="text-kartu font-extrabold text-ink">
+              Pemberitahuan
+            </h2>
+            {belumDibaca > 0 && (
+              <Tombol ragam="tautan" ukuran="kecil" onClick={bacaSemua}>
+                Tandai semua dibaca
+              </Tombol>
+            )}
+          </div>
+
+          {/* Jaraknya di pembungkus: TabSegmen menolkan padding sendiri mulai 640px. */}
+          <div className="px-4 pt-2.5">
+            <TabSegmen<TabPanel>
+              tab={[
+                { nilai: 'perlu', label: 'Perlu tindakan', jumlah: perlu.length },
+                { nilai: 'semua', label: 'Semua', jumlah: butir.length },
+              ]}
+              aktif={tab}
+              ubah={setTab}
+            />
+          </div>
+
+          <div className="mt-2 min-h-0 overflow-y-auto px-2 pb-2">
+            {tampil.length === 0 ? (
+              <div className="px-4 py-8 text-center">
+                <span className="mx-auto size-14 rounded-full bg-brand-soft text-brand grid place-items-center">
+                  <IkonLonceng size={26} />
+                </span>
+                <p className="mt-3 text-kartu font-bold text-ink">
+                  {tab === 'perlu' ? 'Tidak ada yang perlu diurus' : 'Belum ada pemberitahuan'}
+                </p>
+                <p className="mt-1 text-isi text-ink-2 leading-relaxed">
+                  Kami kabari begitu ada yang perlu kamu lihat atau putuskan.
+                </p>
+              </div>
+            ) : (
+              <ul className="divide-y divide-line">
+                {tampil.map((b) => (
+                  <li key={b.kunci} className="py-0.5">
+                    <BarisButir
+                      butir={b}
+                      onClick={() => {
+                        baca(b.kunci)
+                        tutup()
+                      }}
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div className="border-t border-line px-4 flex items-center justify-between gap-3">
+            <span className="text-kecil text-ink-3">
+              {(tab === 'perlu' ? perlu.length : butir.length) > BATAS_PANEL
+                ? `${BATAS_PANEL} dari ${angka(tab === 'perlu' ? perlu.length : butir.length)} ditampilkan`
+                : ''}
+            </span>
+            {/* Menutup sendiri juga: kalau halaman pemberitahuan sudah terbuka,
+                alamatnya tidak berubah dan panel tidak tertutup otomatis. */}
+            <Link
+              to={keSemua}
+              onClick={() => tutup()}
+              className="inline-flex items-center gap-1 min-h-11 text-isi font-bold text-brand hover:underline"
+            >
+              Lihat semua
+              <IkonPanahKanan size={15} />
+            </Link>
+          </div>
+        </div>
       )}
-    </Link>
+    </>
   )
 }
