@@ -1,6 +1,7 @@
-import { Navigate, useNavigate } from 'react-router-dom'
+import { Navigate, NavLink, useNavigate } from 'react-router-dom'
 import { Avatar, Tombol } from '@/components/ui/dasar'
 import { IkonKeluar } from '@/icons'
+import { cx } from '@/lib/format'
 import { IsiHalaman, MemuatHalaman } from '@/layouts/IsiHalaman'
 import { useAplikasi } from '@/store/aplikasi'
 
@@ -30,6 +31,26 @@ export default function KerangkaPos() {
           <p className="text-kartu font-extrabold text-ink leading-tight truncate">{profil.namaUsaha}</p>
           <p className="text-kecil text-ink-3">Portal POS</p>
         </div>
+        <nav aria-label="Menu Portal POS" className="ml-4 flex gap-1">
+          {[
+            { ke: '/pos', label: 'Kasir' },
+            { ke: '/pos/nota', label: 'Nota' },
+          ].map((t) => (
+            <NavLink
+              key={t.ke}
+              to={t.ke}
+              end
+              className={({ isActive }) =>
+                cx(
+                  'h-10 px-3.5 inline-flex items-center rounded-md text-isi font-semibold transition-colors',
+                  isActive ? 'bg-brand-soft text-brand-soft-ink' : 'text-ink-2 hover:bg-sunken hover:text-ink',
+                )
+              }
+            >
+              {t.label}
+            </NavLink>
+          ))}
+        </nav>
         <Tombol
           ragam="sunyi"
           ikonKiri={<IkonKeluar size={17} />}

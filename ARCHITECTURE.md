@@ -46,6 +46,7 @@ Tahap 1 dan 2 sudah ada di kode. Yang bertanda **(rencana)** menyusul di tahap b
   harga, dan mengirim nama menu di nota. Server yang menerjemahkan menu ke bahan.
 - **Daftar nota:** `DaftarNota` di Ringkasan Penjualan menampilkan 8 nota terbaru, dan Lihat Semua Nota memuat 25 lebih lama tiap
   ditekan. `GET /usaha/{id}/transaksi` menerima `batas` (paling banyak 50) dan `mulai`, dan baris notanya membawa harga satuan.
+- **Pembatalan nota:** `POST /usaha/{id}/transaksi/{nomor}/ajukan-batal` (kasir, hanya mencatat alasan di `pengajuan_batal`) dan `.../batal` (pemilik). Pembatalan mengunci barisnya, mengembalikan persis yang dipotong nota itu lewat pergerakan `koreksi` yang menunjuk nota yang sama (jadi jumlah semua pergerakan tetap sama dengan stok), mengurangi `permintaan_harian`, lalu menandai `dibatalkan`. Aman diulang. Nomor nota batal tetap terpakai. Ringkasan, daftar nota, dan menu kasir sudah mengabaikan nota batal. Selama POS memakai akun pemilik, pemisahan kasir dan pemilik hanya di antarmuka.
 - **Pemasangan resep:** memakai layar `KasirPasangkan` dan `PUT /usaha/{id}/menu-kasir` yang sudah ada, ditambah tombol Pakai Resep
   Saran yang mengisi isian dari `frontend/src/lib/resepSaran.ts`. Menu tanpa resep juga muncul sebagai pemberitahuan di lonceng. Resep sarannya tercatat di [PRD.md](PRD.md).
 

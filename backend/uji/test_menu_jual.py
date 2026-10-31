@@ -279,3 +279,86 @@ def test_ringkasan_memotong_diskon_dan_memisah_cara_bayar(kedai):
     assert {x["label"]: x["nilai"] for x in r["rincian"]} == {"Tunai": 30000, "QRIS": 36000, "Transfer": 0, "Belum dicatat": 36000}
     # Terlaris tetap harga baris sebelum diskon.
     assert r["terlaris"][0]["total"] == 3 * 36000
+
+
+def _stok(barang_id: int) -> Decimal:
+    with mesin().connect() as kon:
+        return kon.execute(text("SELECT stok FROM barang WHERE id = :b"), {"b": barang_id}).scalar_one()
+
+
+def _jumlah_pergerakan(barang_id: int) -> Decimal:
+    with mesin().connect() as kon:
+        return kon.execute(text("SELECT COALESCE(SUM(jumlah), 0) FROM pergerakan WHERE barang_id = :b"), {"b": barang_id}).scalar_one()
+
+
+def test_batal_mengembalikan_stok_dan_buku_besar_tetap_utuh(kedai):
+    ids, kepala, _, klien = kedai
+    u = ids["u1"]
+    _simpan(klien, u, kepala)
+    assert _bayar(klien, u, kepala, "POS-UJI-K1", cara_bayar="qris").status_code == 200  # 2 x 18 g
+    assert _stok(ids["kopi"]) == Decimal("964.000")
+
+    r = klien.post(f"/usaha/{u}/transaksi/POS-UJI-K1/batal", headers=kepala, json={"alasan": "Salah pesan"})
+    assert r.status_code == 200, r.text
+    assert r.json()["status"] == "dibatalkan" and r.json()["stok_dikembalikan"] == ["Biji Kopi Uji"]
+    assert _stok(ids["kopi"]) == Decimal("1000.000")
+    # Jumlah semua pergerakan tetap sama dengan stok: pembatalan menambah baris, tidak mengubah yang lama.
+    with mesin().connect() as kon:
+        awal = kon.execute(text("SELECT COALESCE(SUM(jumlah), 0) FROM pergerakan WHERE barang_id = :b AND jenis = 'terjual'"), {"b": ids["kopi"]}).scalar_one()
+    assert awal == Decimal("-36.000") and _jumlah_pergerakan(ids["kopi"]) == Decimal("0.000")
+
+    # Nota batal hilang dari daftar dan dari ringkasan, tetapi nomornya tetap terpakai.
+    assert klien.get(f"/usaha/{u}/transaksi", headers=kepala).json() == []
+    ringkasan = klien.get(f"/usaha/{u}/ringkasan-penjualan", headers=kepala).json()
+    assert ringkasan["total"] == 0 and ringkasan["jumlah_transaksi"] == 0
+    ulang = _bayar(klien, u, kepala, "POS-UJI-K1", cara_bayar="qris")
+    assert ulang.json()["sudah_ada"] is True and _stok(ids["kopi"]) == Decimal("1000.000")
+
+
+def test_batal_diulang_tidak_mengembalikan_stok_dua_kali(kedai):
+    ids, kepala, _, klien = kedai
+    u = ids["u1"]
+    _simpan(klien, u, kepala)
+    _bayar(klien, u, kepala, "POS-UJI-K2")
+    pertama = klien.post(f"/usaha/{u}/transaksi/POS-UJI-K2/batal", headers=kepala, json={"alasan": "Salah catat"})
+    kedua = klien.post(f"/usaha/{u}/transaksi/POS-UJI-K2/batal", headers=kepala, json={"alasan": "Salah catat"})
+    assert (pertama.json()["status"], kedua.json()["status"]) == ("dibatalkan", "sudah-dibatalkan")
+    assert _stok(ids["kopi"]) == Decimal("1000.000")
+
+
+def test_batal_hanya_mengembalikan_yang_dulu_terpotong(kedai):
+    ids, kepala, _, klien = kedai
+    u = ids["u1"]
+    _simpan(klien, u, kepala)
+    with mesin().begin() as kon:
+        kon.execute(text("UPDATE barang SET stok = 10 WHERE id = :b"), {"b": ids["kopi"]})
+    assert _bayar(klien, u, kepala, "POS-UJI-K3").json()["stok_kurang"] == ["Biji Kopi Uji"]  # butuh 36, hanya ada 10
+    assert _stok(ids["kopi"]) == Decimal("0.000")
+    klien.post(f"/usaha/{u}/transaksi/POS-UJI-K3/batal", headers=kepala, json={"alasan": "Pembeli batal"})
+    assert _stok(ids["kopi"]) == Decimal("10.000")
+
+
+def test_pengajuan_tidak_mengubah_stok_sampai_pemilik_membatalkan(kedai):
+    ids, kepala, _, klien = kedai
+    u = ids["u1"]
+    _simpan(klien, u, kepala)
+    _bayar(klien, u, kepala, "POS-UJI-K4")
+    r = klien.post(f"/usaha/{u}/transaksi/POS-UJI-K4/ajukan-batal", headers=kepala, json={"alasan": "Pembeli berubah pikiran"})
+    assert r.json()["status"] == "diajukan"
+    [nota] = klien.get(f"/usaha/{u}/transaksi", headers=kepala).json()
+    assert nota["pengajuan_batal"] == "Pembeli berubah pikiran"
+    assert _stok(ids["kopi"]) == Decimal("964.000")
+    klien.post(f"/usaha/{u}/transaksi/POS-UJI-K4/batal", headers=kepala, json={"alasan": "Disetujui"})
+    assert klien.post(f"/usaha/{u}/transaksi/POS-UJI-K4/ajukan-batal", headers=kepala, json={"alasan": "Terlambat"}).json()["status"] == "sudah-dibatalkan"
+
+
+def test_batal_nota_tidak_ada_atau_milik_usaha_lain_atau_alasan_kosong(kedai):
+    ids, kepala1, kepala2, klien = kedai
+    u = ids["u1"]
+    _simpan(klien, u, kepala1)
+    _bayar(klien, u, kepala1, "POS-UJI-K5")
+    assert klien.post(f"/usaha/{u}/transaksi/TIDAK-ADA/batal", headers=kepala1, json={"alasan": "Coba"}).status_code == 404
+    assert klien.post(f"/usaha/{u}/transaksi/POS-UJI-K5/batal", headers=kepala2, json={"alasan": "Curang"}).status_code == 403
+    assert klien.post(f"/usaha/{ids['u2']}/transaksi/POS-UJI-K5/batal", headers=kepala2, json={"alasan": "Coba"}).status_code == 404
+    assert klien.post(f"/usaha/{u}/transaksi/POS-UJI-K5/batal", headers=kepala1, json={"alasan": "x"}).status_code == 422
+    assert _stok(ids["kopi"]) == Decimal("964.000")

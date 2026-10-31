@@ -98,7 +98,7 @@ erDiagram
 | `pesanan` | Satu pesanan, dibaca dua portal. | `distributor_id` ke `distributor`, `kontrak_id` ke `kontrak`, `usaha_id` ke `usaha` | unik (nomor) |
 | `pesanan_baris` | Satu barang dalam satu pesanan. | `barang_id` ke `barang`, `penawaran_id` ke `penawaran`, `pesanan_id` ke `pesanan`, `promo_id` ke `promo` | - |
 | `pesanan_jejak` | Garis waktu status. Dibaca dua portal dengan kalimat yang berbeda. | `pesanan_id` ke `pesanan` | - |
-| `ulasan` | Penilaian setelah pesanan selesai. Satu pesanan satu ulasan. | `distributor_id` ke `distributor`, `pesanan_id` ke `pesanan`, `usaha_id` ke `usaha` | unik (pesanan_id); cek `ck_ulasan_rating` |
+| `ulasan` | Penilaian setelah pesanan selesai. Satu pesanan satu ulasan. | `distributor_id` ke `distributor`, `pesanan_id` ke `pesanan`, `usaha_id` ke `usaha` | cek `ck_ulasan_rating`; unik (pesanan_id) |
 
 ## Analitik: keluaran mesin
 

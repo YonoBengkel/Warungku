@@ -15,7 +15,7 @@ kalau ada yang menjaganya. Di sinilah penjaganya, dan
 
 from __future__ import annotations
 
-from datetime import timezone
+from datetime import datetime, timezone
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
@@ -30,7 +30,9 @@ from .otentikasi import usaha_saya
 from .skema import (
     BahanMenu,
     BarangRingkas,
+    AlasanBatal,
     BarisNota,
+    HasilBatal,
     HasilStruk,
     KemasanRingkas,
     MenuBelumDipasangkan,
@@ -629,6 +631,103 @@ def ringkasan_menu_kasir(usaha_id: int = Depends(usaha_saya)) -> RingkasanMenuKa
         )
 
 
+def _nota_atau_404(sesi: Session, usaha_id: int, nomor_struk: str) -> Transaksi:
+    """Nota dikunci selama transaksi, supaya dua pembatalan bersamaan tidak mengembalikan stok dua kali."""
+    trx = sesi.exec(
+        select(Transaksi)
+        .where(Transaksi.usaha_id == usaha_id, Transaksi.nomor_struk == nomor_struk)
+        .with_for_update()
+    ).first()
+    if trx is None:
+        raise HTTPException(404, "Nota tidak ditemukan. Muat ulang daftar nota, lalu coba lagi.")
+    return trx
+
+
+@rute.post("/transaksi/{nomor_struk}/ajukan-batal", response_model=HasilBatal)
+def ajukan_batal(nomor_struk: str, isi: AlasanBatal, usaha_id: int = Depends(usaha_saya)) -> HasilBatal:
+    """
+    Kasir mengajukan pembatalan satu nota. Stok dan laporan belum berubah: nota baru
+    batal kalau pemilik membatalkannya. Mengajukan lagi menggantikan alasan sebelumnya.
+
+    Catatan: selama POS memakai akun pemilik, server belum bisa membedakan kasir dari
+    pemilik. Pemisahannya hanya di antarmuka sampai akun kasir ada (tahap 5).
+    """
+    with Session(mesin()) as sesi:
+        _usaha_atau_404(sesi, usaha_id)
+        trx = _nota_atau_404(sesi, usaha_id, nomor_struk)
+        if trx.dibatalkan:
+            return HasilBatal(nomor_struk=trx.nomor_struk, status="sudah-dibatalkan")
+        trx.pengajuan_batal = isi.alasan.strip()
+        sesi.add(trx)
+        sesi.commit()
+        return HasilBatal(nomor_struk=trx.nomor_struk, status="diajukan")
+
+
+@rute.post("/transaksi/{nomor_struk}/batal", response_model=HasilBatal)
+def batalkan_nota(nomor_struk: str, isi: AlasanBatal, usaha_id: int = Depends(usaha_saya)) -> HasilBatal:
+    """
+    Batalkan satu nota. Stok yang dipotong nota itu dikembalikan lewat pergerakan
+    `koreksi` yang menunjuk nota yang sama, jadi buku besar tetap utuh: jumlah semua
+    pergerakan tetap sama dengan stok. Yang dikembalikan persis yang dulu dipotong,
+    termasuk kalau stoknya kurang saat itu. Permintaan harian ikut dikurangi, tetapi
+    tanda stok habis di hari itu dibiarkan, karena tidak bisa dipulihkan dengan pasti.
+
+    Aman diulang: nota yang sudah batal dijawab `sudah-dibatalkan` tanpa berbuat apa-apa.
+    Nomor nota yang batal tetap terpakai, jadi mengirim ulang nomor itu tidak memotong stok lagi.
+    """
+    alasan = isi.alasan.strip()
+    with Session(mesin()) as sesi:
+        _usaha_atau_404(sesi, usaha_id)
+        trx = _nota_atau_404(sesi, usaha_id, nomor_struk)
+        if trx.dibatalkan:
+            return HasilBatal(nomor_struk=trx.nomor_struk, status="sudah-dibatalkan")
+
+        waktu = trx.waktu if trx.waktu.tzinfo else trx.waktu.replace(tzinfo=timezone.utc)
+        tanggal = waktu.astimezone(timezone.utc).date()
+        sekarang = datetime.now(timezone.utc)
+        kembali: list[str] = []
+        potongan = sesi.exec(
+            text(
+                "SELECT barang_id, -jumlah AS n FROM pergerakan "
+                "WHERE transaksi_id = :t AND jenis = 'terjual' ORDER BY id"
+            ).bindparams(t=trx.id)
+        ).all()
+        for barang_id, n in potongan:
+            b = sesi.get(Barang, barang_id)
+            if b is None or b.usaha_id != usaha_id:
+                continue
+            b.stok = Decimal(b.stok) + Decimal(n)
+            sesi.add(b)
+            sesi.flush()
+            sesi.exec(
+                text(
+                    """
+                    INSERT INTO pergerakan
+                        (usaha_id, barang_id, waktu, jenis, jumlah, stok_sesudah, keterangan, transaksi_id, oleh)
+                    VALUES (:u, :b, :w, :j, :n, :s, :k, :t, :o)
+                    """
+                ).bindparams(
+                    u=usaha_id, b=barang_id, w=sekarang, j=JenisPergerakan.KOREKSI.value, n=n, s=b.stok,
+                    k=("Pembatalan struk %s: %s" % (trx.nomor_struk, alasan))[:200], t=trx.id, o="Pemilik",
+                )
+            )
+            sesi.exec(
+                text(
+                    "UPDATE permintaan_harian SET jumlah = GREATEST(jumlah - :n, 0) "
+                    "WHERE usaha_id = :u AND barang_id = :b AND tanggal = :d"
+                ).bindparams(n=n, u=usaha_id, b=barang_id, d=tanggal)
+            )
+            if b.nama not in kembali:
+                kembali.append(b.nama)
+
+        trx.dibatalkan = True
+        trx.alasan_batal = alasan
+        trx.dibatalkan_pada = sekarang
+        sesi.add(trx)
+        sesi.commit()
+        return HasilBatal(nomor_struk=trx.nomor_struk, status="dibatalkan", stok_dikembalikan=kembali)
+
+
 def _pemetaan_menu(sesi: Session, usaha_id: int, kunci: str) -> PemetaanMenu | None:
     """Menu dikenali tanpa peduli huruf besar-kecil dan spasi di tepi, sama seperti saat nota diproses."""
     return sesi.exec(
@@ -769,6 +868,6 @@ def nota_terbaru(
                 )
             )
         return [
-            NotaRingkas(id=n.id, nomor_struk=n.nomor_struk, waktu=n.waktu, kasir=n.kasir, cara_bayar=n.cara_bayar, diskon=n.diskon, uang_diterima=n.uang_diterima, baris=baris.get(n.id, []))
+            NotaRingkas(id=n.id, nomor_struk=n.nomor_struk, waktu=n.waktu, kasir=n.kasir, cara_bayar=n.cara_bayar, diskon=n.diskon, uang_diterima=n.uang_diterima, pengajuan_batal=n.pengajuan_batal, baris=baris.get(n.id, []))
             for n in nota
         ]

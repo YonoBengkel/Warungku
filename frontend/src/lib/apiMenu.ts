@@ -41,6 +41,7 @@ interface NotaApi {
   cara_bayar?: 'tunai' | 'qris' | 'transfer' | null
   diskon?: number
   uang_diterima?: number | null
+  pengajuan_batal?: string | null
 }
 
 interface HasilNotaApi {
@@ -116,6 +117,7 @@ export async function ambilNotaTerbaru(sesi: SesiServer, batas = 8, mulai = 0): 
     kasir: n.kasir ?? 'Kasir',
     caraBayar: n.cara_bayar ?? null,
     diskon: n.diskon ?? 0,
+    pengajuanBatal: n.pengajuan_batal ?? null,
     uangDiterima: n.uang_diterima ?? null,
     baris: n.baris.map((b) => ({ nama: b.nama_menu, jumlah: Number(b.jumlah), satuan: b.satuan, harga: b.harga_jual_satuan ?? null })),
   }))
@@ -199,3 +201,27 @@ export async function simpanMenuJual(
   })
   return keMenuJual(r)
 }
+
+/* ------------------------------------------------------------------ */
+/* Batal nota: kasir mengajukan, pemilik membatalkan                   */
+/* ------------------------------------------------------------------ */
+
+export interface HasilBatalNota {
+  status: 'diajukan' | 'dibatalkan' | 'sudah-dibatalkan'
+  /** Nama bahan yang stoknya dikembalikan. */
+  stokDikembalikan: string[]
+}
+
+async function kirimBatal(sesi: SesiServer, nomorStruk: string, aksi: 'batal' | 'ajukan-batal', alasan: string): Promise<HasilBatalNota> {
+  const r = await minta<{ status: HasilBatalNota['status']; stok_dikembalikan?: string[] }>(
+    `/usaha/${sesi.usahaId}/transaksi/${encodeURIComponent(nomorStruk)}/${aksi}`,
+    { method: 'POST', token: sesi.token, body: JSON.stringify({ alasan }) },
+  )
+  return { status: r.status, stokDikembalikan: r.stok_dikembalikan ?? [] }
+}
+
+/** Pemilik membatalkan nota: stok yang dipotongnya dikembalikan. */
+export const batalkanNota = (sesi: SesiServer, nomorStruk: string, alasan: string) => kirimBatal(sesi, nomorStruk, 'batal', alasan)
+
+/** Kasir mengajukan pembatalan: stok dan laporan belum berubah sampai pemilik membatalkannya. */
+export const ajukanBatalNota = (sesi: SesiServer, nomorStruk: string, alasan: string) => kirimBatal(sesi, nomorStruk, 'ajukan-batal', alasan)

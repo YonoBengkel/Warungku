@@ -22,7 +22,7 @@ export function tandaNotifikasi(n: Pick<Notifikasi, 'tingkat' | 'judul'>): strin
  * diambil dari catatan peramban (`tersimpan`, revisi V5, Q120).
  */
 export function notifikasiDariServer(
-  isi: { barang: Barang[]; pesanan: Pesanan[]; kontrak: Kontrak[]; kasir?: { menuBelumDipasangkan: unknown[] } },
+  isi: { barang: Barang[]; pesanan: Pesanan[]; kontrak: Kontrak[]; kasir?: { menuBelumDipasangkan: unknown[] }; notaTerbaru?: Array<{ pengajuanBatal: string | null }> | null },
   sebelumnya: Notifikasi[],
   tersimpan: PetaDibaca = {},
 ): Notifikasi[] {
@@ -128,6 +128,22 @@ export function notifikasiDariServer(
       butuhTindakan: true,
       tautan: '/akun/kasir?tab=beres',
       aksiLabel: 'Pasangkan',
+      barangId: null,
+    })
+  }
+
+  // Kasir mengajukan pembatalan: pemilik yang memutuskan, jadi perlu tindakan.
+  const diajukan = isi.notaTerbaru?.filter((n) => n.pengajuanBatal).length ?? 0
+  if (diajukan > 0) {
+    tambah({
+      id: 'srv-batal-diajukan',
+      kategori: 'sistem',
+      tingkat: 'penting',
+      judul: `${diajukan} nota diajukan kasir untuk dibatalkan`,
+      detail: 'Baca alasannya di daftar nota, lalu batalkan kalau memang perlu. Stok dikembalikan saat nota dibatalkan.',
+      butuhTindakan: true,
+      tautan: '/penjualan',
+      aksiLabel: 'Tinjau',
       barangId: null,
     })
   }

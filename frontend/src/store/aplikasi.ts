@@ -921,37 +921,49 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
         await get().muatMenuKasir()
         return
       }
-      const [terbaru] = await ambilNotaTerbaru(sesi, 1).catch(() => [] as Transaksi[])
-      if (!terbaru || dikenal[0]?.nomorStruk === terbaru.nomorStruk) return
+      // Tanda daftar: nomor nota dan apakah ada pengajuan batal. Berubah kalau ada nota baru, nota
+      // dibatalkan (dari tab lain), atau kasir mengajukan pembatalan.
+      const tanda = (d: Transaksi[]) => d.map((n) => n.nomorStruk + (n.pengajuanBatal ? '!' : '')).join(',')
+      const terbaru = await ambilNotaTerbaru(sesi, 8).catch(() => null)
+      if (!terbaru || tanda(terbaru) === tanda(dikenal)) return
 
       const stokLama = new Map(get().barang.map((b) => [b.id, b.stok]))
       await Promise.all([get().muatMenuKasir(), get().segarkanGudangServer().catch(() => undefined)])
 
-      const baru: Transaksi[] = []
-      for (const n of get().notaTerbaru ?? []) {
-        if (n.nomorStruk === dikenal[0]?.nomorStruk) break
-        baru.push(n)
-      }
-      if (baru.length === 0) return
+      // Nota baru: belum dikenal dan tidak lebih lama dari yang terbaru yang dikenal. Syarat waktu mencegah
+      // nota lama yang muncul karena nota di atasnya dibatalkan terhitung sebagai nota baru.
+      const sekarang = get().notaTerbaru ?? []
+      const kenal = new Set(dikenal.map((n) => n.nomorStruk))
+      const batasBaru = dikenal[0] ? +new Date(dikenal[0].waktu) : 0
+      const baru = sekarang.filter((n) => !kenal.has(n.nomorStruk) && +new Date(n.waktu) >= batasBaru)
+      const duluDiajukan = new Set(dikenal.filter((n) => n.pengajuanBatal).map((n) => n.nomorStruk))
+      const diajukan = sekarang.filter((n) => n.pengajuanBatal && !duluDiajukan.has(n.nomorStruk) && !baru.includes(n))
 
       const berubah = get().barang.filter((b) => stokLama.has(b.id) && stokLama.get(b.id) !== b.stok).map((b) => b.id)
       if (berubah.length > 0) {
         set({ stokBerubah: berubah })
         window.setTimeout(() => set({ stokBerubah: [] }), 4000)
       }
-      const baris = baru.flatMap((n) => n.baris)
-      const total = baru.reduce(
-        (a, n) => a + Math.max(0, n.baris.reduce((x, b) => x + (b.harga ?? 0) * b.jumlah, 0) - n.diskon),
-        0,
-      )
-      const porsi = baris.reduce((a, b) => a + b.jumlah, 0)
-      get().tampilkanRacun(
-        baru.length === 1
-          ? `Nota masuk dari kasir: ${rupiah(total)}, ${angka(porsi, 2)} porsi.`
-          : `${baru.length} nota baru dari kasir, ${rupiah(total)}.`,
-        'info',
-        { label: 'Lihat Nota', ke: '/penjualan' },
-      )
+      if (baru.length > 0) {
+        const baris = baru.flatMap((n) => n.baris)
+        const total = baru.reduce(
+          (a, n) => a + Math.max(0, n.baris.reduce((x, b) => x + (b.harga ?? 0) * b.jumlah, 0) - n.diskon),
+          0,
+        )
+        const porsi = baris.reduce((a, b) => a + b.jumlah, 0)
+        get().tampilkanRacun(
+          baru.length === 1
+            ? `Nota masuk dari kasir: ${rupiah(total)}, ${angka(porsi, 2)} porsi.`
+            : `${baru.length} nota baru dari kasir, ${rupiah(total)}.`,
+          'info',
+          { label: 'Lihat Nota', ke: '/penjualan' },
+        )
+      } else if (diajukan.length > 0) {
+        get().tampilkanRacun(`Kasir mengajukan pembatalan nota ${diajukan[0].nomorStruk}: ${diajukan[0].pengajuanBatal}`, 'menipis', {
+          label: 'Tinjau',
+          ke: '/penjualan',
+        })
+      }
     } finally {
       memeriksaNota = false
     }
@@ -2173,7 +2185,7 @@ useAplikasi.subscribe((s, sebelum) => {
 // dari catatan peramban milik usaha ini (revisi V5, Q120).
 useAplikasi.subscribe((s, sebelum) => {
   if (s.sumberData !== 'server') return
-  if (s.barang === sebelum.barang && s.pesanan === sebelum.pesanan && s.kontrak === sebelum.kontrak && s.sumberData === sebelum.sumberData && s.kasir.menuBelumDipasangkan === sebelum.kasir.menuBelumDipasangkan) return
+  if (s.barang === sebelum.barang && s.pesanan === sebelum.pesanan && s.kontrak === sebelum.kontrak && s.sumberData === sebelum.sumberData && s.kasir.menuBelumDipasangkan === sebelum.kasir.menuBelumDipasangkan && s.notaTerbaru === sebelum.notaTerbaru) return
   const tersimpan = s.sesiServer ? bacaPetaDibaca(kunciDibacaUsaha(s.sesiServer.usahaId)) : {}
   useAplikasi.setState({ notifikasi: notifikasiDariServer(s, s.notifikasi, tersimpan) })
 })

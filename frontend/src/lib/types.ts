@@ -145,6 +145,8 @@ export interface Transaksi {
   caraBayar: 'tunai' | 'qris' | 'transfer' | null
   /** Potongan untuk seluruh nota, Rupiah. */
   diskon: number
+  /** Alasan yang diajukan kasir; nota baru batal kalau pemilik membatalkannya. */
+  pengajuanBatal: string | null
   /** Uang yang diserahkan pembeli, hanya tunai. */
   uangDiterima: number | null
 }

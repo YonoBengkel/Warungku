@@ -34,6 +34,7 @@ const Masuk = lazy(() => import('@/pages/auth/Masuk'))
 const MasukDistributor = lazy(() => import('@/pages/auth/MasukDistributor'))
 const MasukPos = lazy(() => import('@/pages/auth/MasukPos'))
 const Kasir = lazy(() => import('@/pages/pos/Kasir'))
+const NotaPos = lazy(() => import('@/pages/pos/NotaPos'))
 const Daftar = lazy(() => import('@/pages/auth/Daftar'))
 const DaftarUsaha = lazy(() => import('@/pages/auth/DaftarUsaha'))
 const DaftarLegalitas = lazy(() => import('@/pages/auth/DaftarLegalitas'))
@@ -127,7 +128,6 @@ const RUTE_TANPA_KERANGKA = new Set([
   '/masuk',
   '/masuk/distributor',
   '/masuk/pos',
-  '/pos',
   '/daftar',
   '/daftar/usaha',
   '/daftar/legalitas',
@@ -140,7 +140,8 @@ export default function App() {
   // kerangka. Di dalam kerangka, halamannya dijaga `IsiHalaman`, supaya menu
   // samping tidak ikut dipasang ulang setiap pindah halaman (revisi V6, Q121).
   const { pathname } = useLocation()
-  const kunciBatas = RUTE_TANPA_KERANGKA.has(pathname) ? pathname : 'kerangka'
+  // Portal POS punya satu kunci untuk semua halamannya, supaya pindah Kasir dan Nota tidak memasang ulang kerangkanya.
+  const kunciBatas = RUTE_TANPA_KERANGKA.has(pathname) ? pathname : pathname.startsWith('/pos') ? 'pos' : 'kerangka'
   const tema = useAplikasi((s) => s.tema)
 
   // Kelas tema dipasang di sini, satu kali untuk semua rute. Dulu ia hidup di
@@ -229,6 +230,7 @@ export default function App() {
         {/* Portal POS: layar kasir, bisa terbuka berdampingan dengan Portal UMKM */}
         <Route path="/pos" element={<KerangkaPos />}>
           <Route index element={<Kasir />} />
+          <Route path="nota" element={<NotaPos />} />
         </Route>
 
         {/* Portal Distributor: peran lain, kerangka lain, sidebar empat menu */}

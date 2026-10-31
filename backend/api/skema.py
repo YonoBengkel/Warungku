@@ -149,6 +149,19 @@ class NotaRingkas(BaseModel):
     cara_bayar: str | None = None
     diskon: int = 0
     uang_diterima: int | None = None
+    pengajuan_batal: str | None = None
+
+
+class AlasanBatal(BaseModel):
+    alasan: str = Field(min_length=3, max_length=200)
+
+
+class HasilBatal(BaseModel):
+    nomor_struk: str
+    #: 'diajukan' (menunggu pemilik), 'dibatalkan', atau 'sudah-dibatalkan' (diulang, tidak berbuat apa-apa).
+    status: Literal["diajukan", "dibatalkan", "sudah-dibatalkan"]
+    #: Nama bahan yang stoknya dikembalikan.
+    stok_dikembalikan: list[str] = []
 
 
 class KemasanRingkas(BaseModel):

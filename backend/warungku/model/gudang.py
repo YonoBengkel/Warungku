@@ -168,6 +168,12 @@ class Transaksi(SQLModel, table=True):
     sumber: str = Field(default="pos", max_length=20, **bawaan("pos"))
     #: Struk batal mengembalikan stok lewat pergerakan balik.
     dibatalkan: bool = Field(default=False, **bawaan(False))
+    #: Diisi pemilik saat membatalkan. Nota batal tidak dihitung di mana pun, dan stoknya dikembalikan
+    #: lewat pergerakan `koreksi` yang menunjuk nota ini.
+    alasan_batal: str | None = Field(default=None, max_length=200)
+    dibatalkan_pada: datetime | None = Field(default=None, sa_column=kolom_waktu(nullable=True))
+    #: Alasan yang diajukan kasir. Nota baru batal kalau pemilik menyetujuinya.
+    pengajuan_batal: str | None = Field(default=None, max_length=200)
     #: 'tunai' | 'qris' | 'transfer'. Kosong untuk nota dari kasir yang tidak membawanya.
     #: Hanya dicatat: pembayarannya terjadi di luar aplikasi.
     cara_bayar: str | None = Field(default=None, max_length=10)

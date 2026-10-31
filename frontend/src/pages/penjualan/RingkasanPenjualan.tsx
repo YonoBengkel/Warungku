@@ -38,7 +38,7 @@ export default function RingkasanPenjualan() {
       {sesi ? (
         <>
           <TampilanRingkasan key={versi} ambil={ambil} />
-          {!produsen && <DaftarNota />}
+          {!produsen && <DaftarNota setelahBatal={() => setVersi((v) => v + 1)} />}
         </>
       ) : (
         <section aria-labelledby="judul-ringkasan-contoh" className="mt-4">

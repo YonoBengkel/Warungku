@@ -257,6 +257,7 @@ function bangkitkanTransaksi(): Transaksi[][] {
         kasir: jam < 15 ? KASIR_JAGA[h % 3] : KASIR_JAGA[(h + 1) % 3],
         caraBayar: null,
         diskon: 0,
+        pengajuanBatal: null,
         uangDiterima: null,
       })
     }
