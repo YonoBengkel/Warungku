@@ -107,6 +107,26 @@ class ResepMasuk(BaseModel):
     bahan: list[BahanMenuMasuk] = Field(min_length=1, max_length=20)
 
 
+class MenuJual(BaseModel):
+    """Satu menu yang dijual lewat Portal POS. Pemiliknya mengatur di Portal UMKM."""
+
+    nama_menu: str
+    harga_jual: int
+    kategori: str | None
+    aktif: bool
+    #: False: nota menu ini masuk, tetapi stok bahannya belum terpotong.
+    punya_resep: bool
+
+
+class MenuJualMasuk(BaseModel):
+    """Tambah menu POS, atau ubah harga, kategori, dan status menu yang sudah ada."""
+
+    nama_menu: str = Field(min_length=1, max_length=120)
+    harga_jual: int = Field(gt=0, le=100_000_000)
+    kategori: str | None = Field(default=None, max_length=40)
+    aktif: bool = True
+
+
 class BarisNota(BaseModel):
     nama_menu: str
     jumlah: Decimal

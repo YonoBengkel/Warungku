@@ -181,6 +181,21 @@ MENU_BARU: dict[str, tuple[tuple[str, str, int, int, int], ...]] = {
     ),
 }
 
+#: Menu yang dijual di Portal POS: menu -> (kategori, harga jual). Harga menu baru
+#: sama dengan MENU_BARU. Menu baru tetap tanpa resep, supaya alur memasangkannya
+#: bisa diperlihatkan saat demo.
+MENU_JUAL: dict[str, dict[str, tuple[str, int]]] = {
+    "umkm1@warungku.test": {
+        "Es Kopi Susu Gula Aren": ("Minuman", 22000),
+        "Americano": ("Minuman", 18000),
+        "Matcha Latte": ("Minuman", 26000),
+        "Cokelat Panas": ("Minuman", 20000),
+        "Kopi Susu Pandan": ("Minuman", 24000),
+        "Roti Bakar Keju": ("Makanan", 18000),
+        "Kentang Goreng": ("Makanan", 15000),
+    },
+}
+
 #: Akun distributor yang portalnya dibuka saat demo.
 EMAIL_DISTRIBUTOR = "distributor1@warungku.test"
 
@@ -321,6 +336,7 @@ def hapus(kon, usaha_id: int) -> None:
     )
     kon.execute(text("DELETE FROM transaksi WHERE usaha_id = :u AND nomor_struk LIKE 'DEMO-V-%'"), p)
     menu = [m.lower() for m, _ in RESEP.get(email, ())] + [m[0].lower() for m in MENU_BARU.get(email, ())]
+    # Menu POS tanpa resep punya baris sendiri, ikut terhapus lewat nama yang sama di MENU_BARU.
     if menu:
         q = {"u": usaha_id, "m": menu}
         dipetakan = "SELECT id FROM pemetaan_menu WHERE usaha_id = :u AND lower(btrim(nama_menu)) = ANY(:m)"
@@ -630,6 +646,24 @@ def _satu_kontrak(
                  "diterima": diterima.quantize(Decimal("1")), "selesai": not bulan_ini},
             )
             t = (t.replace(day=28) + timedelta(days=4)).replace(day=1)
+
+
+def _menu_jual(kon, usaha_id: int, email: str) -> int:
+    """Harga dan kategori menu Portal POS. Menu tanpa resep tetap mendapat barisnya sendiri."""
+    menu = MENU_JUAL.get(email, {})
+    for nama, (kategori, harga) in menu.items():
+        kon.execute(
+            text(
+                """
+                INSERT INTO pemetaan_menu (usaha_id, nama_menu, harga_jual, kategori)
+                VALUES (:u, :n, :h, :k)
+                ON CONFLICT ON CONSTRAINT uq_pemetaan_menu
+                DO UPDATE SET harga_jual = EXCLUDED.harga_jual, kategori = EXCLUDED.kategori, aktif = true
+                """
+            ),
+            {"u": usaha_id, "n": nama, "h": harga, "k": kategori},
+        )
+    return len(menu)
 
 
 def _variasi_menu(kon, usaha_id: int, email: str, sekarang: datetime) -> tuple[int, int]:
@@ -950,6 +984,11 @@ def basi(kon) -> bool:
         return True
     if not kon.execute(text("SELECT EXISTS (SELECT 1 FROM pesanan WHERE nomor LIKE 'PS-%-W%')")).scalar():
         return True
+    # Dipasang sebelum Portal POS ada: belum ada menu yang berharga jual.
+    if any(MENU_JUAL.values()) and not kon.execute(
+        text("SELECT EXISTS (SELECT 1 FROM pemetaan_menu WHERE harga_jual IS NOT NULL)")
+    ).scalar():
+        return True
     # Dipasang sebelum dua kontrak minta berhenti (revisi V4): kontrak kedai
     # dengan distributor demo lebih sedikit dari daftarnya. Dihitung dari
     # jumlah, bukan dari pengajuannya, karena pengajuan hilang begitu dijawab
@@ -997,6 +1036,7 @@ def pasang(jika_basi: bool = False) -> dict | None:
             }
             _variasi_atribut(kon, u, email, sekarang)
             hasil[email]["resep"], hasil[email]["nota_menu"] = _variasi_menu(kon, u, email, sekarang)
+            hasil[email]["menu_jual"] = _menu_jual(kon, u, email)
             nomor = _variasi_pesanan(kon, u, email, sekarang, nomor)
             hasil[email]["pesanan"] = nomor - awal
         dist = _variasi_distributor(kon, sekarang)

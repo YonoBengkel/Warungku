@@ -4,6 +4,7 @@ import { JudulBagian, Kartu, Lencana, Pemisah, Tombol, TombolTautan } from '@/co
 import { Kolom } from '@/components/ui/formulir'
 import { Lembar } from '@/components/ui/lembar'
 import { KepalaHalaman, TabSegmen } from '@/components/ui/navigasi'
+import { TabMenuJual } from '@/pages/akun/TabMenuJual'
 import { BilahProgres, KeadaanKosong, Penjelasan, Peringatan } from '@/components/ui/umpanBalik'
 import {
   IkonCentangLingkaran,
@@ -34,7 +35,7 @@ import { POS_TUNGGAL, daftarTransaksi, riwayatKasir } from '@/data/dummy'
 import { KartuStruk } from '@/components/domain/KartuStruk'
 import { useAplikasi } from '@/store/aplikasi'
 
-type Tab = 'sambungan' | 'beres' | 'resep' | 'riwayat'
+type Tab = 'sambungan' | 'beres' | 'resep' | 'menu' | 'riwayat'
 /** Tugas yang tidak berasal dari daftar menu, jadi keadaannya dipegang layar ini. */
 type TugasLain = 'salinan' | 'satuan'
 
@@ -69,7 +70,7 @@ export default function AkunKasir() {
 
   const onboarding = params.get('langkah') === 'mulai'
   const tabParam = params.get('tab')
-  const tab: Tab = tabParam === 'beres' || tabParam === 'resep' || tabParam === 'riwayat' ? tabParam : 'sambungan'
+  const tab: Tab = tabParam === 'beres' || tabParam === 'resep' || tabParam === 'menu' || tabParam === 'riwayat' ? tabParam : 'sambungan'
 
   /* Bahan yang satuannya tidak sama dengan cara kasir menghitung porsi. Tugas
      penjualan kembar dan satuan porsi hanya ada di data contoh: server belum
@@ -140,6 +141,7 @@ export default function AkunKasir() {
               { nilai: 'sambungan', label: 'Sambungan' },
               { nilai: 'beres', label: 'Perlu Dibereskan', jumlah: jumlahPerluDibereskan },
               { nilai: 'resep', label: 'Resep Menu' },
+              { nilai: 'menu', label: 'Menu & Harga' },
               { nilai: 'riwayat', label: 'Riwayat' },
             ]}
           />
@@ -159,6 +161,7 @@ export default function AkunKasir() {
           />
         )}
         {tab === 'resep' && <TabResep />}
+        {tab === 'menu' && <TabMenuJual />}
         {tab === 'riwayat' && <TabRiwayat />}
       </div>
     </div>

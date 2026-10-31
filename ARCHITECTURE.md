@@ -1,13 +1,13 @@
 # Arsitektur Turnify Flow
 
 Susunan komponen, alur data, dan lapisan aplikasi Turnify Flow. Bagian bertanda **(rencana)** belum ada di kode.
-Kebutuhan produknya ada di [PRD.md](PRD.md).
+Kebutuhan produknya ada di [PRD.md](PRD.md), dan tabelnya di [SCHEMA.md](SCHEMA.md).
 
 ## Komponen dan alur data
 
 ```mermaid
 flowchart LR
-    pos["Portal POS /pos (rencana)"] -- "POST /usaha/{id}/transaksi" --> api
+    pos["Portal POS /pos"] -- "POST /usaha/{id}/transaksi" --> api
     umkm["Portal UMKM"] -- "baca dan tulis" --> api
     dist["Portal Distributor"] -- "baca dan tulis" --> api
     umkm -. "tanya nota baru tiap 3 detik (rencana)" .-> api
@@ -26,31 +26,33 @@ flowchart LR
 - **Model menulis ke tabel, API membaca tabel.** API tidak memanggil model saat halaman dibuka. Akibatnya nota baru
   langsung mengubah stok, tetapi prediksi baru berubah pada jadwal penjadwal berikutnya.
 
-## Keputusan Portal POS (rencana)
+## Portal POS
+
+Tahap 1 sudah ada di kode. Yang bertanda **(rencana)** menyusul di tahap berikutnya.
 
 - **Akun:** tahap awal memakai akun usaha yang sudah ada. Token dan penjagaan `usaha_saya` tidak berubah. Akun kasir
   khusus menyusul di tahap 5.
-- **Harga jual:** kolom baru di `pemetaan_menu` (harga jual, kategori, aktif). `barang` tetap tanpa harga jual, karena
+- **Harga jual:** kolom `harga_jual`, `kategori`, dan `aktif` di `pemetaan_menu`, dibaca dan ditulis lewat `/usaha/{id}/menu-jual`. Menu tanpa harga tidak dijual di POS. `barang` tetap tanpa harga jual, karena
   yang dijual kasir adalah menu, bukan bahan. Tabel ini juga bisa menyimpan menu yang belum punya baris
   `pemetaan_menu_bahan`, jadi menu tanpa resep tetap tampil di POS.
 - **Nomor struk:** dibuat di peramban sebelum dikirim, berawalan `POS-`, supaya kirim ulang tetap aman. Awalan `DEMO-`
   tidak boleh dipakai karena `backend/api/penjualan.py` tidak menghitungnya di Ringkasan Penjualan.
-- **Pembayaran:** kolom cara bayar, diskon, dan uang diterima di `transaksi`.
-- **Pembaruan langsung:** Portal UMKM menanyakan nota terakhir tiap 3 detik selama tabnya terlihat, lewat endpoint
+- **Pembayaran (rencana):** kolom cara bayar, diskon, dan uang diterima di `transaksi`.
+- **Pembaruan langsung (rencana):** Portal UMKM menanyakan nota terakhir tiap 3 detik selama tabnya terlihat, lewat endpoint
   ringan. Kalau ada yang baru, ia memanggil `segarkanGudangServer` dan `muatMenuKasir` yang sudah ada. Cara ini dipilih
   daripada WebSocket karena jedanya cukup untuk demo dan tidak menambah infrastruktur.
 - **Pengaturan satu arah:** menu, harga, dan resep ditulis dari Portal UMKM. Portal POS hanya membaca menu aktif yang punya
   harga, dan mengirim nama menu di nota. Server yang menerjemahkan menu ke bahan.
-- **Daftar nota:** ringkasan nota dan Lihat Semua Nota ada di Ringkasan Penjualan. `GET /usaha/{id}/transaksi` sekarang
+- **Daftar nota (rencana):** ringkasan nota dan Lihat Semua Nota ada di Ringkasan Penjualan. `GET /usaha/{id}/transaksi` sekarang
   paling banyak mengembalikan 50 nota, jadi perlu halaman.
-- **Pemasangan resep:** memakai layar `KasirPasangkan` dan `PUT /usaha/{id}/menu-kasir` yang sudah ada, ditambah tombol
+- **Pemasangan resep (rencana):** memakai layar `KasirPasangkan` dan `PUT /usaha/{id}/menu-kasir` yang sudah ada, ditambah tombol
   yang mengisi resep saran demo. Resep sarannya tercatat di [PRD.md](PRD.md).
 
 ## Peta folder
 
 | Folder | Isi |
 |---|---|
-| `frontend/src/pages/`, `layouts/` | Halaman dan kerangka tiap portal |
+| `frontend/src/pages/`, `layouts/` | Halaman dan kerangka tiap portal. Portal POS: `pages/pos/`, `layouts/KerangkaPos.tsx`, `pages/auth/MasukPos.tsx` |
 | `frontend/src/store/aplikasi.ts` | Store Zustand |
 | `frontend/src/lib/api*.ts` | Klien API |
 | `backend/api/` | Endpoint REST |

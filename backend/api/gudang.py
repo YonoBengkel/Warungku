@@ -34,6 +34,8 @@ from .skema import (
     HasilStruk,
     KemasanRingkas,
     MenuBelumDipasangkan,
+    MenuJual,
+    MenuJualMasuk,
     NotaRingkas,
     PemakaianBulanan,
     PeriodePemakaian,
@@ -616,6 +618,63 @@ def ringkasan_menu_kasir(usaha_id: int = Depends(usaha_saya)) -> RingkasanMenuKa
         )
 
 
+def _pemetaan_menu(sesi: Session, usaha_id: int, kunci: str) -> PemetaanMenu | None:
+    """Menu dikenali tanpa peduli huruf besar-kecil dan spasi di tepi, sama seperti saat nota diproses."""
+    return sesi.exec(
+        select(PemetaanMenu).where(PemetaanMenu.usaha_id == usaha_id).where(
+            text("lower(btrim(pemetaan_menu.nama_menu)) = :k").bindparams(k=kunci)
+        )
+    ).first()
+
+
+def _menu_jual(sesi: Session, usaha_id: int) -> list[MenuJual]:
+    baris = sesi.exec(
+        text(
+            """
+            SELECT pm.nama_menu, pm.harga_jual, pm.kategori, pm.aktif,
+                   EXISTS (SELECT 1 FROM pemetaan_menu_bahan pb WHERE pb.pemetaan_id = pm.id) AS punya_resep
+              FROM pemetaan_menu pm
+             WHERE pm.usaha_id = :u AND pm.harga_jual IS NOT NULL
+             ORDER BY pm.kategori NULLS LAST, pm.nama_menu
+            """
+        ).bindparams(u=usaha_id)
+    ).all()
+    return [MenuJual(**dict(r._mapping)) for r in baris]
+
+
+@rute.get("/menu-jual", response_model=list[MenuJual])
+def daftar_menu_jual(usaha_id: int = Depends(usaha_saya)) -> list[MenuJual]:
+    """Menu yang berharga jual. Portal POS memakai yang aktif, Portal UMKM mengatur semuanya."""
+    with Session(mesin()) as sesi:
+        _usaha_atau_404(sesi, usaha_id)
+        return _menu_jual(sesi, usaha_id)
+
+
+@rute.put("/menu-jual", response_model=MenuJual)
+def simpan_menu_jual(menu: MenuJualMasuk, usaha_id: int = Depends(usaha_saya)) -> MenuJual:
+    """
+    Tambah menu POS, atau ubah harga, kategori, dan statusnya.
+
+    Resepnya tidak disentuh: menu tanpa resep tetap boleh dijual, dan notanya
+    masuk daftar menu yang perlu dipasangkan. Harga baru hanya berlaku untuk nota
+    berikutnya, karena tiap baris nota menyimpan harganya sendiri.
+    """
+    nama = menu.nama_menu.strip()
+    if not nama:
+        raise HTTPException(422, "Nama menu belum diisi.")
+    kategori = (menu.kategori or "").strip() or None
+    with Session(mesin()) as sesi:
+        _usaha_atau_404(sesi, usaha_id)
+        kunci = nama.lower()
+        pm = _pemetaan_menu(sesi, usaha_id, kunci) or PemetaanMenu(usaha_id=usaha_id, nama_menu=nama)
+        pm.harga_jual = menu.harga_jual
+        pm.kategori = kategori
+        pm.aktif = menu.aktif
+        sesi.add(pm)
+        sesi.commit()
+        return next(m for m in _menu_jual(sesi, usaha_id) if m.nama_menu.strip().lower() == kunci)
+
+
 @rute.put("/menu-kasir", response_model=ResepMenu)
 def simpan_resep(resep: ResepMasuk, usaha_id: int = Depends(usaha_saya)) -> ResepMenu:
     """
@@ -649,11 +708,7 @@ def simpan_resep(resep: ResepMasuk, usaha_id: int = Depends(usaha_saya)) -> Rese
             )
 
         kunci = nama.lower()
-        pm = sesi.exec(
-            select(PemetaanMenu).where(PemetaanMenu.usaha_id == usaha_id).where(
-                text("lower(btrim(pemetaan_menu.nama_menu)) = :k").bindparams(k=kunci)
-            )
-        ).first()
+        pm = _pemetaan_menu(sesi, usaha_id, kunci)
         if pm is None:
             pm = PemetaanMenu(usaha_id=usaha_id, nama_menu=nama)
             sesi.add(pm)

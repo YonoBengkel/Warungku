@@ -2,6 +2,7 @@ import { Suspense, lazy, useEffect } from 'react'
 import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom'
 import KerangkaAplikasi from '@/layouts/KerangkaAplikasi'
 import KerangkaDistributor from '@/layouts/KerangkaDistributor'
+import KerangkaPos from '@/layouts/KerangkaPos'
 import { MemuatHalaman } from '@/layouts/IsiHalaman'
 import { BatasGalat } from '@/components/BatasGalat'
 import { useAplikasi } from '@/store/aplikasi'
@@ -31,6 +32,8 @@ const Hero = lazy(() => import('@/pages/Hero'))
 /* Otentikasi & pendaftaran */
 const Masuk = lazy(() => import('@/pages/auth/Masuk'))
 const MasukDistributor = lazy(() => import('@/pages/auth/MasukDistributor'))
+const MasukPos = lazy(() => import('@/pages/auth/MasukPos'))
+const Kasir = lazy(() => import('@/pages/pos/Kasir'))
 const Daftar = lazy(() => import('@/pages/auth/Daftar'))
 const DaftarUsaha = lazy(() => import('@/pages/auth/DaftarUsaha'))
 const DaftarLegalitas = lazy(() => import('@/pages/auth/DaftarLegalitas'))
@@ -123,6 +126,8 @@ const RUTE_TANPA_KERANGKA = new Set([
   '/',
   '/masuk',
   '/masuk/distributor',
+  '/masuk/pos',
+  '/pos',
   '/daftar',
   '/daftar/usaha',
   '/daftar/legalitas',
@@ -154,6 +159,7 @@ export default function App() {
         <Route path="/" element={<Hero />} />
         <Route path="/masuk" element={<Masuk />} />
         <Route path="/masuk/distributor" element={<MasukDistributor />} />
+        <Route path="/masuk/pos" element={<MasukPos />} />
         <Route path="/daftar" element={<Daftar />} />
         <Route path="/daftar/usaha" element={<DaftarUsaha />} />
         <Route path="/daftar/legalitas" element={<DaftarLegalitas />} />
@@ -218,6 +224,11 @@ export default function App() {
           <Route path="/akun/bantuan" element={<Bantuan />} />
 
           <Route path="*" element={<TidakDitemukan />} />
+        </Route>
+
+        {/* Portal POS: layar kasir, bisa terbuka berdampingan dengan Portal UMKM */}
+        <Route path="/pos" element={<KerangkaPos />}>
+          <Route index element={<Kasir />} />
         </Route>
 
         {/* Portal Distributor: peran lain, kerangka lain, sidebar empat menu */}

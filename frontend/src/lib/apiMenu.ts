@@ -115,11 +115,12 @@ export async function ambilNotaTerbaru(sesi: SesiServer, batas = 8): Promise<Tra
   }))
 }
 
-/** Kirim satu nota seperti yang dikirim aplikasi kasir. Dipakai alat uji purwarupa. */
+/** Kirim satu nota seperti yang dikirim aplikasi kasir. Dipakai Portal POS dan alat uji purwarupa. */
 export async function kirimNota(
   sesi: SesiServer,
   nomorStruk: string,
   baris: Array<{ namaMenu: string; jumlah: number; satuan: string; harga: number }>,
+  kasir = 'Alat Uji',
 ): Promise<HasilNota> {
   const r = await minta<HasilNotaApi>(`/usaha/${sesi.usahaId}/transaksi`, {
     method: 'POST',
@@ -127,7 +128,7 @@ export async function kirimNota(
     body: JSON.stringify({
       nomor_struk: nomorStruk,
       waktu: new Date().toISOString(),
-      kasir: 'Alat Uji',
+      kasir,
       sumber: 'pos',
       baris: baris.map((b) => ({
         nama_menu: b.namaMenu,
@@ -138,4 +139,55 @@ export async function kirimNota(
     }),
   })
   return { takDikenali: r.tak_dikenali, stokKurang: r.stok_kurang ?? [] }
+}
+
+/* ------------------------------------------------------------------ */
+/* Menu Portal POS: diatur di Portal UMKM, dibaca kasir                */
+/* ------------------------------------------------------------------ */
+
+export interface MenuJual {
+  namaMenu: string
+  hargaJual: number
+  kategori: string | null
+  aktif: boolean
+  /** False: nota menu ini masuk, tetapi stok bahannya belum terpotong. */
+  punyaResep: boolean
+}
+
+interface MenuJualApi {
+  nama_menu: string
+  harga_jual: number
+  kategori: string | null
+  aktif: boolean
+  punya_resep: boolean
+}
+
+const keMenuJual = (m: MenuJualApi): MenuJual => ({
+  namaMenu: m.nama_menu,
+  hargaJual: m.harga_jual,
+  kategori: m.kategori,
+  aktif: m.aktif,
+  punyaResep: m.punya_resep,
+})
+
+export async function ambilMenuJual(sesi: SesiServer): Promise<MenuJual[]> {
+  const isi = await minta<MenuJualApi[]>(`/usaha/${sesi.usahaId}/menu-jual`, { token: sesi.token })
+  return isi.map(keMenuJual)
+}
+
+export async function simpanMenuJual(
+  sesi: SesiServer,
+  menu: { namaMenu: string; hargaJual: number; kategori: string; aktif: boolean },
+): Promise<MenuJual> {
+  const r = await minta<MenuJualApi>(`/usaha/${sesi.usahaId}/menu-jual`, {
+    method: 'PUT',
+    token: sesi.token,
+    body: JSON.stringify({
+      nama_menu: menu.namaMenu,
+      harga_jual: menu.hargaJual,
+      kategori: menu.kategori,
+      aktif: menu.aktif,
+    }),
+  })
+  return keMenuJual(r)
 }

@@ -116,6 +116,13 @@ class PemetaanMenu(SQLModel, table=True):
     usaha_id: int = Field(foreign_key="usaha.id", index=True)
     #: Nama menu apa adanya seperti tertulis di struk kasir.
     nama_menu: str = Field(max_length=160)
+    #: Harga jual di Portal POS, diatur pemilik di Portal UMKM. Kosong berarti
+    #: menu ini tidak dijual lewat POS (mis. pemetaan bawaan 1:1 dan menu dari
+    #: kasir luar). `barang` sengaja tidak punya harga jual: yang dijual menu.
+    harga_jual: int | None = Field(default=None, sa_column=kolom_uang(nullable=True))
+    kategori: str | None = Field(default=None, max_length=40)
+    #: Menu yang dimatikan hilang dari POS, tetapi namanya tetap dikenali di nota lama.
+    aktif: bool = Field(default=True, **bawaan(True))
     dibuat_pada: datetime | None = Field(default=None, sa_column=kolom_dibuat_pada())
 
 
