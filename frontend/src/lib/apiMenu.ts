@@ -37,7 +37,7 @@ interface NotaApi {
   nomor_struk: string
   waktu: string
   kasir: string | null
-  baris: Array<{ nama_menu: string; jumlah: string | number; satuan: string }>
+  baris: Array<{ nama_menu: string; jumlah: string | number; satuan: string; harga_jual_satuan?: number | null }>
 }
 
 interface HasilNotaApi {
@@ -104,14 +104,14 @@ export async function simpanResep(sesi: SesiServer, namaMenu: string, bahan: Bah
   return keResep(r)
 }
 
-export async function ambilNotaTerbaru(sesi: SesiServer, batas = 8): Promise<Transaksi[]> {
-  const isi = await minta<NotaApi[]>(`/usaha/${sesi.usahaId}/transaksi?batas=${batas}`, { token: sesi.token })
+export async function ambilNotaTerbaru(sesi: SesiServer, batas = 8, mulai = 0): Promise<Transaksi[]> {
+  const isi = await minta<NotaApi[]>(`/usaha/${sesi.usahaId}/transaksi?batas=${batas}&mulai=${mulai}`, { token: sesi.token })
   return isi.map((n) => ({
     id: String(n.id),
     nomorStruk: n.nomor_struk,
     waktu: n.waktu,
     kasir: n.kasir ?? 'Kasir',
-    baris: n.baris.map((b) => ({ nama: b.nama_menu, jumlah: Number(b.jumlah), satuan: b.satuan })),
+    baris: n.baris.map((b) => ({ nama: b.nama_menu, jumlah: Number(b.jumlah), satuan: b.satuan, harga: b.harga_jual_satuan ?? null })),
   }))
 }
 

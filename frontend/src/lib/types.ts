@@ -121,6 +121,8 @@ export interface BarisTransaksi {
   nama: string
   jumlah: number
   satuan: string
+  /** Harga satuan seperti tercetak di struk. Null untuk nota lama tanpa harga. */
+  harga: number | null
 }
 
 /**

@@ -244,7 +244,7 @@ function bangkitkanTransaksi(): Transaksi[][] {
         const sudahAda = baris.find((x) => x.nama === menu.nama)
         // Satu menu cuma boleh sekali per struk; pesanan kedua menambah jumlahnya.
         if (sudahAda) sudahAda.jumlah += jumlah
-        else baris.push({ nama: menu.nama, jumlah, satuan: menu.satuan })
+        else baris.push({ nama: menu.nama, jumlah, satuan: menu.satuan, harga: null })
       }
 
       const urut = Math.max(1, Math.round(((i + 1) / jumlahStruk) * totalHariItu))

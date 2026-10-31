@@ -28,7 +28,7 @@ flowchart LR
 
 ## Portal POS
 
-Tahap 1 sudah ada di kode. Yang bertanda **(rencana)** menyusul di tahap berikutnya.
+Tahap 1 dan 2 sudah ada di kode. Yang bertanda **(rencana)** menyusul di tahap berikutnya.
 
 - **Akun:** tahap awal memakai akun usaha yang sudah ada. Token dan penjagaan `usaha_saya` tidak berubah. Akun kasir
   khusus menyusul di tahap 5.
@@ -38,15 +38,16 @@ Tahap 1 sudah ada di kode. Yang bertanda **(rencana)** menyusul di tahap berikut
 - **Nomor struk:** dibuat di peramban sebelum dikirim, berawalan `POS-`, supaya kirim ulang tetap aman. Awalan `DEMO-`
   tidak boleh dipakai karena `backend/api/penjualan.py` tidak menghitungnya di Ringkasan Penjualan.
 - **Pembayaran (rencana):** kolom cara bayar, diskon, dan uang diterima di `transaksi`.
-- **Pembaruan langsung (rencana):** Portal UMKM menanyakan nota terakhir tiap 3 detik selama tabnya terlihat, lewat endpoint
-  ringan. Kalau ada yang baru, ia memanggil `segarkanGudangServer` dan `muatMenuKasir` yang sudah ada. Cara ini dipilih
+- **Pembaruan langsung:** `KerangkaAplikasi` memanggil `periksaNotaMasuk` (store) tiap 3 detik selama tabnya terlihat. Aksi itu
+  membaca satu nota terbaru dari `GET /usaha/{id}/transaksi?batas=1`. Kalau nomornya baru, ia memanggil `segarkanGudangServer` dan
+  `muatMenuKasir` yang sudah ada, menyalakan baris stok yang berubah (`stokBerubah`), dan memunculkan pemberitahuan. Cara ini dipilih
   daripada WebSocket karena jedanya cukup untuk demo dan tidak menambah infrastruktur.
 - **Pengaturan satu arah:** menu, harga, dan resep ditulis dari Portal UMKM. Portal POS hanya membaca menu aktif yang punya
   harga, dan mengirim nama menu di nota. Server yang menerjemahkan menu ke bahan.
-- **Daftar nota (rencana):** ringkasan nota dan Lihat Semua Nota ada di Ringkasan Penjualan. `GET /usaha/{id}/transaksi` sekarang
-  paling banyak mengembalikan 50 nota, jadi perlu halaman.
-- **Pemasangan resep (rencana):** memakai layar `KasirPasangkan` dan `PUT /usaha/{id}/menu-kasir` yang sudah ada, ditambah tombol
-  yang mengisi resep saran demo. Resep sarannya tercatat di [PRD.md](PRD.md).
+- **Daftar nota:** `DaftarNota` di Ringkasan Penjualan menampilkan 8 nota terbaru, dan Lihat Semua Nota memuat 25 lebih lama tiap
+  ditekan. `GET /usaha/{id}/transaksi` menerima `batas` (paling banyak 50) dan `mulai`, dan baris notanya membawa harga satuan.
+- **Pemasangan resep:** memakai layar `KasirPasangkan` dan `PUT /usaha/{id}/menu-kasir` yang sudah ada, ditambah tombol Pakai Resep
+  Saran yang mengisi isian dari `frontend/src/lib/resepSaran.ts`. Menu tanpa resep juga muncul sebagai pemberitahuan di lonceng. Resep sarannya tercatat di [PRD.md](PRD.md).
 
 ## Peta folder
 

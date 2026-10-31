@@ -22,7 +22,7 @@ export function tandaNotifikasi(n: Pick<Notifikasi, 'tingkat' | 'judul'>): strin
  * diambil dari catatan peramban (`tersimpan`, revisi V5, Q120).
  */
 export function notifikasiDariServer(
-  isi: { barang: Barang[]; pesanan: Pesanan[]; kontrak: Kontrak[] },
+  isi: { barang: Barang[]; pesanan: Pesanan[]; kontrak: Kontrak[]; kasir?: { menuBelumDipasangkan: unknown[] } },
   sebelumnya: Notifikasi[],
   tersimpan: PetaDibaca = {},
 ): Notifikasi[] {
@@ -112,6 +112,22 @@ export function notifikasiDariServer(
       butuhTindakan: false,
       tautan: `/kontrak/${k.id}`,
       aksiLabel: 'Lihat Kontrak',
+      barangId: null,
+    })
+  }
+
+  // Menu yang sudah terjual lewat kasir tetapi belum punya resep: stok bahannya tidak terpotong.
+  const belumMenu = isi.kasir?.menuBelumDipasangkan.length ?? 0
+  if (belumMenu > 0) {
+    tambah({
+      id: 'srv-menu-belum',
+      kategori: 'sistem',
+      tingkat: 'penting',
+      judul: `${belumMenu} menu belum dipasangkan ke bahan`,
+      detail: 'Penjualannya sudah masuk dari kasir, tetapi stok bahannya belum terpotong. Pasangkan resepnya supaya stok ikut berkurang.',
+      butuhTindakan: true,
+      tautan: '/akun/kasir?tab=beres',
+      aksiLabel: 'Pasangkan',
       barangId: null,
     })
   }

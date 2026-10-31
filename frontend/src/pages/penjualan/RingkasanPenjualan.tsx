@@ -1,4 +1,5 @@
-import { useCallback } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { DaftarNota } from '@/components/domain/DaftarNota'
 import { TampilanRingkasan } from '@/components/domain/RingkasanPenjualan'
 import { TombolTautan } from '@/components/ui/dasar'
 import { KepalaHalaman } from '@/components/ui/navigasi'
@@ -19,12 +20,26 @@ export default function RingkasanPenjualan() {
       sesi ? ambilRingkasanUsaha(sesi, rentang) : Promise.reject(new Error('Belum masuk dengan akun usaha.')),
     [sesi],
   )
+  const produsen = useAplikasi((s) => s.profil.jenisUsaha === 'produksi-makanan')
+
+  // Nota baru dari kasir mengisi ulang angka ringkasan. Nota pertama yang
+  // baru dikenali sesudah halaman dibuka bukan nota baru, jadi tidak ikut.
+  const terakhir = useAplikasi((s) => s.notaTerbaru?.[0]?.nomorStruk)
+  const [versi, setVersi] = useState(0)
+  const sebelum = useRef(terakhir)
+  useEffect(() => {
+    if (sebelum.current !== undefined && terakhir !== sebelum.current) setVersi((v) => v + 1)
+    sebelum.current = terakhir
+  }, [terakhir])
 
   return (
     <div className="pb-6 lg:pb-0">
       <KepalaHalaman judul="Ringkasan Penjualan" kembaliKe="/beranda" />
       {sesi ? (
-        <TampilanRingkasan ambil={ambil} />
+        <>
+          <TampilanRingkasan key={versi} ambil={ambil} />
+          {!produsen && <DaftarNota />}
+        </>
       ) : (
         <section aria-labelledby="judul-ringkasan-contoh" className="mt-4">
           <h2 id="judul-ringkasan-contoh" className="sr-only">

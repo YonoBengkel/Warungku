@@ -24,7 +24,7 @@ Target saat ini adalah demo di desktop dengan akun simulasi Kopi Kita Jogja.
 |---|---|---|
 | 0. Rancangan (selesai) | Dokumen ini, ARCHITECTURE.md, mockup | Disetujui Ilham |
 | 1. Portal dan jual dasar (selesai) | Portal terpisah di `/pos`, masuk dengan akun usaha yang sudah ada, keranjang, kirim nota. Daftar menu dan harga jual diatur pemilik di Portal UMKM, POS hanya membaca | Satu penjualan memotong stok dan tersimpan sebagai nota |
-| 2. Interaksi langsung dan pemasangan resep | Portal UMKM yang terbuka menangkap nota baru tanpa dimuat ulang: baris stok menyala, pemberitahuan "Nota masuk", dan baris data kasir berubah. Ringkasan Penjualan mendapat ringkasan nota dan Lihat Semua Nota. Menu tanpa resep tetap bisa dijual, masuk ke panel lonceng, dan bisa dipasangkan dengan resep saran | Perubahan terlihat dalam beberapa detik. Sesudah resep dipasangkan, penjualan berikutnya memotong stok |
+| 2. Interaksi langsung dan pemasangan resep (selesai) | Portal UMKM yang terbuka menangkap nota baru tanpa dimuat ulang: baris stok menyala, pemberitahuan "Nota masuk", dan baris data kasir berubah. Ringkasan Penjualan mendapat ringkasan nota dan Lihat Semua Nota. Menu tanpa resep tetap bisa dijual, masuk ke panel lonceng, dan bisa dipasangkan dengan resep saran | Perubahan terlihat dalam beberapa detik. Sesudah resep dipasangkan, penjualan berikutnya memotong stok |
 | 3. Pembayaran | Tunai dengan kembalian, QRIS dan transfer yang hanya dicatat, diskon, struk di layar | Nota menyimpan cara bayar dan diskon |
 | 4. Batal dan retur | Pembatalan nota dengan alasan, stok kembali lewat pergerakan balik | Stok dan Ringkasan Penjualan tetap cocok |
 | 5. Shift dan peran | Buka dan tutup kas, selisih kas, akun kasir khusus yang hanya bisa membuka Portal POS | Rekap per shift |
@@ -45,12 +45,13 @@ angkanya contoh demo.
 
 | Menu | Bahan |
 |---|---|
-| Kopi Susu Pandan | Biji Kopi Arabika 18 g, Susu UHT Full Cream 150 ml, Sirup Pandan 20 ml, Es Batu Kristal 150 g, Gelas Plastik 16 oz 1, Sedotan Kertas 1 |
-| Roti Bakar Keju | Roti Tawar 2 lembar, Keju Cheddar 30 g, Susu Kental Manis 15 ml, Tisu Makan 1 |
-| Kentang Goreng | Kentang Beku 150 g, Minyak Goreng 30 ml, Tisu Makan 1 |
+| Kopi Susu Pandan | Biji Kopi Arabika 18 g, Susu UHT Full Cream 150 ml, Sirup Vanila 20 ml (pengganti sirup pandan), Es Batu Kristal 150 g, Gelas Plastik 16 oz 1, Sedotan Kertas 1 |
+| Roti Bakar Keju | Roti Tawar 2 lembar, Keju Cheddar 30 g, Susu Kental Manis 15 ml |
+| Kentang Goreng | Kentang Beku 150 g, Minyak Goreng 30 ml |
 
-Sirup Pandan, Roti Tawar, dan Minyak Goreng belum ada di gudang demo Kopi Kita, jadi ketiganya ditambahkan ke data demo.
-Sirup Pandan juga belum ada di katalog.
+Roti Tawar dan Minyak Goreng belum ada di gudang demo Kopi Kita, jadi keduanya ditambahkan ke data demo. Sirup pandan
+belum ada di katalog, jadi resepnya memakai Sirup Vanila yang sudah ada. Tisu tidak dipakai, karena dicatat manual dan
+barang seperti itu tidak bisa menjadi bahan menu.
 
 Di layar memasangkan ada pilihan **Pakai resep saran**. Tombol itu hanya mengisi bahan dan takaran, dan pemilik masih bisa
 mengubahnya sebelum menyimpan. Pemasangan berlaku untuk penjualan berikutnya, tidak menarik ulang penjualan yang sudah lewat.

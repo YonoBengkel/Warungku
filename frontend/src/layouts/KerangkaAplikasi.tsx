@@ -82,6 +82,23 @@ export default function KerangkaAplikasi() {
   const isiKeranjang = useJumlahKeranjang()
   const aktif = tabInduk(pathname)
   const tab = profil.jenisUsaha === 'produksi-makanan' ? TAB_PRODUKSI : TAB
+
+  // Nota dari Portal POS yang terbuka di tab lain: tanya server tiap 3 detik selama tab ini terlihat.
+  const server = useAplikasi((s) => s.sumberData === 'server')
+  const periksaNotaMasuk = useAplikasi((s) => s.periksaNotaMasuk)
+  useEffect(() => {
+    if (!server) return
+    const periksa = () => {
+      if (document.visibilityState === 'visible') void periksaNotaMasuk()
+    }
+    periksa()
+    const t = window.setInterval(periksa, 3000)
+    document.addEventListener('visibilitychange', periksa)
+    return () => {
+      window.clearInterval(t)
+      document.removeEventListener('visibilitychange', periksa)
+    }
+  }, [server, periksaNotaMasuk])
   /* Halaman pemberitahuan tampil tanpa menu samping di desktop, dengan tombol
      kembali di kepalanya (revisi V2, Q54). Lonceng melayangnya ikut disembunyikan:
      halamannya sudah terbuka. */

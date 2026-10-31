@@ -14,6 +14,7 @@ import {
 } from '@/icons'
 import { angka, bacaAngkaIndonesia, cx, jumlahSatuan, tanggalPendek, waktuLalu } from '@/lib/format'
 import { jumlahTampil } from '@/lib/satuan'
+import { resepSaranUntuk } from '@/lib/resepSaran'
 import { useAplikasi } from '@/store/aplikasi'
 
 interface BahanTerpilih {
@@ -85,6 +86,8 @@ export default function KasirPasangkan() {
       )
       .slice(0, 8)
   }, [cari, barang, dipilih])
+
+  const saran = useMemo(() => (menu ? resepSaranUntuk(menu.namaMenu, barang) : null), [menu, barang])
 
   if (!menu) {
     return (
@@ -193,6 +196,14 @@ export default function KasirPasangkan() {
             <p className="text-isi text-ink-3 leading-relaxed mb-3">
               Boleh lebih dari satu. Contohnya kopi susu memakai biji kopi, susu, dan gula aren sekaligus.
             </p>
+            {saran && pakaiTakaran && (
+              <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                <Tombol ragam="sekunder" ukuran="kecil" ikonKiri={<IkonCentang size={16} />} onClick={() => setDipilih(saran)}>
+                  Pakai Resep Saran
+                </Tombol>
+                <p className="text-kecil text-ink-3">Resep contoh untuk demo. Periksa takarannya sebelum menyimpan.</p>
+              </div>
+            )}
 
             {barang.length === 0 ? (
               <KeadaanKosong

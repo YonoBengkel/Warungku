@@ -105,6 +105,8 @@ BARANG_BARU: dict[str, tuple[tuple[str, int, int, str], ...]] = {
     "umkm1@warungku.test": (
         ("Keju Cheddar", 2, 45, "Untuk menu roti bakar keju yang belum mulai dijual."),
         ("Kentang Beku", 3, 60, "Untuk camilan kentang goreng; menunggu penggorengan baru."),
+        ("Roti Tawar", 2, 40, "Untuk roti bakar keju; menunggu oven roti baru."),
+        ("Minyak Goreng", 1, 35, "Untuk kentang goreng; menunggu penggorengan baru."),
     ),
     "produksi1@warungku.test": (
         ("Kantong Plastik", 2, 50, "Untuk kemasan eceran yang belum dijalankan; kiriman ke toko memakai dus."),
@@ -455,7 +457,10 @@ def _barang_baru(kon, usaha_id: int, email: str) -> int:
                 """
             ),
             {"n": nama},
-        ).mappings().one()
+        ).mappings().first()
+        if pm is None:
+            # Produk belum ada di katalog atau belum ditawarkan siapa pun: lewati, jangan menggagalkan seluruh demo.
+            continue
         isi = Decimal(pm["kemasan_isi"])
         stok = isi * jumlah
         bid = kon.execute(

@@ -29,7 +29,7 @@ import type {
   WarnaTitik,
 } from '@/lib/types'
 import { PESANAN_BERJALAN } from '@/lib/label'
-import { waktuNanti } from '@/lib/format'
+import { angka, rupiah, waktuNanti } from '@/lib/format'
 import {
   POS_TUNGGAL,
   daftarBarang,
@@ -142,6 +142,8 @@ interface KeadaanAplikasi {
   resepMenu: ResepMenu[]
   /** Nota terbaru dari server untuk tab Riwayat. Null di mode contoh atau sebelum dimuat. */
   notaTerbaru: Transaksi[] | null
+  /** Id barang yang stoknya baru berubah karena nota kasir masuk. Kosong sesudah beberapa detik. */
+  stokBerubah: string[]
   kontrak: Kontrak[]
   pesanan: Pesanan[]
   notifikasi: Notifikasi[]
@@ -231,6 +233,12 @@ interface KeadaanAplikasi {
   pasangkanMenu: (menuId: string, bahan: BahanMenu[]) => Promise<boolean>
   /** Mode data server: muat ulang menu kasir, resep, dan nota terbaru. */
   muatMenuKasir: () => Promise<void>
+  /**
+   * Tanya server apakah ada nota baru dari kasir (Portal POS). Kalau ada: stok dan
+   * menu dimuat ulang, barang yang berubah menyala sebentar, dan muncul pemberitahuan.
+   * Pemeriksaan pertama sesudah halaman dibuka hanya mencatat nota yang sudah ada.
+   */
+  periksaNotaMasuk: () => Promise<void>
   /** Alat uji purwarupa: kirim satu nota berisi menu yang ada, seperti dari kasir. */
   kirimNotaContoh: () => Promise<void>
   catatPemakaianHarian: (pemakaian: Record<string, number>) => void
@@ -318,6 +326,7 @@ interface KeadaanAplikasi {
 }
 
 let nomorRacun = 0
+let memeriksaNota = false
 let urutPesanan = 10
 let urutBelanja = 0
 
@@ -587,6 +596,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
   transaksi: daftarTransaksi,
   resepMenu: [],
   notaTerbaru: null,
+  stokBerubah: [],
   kontrak: daftarKontrak,
   pesanan: daftarPesanan,
   notifikasi: daftarNotifikasi,
@@ -898,6 +908,50 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
       ...(menu ? { kasir: kasirServer(menu), resepMenu: menu.resep } : {}),
       ...(nota ? { notaTerbaru: nota } : {}),
     })
+  },
+
+  periksaNotaMasuk: async () => {
+    const sesi = get().sesiServer
+    if (get().sumberData !== 'server' || !sesi || memeriksaNota) return
+    memeriksaNota = true
+    try {
+      const dikenal = get().notaTerbaru
+      if (dikenal === null) {
+        // Pemeriksaan pertama: catat nota yang sudah ada (mungkin tidak ada sama sekali) sebagai dasar.
+        await get().muatMenuKasir()
+        return
+      }
+      const [terbaru] = await ambilNotaTerbaru(sesi, 1).catch(() => [] as Transaksi[])
+      if (!terbaru || dikenal[0]?.nomorStruk === terbaru.nomorStruk) return
+
+      const stokLama = new Map(get().barang.map((b) => [b.id, b.stok]))
+      await Promise.all([get().muatMenuKasir(), get().segarkanGudangServer().catch(() => undefined)])
+
+      const baru: Transaksi[] = []
+      for (const n of get().notaTerbaru ?? []) {
+        if (n.nomorStruk === dikenal[0]?.nomorStruk) break
+        baru.push(n)
+      }
+      if (baru.length === 0) return
+
+      const berubah = get().barang.filter((b) => stokLama.has(b.id) && stokLama.get(b.id) !== b.stok).map((b) => b.id)
+      if (berubah.length > 0) {
+        set({ stokBerubah: berubah })
+        window.setTimeout(() => set({ stokBerubah: [] }), 4000)
+      }
+      const baris = baru.flatMap((n) => n.baris)
+      const total = baris.reduce((a, b) => a + (b.harga ?? 0) * b.jumlah, 0)
+      const porsi = baris.reduce((a, b) => a + b.jumlah, 0)
+      get().tampilkanRacun(
+        baru.length === 1
+          ? `Nota masuk dari kasir: ${rupiah(total)}, ${angka(porsi, 2)} porsi.`
+          : `${baru.length} nota baru dari kasir, ${rupiah(total)}.`,
+        'info',
+        { label: 'Lihat Nota', ke: '/penjualan' },
+      )
+    } finally {
+      memeriksaNota = false
+    }
   },
 
   kirimNotaContoh: async () => {
@@ -2116,7 +2170,7 @@ useAplikasi.subscribe((s, sebelum) => {
 // dari catatan peramban milik usaha ini (revisi V5, Q120).
 useAplikasi.subscribe((s, sebelum) => {
   if (s.sumberData !== 'server') return
-  if (s.barang === sebelum.barang && s.pesanan === sebelum.pesanan && s.kontrak === sebelum.kontrak && s.sumberData === sebelum.sumberData) return
+  if (s.barang === sebelum.barang && s.pesanan === sebelum.pesanan && s.kontrak === sebelum.kontrak && s.sumberData === sebelum.sumberData && s.kasir.menuBelumDipasangkan === sebelum.kasir.menuBelumDipasangkan) return
   const tersimpan = s.sesiServer ? bacaPetaDibaca(kunciDibacaUsaha(s.sesiServer.usahaId)) : {}
   useAplikasi.setState({ notifikasi: notifikasiDariServer(s, s.notifikasi, tersimpan) })
 })

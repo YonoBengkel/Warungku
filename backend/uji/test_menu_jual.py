@@ -196,3 +196,22 @@ def test_usaha_lain_tidak_bisa_membaca_atau_mengubah(kedai):
     assert _simpan(klien, u, kepala2, harga=1).status_code == 403
     assert klien.get(f"/usaha/{u}/menu-jual").status_code in (401, 403)
     assert klien.get(f"/usaha/{u}/menu-jual", headers=kepala1).json()[0]["harga_jual"] == 18000
+
+
+def test_daftar_nota_membawa_harga_dan_bisa_berhalaman(kedai):
+    ids, kepala, _, klien = kedai
+    u = ids["u1"]
+    _simpan(klien, u, kepala)
+    for urut in range(3):
+        nota = _nota("POS-UJI-H%d" % urut, "Americano", 18000)
+        nota["waktu"] = "2026-10-31T0%d:00:00+00:00" % (3 + urut)
+        assert klien.post(f"/usaha/{u}/transaksi", headers=kepala, json=nota).status_code == 200
+
+    semua = klien.get(f"/usaha/{u}/transaksi?batas=10", headers=kepala).json()
+    assert [n["nomor_struk"] for n in semua] == ["POS-UJI-H2", "POS-UJI-H1", "POS-UJI-H0"]
+    assert semua[0]["baris"][0]["harga_jual_satuan"] == 18000
+
+    # Halaman kedua melewati satu nota terbaru, tanpa tumpang tindih dengan yang pertama.
+    kedua = klien.get(f"/usaha/{u}/transaksi?batas=2&mulai=1", headers=kepala).json()
+    assert [n["nomor_struk"] for n in kedua] == ["POS-UJI-H1", "POS-UJI-H0"]
+    assert klien.get(f"/usaha/{u}/transaksi?batas=2&mulai=-1", headers=kepala).status_code == 422

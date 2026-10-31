@@ -727,7 +727,9 @@ def simpan_resep(resep: ResepMasuk, usaha_id: int = Depends(usaha_saya)) -> Rese
 
 @rute.get("/transaksi", response_model=list[NotaRingkas])
 def nota_terbaru(
-    usaha_id: int = Depends(usaha_saya), batas: int = Query(default=10, ge=1, le=50)
+    usaha_id: int = Depends(usaha_saya),
+    batas: int = Query(default=10, ge=1, le=50),
+    mulai: int = Query(default=0, ge=0, description="Lewati sekian nota terbaru, untuk halaman berikutnya."),
 ) -> list[NotaRingkas]:
     """Nota terbaru apa adanya, untuk dicocokkan pemilik dengan yang tercetak di kasir."""
     with Session(mesin()) as sesi:
@@ -737,6 +739,7 @@ def nota_terbaru(
             .where(Transaksi.usaha_id == usaha_id, Transaksi.dibatalkan == False)  # noqa: E712
             .order_by(Transaksi.waktu.desc(), Transaksi.id.desc())
             .limit(batas)
+            .offset(mulai)
         ).all()
         if not nota:
             return []
@@ -747,7 +750,12 @@ def nota_terbaru(
             .order_by(TransaksiBaris.id)
         ).all():
             baris.setdefault(b.transaksi_id, []).append(
-                BarisNota(nama_menu=b.nama_menu, jumlah=b.jumlah, satuan=b.satuan)
+                BarisNota(
+                    nama_menu=b.nama_menu,
+                    jumlah=b.jumlah,
+                    satuan=b.satuan,
+                    harga_jual_satuan=b.harga_jual_satuan,
+                )
             )
         return [
             NotaRingkas(id=n.id, nomor_struk=n.nomor_struk, waktu=n.waktu, kasir=n.kasir, baris=baris.get(n.id, []))

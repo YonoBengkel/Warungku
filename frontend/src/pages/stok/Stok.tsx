@@ -153,6 +153,7 @@ export default function Stok() {
   /* Jumlah yang sedang dikirim per barang. Angka ini TIDAK PERNAH dijumlahkan
      dengan sisa stok; ia hanya dipakai untuk menahan saran "perlu dibeli"
      supaya barang yang sudah di jalan tidak dipesan dua kali. */
+  const stokBerubah = useAplikasi((s) => s.stokBerubah)
   const dikirimPerBarang = useMemo(() => {
     const peta = new Map<string, { jumlah: number; pesananId: string | null; tiba: string | null }>()
     for (const p of pesanan) {
@@ -665,7 +666,13 @@ export default function Stok() {
                   const cukup = hariCukup(b)
                   const dikirim = dikirimPerBarang.get(b.id)
                   return (
-                    <tr key={b.id} className="hover:bg-sunken/60 [&>td]:border-b [&>td]:border-line last:[&>td]:border-b-0">
+                    <tr
+                      key={b.id}
+                      className={cx(
+                        'hover:bg-sunken/60 [&>td]:border-b [&>td]:border-line last:[&>td]:border-b-0 [&>td]:transition-colors [&>td]:duration-700',
+                        stokBerubah.includes(b.id) && '[&>td]:bg-menipis-soft',
+                      )}
+                    >
                       <td className="py-2.5 px-4 align-middle">
                         <Link
                           to={`/stok/${b.id}`}

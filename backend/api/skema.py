@@ -131,6 +131,8 @@ class BarisNota(BaseModel):
     nama_menu: str
     jumlah: Decimal
     satuan: str
+    #: Harga satuan seperti tercetak di struk. Kosong untuk nota lama tanpa harga.
+    harga_jual_satuan: int | None = None
 
 
 class NotaRingkas(BaseModel):
