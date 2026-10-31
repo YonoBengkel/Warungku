@@ -596,7 +596,7 @@ backend `0.5.0` menganggap semua barang "tidak bergerak" di halaman Stok, backen
 bulanan, dan backend `0.3.0` ke bawah serta basis data `0.1.0` belum memuat
 perubahan 16 Oktober 2026 (Mesin 1 LightGBM, UMKM produsen, gambar produk).
 Portal POS (kasir, pembayaran, batal nota, akun kasir, dan shift) ada di kode sejak komit
-`6353239` dan butuh backend `0.12.0`. **Image itu belum dibangun dan belum diterbitkan.** Selama
+`6353239` dan butuh backend `0.12.0`. **Image itu sudah dibangun dan diuji secara lokal (898 MB), tetapi belum diterbitkan ke Docker Hub.** Selama
 belum, jalur Docker (`siapkan.cmd`) memakai backend `0.11.0` yang tidak punya endpoint-nya, dan Portal POS
 tidak bisa dipakai di sana. Untuk membangunnya: `docker build -f deployment/Dockerfile -t
 yonobengkel/turnify-flow-backend:0.12.0 .`, lalu naikkan tag di `deployment/docker-compose.yml`
