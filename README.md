@@ -40,15 +40,20 @@ lihat [Kalau ada yang tidak jalan](#kalau-ada-yang-tidak-jalan).
 
 Semua perintah untuk **Windows PowerShell** dan dijalankan dari **akar repo**.
 
-> Pakai branch **`Rombak#4`**. Branch `main` hanya berisi purwarupa antarmuka
-> lama, tanpa backend dan model.
+> Pakai branch **`main`**. Branch `Rombak#4` berhenti di revisi V5 dan tidak lagi
+> dikerjakan.
+>
+> **Portal POS (kasir) butuh backend `0.12.0` atau yang lebih baru.** Image Docker
+> terbitan terakhir masih `0.11.0`, jadi `siapkan.cmd` belum membawa Portal POS
+> sampai image baru diterbitkan. `nyalakan.cmd` dan jalur dari kode memakai backend
+> dari repo ini, jadi sudah membawanya.
 
 ### Paling mudah untuk mencoba: `siapkan.cmd`
 
 Untuk yang hanya ingin melihat aplikasinya jalan, tanpa Python dan tanpa perlu
 mengerti Docker:
 
-1. Buka [halaman `siapkan.cmd` di GitHub](https://github.com/YonoBengkel/Warungku/blob/Rombak%234/siapkan.cmd),
+1. Buka [halaman `siapkan.cmd` di GitHub](https://github.com/YonoBengkel/Warungku/blob/main/siapkan.cmd),
    tekan tombol **Download raw file**, lalu taruh berkasnya di folder mana saja
    (misalnya `Documents`). Belum perlu clone apa pun.
 2. Klik dua kali `siapkan.cmd`, lalu tunggu sampai peramban terbuka.
@@ -56,7 +61,7 @@ mengerti Docker:
 Yang dikerjakan skrip itu:
 - memeriksa Git, Docker Desktop, dan Node.js; yang belum ada ditawarkan untuk
   dipasang lewat winget (selalu ditanya dulu);
-- clone repo (branch `Rombak#4`) ke folder `turnify-flow` di sebelah berkas itu;
+- clone repo (branch `main`) ke folder `turnify-flow` di sebelah berkas itu;
 - menyalakan Docker Desktop, mengunduh image dari Docker Hub (sekitar 400 MB
   pertama kali), lalu menyalakan kontainer basis data, API, dan layanan model;
 - kalau laptop itu sudah punya basis data dari image lama, menawarkan menggantinya
@@ -98,13 +103,12 @@ sama. Datanya tetap tersimpan.
 ```powershell
 git clone https://github.com/YonoBengkel/Warungku.git turnify-flow
 cd turnify-flow
-git switch "Rombak#4"
 ```
 
 Sudah pernah clone? Cukup ambil perubahan terbaru:
 
 ```powershell
-git switch "Rombak#4"
+git switch main
 git pull
 ```
 
@@ -591,6 +595,14 @@ kasirnya gagal seluruhnya kalau satu bahan stoknya habis; backend `0.7.0` masih 
 backend `0.5.0` menganggap semua barang "tidak bergerak" di halaman Stok, backend `0.4.0` belum menggambar garis perkiraan masa lalu di grafik
 bulanan, dan backend `0.3.0` ke bawah serta basis data `0.1.0` belum memuat
 perubahan 16 Oktober 2026 (Mesin 1 LightGBM, UMKM produsen, gambar produk).
+Portal POS (kasir, pembayaran, batal nota, akun kasir, dan shift) ada di kode sejak komit
+`6353239` dan butuh backend `0.12.0`. **Image itu belum dibangun dan belum diterbitkan.** Selama
+belum, jalur Docker (`siapkan.cmd`) memakai backend `0.11.0` yang tidak punya endpoint-nya, dan Portal POS
+tidak bisa dipakai di sana. Untuk membangunnya: `docker build -f deployment/Dockerfile -t
+yonobengkel/turnify-flow-backend:0.12.0 .`, lalu naikkan tag di `deployment/docker-compose.yml`
+dan Dockerfile, dan `docker push` (butuh `docker login` sebagai pemilik repositori).
+Kontainer API menjalankan migrasi sendiri saat menyala, jadi basis data `0.3.0` cukup.
+
 Backend `0.11.0` membutuhkan basis data `0.2.0` atau lebih baru, karena tabel
 produksinya baru ada sejak itu. Kolom yang ditambahkan sesudahnya (titik gudang
 distributor) dipasang sendiri oleh kontainer API saat menyala (lihat di bawah). Di atas

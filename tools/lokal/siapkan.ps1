@@ -9,7 +9,7 @@ turnify-flow di sebelahnya.
 Yang dikerjakan, berurutan:
   1. Git, Docker Desktop, dan Node.js diperiksa. Yang belum ada ditawarkan
      untuk dipasang lewat winget (selalu ditanya dulu).
-  2. Repo di-clone (branch Rombak#4), atau diperbarui bila sudah ada dan
+  2. Repo di-clone (branch main), atau diperbarui bila sudah ada dan
      tidak ada perubahan yang belum dikomit.
   3. Docker Desktop dinyalakan, image basis data dan backend diunduh dari
      Docker Hub, lalu kontainer basis data (5433), API (8000), dan layanan
@@ -44,7 +44,7 @@ $ErrorActionPreference = 'Continue'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 $RepoUrl = 'https://github.com/YonoBengkel/Warungku.git'
-$Cabang = 'Rombak#4'
+$Cabang = 'main'
 $BerkasPid = Join-Path $env:TEMP 'turnify-lokal-pid.txt'
 $Compose = 'docker compose -f deployment/docker-compose.yml --profile layanan'
 

@@ -27,11 +27,11 @@ export default function KerangkaPos() {
     <div className="min-h-dvh lg:h-dvh flex flex-col bg-bg">
       <header className="shrink-0 flex items-center gap-3 h-16 px-4 sm:px-6 bg-surface border-b border-line">
         <Avatar nama={profil.namaUsaha} warna={profil.warna} ukuran={40} className="rounded-md" />
-        <div className="min-w-0">
+        <div className="min-w-0 max-sm:hidden">
           <p className="text-kartu font-extrabold text-ink leading-tight truncate">{profil.namaUsaha}</p>
           <p className="text-kecil text-ink-3">Portal POS</p>
         </div>
-        <nav aria-label="Menu Portal POS" className="ml-4 flex gap-1">
+        <nav aria-label="Menu Portal POS" className="sm:ml-4 flex gap-0.5 sm:gap-1">
           {[
             { ke: '/pos', label: 'Kasir' },
             { ke: '/pos/nota', label: 'Nota' },
@@ -43,7 +43,7 @@ export default function KerangkaPos() {
               end
               className={({ isActive }) =>
                 cx(
-                  'h-10 px-3.5 inline-flex items-center rounded-md text-isi font-semibold transition-colors',
+                  'h-11 sm:h-10 px-3 sm:px-3.5 inline-flex items-center rounded-md text-isi font-semibold transition-colors',
                   isActive ? 'bg-brand-soft text-brand-soft-ink' : 'text-ink-2 hover:bg-sunken hover:text-ink',
                 )
               }
@@ -56,12 +56,13 @@ export default function KerangkaPos() {
           ragam="sunyi"
           ikonKiri={<IkonKeluar size={17} />}
           className="ml-auto"
+          aria-label="Keluar"
           onClick={() => {
             aturMasuk(false)
             navigate('/masuk/pos')
           }}
         >
-          Keluar
+          <span className="max-sm:sr-only">Keluar</span>
         </Tombol>
       </header>
       <main id="konten" className="flex-1 min-h-0">
