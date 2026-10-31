@@ -22,12 +22,12 @@ erDiagram
     pengguna ||--o{ keanggotaan : pengguna_id
     usaha ||--o{ keanggotaan : usaha_id
     usaha ||--o{ pemetaan_menu : usaha_id
-    usaha ||--o{ transaksi : usaha_id
     barang ||--o{ pemetaan_menu_bahan : barang_id
     pemetaan_menu ||--o{ pemetaan_menu_bahan : pemetaan_id
     distributor ||--o{ penawaran : distributor_id
     barang ||--o{ permintaan_harian : barang_id
     usaha ||--o{ permintaan_harian : usaha_id
+    usaha ||--o{ transaksi : usaha_id
     transaksi ||--o{ transaksi_baris : transaksi_id
     barang ||--o{ kontrak : barang_id
     distributor ||--o{ kontrak : distributor_id
@@ -63,12 +63,13 @@ erDiagram
 
 | Tabel | Isi | Kunci asing | Batasan |
 |---|---|---|---|
-| `barang` | Satu baris stok di gudang UMKM. | `produk_master_id` ke `produk_master`, `usaha_id` ke `usaha` | cek `ck_barang_stok_tak_negatif`; unik (usaha_id, kode_barang) |
+| `barang` | Satu baris stok di gudang UMKM. | `produk_master_id` ke `produk_master`, `usaha_id` ke `usaha` | unik (usaha_id, kode_barang); cek `ck_barang_stok_tak_negatif` |
 | `data_kasir` | Keadaan sambungan POS per usaha. Satu baris per usaha. | `usaha_id` ke `usaha` | unik (usaha_id) |
 | `pemetaan_menu` | Jembatan antara nama menu di struk kasir dan bahan di gudang. | `usaha_id` ke `usaha` | unik (usaha_id, nama_menu) |
-| `transaksi` | Satu struk dari kasir, apa adanya. | `usaha_id` ke `usaha` | unik (usaha_id, nomor_struk) |
+| `shift_kas` | Satu shift kasir: buka dengan uang modal, tutup dengan uang yang dihitung di laci. | `dibuka_oleh` ke `pengguna`, `usaha_id` ke `usaha` | cek `ck_shift_modal` |
 | `kemasan` | Lapisan tampilan: 1 dus = 1.000 pcs. `isi` selalu dalam satuan dasar barang. | `barang_id` ke `barang` | unik (barang_id, nama) |
 | `pemetaan_menu_bahan` | Satu bahan dalam satu menu, beserta takarannya dalam satuan dasar barang. | `barang_id` ke `barang`, `pemetaan_id` ke `pemetaan_menu` | cek `ck_takaran_positif`; unik (pemetaan_id, barang_id) |
+| `transaksi` | Satu struk dari kasir, apa adanya. | `shift_id` ke `shift_kas`, `usaha_id` ke `usaha` | unik (usaha_id, nomor_struk) |
 | `transaksi_baris` | Satu baris struk. | `transaksi_id` ke `transaksi` | - |
 | `pergerakan` | Buku besar stok. Hanya ditambah, tidak pernah diubah atau dihapus. | `barang_id` ke `barang`, `pesanan_id` ke `pesanan`, `produksi_id` ke `produksi`, `transaksi_id` ke `transaksi`, `usaha_id` ke `usaha` | - |
 
@@ -77,7 +78,7 @@ erDiagram
 | Tabel | Isi | Kunci asing | Batasan |
 |---|---|---|---|
 | `pembeli` | Usaha lain yang membeli produk jadi: ritel modern, toko oleh-oleh, katering. | `usaha_id` ke `usaha` | unik (usaha_id, nama) |
-| `produk_jadi` | Barang hasil produksi yang dijual ke usaha lain, mis. "Sambal Bawang 200 g". | `usaha_id` ke `usaha` | unik (usaha_id, nama); cek `ck_produk_jadi_stok_tak_negatif` |
+| `produk_jadi` | Barang hasil produksi yang dijual ke usaha lain, mis. "Sambal Bawang 200 g". | `usaha_id` ke `usaha` | cek `ck_produk_jadi_stok_tak_negatif`; unik (usaha_id, nama) |
 | `penjualan` | Satu kiriman produk jadi ke satu pembeli. | `pembeli_id` ke `pembeli`, `usaha_id` ke `usaha` | unik (usaha_id, nomor) |
 | `produksi` | Satu sesi masak: sekian satuan produk jadi, memotong bahan sesuai resep. | `produk_jadi_id` ke `produk_jadi`, `usaha_id` ke `usaha` | cek `ck_produksi_jumlah_positif` |
 | `resep_bahan` | Satu bahan untuk SATU satuan produk jadi, dalam satuan dasar barang. | `barang_id` ke `barang`, `produk_jadi_id` ke `produk_jadi` | unik (produk_jadi_id, barang_id); cek `ck_resep_takaran_positif` |

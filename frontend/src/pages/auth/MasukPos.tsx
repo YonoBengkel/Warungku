@@ -3,18 +3,18 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Kartu, Tombol } from '@/components/ui/dasar'
 import { Kolom } from '@/components/ui/formulir'
 import { GalatApi, ServerTakTerjangkau } from '@/lib/api'
-import { AKUN_KOPI_KITA } from '@/lib/akunSimulasi'
+import { AKUN_KASIR, AKUN_KOPI_KITA } from '@/lib/akunSimulasi'
 import { useAplikasi } from '@/store/aplikasi'
 
 /**
- * Masuk ke Portal POS. Untuk sekarang memakai akun usaha yang sudah ada; akun
- * kasir khusus menyusul. Sesi tersimpan per tab, jadi portal ini bisa terbuka
+ * Masuk ke Portal POS, untuk pemilik dan untuk akun kasir yang dibuat pemilik di
+ * Pengguna & Hak Akses. Sesi tersimpan per tab, jadi portal ini bisa terbuka
  * berdampingan dengan Portal UMKM.
  */
 export default function MasukPos() {
   const navigate = useNavigate()
   const sesi = useAplikasi((s) => s.sesiServer)
-  const masukServer = useAplikasi((s) => s.masukServer)
+  const masukPos = useAplikasi((s) => s.masukPos)
   const [email, setEmail] = useState('')
   const [sandi, setSandi] = useState('')
   const [memuat, setMemuat] = useState(false)
@@ -27,7 +27,7 @@ export default function MasukPos() {
   function kirim() {
     setMemuat(true)
     setGalat(null)
-    masukServer(email.trim(), sandi)
+    masukPos(email.trim(), sandi)
       .catch((e: unknown) => {
         setGalat(
           e instanceof ServerTakTerjangkau
@@ -85,11 +85,23 @@ export default function MasukPos() {
                   setGalat(null)
                 }}
               >
-                Isikan akun simulasi
+                Isikan akun pemilik
+              </Tombol>
+              <Tombol
+                ragam="garis"
+                onClick={() => {
+                  setEmail(AKUN_KASIR.email)
+                  setSandi(AKUN_KASIR.kataSandi)
+                  setGalat(null)
+                }}
+              >
+                Isikan akun kasir
               </Tombol>
             </div>
           </form>
-          <p className="mt-3 text-kecil text-ink-3">Akun simulasi {AKUN_KOPI_KITA.email} adalah {AKUN_KOPI_KITA.namaUsaha}.</p>
+          <p className="mt-3 text-kecil text-ink-3">
+            Akun simulasi {AKUN_KOPI_KITA.email} adalah pemilik {AKUN_KOPI_KITA.namaUsaha}, dan {AKUN_KASIR.email} adalah kasirnya.
+          </p>
         </Kartu>
         <p className="mt-5 text-center text-isi text-ink-2">
           Pemilik usaha?{' '}

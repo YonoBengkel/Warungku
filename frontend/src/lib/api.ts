@@ -42,6 +42,8 @@ export interface SesiServer {
   kedaluwarsaPada: string
   /** Email yang dipakai masuk. Kosong untuk sesi yang tersimpan sebelum kolom ini ada. */
   email?: string
+  /** Akun kasir (Portal POS) hanya diterima endpoint POS. Kosong berarti pemilik. */
+  peran?: 'umkm' | 'kasir'
 }
 
 /* ------------------------------------------------------------------ */
@@ -127,6 +129,24 @@ export async function masukUmkm(email: string, kataSandi: string): Promise<SesiS
     namaUsaha: t.nama_usaha ?? null,
     kedaluwarsaPada: t.kedaluwarsa_pada,
     email,
+  }
+}
+
+/** Pintu Portal POS: pemilik mendapat sesi penuh, kasir mendapat sesi yang hanya diterima endpoint POS. */
+export async function masukPos(email: string, kataSandi: string): Promise<SesiServer> {
+  const t = await minta<TokenApi>('/auth/pos/masuk', {
+    method: 'POST',
+    body: JSON.stringify({ email, kata_sandi: kataSandi }),
+  })
+  if (t.usaha_id == null) throw new GalatApi(403, 'Akun ini belum punya usaha.')
+  return {
+    token: t.token,
+    usahaId: t.usaha_id,
+    namaPengguna: t.nama,
+    namaUsaha: t.nama_usaha ?? null,
+    kedaluwarsaPada: t.kedaluwarsa_pada,
+    email,
+    peran: t.peran === 'kasir' ? 'kasir' : 'umkm',
   }
 }
 

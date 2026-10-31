@@ -26,7 +26,7 @@ from warungku.basis_data import mesin
 from warungku.enum import JenisPergerakan
 from warungku.model import Barang, Kemasan, PemetaanMenu, PemetaanMenuBahan, Transaksi, TransaksiBaris, Usaha
 
-from .otentikasi import usaha_saya
+from .otentikasi import kasir_atau_pemilik, usaha_saya
 from .skema import (
     BahanMenu,
     BarangRingkas,
@@ -388,7 +388,7 @@ def ringkasan_saran_distributor(usaha_id: int = Depends(usaha_saya)):
 
 
 @rute.post("/transaksi", response_model=HasilStruk)
-def terima_struk(struk: StrukMasuk, usaha_id: int = Depends(usaha_saya)) -> HasilStruk:
+def terima_struk(struk: StrukMasuk, usaha_id: int = Depends(kasir_atau_pemilik)) -> HasilStruk:
     """
     Terima satu nota dari kasir. Aman dikirim ulang berapa kali pun.
 
@@ -437,8 +437,12 @@ def terima_struk(struk: StrukMasuk, usaha_id: int = Depends(usaha_saya)) -> Hasi
         if struk.cara_bayar == "tunai" and struk.uang_diterima is not None and struk.uang_diterima < subtotal - struk.diskon:
             raise HTTPException(422, "Uang yang diterima kurang dari total yang harus dibayar.")
 
+        shift_id = sesi.exec(
+            text("SELECT id FROM shift_kas WHERE usaha_id = :u AND ditutup_pada IS NULL").bindparams(u=usaha_id)
+        ).scalar()
         trx = Transaksi(
             usaha_id=usaha_id,
+            shift_id=shift_id,
             nomor_struk=struk.nomor_struk,
             waktu=struk.waktu,
             kasir=struk.kasir,
@@ -644,13 +648,12 @@ def _nota_atau_404(sesi: Session, usaha_id: int, nomor_struk: str) -> Transaksi:
 
 
 @rute.post("/transaksi/{nomor_struk}/ajukan-batal", response_model=HasilBatal)
-def ajukan_batal(nomor_struk: str, isi: AlasanBatal, usaha_id: int = Depends(usaha_saya)) -> HasilBatal:
+def ajukan_batal(nomor_struk: str, isi: AlasanBatal, usaha_id: int = Depends(kasir_atau_pemilik)) -> HasilBatal:
     """
     Kasir mengajukan pembatalan satu nota. Stok dan laporan belum berubah: nota baru
     batal kalau pemilik membatalkannya. Mengajukan lagi menggantikan alasan sebelumnya.
 
-    Catatan: selama POS memakai akun pemilik, server belum bisa membedakan kasir dari
-    pemilik. Pemisahannya hanya di antarmuka sampai akun kasir ada (tahap 5).
+    Terbuka bagi kasir (`kasir_atau_pemilik`). Yang membatalkan (`/batal`) hanya pemilik.
     """
     with Session(mesin()) as sesi:
         _usaha_atau_404(sesi, usaha_id)
@@ -753,7 +756,7 @@ def _menu_jual(sesi: Session, usaha_id: int) -> list[MenuJual]:
 
 
 @rute.get("/menu-jual", response_model=list[MenuJual])
-def daftar_menu_jual(usaha_id: int = Depends(usaha_saya)) -> list[MenuJual]:
+def daftar_menu_jual(usaha_id: int = Depends(kasir_atau_pemilik)) -> list[MenuJual]:
     """Menu yang berharga jual. Portal POS memakai yang aktif, Portal UMKM mengatur semuanya."""
     with Session(mesin()) as sesi:
         _usaha_atau_404(sesi, usaha_id)
@@ -837,7 +840,7 @@ def simpan_resep(resep: ResepMasuk, usaha_id: int = Depends(usaha_saya)) -> Rese
 
 @rute.get("/transaksi", response_model=list[NotaRingkas])
 def nota_terbaru(
-    usaha_id: int = Depends(usaha_saya),
+    usaha_id: int = Depends(kasir_atau_pemilik),
     batas: int = Query(default=10, ge=1, le=50),
     mulai: int = Query(default=0, ge=0, description="Lewati sekian nota terbaru, untuk halaman berikutnya."),
 ) -> list[NotaRingkas]:

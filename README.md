@@ -317,6 +317,7 @@ ketiga mesin, masuk dengan salah satu akun berikut. API (port 8000) harus menyal
 
 | Akun | Portal | Usaha | Yang bisa dicoba |
 | --- | --- | --- | --- |
+| `kasir1@warungku.test` | Kasir (peran pegawai) | Kopi Kita Jogja | Hanya Portal POS: masuk di `/masuk/pos`, tombol Isikan akun kasir. Ditolak di Portal UMKM |
 | `umkm1@warungku.test` | Pemilik usaha | Kopi Kita Jogja (kedai kopi) | Stok, grafik pemakaian aktual vs perkiraan, Prediksi, saran distributor, belanja, pesanan, kontrak, promo, Lacak Pesanan, Ringkasan Penjualan |
 | `produksi1@warungku.test` | Pemilik usaha produsen | Dapur Sambal Bu Ratmi | Semua yang di atas, ditambah tab **Produksi**: resep, catat sesi masak, kiriman ke Indomaret, swalayan, toko oleh-oleh, dan katering |
 | `distributor1@warungku.test` | Distributor | Sumber Tani Nusantara | Pesanan masuk, kontrak dan paket (termasuk pengajuan berhenti), promo dan halaman ubah promo, peta Sebaran pemesan, segmen pelanggan (Mesin 3), Lacak Pesanan, Ringkasan Penjualan, halaman akun (profil toko, barang yang dijual, penilaian, titik gudang) |

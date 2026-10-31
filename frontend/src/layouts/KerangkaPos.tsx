@@ -35,6 +35,7 @@ export default function KerangkaPos() {
           {[
             { ke: '/pos', label: 'Kasir' },
             { ke: '/pos/nota', label: 'Nota' },
+            { ke: '/pos/shift', label: 'Shift' },
           ].map((t) => (
             <NavLink
               key={t.ke}

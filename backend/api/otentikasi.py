@@ -175,6 +175,19 @@ def usaha_saya(usaha_id: int = Path(ge=1), saya: Identitas = Depends(identitas))
     return usaha_id
 
 
+def kasir_atau_pemilik(usaha_id: int = Path(ge=1), saya: Identitas = Depends(identitas)) -> int:
+    """
+    Untuk endpoint Portal POS saja: token `umkm` (pemilik) atau `kasir` milik usaha ini.
+
+    Token kasir tidak diterima `usaha_saya`, jadi semua endpoint yang tidak memakai
+    dependency ini otomatis tertutup bagi kasir. Daftar yang terbuka sengaja pendek:
+    menjual (POST dan GET transaksi), membaca menu jual, mengajukan pembatalan, dan shift.
+    """
+    if saya.peran not in ("umkm", "kasir") or saya.usaha_id != usaha_id:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Token ini bukan untuk usaha tersebut.")
+    return usaha_id
+
+
 def distributor_saya(
     distributor_id: int = Path(ge=1), saya: Identitas = Depends(identitas)
 ) -> int:
@@ -233,8 +246,12 @@ def daftar_umkm(badan: Daftar) -> Token:
         return _buat_token(pengguna, "umkm", usaha_id=usaha.id)
 
 
-@rute.post("/umkm/masuk", response_model=Token)
-def masuk_umkm(badan: Masuk) -> Token:
+def _masuk_usaha(badan: Masuk, *, untuk_pos: bool) -> Token:
+    """
+    Masuk ke usaha. Pemilik mendapat token `umkm`. Akun kasir (peran pegawai) mendapat token
+    `kasir`, yang hanya diterima endpoint Portal POS (`kasir_atau_pemilik`), dan hanya lewat
+    pintu POS: di pintu UMKM ia ditolak dengan penjelasan.
+    """
     with Session(mesin()) as sesi:
         pengguna = sesi.exec(select(Pengguna).where(Pengguna.email == badan.email)).first()
         if pengguna is None or not cocok(pengguna.kata_sandi_hash, badan.kata_sandi):
@@ -257,10 +274,27 @@ def masuk_umkm(badan: Masuk) -> Token:
                     "Akun ini terdaftar sebagai distributor. Masuk lewat portal distributor.",
                 )
             raise HTTPException(status.HTTP_403_FORBIDDEN, "Akun ini belum punya usaha.")
-        token = _buat_token(pengguna, "umkm", usaha_id=anggota.usaha_id)
+        kasir = str(getattr(anggota.peran, "value", anggota.peran)) == "pegawai"
+        if kasir and not untuk_pos:
+            raise HTTPException(
+                status.HTTP_403_FORBIDDEN,
+                "Akun kasir hanya untuk Portal POS. Masuk lewat Portal POS.",
+            )
+        token = _buat_token(pengguna, "kasir" if kasir else "umkm", usaha_id=anggota.usaha_id)
         usaha = sesi.get(Usaha, anggota.usaha_id)
         token.nama_usaha = usaha.nama if usaha else None
         return token
+
+
+@rute.post("/umkm/masuk", response_model=Token)
+def masuk_umkm(badan: Masuk) -> Token:
+    return _masuk_usaha(badan, untuk_pos=False)
+
+
+@rute.post("/pos/masuk", response_model=Token)
+def masuk_pos(badan: Masuk) -> Token:
+    """Pintu Portal POS: pemilik (token umkm) dan kasir (token kasir)."""
+    return _masuk_usaha(badan, untuk_pos=True)
 
 
 @rute.post("/distributor/masuk", response_model=Token)

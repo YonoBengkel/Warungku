@@ -16,6 +16,7 @@ import { Konfirmasi, Lembar } from '@/components/ui/lembar'
 import { IkonCentang, IkonProfil, IkonSampah, IkonSilang, IkonTambah } from '@/icons'
 import { nomorHp as formatHp } from '@/lib/format'
 import { useAplikasi } from '@/store/aplikasi'
+import PenggunaServer from './PenggunaServer'
 
 /**
  * Hak akses ditulis sebagai kalimat "boleh" dan "tidak boleh", bukan matriks izin.
@@ -96,7 +97,7 @@ const PENGGUNA_AWAL: PenggunaUsaha[] = [
   { id: 'pg-02', nama: 'Sinta Rahmawati', nomorHp: '082114560932', peran: 'kasir', sejak: 'Mei 2026' },
 ]
 
-export default function Pengguna() {
+function PenggunaContoh() {
   const namaPemilik = useAplikasi((s) => s.profil.namaPemilik)
   const warnaUsaha = useAplikasi((s) => s.profil.warna)
   const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
@@ -353,4 +354,10 @@ export default function Pengguna() {
       />
     </div>
   )
+}
+
+/** Data server: pemilik dan akun kasir sungguhan. Data contoh: daftar peran yang sudah ada. */
+export default function Pengguna() {
+  const server = useAplikasi((s) => s.sumberData === 'server')
+  return server ? <PenggunaServer /> : <PenggunaContoh />
 }

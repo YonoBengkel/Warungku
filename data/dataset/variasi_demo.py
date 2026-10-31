@@ -198,6 +198,12 @@ MENU_JUAL: dict[str, dict[str, tuple[str, int]]] = {
     },
 }
 
+#: Kasir simulasi Portal POS: usaha -> (nama, email, nomor HP). Peran pegawai, jadi tokennya hanya
+#: diterima endpoint POS. Kata sandinya sama dengan akun contoh lain.
+KASIR_DEMO: dict[str, tuple[str, str, str]] = {
+    "umkm1@warungku.test": ("Rina Kasir", "kasir1@warungku.test", "081230010001"),
+}
+
 #: Akun distributor yang portalnya dibuka saat demo.
 EMAIL_DISTRIBUTOR = "distributor1@warungku.test"
 
@@ -653,6 +659,31 @@ def _satu_kontrak(
             t = (t.replace(day=28) + timedelta(days=4)).replace(day=1)
 
 
+def _kasir_demo(kon, usaha_id: int, email: str) -> int:
+    """Akun kasir simulasi. Tidak ikut dihapus saat variasi dipasang ulang, jadi dibuat hanya kalau belum ada."""
+    data = KASIR_DEMO.get(email)
+    if data is None:
+        return 0
+    from api.otentikasi import acak_kata_sandi
+
+    from .buat_dataset import KATA_SANDI_CONTOH
+
+    nama, surel, hp = data
+    if kon.execute(text("SELECT 1 FROM pengguna WHERE email = :e"), {"e": surel}).scalar() is None:
+        pid = kon.execute(
+            text(
+                "INSERT INTO pengguna (nomor_hp, email, kata_sandi_hash, nama, aktif) "
+                "VALUES (:h, :e, :k, :n, true) RETURNING id"
+            ),
+            {"h": hp, "e": surel, "k": acak_kata_sandi(KATA_SANDI_CONTOH), "n": nama},
+        ).scalar_one()
+        kon.execute(
+            text("INSERT INTO keanggotaan (pengguna_id, usaha_id, peran) VALUES (:p, :u, 'pegawai')"),
+            {"p": pid, "u": usaha_id},
+        )
+    return 1
+
+
 def _menu_jual(kon, usaha_id: int, email: str) -> int:
     """Harga dan kategori menu Portal POS. Menu tanpa resep tetap mendapat barisnya sendiri."""
     menu = MENU_JUAL.get(email, {})
@@ -989,6 +1020,10 @@ def basi(kon) -> bool:
         return True
     if not kon.execute(text("SELECT EXISTS (SELECT 1 FROM pesanan WHERE nomor LIKE 'PS-%-W%')")).scalar():
         return True
+    # Dipasang sebelum akun kasir simulasi ada.
+    for _, surel, _ in KASIR_DEMO.values():
+        if not kon.execute(text("SELECT EXISTS (SELECT 1 FROM pengguna WHERE email = :e)"), {"e": surel}).scalar():
+            return True
     # Dipasang sebelum Portal POS ada: belum ada menu yang berharga jual.
     if any(MENU_JUAL.values()) and not kon.execute(
         text("SELECT EXISTS (SELECT 1 FROM pemetaan_menu WHERE harga_jual IS NOT NULL)")
@@ -1042,6 +1077,7 @@ def pasang(jika_basi: bool = False) -> dict | None:
             _variasi_atribut(kon, u, email, sekarang)
             hasil[email]["resep"], hasil[email]["nota_menu"] = _variasi_menu(kon, u, email, sekarang)
             hasil[email]["menu_jual"] = _menu_jual(kon, u, email)
+            hasil[email]["kasir"] = _kasir_demo(kon, u, email)
             nomor = _variasi_pesanan(kon, u, email, sekarang, nomor)
             hasil[email]["pesanan"] = nomor - awal
         dist = _variasi_distributor(kon, sekarang)

@@ -16,7 +16,7 @@ from sqlalchemy import text
 from warungku.basis_data import mesin
 from warungku.konfigurasi import alamat_layanan_model
 
-from . import distributor, gudang, katalog, kontrak, otentikasi, penjualan, pesanan, produksi, promo
+from . import distributor, gudang, kasir, katalog, kontrak, otentikasi, penjualan, pesanan, produksi, promo
 
 app = FastAPI(
     title="Turnify Flow API",
@@ -44,6 +44,7 @@ app.add_middleware(
 
 app.include_router(otentikasi.rute)
 app.include_router(gudang.rute)
+app.include_router(kasir.rute)
 app.include_router(distributor.rute)
 app.include_router(katalog.rute)
 app.include_router(katalog.rute_distributor)

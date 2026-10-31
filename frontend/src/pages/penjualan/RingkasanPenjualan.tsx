@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { DaftarNota } from '@/components/domain/DaftarNota'
+import { DaftarShift } from '@/components/domain/DaftarShift'
 import { TampilanRingkasan } from '@/components/domain/RingkasanPenjualan'
 import { TombolTautan } from '@/components/ui/dasar'
 import { KepalaHalaman } from '@/components/ui/navigasi'
@@ -39,6 +40,7 @@ export default function RingkasanPenjualan() {
         <>
           <TampilanRingkasan key={versi} ambil={ambil} />
           {!produsen && <DaftarNota setelahBatal={() => setVersi((v) => v + 1)} />}
+          {!produsen && <DaftarShift />}
         </>
       ) : (
         <section aria-labelledby="judul-ringkasan-contoh" className="mt-4">

@@ -5,9 +5,11 @@ import { Chip } from '@/components/ui/navigasi'
 import { KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
 import { IkonCari, IkonNota } from '@/icons'
 import { GalatApi } from '@/lib/api'
+import { ambilShiftAktif, type Shift } from '@/lib/apiKasir'
 import { ambilMenuJual, kirimNota, type MenuJual } from '@/lib/apiMenu'
 import { angka, bacaAngkaIndonesia, jam, rupiah, tanggalPendek } from '@/lib/format'
 import { useAplikasi } from '@/store/aplikasi'
+import { BukaKas } from './BukaKas'
 
 type CaraBayar = 'tunai' | 'qris' | 'transfer'
 
@@ -83,6 +85,15 @@ export default function Kasir() {
   const [galatKirim, setGalatKirim] = useState<string | null>(null)
   const [struk, setStruk] = useState<Struk | null>(null)
   const nomor = useRef(buatNomor())
+  // undefined: belum dicek. null: belum ada shift terbuka, jadi kasir diminta membuka kas lebih dulu.
+  const [shift, setShift] = useState<Shift | null | undefined>(undefined)
+
+  useEffect(() => {
+    if (!sesi) return
+    ambilShiftAktif(sesi)
+      .then(setShift)
+      .catch(() => setShift(null))
+  }, [sesi])
 
   function muat() {
     if (!sesi) return
@@ -172,6 +183,8 @@ export default function Kasir() {
     setGalatKirim(null)
     nomor.current = buatNomor()
   }
+
+  if (shift === null) return <BukaKas onBuka={setShift} />
 
   return (
     <div className="h-full lg:grid lg:grid-cols-[minmax(0,1fr)_23rem]">

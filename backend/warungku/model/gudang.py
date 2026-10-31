@@ -19,7 +19,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from decimal import Decimal
 
-from sqlalchemy import CheckConstraint, Column, Index, Text, UniqueConstraint
+from sqlalchemy import CheckConstraint, Column, Index, Text, UniqueConstraint, text
 from sqlalchemy import String
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlmodel import Field, SQLModel
@@ -168,6 +168,8 @@ class Transaksi(SQLModel, table=True):
     sumber: str = Field(default="pos", max_length=20, **bawaan("pos"))
     #: Struk batal mengembalikan stok lewat pergerakan balik.
     dibatalkan: bool = Field(default=False, **bawaan(False))
+    #: Shift kas yang sedang terbuka saat nota ini masuk. Kosong kalau tidak ada shift.
+    shift_id: int | None = Field(default=None, foreign_key="shift_kas.id", index=True)
     #: Diisi pemilik saat membatalkan. Nota batal tidak dihitung di mana pun, dan stoknya dikembalikan
     #: lewat pergerakan `koreksi` yang menunjuk nota ini.
     alasan_batal: str | None = Field(default=None, max_length=200)
@@ -182,6 +184,39 @@ class Transaksi(SQLModel, table=True):
     #: Uang yang diserahkan pembeli, hanya untuk tunai. Kembaliannya turunan: uang dikurangi total.
     uang_diterima: int | None = Field(default=None, sa_column=kolom_uang(nullable=True))
     diproses_pada: datetime | None = Field(default=None, sa_column=kolom_waktu(nullable=True))
+
+
+class ShiftKas(SQLModel, table=True):
+    """
+    Satu shift kasir: buka dengan uang modal, tutup dengan uang yang dihitung di laci.
+
+    Satu usaha hanya punya satu shift terbuka (indeks unik sebagian), karena demo ini
+    memakai satu laci. Saat ditutup, rekap tunai, QRIS, dan transfer dibekukan di sini.
+    Selisih = uang dihitung dikurangi (modal awal + tunai): negatif berarti laci kurang.
+    """
+
+    __tablename__ = "shift_kas"
+    __table_args__ = (
+        CheckConstraint("modal_awal >= 0", name="ck_shift_modal"),
+        Index("ix_shift_kas_usaha", "usaha_id", "dibuka_pada"),
+        Index("uq_shift_terbuka", "usaha_id", unique=True, postgresql_where=text("ditutup_pada IS NULL")),
+    )
+
+    id: int | None = Field(default=None, primary_key=True)
+    usaha_id: int = Field(foreign_key="usaha.id")
+    dibuka_oleh: int | None = Field(default=None, foreign_key="pengguna.id")
+    nama_kasir: str = Field(max_length=120)
+    dibuka_pada: datetime = Field(sa_column=kolom_waktu(nullable=False))
+    modal_awal: int = Field(sa_column=kolom_uang(nullable=False))
+    ditutup_pada: datetime | None = Field(default=None, sa_column=kolom_waktu(nullable=True))
+    uang_dihitung: int | None = Field(default=None, sa_column=kolom_uang(nullable=True))
+    jumlah_nota: int | None = None
+    tunai: int | None = Field(default=None, sa_column=kolom_uang(nullable=True))
+    qris: int | None = Field(default=None, sa_column=kolom_uang(nullable=True))
+    transfer: int | None = Field(default=None, sa_column=kolom_uang(nullable=True))
+    tunai_diharapkan: int | None = Field(default=None, sa_column=kolom_uang(nullable=True))
+    selisih: int | None = Field(default=None, sa_column=kolom_uang(nullable=True))
+    catatan: str | None = Field(default=None, max_length=200)
 
 
 class TransaksiBaris(SQLModel, table=True):

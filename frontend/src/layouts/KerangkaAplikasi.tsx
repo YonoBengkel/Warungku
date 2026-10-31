@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { Link, Navigate, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { cx } from '@/lib/format'
 import { NAV } from '@/lib/label'
 import {
@@ -85,6 +85,7 @@ export default function KerangkaAplikasi() {
 
   // Nota dari Portal POS yang terbuka di tab lain: tanya server tiap 3 detik selama tab ini terlihat.
   const server = useAplikasi((s) => s.sumberData === 'server')
+  const sesiKasir = useAplikasi((s) => s.sesiServer?.peran === 'kasir')
   const periksaNotaMasuk = useAplikasi((s) => s.periksaNotaMasuk)
   useEffect(() => {
     if (!server) return
@@ -107,6 +108,9 @@ export default function KerangkaAplikasi() {
   useEffect(() => {
     window.scrollTo(0, 0)
   }, [pathname])
+
+  // Akun kasir hanya untuk Portal POS: tokennya ditolak endpoint lain, jadi portal ini tidak ada isinya baginya.
+  if (sesiKasir) return <Navigate to="/pos" replace />
 
   return (
     <div className="kerangka-umkm min-h-dvh bg-bg lg:flex">

@@ -35,6 +35,7 @@ const MasukDistributor = lazy(() => import('@/pages/auth/MasukDistributor'))
 const MasukPos = lazy(() => import('@/pages/auth/MasukPos'))
 const Kasir = lazy(() => import('@/pages/pos/Kasir'))
 const NotaPos = lazy(() => import('@/pages/pos/NotaPos'))
+const ShiftPos = lazy(() => import('@/pages/pos/Shift'))
 const Daftar = lazy(() => import('@/pages/auth/Daftar'))
 const DaftarUsaha = lazy(() => import('@/pages/auth/DaftarUsaha'))
 const DaftarLegalitas = lazy(() => import('@/pages/auth/DaftarLegalitas'))
@@ -231,6 +232,7 @@ export default function App() {
         <Route path="/pos" element={<KerangkaPos />}>
           <Route index element={<Kasir />} />
           <Route path="nota" element={<NotaPos />} />
+          <Route path="shift" element={<ShiftPos />} />
         </Route>
 
         {/* Portal Distributor: peran lain, kerangka lain, sidebar empat menu */}

@@ -23,6 +23,7 @@ from .gudang import (
     PemetaanMenu,
     PemetaanMenuBahan,
     Pergerakan,
+    ShiftKas,
     Transaksi,
     TransaksiBaris,
 )
@@ -57,6 +58,7 @@ __all__ = [
     "Kemasan",
     "PemetaanMenu",
     "PemetaanMenuBahan",
+    "ShiftKas",
     "Transaksi",
     "TransaksiBaris",
     "Pergerakan",

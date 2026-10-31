@@ -71,6 +71,7 @@ import {
   ambilPemakaianBulanan,
   masukDistributor,
   masukUmkm,
+  masukPos as masukPosApi,
   sesiDistributorTersimpan,
   sesiTersimpan,
   simpanSesi,
@@ -204,6 +205,8 @@ interface KeadaanAplikasi {
   aturMasuk: (v: boolean) => void
   /** Masuk lewat API. Melempar GalatApi (ditolak) atau ServerTakTerjangkau (server mati). */
   masukServer: (email: string, kataSandi: string) => Promise<void>
+  /** Masuk lewat pintu Portal POS. Kasir mendapat sesi minimal: gudang tidak dimuat, karena ia tidak boleh membacanya. */
+  masukPos: (email: string, kataSandi: string) => Promise<void>
   /** Dipanggil sekali saat aplikasi dibuka: memakai sesi yang masih berlaku di tab ini. */
   pulihkanSesiServer: () => Promise<void>
   /** Pesan satu penawaran langsung dari saran Mesin 2. Mengembalikan id pesanan baru. */
@@ -667,10 +670,35 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
     set((s) => ({ ...keadaanServer(s, sesi, isi), profil: { ...keadaanServer(s, sesi, isi).profil, email } }))
   },
 
+  masukPos: async (email, kataSandi) => {
+    const sesi = await masukPosApi(email, kataSandi)
+    if (sesi.peran !== 'kasir') {
+      await get().masukServer(email, kataSandi)
+      return
+    }
+    simpanSesi(sesi)
+    set((s) => ({
+      masuk: true,
+      sumberData: 'server',
+      sesiServer: sesi,
+      profil: { ...s.profil, namaUsaha: sesi.namaUsaha ?? s.profil.namaUsaha, email },
+    }))
+  },
+
   pulihkanSesiServer: async () => {
     const sesi = sesiTersimpan()
     if (!sesi || get().sesiServer) {
       set({ memulihkanSesi: false })
+      return
+    }
+    if (sesi.peran === 'kasir') {
+      set((s) => ({
+        masuk: true,
+        sumberData: 'server',
+        sesiServer: sesi,
+        memulihkanSesi: false,
+        profil: { ...s.profil, namaUsaha: sesi.namaUsaha ?? s.profil.namaUsaha },
+      }))
       return
     }
     try {
