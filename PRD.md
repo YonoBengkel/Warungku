@@ -25,7 +25,7 @@ Target saat ini adalah demo di desktop dengan akun simulasi Kopi Kita Jogja.
 | 0. Rancangan (selesai) | Dokumen ini, ARCHITECTURE.md, mockup | Disetujui Ilham |
 | 1. Portal dan jual dasar (selesai) | Portal terpisah di `/pos`, masuk dengan akun usaha yang sudah ada, keranjang, kirim nota. Daftar menu dan harga jual diatur pemilik di Portal UMKM, POS hanya membaca | Satu penjualan memotong stok dan tersimpan sebagai nota |
 | 2. Interaksi langsung dan pemasangan resep (selesai) | Portal UMKM yang terbuka menangkap nota baru tanpa dimuat ulang: baris stok menyala, pemberitahuan "Nota masuk", dan baris data kasir berubah. Ringkasan Penjualan mendapat ringkasan nota dan Lihat Semua Nota. Menu tanpa resep tetap bisa dijual, masuk ke panel lonceng, dan bisa dipasangkan dengan resep saran | Perubahan terlihat dalam beberapa detik. Sesudah resep dipasangkan, penjualan berikutnya memotong stok |
-| 3. Pembayaran | Tunai dengan kembalian, QRIS dan transfer yang hanya dicatat, diskon, struk di layar | Nota menyimpan cara bayar dan diskon |
+| 3. Pembayaran (selesai) | Tunai dengan kembalian, QRIS dan transfer yang hanya dicatat, diskon per nota, struk di layar. Total Ringkasan Penjualan dipotong diskon dan dirinci per cara bayar | Nota menyimpan cara bayar, diskon, dan uang diterima |
 | 4. Batal dan retur | Pembatalan nota dengan alasan, stok kembali lewat pergerakan balik | Stok dan Ringkasan Penjualan tetap cocok |
 | 5. Shift dan peran | Buka dan tutup kas, selisih kas, akun kasir khusus yang hanya bisa membuka Portal POS | Rekap per shift |
 | 6. Kesiapan demo | Data demo, README, `siapkan.cmd` diarahkan ke `main` | Alur demo jalan dari pemasangan baru |

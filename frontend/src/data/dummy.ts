@@ -255,6 +255,9 @@ function bangkitkanTransaksi(): Transaksi[][] {
         baris,
         // Kedai ini dua sif: yang jaga pagi bukan yang jaga malam.
         kasir: jam < 15 ? KASIR_JAGA[h % 3] : KASIR_JAGA[(h + 1) % 3],
+        caraBayar: null,
+        diskon: 0,
+        uangDiterima: null,
       })
     }
 

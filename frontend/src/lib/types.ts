@@ -141,6 +141,12 @@ export interface Transaksi {
   baris: BarisTransaksi[]
   /** Kasir/nama penjaga yang tercetak di struk. */
   kasir: string
+  /** Hanya dicatat; null untuk nota dari kasir yang tidak membawanya. */
+  caraBayar: 'tunai' | 'qris' | 'transfer' | null
+  /** Potongan untuk seluruh nota, Rupiah. */
+  diskon: number
+  /** Uang yang diserahkan pembeli, hanya tunai. */
+  uangDiterima: number | null
 }
 
 /* ------------------------------------------------------------------ */

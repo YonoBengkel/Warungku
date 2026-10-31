@@ -37,7 +37,7 @@ Tahap 1 dan 2 sudah ada di kode. Yang bertanda **(rencana)** menyusul di tahap b
   `pemetaan_menu_bahan`, jadi menu tanpa resep tetap tampil di POS.
 - **Nomor struk:** dibuat di peramban sebelum dikirim, berawalan `POS-`, supaya kirim ulang tetap aman. Awalan `DEMO-`
   tidak boleh dipakai karena `backend/api/penjualan.py` tidak menghitungnya di Ringkasan Penjualan.
-- **Pembayaran (rencana):** kolom cara bayar, diskon, dan uang diterima di `transaksi`.
+- **Pembayaran:** kolom `cara_bayar`, `diskon`, dan `uang_diterima` di `transaksi` (migrasi `d5a2c9e4f1b7`), diisi lewat badan `POST /usaha/{id}/transaksi`. Server menolak diskon di atas belanja dan uang tunai di bawah total (422), dan hanya menyimpan uang diterima untuk tunai. Kasir lama tanpa ketiganya tetap diterima. Ringkasan Penjualan menghitung total per nota dikurangi diskon dan merincinya per cara bayar. QRIS dan transfer hanya dicatat.
 - **Pembaruan langsung:** `KerangkaAplikasi` memanggil `periksaNotaMasuk` (store) tiap 3 detik selama tabnya terlihat. Aksi itu
   membaca satu nota terbaru dari `GET /usaha/{id}/transaksi?batas=1`. Kalau nomornya baru, ia memanggil `segarkanGudangServer` dan
   `muatMenuKasir` yang sudah ada, menyalakan baris stok yang berubah (`stokBerubah`), dan memunculkan pemberitahuan. Cara ini dipilih

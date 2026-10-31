@@ -215,3 +215,67 @@ def test_daftar_nota_membawa_harga_dan_bisa_berhalaman(kedai):
     kedua = klien.get(f"/usaha/{u}/transaksi?batas=2&mulai=1", headers=kepala).json()
     assert [n["nomor_struk"] for n in kedua] == ["POS-UJI-H1", "POS-UJI-H0"]
     assert klien.get(f"/usaha/{u}/transaksi?batas=2&mulai=-1", headers=kepala).status_code == 422
+
+
+def _bayar(klien, u, kepala, nomor, **tambahan):
+    badan = _nota(nomor, "Americano", 18000)
+    badan["baris"][0]["jumlah"] = 2
+    badan.update(tambahan)
+    return klien.post(f"/usaha/{u}/transaksi", headers=kepala, json=badan)
+
+
+def test_pembayaran_tersimpan_dan_terbaca(kedai):
+    ids, kepala, _, klien = kedai
+    u = ids["u1"]
+    _simpan(klien, u, kepala)
+    r = _bayar(klien, u, kepala, "POS-UJI-B1", cara_bayar="tunai", diskon=6000, uang_diterima=50000)
+    assert r.status_code == 200, r.text
+    [nota] = klien.get(f"/usaha/{u}/transaksi", headers=kepala).json()
+    assert (nota["cara_bayar"], nota["diskon"], nota["uang_diterima"]) == ("tunai", 6000, 50000)
+
+    # Uang diterima hanya berarti untuk tunai: QRIS tidak menyimpannya.
+    _bayar(klien, u, kepala, "POS-UJI-B2", cara_bayar="qris", uang_diterima=99999)
+    baru = klien.get(f"/usaha/{u}/transaksi?batas=1", headers=kepala).json()[0]
+    assert (baru["cara_bayar"], baru["uang_diterima"]) == ("qris", None)
+
+
+@pytest.mark.parametrize(
+    "isian",
+    [
+        {"diskon": 36001},  # melebihi belanja 2 x 18.000
+        {"cara_bayar": "tunai", "diskon": 6000, "uang_diterima": 29999},  # kurang dari total 30.000
+        {"cara_bayar": "bitcoin"},
+        {"diskon": -1},
+    ],
+)
+def test_pembayaran_tidak_masuk_akal_ditolak_dan_stok_utuh(kedai, isian):
+    ids, kepala, _, klien = kedai
+    u = ids["u1"]
+    _simpan(klien, u, kepala)
+    assert _bayar(klien, u, kepala, "POS-UJI-X", **isian).status_code == 422
+    assert klien.get(f"/usaha/{u}/transaksi", headers=kepala).json() == []
+    with mesin().connect() as kon:
+        stok = kon.execute(text("SELECT stok FROM barang WHERE id = :b"), {"b": ids["kopi"]}).scalar_one()
+    assert stok == Decimal("1000.000")
+
+
+def test_nota_lama_tanpa_pembayaran_tetap_diterima(kedai):
+    ids, kepala, _, klien = kedai
+    u = ids["u1"]
+    assert klien.post(f"/usaha/{u}/transaksi", headers=kepala, json=_nota("POS-UJI-L", "Americano", 18000)).status_code == 200
+    [nota] = klien.get(f"/usaha/{u}/transaksi", headers=kepala).json()
+    assert (nota["cara_bayar"], nota["diskon"], nota["uang_diterima"]) == (None, 0, None)
+
+
+def test_ringkasan_memotong_diskon_dan_memisah_cara_bayar(kedai):
+    ids, kepala, _, klien = kedai
+    u = ids["u1"]
+    _simpan(klien, u, kepala)
+    _bayar(klien, u, kepala, "POS-UJI-R1", cara_bayar="tunai", diskon=6000, uang_diterima=30000)  # 36.000 - 6.000
+    _bayar(klien, u, kepala, "POS-UJI-R2", cara_bayar="qris")  # 36.000
+    klien.post(f"/usaha/{u}/transaksi", headers=kepala, json=_nota("POS-UJI-R3", "Americano", 18000))  # 36.000, tanpa cara bayar
+    r = klien.get(f"/usaha/{u}/ringkasan-penjualan", headers=kepala).json()
+    assert r["total"] == 30000 + 36000 + 36000 and r["jumlah_transaksi"] == 3
+    assert {x["label"]: x["nilai"] for x in r["rincian"]} == {"Tunai": 30000, "QRIS": 36000, "Transfer": 0, "Belum dicatat": 36000}
+    # Terlaris tetap harga baris sebelum diskon.
+    assert r["terlaris"][0]["total"] == 3 * 36000

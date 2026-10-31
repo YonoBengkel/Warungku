@@ -168,6 +168,13 @@ class Transaksi(SQLModel, table=True):
     sumber: str = Field(default="pos", max_length=20, **bawaan("pos"))
     #: Struk batal mengembalikan stok lewat pergerakan balik.
     dibatalkan: bool = Field(default=False, **bawaan(False))
+    #: 'tunai' | 'qris' | 'transfer'. Kosong untuk nota dari kasir yang tidak membawanya.
+    #: Hanya dicatat: pembayarannya terjadi di luar aplikasi.
+    cara_bayar: str | None = Field(default=None, max_length=10)
+    #: Potongan harga untuk seluruh nota, Rupiah bulat. Total nota = jumlah baris dikurangi ini.
+    diskon: int = Field(default=0, **bawaan(0))
+    #: Uang yang diserahkan pembeli, hanya untuk tunai. Kembaliannya turunan: uang dikurangi total.
+    uang_diterima: int | None = Field(default=None, sa_column=kolom_uang(nullable=True))
     diproses_pada: datetime | None = Field(default=None, sa_column=kolom_waktu(nullable=True))
 
 

@@ -129,23 +129,32 @@ def _nota(sesi: Session, usaha_id: int, dari: date | None, sampai: date | None) 
     ).scalar()
     waktu = _ANTARA.format(k="t.waktu")
     nilai_baris = "COALESCE(SUM(b.jumlah * b.harga_jual_satuan), 0)"
-    return _ringkasan(
+    # Pendapatan per nota sesudah diskon. Terlaris tetap menghitung harga baris
+    # sebelum diskon, karena diskonnya berlaku untuk seluruh nota, bukan satu menu.
+    bersih = f"""
+        WITH n AS (
+            SELECT t.id, (t.waktu AT TIME ZONE 'UTC')::date AS tanggal, t.cara_bayar,
+                   GREATEST(COALESCE(SUM(b.jumlah * b.harga_jual_satuan), 0) - t.diskon, 0) AS bersih
+              FROM transaksi t JOIN transaksi_baris b ON b.transaksi_id = t.id
+             WHERE {_NOTA} AND {waktu}
+             GROUP BY t.id"""
+    hasil = _ringkasan(
         sesi,
         sumber="nota",
         kunci={"u": usaha_id},
         terakhir=terakhir,
         dari=dari,
         sampai=sampai,
-        sql_harian=f"""
-            SELECT (t.waktu AT TIME ZONE 'UTC')::date AS tanggal, round({nilai_baris}) AS total,
-                   COUNT(DISTINCT t.id) AS jumlah
-              FROM transaksi t JOIN transaksi_baris b ON b.transaksi_id = t.id
-             WHERE {_NOTA} AND {waktu}
-             GROUP BY 1""",
-        sql_total=f"""
-            SELECT round({nilai_baris}) AS total, COUNT(DISTINCT t.id) AS jumlah
-              FROM transaksi t JOIN transaksi_baris b ON b.transaksi_id = t.id
-             WHERE {_NOTA} AND {waktu}""",
+        sql_harian=f"""{bersih})
+            SELECT tanggal, round(SUM(bersih)) AS total, COUNT(*) AS jumlah FROM n GROUP BY tanggal""",
+        sql_total=f"""{bersih})
+            SELECT COALESCE(round(SUM(bersih)), 0) AS total, COUNT(*) AS jumlah FROM n""",
+        sql_rincian=f"""{bersih})
+            SELECT COALESCE(SUM(bersih) FILTER (WHERE cara_bayar = 'tunai'), 0) AS "Tunai",
+                   COALESCE(SUM(bersih) FILTER (WHERE cara_bayar = 'qris'), 0) AS "QRIS",
+                   COALESCE(SUM(bersih) FILTER (WHERE cara_bayar = 'transfer'), 0) AS "Transfer",
+                   COALESCE(SUM(bersih) FILTER (WHERE cara_bayar IS NULL), 0) AS "Belum dicatat"
+              FROM n""",
         sql_terlaris=f"""
             SELECT b.nama_menu AS nama, b.satuan, SUM(b.jumlah) AS jumlah, round({nilai_baris}) AS total
               FROM transaksi t JOIN transaksi_baris b ON b.transaksi_id = t.id
@@ -154,6 +163,9 @@ def _nota(sesi: Session, usaha_id: int, dari: date | None, sampai: date | None) 
              ORDER BY total DESC, nama LIMIT :n""",
         sql_pihak=None,
     )
+    # Nota tanpa cara bayar (kasir lain, data simulasi) hanya disebut kalau ada.
+    hasil.rincian = [r for r in hasil.rincian if r.label != "Belum dicatat" or r.nilai > 0]
+    return hasil
 
 
 def _penjualan_usaha(sesi: Session, usaha_id: int, dari: date | None, sampai: date | None) -> RingkasanPenjualan:

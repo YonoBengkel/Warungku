@@ -38,6 +38,9 @@ interface NotaApi {
   waktu: string
   kasir: string | null
   baris: Array<{ nama_menu: string; jumlah: string | number; satuan: string; harga_jual_satuan?: number | null }>
+  cara_bayar?: 'tunai' | 'qris' | 'transfer' | null
+  diskon?: number
+  uang_diterima?: number | null
 }
 
 interface HasilNotaApi {
@@ -111,6 +114,9 @@ export async function ambilNotaTerbaru(sesi: SesiServer, batas = 8, mulai = 0): 
     nomorStruk: n.nomor_struk,
     waktu: n.waktu,
     kasir: n.kasir ?? 'Kasir',
+    caraBayar: n.cara_bayar ?? null,
+    diskon: n.diskon ?? 0,
+    uangDiterima: n.uang_diterima ?? null,
     baris: n.baris.map((b) => ({ nama: b.nama_menu, jumlah: Number(b.jumlah), satuan: b.satuan, harga: b.harga_jual_satuan ?? null })),
   }))
 }
@@ -121,6 +127,7 @@ export async function kirimNota(
   nomorStruk: string,
   baris: Array<{ namaMenu: string; jumlah: number; satuan: string; harga: number }>,
   kasir = 'Alat Uji',
+  bayar?: { caraBayar: 'tunai' | 'qris' | 'transfer'; diskon: number; uangDiterima: number | null },
 ): Promise<HasilNota> {
   const r = await minta<HasilNotaApi>(`/usaha/${sesi.usahaId}/transaksi`, {
     method: 'POST',
@@ -130,6 +137,7 @@ export async function kirimNota(
       waktu: new Date().toISOString(),
       kasir,
       sumber: 'pos',
+      ...(bayar ? { cara_bayar: bayar.caraBayar, diskon: bayar.diskon, uang_diterima: bayar.uangDiterima } : {}),
       baris: baris.map((b) => ({
         nama_menu: b.namaMenu,
         jumlah: b.jumlah,

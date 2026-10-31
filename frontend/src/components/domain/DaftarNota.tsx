@@ -6,6 +6,7 @@ import type { Transaksi } from '@/lib/types'
 import { useAplikasi } from '@/store/aplikasi'
 
 const HALAMAN_AWAL = 8
+const NAMA_CARA = { tunai: 'Tunai', qris: 'QRIS', transfer: 'Transfer' } as const
 const HALAMAN_BERIKUT = 25
 
 /**
@@ -88,7 +89,7 @@ export function DaftarNota() {
         <ul className="divide-y divide-line">
           {daftar.map((n) => {
             const adaHarga = n.baris.some((b) => b.harga != null)
-            const total = n.baris.reduce((a, b) => a + (b.harga ?? 0) * b.jumlah, 0)
+            const total = Math.max(0, n.baris.reduce((a, b) => a + (b.harga ?? 0) * b.jumlah, 0) - n.diskon)
             return (
               <li key={n.nomorStruk} className="flex items-start justify-between gap-4 py-3">
                 <div className="min-w-0">
@@ -100,7 +101,14 @@ export function DaftarNota() {
                     {n.baris.map((b) => `${angka(b.jumlah, 2)} ${b.nama}`).join(', ')}
                   </p>
                 </div>
-                <p className="shrink-0 text-isi font-bold text-ink tabular">{adaHarga ? rupiah(total) : '-'}</p>
+                <div className="shrink-0 text-right">
+                  <p className="text-isi font-bold text-ink tabular">{adaHarga ? rupiah(total) : '-'}</p>
+                  {(n.caraBayar || n.diskon > 0) && (
+                    <p className="text-kecil text-ink-3">
+                      {[n.caraBayar && NAMA_CARA[n.caraBayar], n.diskon > 0 && `diskon ${rupiah(n.diskon)}`].filter(Boolean).join(' · ')}
+                    </p>
+                  )}
+                </div>
               </li>
             )
           })}

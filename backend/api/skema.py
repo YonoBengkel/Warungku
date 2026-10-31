@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from decimal import Decimal
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -41,6 +42,10 @@ class StrukMasuk(BaseModel):
     kasir: str | None = Field(default=None, max_length=60)
     sumber: str = Field(default="pos", max_length=20)
     baris: list[BarisStruk] = Field(min_length=1)
+    #: Hanya dicatat. Kasir lama tidak mengirimnya, jadi semuanya opsional.
+    cara_bayar: Literal["tunai", "qris", "transfer"] | None = None
+    diskon: int = Field(default=0, ge=0, le=100_000_000)
+    uang_diterima: int | None = Field(default=None, ge=0, le=1_000_000_000)
 
 
 class HasilStruk(BaseModel):
@@ -141,6 +146,9 @@ class NotaRingkas(BaseModel):
     waktu: datetime
     kasir: str | None
     baris: list[BarisNota]
+    cara_bayar: str | None = None
+    diskon: int = 0
+    uang_diterima: int | None = None
 
 
 class KemasanRingkas(BaseModel):

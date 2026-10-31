@@ -63,7 +63,7 @@ erDiagram
 
 | Tabel | Isi | Kunci asing | Batasan |
 |---|---|---|---|
-| `barang` | Satu baris stok di gudang UMKM. | `produk_master_id` ke `produk_master`, `usaha_id` ke `usaha` | unik (usaha_id, kode_barang); cek `ck_barang_stok_tak_negatif` |
+| `barang` | Satu baris stok di gudang UMKM. | `produk_master_id` ke `produk_master`, `usaha_id` ke `usaha` | cek `ck_barang_stok_tak_negatif`; unik (usaha_id, kode_barang) |
 | `data_kasir` | Keadaan sambungan POS per usaha. Satu baris per usaha. | `usaha_id` ke `usaha` | unik (usaha_id) |
 | `pemetaan_menu` | Jembatan antara nama menu di struk kasir dan bahan di gudang. | `usaha_id` ke `usaha` | unik (usaha_id, nama_menu) |
 | `transaksi` | Satu struk dari kasir, apa adanya. | `usaha_id` ke `usaha` | unik (usaha_id, nomor_struk) |
@@ -98,7 +98,7 @@ erDiagram
 | `pesanan` | Satu pesanan, dibaca dua portal. | `distributor_id` ke `distributor`, `kontrak_id` ke `kontrak`, `usaha_id` ke `usaha` | unik (nomor) |
 | `pesanan_baris` | Satu barang dalam satu pesanan. | `barang_id` ke `barang`, `penawaran_id` ke `penawaran`, `pesanan_id` ke `pesanan`, `promo_id` ke `promo` | - |
 | `pesanan_jejak` | Garis waktu status. Dibaca dua portal dengan kalimat yang berbeda. | `pesanan_id` ke `pesanan` | - |
-| `ulasan` | Penilaian setelah pesanan selesai. Satu pesanan satu ulasan. | `distributor_id` ke `distributor`, `pesanan_id` ke `pesanan`, `usaha_id` ke `usaha` | cek `ck_ulasan_rating`; unik (pesanan_id) |
+| `ulasan` | Penilaian setelah pesanan selesai. Satu pesanan satu ulasan. | `distributor_id` ke `distributor`, `pesanan_id` ke `pesanan`, `usaha_id` ke `usaha` | unik (pesanan_id); cek `ck_ulasan_rating` |
 
 ## Analitik: keluaran mesin
 

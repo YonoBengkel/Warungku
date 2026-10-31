@@ -940,7 +940,10 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
         window.setTimeout(() => set({ stokBerubah: [] }), 4000)
       }
       const baris = baru.flatMap((n) => n.baris)
-      const total = baris.reduce((a, b) => a + (b.harga ?? 0) * b.jumlah, 0)
+      const total = baru.reduce(
+        (a, n) => a + Math.max(0, n.baris.reduce((x, b) => x + (b.harga ?? 0) * b.jumlah, 0) - n.diskon),
+        0,
+      )
       const porsi = baris.reduce((a, b) => a + b.jumlah, 0)
       get().tampilkanRacun(
         baru.length === 1

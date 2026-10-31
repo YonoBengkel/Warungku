@@ -6,8 +6,17 @@ import { KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
 import { IkonCari, IkonNota } from '@/icons'
 import { GalatApi } from '@/lib/api'
 import { ambilMenuJual, kirimNota, type MenuJual } from '@/lib/apiMenu'
-import { rupiah } from '@/lib/format'
+import { angka, bacaAngkaIndonesia, jam, rupiah, tanggalPendek } from '@/lib/format'
 import { useAplikasi } from '@/store/aplikasi'
+
+type CaraBayar = 'tunai' | 'qris' | 'transfer'
+
+const CARA: Array<{ nilai: CaraBayar; label: string }> = [
+  { nilai: 'tunai', label: 'Tunai' },
+  { nilai: 'qris', label: 'QRIS' },
+  { nilai: 'transfer', label: 'Transfer' },
+]
+const UANG_CEPAT = [50_000, 100_000]
 
 interface BarisNota {
   namaMenu: string
@@ -15,9 +24,16 @@ interface BarisNota {
   jumlah: number
 }
 
-interface HasilKirim {
+/** Isi struk yang tampil sesudah nota diterima. Angkanya dibekukan saat dikirim. */
+interface Struk {
   nomor: string
+  waktu: Date
+  baris: BarisNota[]
+  subtotal: number
+  diskon: number
   total: number
+  caraBayar: CaraBayar
+  uang: number | null
   tanpaResep: string[]
   stokKurang: string[]
 }
@@ -37,22 +53,35 @@ function buatNomor(): string {
   return `POS-${w.getFullYear()}${d(w.getMonth() + 1)}${d(w.getDate())}-${d(w.getHours())}${d(w.getMinutes())}${d(w.getSeconds())}-${acak}`
 }
 
+/** Angka Rupiah yang diketik kasir. Kosong atau tidak terbaca dianggap 0. */
+function bacaRupiah(teks: string): number {
+  const n = bacaAngkaIndonesia(teks)
+  return Number.isFinite(n) && n > 0 ? Math.round(n) : 0
+}
+
 /**
- * Layar kasir (Portal POS, tahap 1): kisi menu di kiri, nota berjalan di kanan.
+ * Layar kasir (Portal POS): kisi menu di kiri, nota berjalan di kanan.
  * Menu, harga, dan resep diatur pemilik di Portal UMKM, jadi di sini hanya dibaca.
  * Menu tanpa resep tetap bisa dijual: notanya masuk, tetapi stok bahannya belum
  * terpotong, dan pemiliknya melihatnya sebagai menu yang perlu dipasangkan.
+ *
+ * Pembayaran hanya dicatat (tahap 3): tunai dengan kembalian, QRIS, atau transfer.
+ * Uangnya tidak lewat aplikasi ini. Uang tunai yang dikosongkan dianggap pas.
  */
 export default function Kasir() {
   const sesi = useAplikasi((s) => s.sesiServer)
+  const profil = useAplikasi((s) => s.profil)
   const [menu, setMenu] = useState<MenuJual[] | null>(null)
   const [galatMuat, setGalatMuat] = useState<string | null>(null)
   const [kategori, setKategori] = useState(SEMUA)
   const [cari, setCari] = useState('')
   const [nota, setNota] = useState<BarisNota[]>([])
+  const [caraBayar, setCaraBayar] = useState<CaraBayar>('tunai')
+  const [diskonTeks, setDiskonTeks] = useState('')
+  const [uangTeks, setUangTeks] = useState('')
   const [mengirim, setMengirim] = useState(false)
   const [galatKirim, setGalatKirim] = useState<string | null>(null)
-  const [hasil, setHasil] = useState<HasilKirim | null>(null)
+  const [struk, setStruk] = useState<Struk | null>(null)
   const nomor = useRef(buatNomor())
 
   function muat() {
@@ -81,10 +110,16 @@ export default function Kasir() {
     )
   }, [menu, kategori, cari])
 
-  const total = nota.reduce((a, b) => a + b.harga * b.jumlah, 0)
+  const subtotal = nota.reduce((a, b) => a + b.harga * b.jumlah, 0)
+  const diskonDiminta = bacaRupiah(diskonTeks)
+  const diskon = Math.min(diskonDiminta, subtotal)
+  const total = subtotal - diskon
+  const uangDiketik = bacaRupiah(uangTeks)
+  const uang = uangTeks.trim() === '' ? total : uangDiketik
+  const kurang = caraBayar === 'tunai' ? Math.max(0, total - uang) : 0
+  const bisaKirim = nota.length > 0 && !mengirim && kurang === 0
 
   function tambah(m: MenuJual) {
-    setHasil(null)
     setGalatKirim(null)
     setNota((n) =>
       n.some((b) => b.namaMenu === m.namaMenu)
@@ -98,7 +133,7 @@ export default function Kasir() {
   }
 
   async function kirim() {
-    if (!sesi || nota.length === 0) return
+    if (!sesi || !bisaKirim) return
     setMengirim(true)
     setGalatKirim(null)
     try {
@@ -107,10 +142,20 @@ export default function Kasir() {
         nomor.current,
         nota.map((b) => ({ namaMenu: b.namaMenu, jumlah: b.jumlah, satuan: 'porsi', harga: b.harga })),
         'Portal POS',
+        { caraBayar, diskon, uangDiterima: caraBayar === 'tunai' ? uang : null },
       )
-      setHasil({ nomor: nomor.current, total, tanpaResep: h.takDikenali, stokKurang: h.stokKurang })
-      setNota([])
-      nomor.current = buatNomor()
+      setStruk({
+        nomor: nomor.current,
+        waktu: new Date(),
+        baris: nota,
+        subtotal,
+        diskon,
+        total,
+        caraBayar,
+        uang: caraBayar === 'tunai' ? uang : null,
+        tanpaResep: h.takDikenali,
+        stokKurang: h.stokKurang,
+      })
     } catch (e) {
       setGalatKirim(e instanceof GalatApi ? e.message : 'Nota belum terkirim. Isinya masih aman, coba kirim lagi.')
     } finally {
@@ -118,8 +163,18 @@ export default function Kasir() {
     }
   }
 
+  function transaksiBaru() {
+    setStruk(null)
+    setNota([])
+    setDiskonTeks('')
+    setUangTeks('')
+    setCaraBayar('tunai')
+    setGalatKirim(null)
+    nomor.current = buatNomor()
+  }
+
   return (
-    <div className="h-full lg:grid lg:grid-cols-[minmax(0,1fr)_21rem]">
+    <div className="h-full lg:grid lg:grid-cols-[minmax(0,1fr)_23rem]">
       <section aria-label="Daftar menu" className="min-w-0 lg:overflow-y-auto p-4 sm:p-6">
         <Kolom
           aria-label="Cari menu"
@@ -170,8 +225,9 @@ export default function Kasir() {
                 <li key={m.namaMenu}>
                   <button
                     type="button"
+                    disabled={struk !== null}
                     onClick={() => tambah(m)}
-                    className="w-full h-full min-h-28 flex flex-col gap-1 p-3.5 text-left rounded-lg border border-line bg-surface transition-colors duration-150 hover:border-brand hover:bg-brand-soft"
+                    className="w-full h-full min-h-28 flex flex-col gap-1 p-3.5 text-left rounded-lg border border-line bg-surface transition-colors duration-150 hover:border-brand hover:bg-brand-soft disabled:opacity-55 disabled:hover:border-line disabled:hover:bg-surface"
                   >
                     <span className="text-kartu font-bold text-ink leading-snug">{m.namaMenu}</span>
                     {!m.punyaResep && <span className="text-kecil font-semibold text-menipis-ink">Resep belum dipasangkan</span>}
@@ -184,65 +240,199 @@ export default function Kasir() {
         </div>
       </section>
 
-      <aside aria-label="Nota berjalan" className="flex flex-col min-h-0 bg-surface border-t lg:border-t-0 lg:border-l border-line">
-        <div className="shrink-0 px-4 pt-4 pb-3 border-b border-line">
-          <h1 className="text-kartu font-extrabold text-ink">Nota berjalan</h1>
-          <p className="text-kecil text-ink-3 break-all">{nomor.current}</p>
-        </div>
+      <aside aria-label={struk ? 'Struk' : 'Nota berjalan'} className="flex flex-col min-h-0 bg-surface border-t lg:border-t-0 lg:border-l border-line">
+        {struk ? (
+          <StrukLayar struk={struk} namaUsaha={profil.namaUsaha} onBaru={transaksiBaru} />
+        ) : (
+          <>
+            <div className="shrink-0 px-4 pt-4 pb-3 border-b border-line">
+              <h1 className="text-kartu font-extrabold text-ink">Nota berjalan</h1>
+              <p className="text-kecil text-ink-3 break-all">{nomor.current}</p>
+            </div>
 
-        <div className="flex-1 min-h-0 overflow-y-auto px-4">
-          {nota.length === 0 ? (
-            <p className="py-8 text-center text-isi text-ink-3">Tekan menu untuk menambahkannya.</p>
-          ) : (
-            <ul>
-              {nota.map((b) => (
-                <li key={b.namaMenu} className="py-3 border-b border-line">
-                  <p className="text-isi font-semibold text-ink">{b.namaMenu}</p>
-                  <div className="mt-1.5 flex items-center justify-between gap-3">
-                    <PengaturJumlah
-                      nilai={b.jumlah}
-                      ubah={(n) => ubahJumlah(b.namaMenu, n)}
-                      ukuran="kecil"
-                      label={`Jumlah ${b.namaMenu}`}
-                    />
-                    <span className="text-isi font-bold text-ink">{rupiah(b.harga * b.jumlah)}</span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+            <div className="flex-1 min-h-0 overflow-y-auto px-4">
+              {nota.length === 0 ? (
+                <p className="py-8 text-center text-isi text-ink-3">Tekan menu untuk menambahkannya.</p>
+              ) : (
+                <ul>
+                  {nota.map((b) => (
+                    <li key={b.namaMenu} className="py-3 border-b border-line">
+                      <p className="text-isi font-semibold text-ink">{b.namaMenu}</p>
+                      <div className="mt-1.5 flex items-center justify-between gap-3">
+                        <PengaturJumlah
+                          nilai={b.jumlah}
+                          ubah={(n) => ubahJumlah(b.namaMenu, n)}
+                          ukuran="kecil"
+                          label={`Jumlah ${b.namaMenu}`}
+                        />
+                        <span className="text-isi font-bold text-ink">{rupiah(b.harga * b.jumlah)}</span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
 
-        <div className="shrink-0 p-4 border-t border-line">
-          <div className="flex items-baseline justify-between gap-3">
-            <span className="text-kartu font-bold text-ink">Total</span>
-            <strong className="text-angka font-extrabold text-ink tracking-tight">{rupiah(total)}</strong>
-          </div>
-          <Tombol penuh ukuran="besar" className="mt-3" disabled={nota.length === 0} memuat={mengirim} onClick={kirim}>
-            Kirim Nota
-          </Tombol>
-          <div role="status" className="min-h-5">
-            {hasil && (
-              <div className="mt-2 text-kecil leading-snug">
-                <p className="font-semibold text-aman-ink">
-                  Nota {rupiah(hasil.total)} terkirim.
-                </p>
-                {hasil.tanpaResep.length > 0 && (
-                  <p className="mt-0.5 text-menipis-ink">Stok belum terpotong untuk {hasil.tanpaResep.join(', ')}, karena resepnya belum dipasangkan.</p>
-                )}
-                {hasil.stokKurang.length > 0 && (
-                  <p className="mt-0.5 text-menipis-ink">Catatan stok {hasil.stokKurang.join(', ')} sudah habis.</p>
-                )}
+            <div className="shrink-0 p-4 border-t border-line space-y-3">
+              <Kolom
+                label="Diskon"
+                awalan="Rp"
+                inputMode="numeric"
+                value={diskonTeks}
+                disabled={nota.length === 0}
+                bantuan={diskonDiminta > subtotal && subtotal > 0 ? `Diskon dibatasi sebesar belanja, ${rupiah(subtotal)}.` : undefined}
+                onChange={(e) => setDiskonTeks(e.target.value)}
+              />
+
+              <div>
+                <p className="text-isi font-semibold text-ink mb-1.5">Cara bayar</p>
+                <div className="flex flex-wrap gap-2">
+                  {CARA.map((c) => (
+                    <Chip key={c.nilai} aktif={caraBayar === c.nilai} onClick={() => setCaraBayar(c.nilai)}>
+                      {c.label}
+                    </Chip>
+                  ))}
+                </div>
               </div>
-            )}
-          </div>
-          {galatKirim && (
-            <p role="alert" className="mt-2 text-kecil font-semibold text-kritis-ink leading-snug">
-              {galatKirim}
+
+              {caraBayar === 'tunai' ? (
+                <div>
+                  <Kolom
+                    label="Uang diterima"
+                    bantuan="Kosongkan kalau uangnya pas."
+                    awalan="Rp"
+                    inputMode="numeric"
+                    value={uangTeks}
+                    disabled={nota.length === 0}
+                    onChange={(e) => setUangTeks(e.target.value)}
+                  />
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <Tombol ragam="garis" ukuran="kecil" disabled={nota.length === 0} onClick={() => setUangTeks('')}>
+                      Uang Pas
+                    </Tombol>
+                    {UANG_CEPAT.map((u) => (
+                      <Tombol key={u} ragam="garis" ukuran="kecil" disabled={nota.length === 0} onClick={() => setUangTeks(String(u))}>
+                        {angka(u)}
+                      </Tombol>
+                    ))}
+                  </div>
+                  {nota.length > 0 && (
+                    <p role="status" className={kurang > 0 ? 'mt-2 text-isi font-bold text-kritis-ink' : 'mt-2 text-isi font-bold text-aman-ink'}>
+                      {kurang > 0 ? `Uang kurang ${rupiah(kurang)}` : `Kembalian ${rupiah(uang - total)}`}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-kecil text-ink-3 leading-snug">
+                  Hanya dicatat. Pembayarannya dilakukan di luar aplikasi ini.
+                </p>
+              )}
+
+              <div>
+                {diskon > 0 && (
+                  <>
+                    <p className="flex justify-between text-isi text-ink-2">
+                      <span>Subtotal</span>
+                      <span className="tabular">{rupiah(subtotal)}</span>
+                    </p>
+                    <p className="flex justify-between text-isi text-ink-2">
+                      <span>Diskon</span>
+                      <span className="tabular">-{rupiah(diskon)}</span>
+                    </p>
+                  </>
+                )}
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="text-kartu font-bold text-ink">Total</span>
+                  <strong className="text-angka font-extrabold text-ink tracking-tight">{rupiah(total)}</strong>
+                </div>
+              </div>
+
+              <Tombol penuh ukuran="besar" disabled={!bisaKirim} memuat={mengirim} onClick={kirim}>
+                Bayar dan Kirim Nota
+              </Tombol>
+              {galatKirim && (
+                <p role="alert" className="text-kecil font-semibold text-kritis-ink leading-snug">
+                  {galatKirim}
+                </p>
+              )}
+            </div>
+          </>
+        )}
+      </aside>
+    </div>
+  )
+}
+
+const NAMA_CARA: Record<CaraBayar, string> = { tunai: 'Tunai', qris: 'QRIS', transfer: 'Transfer' }
+
+/** Struk di layar sesudah nota diterima. Satu-satunya tombolnya membuka transaksi baru. */
+function StrukLayar({ struk, namaUsaha, onBaru }: { struk: Struk; namaUsaha: string; onBaru: () => void }) {
+  return (
+    <>
+      <div className="flex-1 min-h-0 overflow-y-auto p-4">
+        <h1 className="text-kartu font-extrabold text-aman-ink">Nota terkirim</h1>
+        <div className="mt-3 pb-3 border-b border-dashed border-line-strong text-center">
+          <p className="text-kartu font-extrabold text-ink">{namaUsaha}</p>
+          <p className="text-kecil text-ink-3">
+            {tanggalPendek(struk.waktu)}, {jam(struk.waktu)} &middot; Portal POS
+          </p>
+          <p className="text-kecil text-ink-3 break-all">{struk.nomor}</p>
+        </div>
+
+        <ul className="py-3 border-b border-dashed border-line-strong space-y-1.5">
+          {struk.baris.map((b) => (
+            <li key={b.namaMenu} className="text-isi text-ink">
+              <span className="font-semibold">{b.namaMenu}</span>
+              <span className="flex justify-between text-ink-2">
+                <span>
+                  {angka(b.jumlah)} &times; {rupiah(b.harga)}
+                </span>
+                <span className="tabular">{rupiah(b.harga * b.jumlah)}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+
+        <dl className="py-3 text-isi text-ink-2 space-y-1">
+          {struk.diskon > 0 && (
+            <>
+              <Baris label="Subtotal" nilai={rupiah(struk.subtotal)} />
+              <Baris label="Diskon" nilai={`-${rupiah(struk.diskon)}`} />
+            </>
+          )}
+          <Baris label="Total" nilai={rupiah(struk.total)} tebal />
+          <Baris label="Cara bayar" nilai={NAMA_CARA[struk.caraBayar]} />
+          {struk.uang !== null && (
+            <>
+              <Baris label="Uang diterima" nilai={rupiah(struk.uang)} />
+              <Baris label="Kembalian" nilai={rupiah(struk.uang - struk.total)} tebal />
+            </>
+          )}
+        </dl>
+
+        <div role="status" className="text-kecil leading-snug space-y-1">
+          {struk.tanpaResep.length > 0 && (
+            <p className="text-menipis-ink">
+              Stok belum terpotong untuk {struk.tanpaResep.join(', ')}, karena resepnya belum dipasangkan.
             </p>
           )}
+          {struk.stokKurang.length > 0 && <p className="text-menipis-ink">Catatan stok {struk.stokKurang.join(', ')} sudah habis.</p>}
         </div>
-      </aside>
+      </div>
+      <div className="shrink-0 p-4 border-t border-line">
+        <Tombol penuh ukuran="besar" onClick={onBaru} autoFocus>
+          Transaksi Baru
+        </Tombol>
+      </div>
+    </>
+  )
+}
+
+function Baris({ label, nilai, tebal }: { label: string; nilai: string; tebal?: boolean }) {
+  return (
+    <div className={tebal ? 'flex justify-between font-extrabold text-ink' : 'flex justify-between'}>
+      <dt>{label}</dt>
+      <dd className="tabular">{nilai}</dd>
     </div>
   )
 }

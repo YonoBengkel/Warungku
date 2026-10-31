@@ -33,7 +33,7 @@ const ISTILAH: Record<SumberPenjualan, Istilah> = {
     transaksi: 'nota',
     pihak: null,
     judulPihak: null,
-    sumber: 'Dihitung dari nota kasir apa adanya: nama dan harga seperti tercetak di struk. Nota demo tidak dihitung.',
+    sumber: 'Dihitung dari nota kasir: nama dan harga seperti tercetak di struk, dikurangi diskon nota. Nota demo tidak dihitung.',
   },
   'penjualan-usaha': {
     total: 'Total penjualan',

@@ -427,12 +427,23 @@ def terima_struk(struk: StrukMasuk, usaha_id: int = Depends(usaha_saya)) -> Hasi
                 baris_tercatat=int(jumlah), tak_dikenali=[],
             )
 
+        # Pembayaran dicatat apa adanya, tetapi angkanya harus masuk akal: diskon tidak
+        # boleh melebihi belanja, dan uang tunai tidak boleh kurang dari total.
+        subtotal = sum(int(b.jumlah * (b.harga_jual_satuan or 0)) for b in struk.baris)
+        if struk.diskon > subtotal:
+            raise HTTPException(422, "Diskon melebihi total belanja. Kurangi diskonnya.")
+        if struk.cara_bayar == "tunai" and struk.uang_diterima is not None and struk.uang_diterima < subtotal - struk.diskon:
+            raise HTTPException(422, "Uang yang diterima kurang dari total yang harus dibayar.")
+
         trx = Transaksi(
             usaha_id=usaha_id,
             nomor_struk=struk.nomor_struk,
             waktu=struk.waktu,
             kasir=struk.kasir,
             sumber=struk.sumber,
+            cara_bayar=struk.cara_bayar,
+            diskon=struk.diskon,
+            uang_diterima=struk.uang_diterima if struk.cara_bayar == "tunai" else None,
         )
         sesi.add(trx)
         sesi.flush()  # butuh id-nya untuk menautkan baris
@@ -758,6 +769,6 @@ def nota_terbaru(
                 )
             )
         return [
-            NotaRingkas(id=n.id, nomor_struk=n.nomor_struk, waktu=n.waktu, kasir=n.kasir, baris=baris.get(n.id, []))
+            NotaRingkas(id=n.id, nomor_struk=n.nomor_struk, waktu=n.waktu, kasir=n.kasir, cara_bayar=n.cara_bayar, diskon=n.diskon, uang_diterima=n.uang_diterima, baris=baris.get(n.id, []))
             for n in nota
         ]
