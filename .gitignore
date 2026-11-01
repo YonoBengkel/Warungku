@@ -65,3 +65,6 @@ npm-debug.log*
 
 # Cadangan basis data untuk image turnify-flow-db (besar; dibuat ulang, tidak dilacak)
 deployment/db/*.dump
+
+#gambar referensi
+/referensi

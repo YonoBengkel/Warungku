@@ -322,8 +322,8 @@ ketiga mesin, masuk dengan salah satu akun berikut. API (port 8000) harus menyal
 | Akun | Portal | Usaha | Yang bisa dicoba |
 | --- | --- | --- | --- |
 | `kasir1@warungku.test` | Kasir (peran pegawai) | Kopi Kita Jogja | Hanya Portal POS: masuk di `/masuk/pos`, tombol Isikan akun kasir. Ditolak di Portal UMKM |
-| `umkm1@warungku.test` | Pemilik usaha | Kopi Kita Jogja (kedai kopi) | Stok, grafik pemakaian aktual vs perkiraan, Prediksi, saran distributor, belanja, pesanan, kontrak, promo, Lacak Pesanan, Ringkasan Penjualan |
-| `produksi1@warungku.test` | Pemilik usaha produsen | Dapur Sambal Bu Ratmi | Semua yang di atas, ditambah tab **Produksi**: resep, catat sesi masak, kiriman ke Indomaret, swalayan, toko oleh-oleh, dan katering |
+| `umkm1@warungku.test` | Pemilik usaha | Kopi Kita Jogja (kedai kopi) | Stok, grafik pemakaian aktual vs perkiraan, Prediksi, saran distributor, belanja, pesanan, kontrak, promo, Lacak Pesanan, Ringkasan Penjualan (dengan Riwayat Kasir: Nota & Shift), serta tab **Produksi** (Menu: kelola harga jual dan komposisi bahan) |
+| `produksi1@warungku.test` | Pemilik usaha produsen | Dapur Sambal Bu Ratmi | Semua yang di atas, ditambah tab **Produksi** penuh: Menu (tambah/ubah produk jadi dan resep langsung dari layar), Sesi Masak, dan Kiriman ke Pembeli (ritel/katering) |
 | `distributor1@warungku.test` | Distributor | Sumber Tani Nusantara | Pesanan masuk, kontrak dan paket (termasuk pengajuan berhenti), promo dan halaman ubah promo, peta Sebaran pemesan, segmen pelanggan (Mesin 3), Lacak Pesanan, Ringkasan Penjualan, halaman akun (profil toko, barang yang dijual, penilaian, titik gudang) |
 
 **Cara masuk tanpa mengetik:**
@@ -382,9 +382,9 @@ pesanan pekan depan di tab Produksi turun.
 
 ```mermaid
 flowchart LR
-    kasir["Aplikasi kasir (POS)"] -- "nota" --> api
+    kasir["Aplikasi kasir (POS /pos)"] -- "nota, shift, ajukan batal" --> api
     subgraph backend["backend/ · port 8000"]
-        api["API FastAPI<br/>stok, nota, pesanan,<br/>produksi, otentikasi"]
+        api["API FastAPI<br/>stok, nota, kasir, shift,<br/>pesanan, produksi, otentikasi"]
     end
     subgraph ml["ml/ · port 8001"]
         m1["Mesin 1<br/>ramalan kebutuhan"]
@@ -393,7 +393,7 @@ flowchart LR
         jadwal["Penjadwal<br/>02.00 dan tiap 4 jam"]
     end
     db[("PostgreSQL 16<br/>port 5433")]
-    fe["frontend/<br/>portal pemilik usaha<br/>dan distributor"]
+    fe["frontend/<br/>Portal Pemilik Usaha, POS,<br/>dan Distributor"]
 
     api -- "tulis" --> db
     jadwal --> m1 & m2 & m3
@@ -502,6 +502,7 @@ turnify-flow/
 | --- | --- | --- |
 | POST | `/auth/umkm/daftar` | Buat akun pemilik usaha beserta usahanya (satu akun, satu usaha) |
 | POST | `/auth/umkm/masuk` | Masuk sebagai pemilik usaha |
+| POST | `/auth/pos/masuk` | Masuk sebagai kasir pegawai untuk Portal POS |
 | POST | `/auth/distributor/masuk` | Masuk sebagai distributor |
 | GET | `/auth/saya` | Siapa pemegang token ini |
 | GET | `/usaha/{usaha_id}/barang` | Daftar barang di gudang, termasuk pemakaian rata-rata 28 hari, harga per satuan, dan hari sejak terakhir terpakai (`hari_tanpa_pemakaian`, dihitung dari hari terakhir data) |
@@ -511,10 +512,17 @@ turnify-flow/
 | GET | `/usaha/{usaha_id}/saran-distributor` | Saran Mesin 2 dirangkum per distributor: rata-rata skor, peluang lancar, barang yang menempatkannya di urutan pertama |
 | GET | `/usaha/{usaha_id}/pemakaian-bulanan` | Pemakaian per 30 hari beserta uji balik Mesin 1 tiap periode (`uji_balik`), dan perkiraan 30 hari ke depan, semua barang |
 | POST | `/usaha/{usaha_id}/transaksi` | Terima satu nota kasir; aman dikirim ulang. Tiap menu memotong bahan sesuai resepnya; stok yang kurang dipotong sampai nol dan dilaporkan di `stok_kurang` |
-| GET | `/usaha/{usaha_id}/transaksi?batas=` | Nota terbaru beserta barisnya |
+| GET | `/usaha/{usaha_id}/transaksi?batas=&mulai=` | Nota kasir terbaru beserta barisnya (tanpa nota `DEMO-`), dibatasi per halaman |
+| POST | `/usaha/{usaha_id}/transaksi/{nomor_struk}/ajukan-batal` | Kasir mengajukan pembatalan nota dengan alasan tertulis |
+| POST | `/usaha/{usaha_id}/transaksi/{nomor_struk}/batal` | Pemilik menyetujui pembatalan nota; mengembalikan stok via pergerakan koreksi |
 | GET, PUT | `/usaha/{usaha_id}/menu-jual` | Menu Portal POS: harga jual, kategori, dan status dijual, diatur di Portal UMKM |
 | GET, PUT | `/usaha/{usaha_id}/menu-kasir` | Menu dari nota yang belum punya bahan, resep yang sudah ada, nota terakhir dan jumlah hari ini; simpan resep satu menu (hanya berlaku untuk nota berikutnya) |
+| GET, POST | `/usaha/{usaha_id}/kasir` | Daftar akun kasir; buat akun kasir baru (peran pegawai) |
+| PATCH | `/usaha/{usaha_id}/kasir/{pengguna_id}` | Aktifkan atau nonaktifkan akun kasir pegawai |
+| GET, POST | `/usaha/{usaha_id}/shift/aktif`, `/shift/buka`, `/shift/tutup` | Buka shift kasir (modal awal), tutup shift kasir (hitung fisik), cek shift aktif |
+| GET | `/usaha/{usaha_id}/shift?batas=&mulai=` | Riwayat shift kasir beserta rekap tunai/QRIS/transfer dan selisih laci kas |
 | GET | `/usaha/{usaha_id}/produksi/ringkasan` | UMKM produsen: barang jadi, resep, jumlah yang bisa dibuat, perkiraan pesanan 7 hari, saran masak, pembeli, omset bulanan |
+| POST | `/usaha/{usaha_id}/produk-jadi` | Tambah produk jadi baru atau perbarui resep/komposisi bahannya sekaligus (UMKM produsen) |
 | GET, POST | `/usaha/{usaha_id}/produksi` | Riwayat sesi masak; catat sesi masak (bahan dipotong sesuai resep, ditolak kalau bahan kurang) |
 | GET, POST | `/usaha/{usaha_id}/penjualan` | Riwayat kiriman ke pembeli usaha; catat kiriman (ditolak kalau stok barang jadi kurang) |
 | GET | `/usaha/{usaha_id}/ringkasan-penjualan?dari=&sampai=` | Ringkasan penjualan: dari nota kasir, atau dari kiriman ke pembeli untuk UMKM produsen. Total, jumlah, per hari, terlaris, pembanding periode sebelumnya; tanpa nota demo. Rentang bawaan 30 hari sampai data terakhir |
@@ -710,9 +718,11 @@ Daftar ini ada supaya tidak ada yang menyangka bagian ini sudah selesai.
   (dari Downpic, hanya 390 × 260) perlu diganti foto berlisensi beresolusi lebih tinggi
   sebelum proyek dipakai di luar kuliah. Foto hero sudah diganti gambar warung dari Ilham
   (27 Okt 2026, 1536 × 1024).
-- **UMKM produsen** belum bisa menambah produk, resep, atau pembeli dari layar;
-  ketiganya dibuat oleh pembangkit data. Perkiraan pesanannya masih rata-rata hari
-  yang sama dalam 4 pekan terakhir, belum memakai Mesin 1.
+- **UMKM produsen** sudah bisa menambah produk jadi dan komposisi resepnya langsung
+  dari layar (tab Menu di halaman Produksi, endpoint `POST /usaha/{id}/produk-jadi`),
+  tetapi belum bisa menambah pembeli baru dari antarmuka (pembeli masih dari
+  pembangkit data). Perkiraan pesanannya masih rata-rata hari yang sama dalam
+  4 pekan terakhir, belum memakai Mesin 1.
 - **Gambar produk dan logo** masih ilustrasi buatan tim, belum foto sungguhan.
 - **Konektor POS.** Kontrak nota sudah ada dan teruji (idempoten); penyambung ke
   aplikasi kasir tertentu belum dibuat.
