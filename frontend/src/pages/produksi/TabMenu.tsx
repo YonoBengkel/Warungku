@@ -1,25 +1,35 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Kartu, Kerangka, Lencana, Tombol } from '@/components/ui/dasar'
+import { Kartu, Kerangka, Lencana, Tombol, TombolTautan } from '@/components/ui/dasar'
 import { Kolom, Sakelar } from '@/components/ui/formulir'
 import { KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
 import { IkonNota } from '@/icons'
 import { GalatApi } from '@/lib/api'
 import { ambilMenuJual, simpanMenuJual, type MenuJual } from '@/lib/apiMenu'
-import { angka, bacaAngkaIndonesia, rupiah } from '@/lib/format'
+import { angka, bacaAngkaIndonesia, jumlahSatuan, rupiah } from '@/lib/format'
 import { useAplikasi } from '@/store/aplikasi'
 
 const FORMULIR_KOSONG = { namaMenu: '', kategori: '', harga: '' }
 
 /**
- * Menu dan harga jual untuk Portal POS. Hanya diatur di sini: POS membacanya, jadi
- * kasir tidak bisa mengubah harga. Harga baru berlaku untuk nota berikutnya, karena
- * tiap baris nota menyimpan harganya sendiri. Menu dimatikan, bukan dihapus, supaya
- * namanya tetap dikenali di nota lama.
+ * Menu kedai: nama, harga jual, dan komposisinya, dalam satu daftar (revisi V7,
+ * Q164).
+ *
+ * Dulu ini dua tab terpisah di Akun, Data dari Kasir: "Menu & Harga" dan "Resep
+ * Menu". Keduanya berbicara tentang menu yang sama, jadi memisahkannya memaksa
+ * pemilik bolak-balik untuk menjawab satu pertanyaan. Sekarang satu kartu per
+ * menu memuat keduanya, dan tempatnya tab Produksi, bukan terkubur di Akun.
+ *
+ * Harga tetap hanya diatur di sini: Portal POS membacanya, jadi kasir tidak bisa
+ * mengubah harga. Harga baru berlaku untuk nota berikutnya, karena tiap baris
+ * nota menyimpan harganya sendiri. Menu dimatikan, bukan dihapus, supaya namanya
+ * tetap dikenali di nota lama.
  */
-export function TabMenuJual() {
+export function TabMenu() {
   const sesi = useAplikasi((s) => s.sesiServer)
   const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
+  const resepMenu = useAplikasi((s) => s.resepMenu)
+  const barang = useAplikasi((s) => s.barang)
   const [menu, setMenu] = useState<MenuJual[] | null>(null)
   const [galatMuat, setGalatMuat] = useState<string | null>(null)
   const [form, setForm] = useState(FORMULIR_KOSONG)
@@ -79,7 +89,7 @@ export function TabMenuJual() {
     return (
       <KeadaanKosong
         ikon={<IkonNota size={26} />}
-        judul="Menu & Harga butuh akun usaha"
+        judul="Menu butuh akun usaha"
         pesan="Saat ini aplikasi memakai data contoh. Masuk dengan email akun usahamu untuk mengatur menu Portal POS."
       />
     )
@@ -163,37 +173,78 @@ export function TabMenuJual() {
         ) : menu === null ? (
           <div aria-busy="true" className="space-y-2">
             {[0, 1, 2].map((i) => (
-              <Kerangka key={i} className="h-20 rounded-lg" />
+              <Kerangka key={i} className="h-28 rounded-lg" />
             ))}
           </div>
         ) : menu.length === 0 ? (
           <KeadaanKosong ikon={<IkonNota size={26} />} judul="Belum ada menu" pesan="Tambahkan menu pertamamu supaya bisa dijual di Portal POS." />
         ) : (
           <ul className="space-y-2">
-            {menu.map((m) => (
-              <li key={m.namaMenu} className="flex flex-wrap items-center gap-x-4 gap-y-2 p-3.5 rounded-lg border border-line bg-surface">
-                <div className="min-w-0 flex-1 basis-48">
-                  <p className="text-kartu font-bold text-ink">{m.namaMenu}</p>
-                  <p className="text-isi text-ink-2">
-                    {m.kategori ?? 'Tanpa kategori'} &middot; {rupiah(m.hargaJual)}
-                  </p>
-                </div>
-                {!m.punyaResep && <Lencana nada="menipis">Resep belum dipasangkan</Lencana>}
-                <Sakelar aktif={m.aktif} ubah={(v) => void ubahAktif(m, v)} label="Dijual" />
-                <Tombol
-                  ragam="garis"
-                  ukuran="kecil"
-                  aria-label={`Ubah ${m.namaMenu}`}
-                  onClick={() => {
-                    setForm({ namaMenu: m.namaMenu, kategori: m.kategori ?? '', harga: angka(m.hargaJual) })
-                    setMengubah(true)
-                    setGalat({})
-                  }}
-                >
-                  Ubah
-                </Tombol>
-              </li>
-            ))}
+            {menu.map((m) => {
+              // Resep dicocokkan dengan nama, sama seperti yang dilakukan kasir
+              // saat nota masuk, supaya yang tampil di sini persis yang memotong
+              // stok nanti.
+              const resep = resepMenu.find((r) => r.namaMenu.toLowerCase() === m.namaMenu.toLowerCase() && !r.langsung)
+              return (
+                <li key={m.namaMenu} className="p-3.5 rounded-lg border border-line bg-surface">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                    <div className="min-w-0 flex-1 basis-48">
+                      <p className="text-kartu font-bold text-ink">{m.namaMenu}</p>
+                      <p className="text-isi text-ink-2">
+                        {m.kategori ?? 'Tanpa kategori'} &middot; {rupiah(m.hargaJual)}
+                      </p>
+                    </div>
+                    <Sakelar aktif={m.aktif} ubah={(v) => void ubahAktif(m, v)} label="Dijual" />
+                    <Tombol
+                      ragam="garis"
+                      ukuran="kecil"
+                      aria-label={`Ubah harga ${m.namaMenu}`}
+                      onClick={() => {
+                        setForm({ namaMenu: m.namaMenu, kategori: m.kategori ?? '', harga: angka(m.hargaJual) })
+                        setMengubah(true)
+                        setGalat({})
+                      }}
+                    >
+                      Ubah Harga
+                    </Tombol>
+                  </div>
+
+                  {/* Komposisi: inilah yang memotong stok bahan tiap porsi terjual. */}
+                  <div className="mt-2.5 pt-2.5 border-t border-line">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <p className="text-kecil font-semibold text-ink-2">Komposisi per porsi</p>
+                      {resep && (
+                        <TombolTautan ke={`/akun/kasir/pasangkan/${encodeURIComponent(resep.id)}`} ragam="tautan" ukuran="kecil">
+                          Ubah Komposisi
+                        </TombolTautan>
+                      )}
+                    </div>
+                    {!resep ? (
+                      <div className="mt-1 flex flex-wrap items-center gap-2.5">
+                        <Lencana nada="menipis">Komposisi belum dipasangkan</Lencana>
+                        <TombolTautan ke="/akun/kasir?tab=beres" ragam="garis" ukuran="kecil">
+                          Pasangkan Sekarang
+                        </TombolTautan>
+                      </div>
+                    ) : (
+                      <ul className="mt-1 grid gap-x-6 gap-y-0.5 sm:grid-cols-2">
+                        {resep.bahan.map((b) => {
+                          const brg = barang.find((x) => x.id === b.barangId)
+                          return (
+                            <li key={b.barangId} className="flex items-baseline justify-between gap-3 text-isi">
+                              <span className="min-w-0 text-ink-2">{brg?.nama ?? 'Bahan'}</span>
+                              <span className="shrink-0 font-semibold text-ink tabular">
+                                {brg ? jumlahSatuan(b.takaran, brg.satuan) : angka(b.takaran, 3)}
+                              </span>
+                            </li>
+                          )
+                        })}
+                      </ul>
+                    )}
+                  </div>
+                </li>
+              )
+            })}
           </ul>
         )}
       </div>

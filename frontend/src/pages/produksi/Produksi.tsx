@@ -19,6 +19,8 @@ import type { KirimanPembeli, ProdukJadi, RingkasanProduksi, SesiProduksi } from
 import { angka, bulanRingkas, rupiah, rupiahSumbu, tanggalLengkapHari, tanggalPanjang } from '@/lib/format'
 import { NAV } from '@/lib/label'
 import { useAplikasi } from '@/store/aplikasi'
+import { TabMenu } from './TabMenu'
+import { TabMenuProduksi } from './TabMenuProduksi'
 
 /**
  * Produksi untuk UMKM produsen (permintaan dosen pengampu, 16 Okt 2026).
@@ -31,7 +33,7 @@ import { useAplikasi } from '@/store/aplikasi'
  * Halaman ini hanya punya data server. Data contoh tidak punya usaha produsen.
  */
 
-type Tab = 'produksi' | 'kiriman'
+type Tab = 'menu' | 'produksi' | 'kiriman'
 
 const LABEL_PEMBELI: Record<string, string> = {
   'ritel-modern': 'Ritel modern',
@@ -57,7 +59,8 @@ export default function Produksi() {
   const sesi = useAplikasi((s) => s.sesiServer)
   const jenis = useAplikasi((s) => s.profil.jenisUsaha)
   const memulihkan = useAplikasi((s) => s.memulihkanSesi)
-  const [tab, setTab] = useState<Tab>('produksi')
+  const produsen = jenis === 'produksi-makanan'
+  const [tab, setTab] = useState<Tab>('menu')
   const [data, setData] = useState<{
     ringkasan: RingkasanProduksi
     riwayat: SesiProduksi[]
@@ -67,7 +70,7 @@ export default function Produksi() {
   const [versi, setVersi] = useState(0)
 
   useEffect(() => {
-    if (!sesi || jenis !== 'produksi-makanan') return
+    if (!sesi || !produsen) return
     let batal = false
     Promise.all([ambilRingkasanProduksi(sesi), ambilRiwayatProduksi(sesi), ambilKiriman(sesi)])
       .then(([ringkasan, riwayat, kiriman]) => {
@@ -82,7 +85,7 @@ export default function Produksi() {
     return () => {
       batal = true
     }
-  }, [sesi, jenis, versi])
+  }, [sesi, produsen, versi])
 
   // Sesudah muat ulang halaman, sesi dipulihkan sebentar kemudian. Jangan
   // sempat menampilkan "halaman ini bukan untukmu" selama itu.
@@ -94,15 +97,15 @@ export default function Produksi() {
     )
   }
 
-  if (!sesi || jenis !== 'produksi-makanan') {
+  if (!sesi) {
     return (
       <div className="pb-8 lg:pb-0">
         <h1 className="text-judul font-extrabold text-ink tracking-tight">{NAV.produksi}</h1>
         <KeadaanKosong
           ikon={<IkonPanci size={26} />}
-          judul="Halaman ini untuk usaha yang memproduksi barang"
-          pesan="Catat sesi masak dan kiriman ke toko langganan di sini. Coba dengan akun simulasi produsen: Dapur Sambal Bu Ratmi."
-          aksi={<TombolTautan ke="/masuk">Masuk dengan akun produsen</TombolTautan>}
+          judul="Halaman ini butuh akun usaha"
+          pesan="Menu dan komposisinya tersimpan di server, jadi data contoh tidak punya isinya. Masuk dengan akun usahamu untuk mengaturnya."
+          aksi={<TombolTautan ke="/masuk">Masuk</TombolTautan>}
         />
       </div>
     )
@@ -114,25 +117,40 @@ export default function Produksi() {
     <div className="pb-8 lg:pb-0">
       <div data-sejajar-lonceng className={`flex items-baseline justify-between gap-3 flex-wrap ${RUANG_LONCENG}`}>
         <h1 className="text-judul font-extrabold text-ink tracking-tight">{NAV.produksi}</h1>
-        {data && (
+        {produsen && data && (
           <p className="text-isi text-ink-3">Data sampai {tanggalPanjang(data.ringkasan.tanggalAcuan)}</p>
         )}
       </div>
       <p className="mt-1 text-isi text-ink-2 leading-relaxed max-w-[62ch]">
-        Setiap sesi masak memotong bahan baku sesuai resep, lalu hasilnya dikirim ke pemesan.
+        {produsen
+          ? 'Setiap sesi masak memotong bahan baku sesuai komposisinya, lalu hasilnya dikirim ke pemesan.'
+          : 'Setiap porsi yang terjual di kasir memotong bahan baku sesuai komposisinya.'}
       </p>
 
-      <TabSegmen<Tab>
-        className="mt-4"
-        tab={[
-          { nilai: 'produksi', label: 'Produksi' },
-          { nilai: 'kiriman', label: 'Kiriman ke pembeli', jumlah: data?.kiriman.length },
-        ]}
-        aktif={tab}
-        ubah={setTab}
-      />
+      {/* Kedai hanya punya satu tab, jadi jalurnya tidak digambar: satu tab yang
+          tidak bisa ditinggalkan hanya menambah baris tanpa menambah pilihan. */}
+      {produsen && (
+        <TabSegmen<Tab>
+          className="mt-4"
+          tab={[
+            { nilai: 'menu', label: 'Menu' },
+            { nilai: 'produksi', label: 'Sesi Masak' },
+            { nilai: 'kiriman', label: 'Kiriman ke pembeli', jumlah: data?.kiriman.length },
+          ]}
+          aktif={tab}
+          ubah={setTab}
+        />
+      )}
 
-      {gagal ? (
+      {!produsen ? (
+        <div className="mt-4">
+          <TabMenu />
+        </div>
+      ) : tab === 'menu' ? (
+        <div className="mt-4">
+          <TabMenuProduksi ringkasan={data?.ringkasan} gagal={gagal} sesudahSimpan={muatUlang} />
+        </div>
+      ) : gagal ? (
         <Peringatan nada="menipis" className="mt-4" judul="Data produksi belum bisa dibuka">
           Coba muat ulang sebentar lagi.
           <div className="mt-2.5">

@@ -217,6 +217,20 @@ def test_daftar_nota_membawa_harga_dan_bisa_berhalaman(kedai):
     assert klien.get(f"/usaha/{u}/transaksi?batas=2&mulai=-1", headers=kepala).status_code == 422
 
 
+def test_nota_demo_tidak_ikut_di_daftar(kedai):
+    """Nota DEMO- tidak dihitung Ringkasan Penjualan, jadi ia juga tidak boleh
+    muncul di daftar nota: daftarnya akan tidak cocok dengan total di atasnya,
+    dan pemilik bisa menekan Batalkan pada nota yang tidak pernah dihitung."""
+    ids, kepala, _, klien = kedai
+    u = ids["u1"]
+    _simpan(klien, u, kepala)
+    for nomor in ("DEMO-V-0001", "POS-UJI-D1"):
+        assert klien.post(f"/usaha/{u}/transaksi", headers=kepala, json=_nota(nomor, "Americano", 18000)).status_code == 200
+
+    daftar = klien.get(f"/usaha/{u}/transaksi?batas=10", headers=kepala).json()
+    assert [n["nomor_struk"] for n in daftar] == ["POS-UJI-D1"]
+
+
 def _bayar(klien, u, kepala, nomor, **tambahan):
     badan = _nota(nomor, "Americano", 18000)
     badan["baris"][0]["jumlah"] = 2

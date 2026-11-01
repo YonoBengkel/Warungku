@@ -818,6 +818,29 @@ class RingkasanProduksi(BaseModel):
     omset_bulanan: list[OmsetBulanan]
 
 
+class BahanResepMasuk(BaseModel):
+    barang_id: int
+    #: Takaran untuk SATU satuan produk jadi, dalam satuan dasar bahan.
+    takaran: Decimal = Field(gt=0)
+
+
+class ProdukJadiBaru(BaseModel):
+    """Tambah atau ubah satu produk jadi beserta komposisinya sekaligus (revisi V7, Q165).
+
+    Sama seperti ``PUT /menu-kasir``: resep ditimpa seluruhnya, bukan ditambah
+    baris per baris, supaya pemilik tidak perlu dua langkah untuk mengganti
+    satu bahan.
+    """
+
+    nama: str = Field(min_length=1, max_length=120)
+    satuan: str = Field(min_length=1, max_length=20)
+    isi_bersih: str | None = Field(default=None, max_length=40)
+    harga_jual: int = Field(ge=0)
+    batas_aman: Decimal = Field(default=Decimal(0), ge=0)
+    ukuran_sesi: int = Field(default=60, gt=0, le=100_000)
+    bahan: list[BahanResepMasuk] = Field(max_length=30)
+
+
 class ProduksiBaru(BaseModel):
     produk_jadi_id: int
     jumlah: Decimal = Field(gt=0, le=10_000)

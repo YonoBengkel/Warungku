@@ -228,7 +228,7 @@ export default function Kasir() {
             <KeadaanKosong
               ikon={<IkonNota size={26} />}
               judul="Belum ada menu untuk dijual"
-              pesan="Pemilik usaha mengatur menu dan harganya di Portal UMKM: Akun, Data dari Kasir, tab Menu & Harga."
+              pesan="Pemilik usaha mengatur menu dan harganya di Portal UMKM, tab Produksi."
             />
           ) : tampil.length === 0 ? (
             <KeadaanKosong ikon={<IkonCari size={26} />} judul="Menu tidak ditemukan" pesan="Coba kata lain, atau pilih kategori Semua." />

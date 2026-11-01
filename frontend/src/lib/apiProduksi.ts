@@ -141,6 +141,31 @@ function keSesi(s: SesiApi): SesiProduksi {
   }
 }
 
+function keProduk(p: ProdukApi): ProdukJadi {
+  return {
+    id: p.id,
+    nama: p.nama,
+    satuan: p.satuan,
+    isiBersih: p.isi_bersih,
+    stok: angka(p.stok),
+    batasAman: angka(p.batas_aman),
+    hargaJual: p.harga_jual,
+    ukuranSesi: p.ukuran_sesi,
+    resep: p.resep.map((b) => ({
+      barangId: String(b.barang_id),
+      nama: b.nama,
+      satuan: b.satuan,
+      takaran: angka(b.takaran),
+      stok: angka(b.stok),
+      cukupUntuk: b.cukup_untuk,
+    })),
+    bisaDibuat: p.bisa_dibuat,
+    terjual28Hari: angka(p.terjual_28_hari),
+    perkiraan7Hari: angka(p.perkiraan_7_hari),
+    saranProduksi: p.saran_produksi,
+  }
+}
+
 export async function ambilRingkasanProduksi(sesi: SesiServer): Promise<RingkasanProduksi> {
   const isi = await minta<{
     tanggal_acuan: string
@@ -160,28 +185,7 @@ export async function ambilRingkasanProduksi(sesi: SesiServer): Promise<Ringkasa
   }>(`/usaha/${sesi.usahaId}/produksi/ringkasan`, { token: sesi.token })
   return {
     tanggalAcuan: isi.tanggal_acuan,
-    produk: isi.produk.map((p) => ({
-      id: p.id,
-      nama: p.nama,
-      satuan: p.satuan,
-      isiBersih: p.isi_bersih,
-      stok: angka(p.stok),
-      batasAman: angka(p.batas_aman),
-      hargaJual: p.harga_jual,
-      ukuranSesi: p.ukuran_sesi,
-      resep: p.resep.map((b) => ({
-        barangId: String(b.barang_id),
-        nama: b.nama,
-        satuan: b.satuan,
-        takaran: angka(b.takaran),
-        stok: angka(b.stok),
-        cukupUntuk: b.cukup_untuk,
-      })),
-      bisaDibuat: p.bisa_dibuat,
-      terjual28Hari: angka(p.terjual_28_hari),
-      perkiraan7Hari: angka(p.perkiraan_7_hari),
-      saranProduksi: p.saran_produksi,
-    })),
+    produk: isi.produk.map(keProduk),
     pembeli: isi.pembeli.map((b) => ({
       id: b.id,
       nama: b.nama,
@@ -214,6 +218,46 @@ export async function catatProduksi(
     body: JSON.stringify({ produk_jadi_id: produkJadiId, jumlah: String(jumlah), catatan: catatan || null }),
   })
   return keSesi(isi)
+}
+
+/** Bahan satu baris komposisi untuk `simpanProdukJadi`. */
+export interface BahanResepMasuk {
+  barangId: string
+  takaran: number
+}
+
+/**
+ * Tambah atau ubah produk jadi beserta komposisinya sekaligus (revisi V7,
+ * Q165): tab Menu Bu Ratmi. Nama yang sudah ada mengubah produk itu, bukan
+ * membuat duplikat, dan komposisinya ditimpa seluruhnya, sama seperti
+ * `simpanMenuJual` di Portal POS.
+ */
+export async function simpanProdukJadi(
+  sesi: SesiServer,
+  data: {
+    nama: string
+    satuan: string
+    isiBersih?: string | null
+    hargaJual: number
+    batasAman?: number
+    ukuranSesi?: number
+    bahan: BahanResepMasuk[]
+  },
+): Promise<ProdukJadi> {
+  const isi = await minta<ProdukApi>(`/usaha/${sesi.usahaId}/produk-jadi`, {
+    method: 'POST',
+    token: sesi.token,
+    body: JSON.stringify({
+      nama: data.nama,
+      satuan: data.satuan,
+      isi_bersih: data.isiBersih || null,
+      harga_jual: data.hargaJual,
+      batas_aman: String(data.batasAman ?? 0),
+      ukuran_sesi: data.ukuranSesi ?? 60,
+      bahan: data.bahan.map((b) => ({ barang_id: Number(b.barangId), takaran: String(b.takaran) })),
+    }),
+  })
+  return keProduk(isi)
 }
 
 export async function ambilKiriman(sesi: SesiServer, hari = 21): Promise<KirimanPembeli[]> {

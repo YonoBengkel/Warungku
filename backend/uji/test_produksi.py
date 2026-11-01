@@ -163,3 +163,69 @@ def test_usaha_lain_ditolak(dapur):
     assert k.get(f"/usaha/{lain}/produksi/ringkasan", headers=dapur["kepala"]).status_code == 403
     r = k.post(f"/usaha/{lain}/produksi", json={"produk_jadi_id": dapur["produk"], "jumlah": "1"}, headers=dapur["kepala"])
     assert r.status_code == 403
+
+
+def test_produk_jadi_baru_tersimpan_dengan_komposisi(dapur):
+    """Tab Menu (revisi V7, Q165): Bu Ratmi menambah produk jadi baru beserta komposisinya sekaligus."""
+    k, u, kepala = dapur["klien"], dapur["usaha"], dapur["kepala"]
+    r = k.post(
+        f"/usaha/{u}/produk-jadi",
+        json={
+            "nama": "Sambal Teri Uji",
+            "satuan": "toples",
+            "isi_bersih": "150 g",
+            "harga_jual": 25_000,
+            "batas_aman": "5",
+            "ukuran_sesi": 30,
+            "bahan": [{"barang_id": dapur["cabai"], "takaran": "80"}, {"barang_id": dapur["toples"], "takaran": "1"}],
+        },
+        headers=kepala,
+    )
+    assert r.status_code == 201, r.text
+    hasil = r.json()
+    assert hasil["nama"] == "Sambal Teri Uji"
+    assert hasil["harga_jual"] == 25_000
+    assert {b["barang_id"]: Decimal(b["takaran"]) for b in hasil["resep"]} == {dapur["cabai"]: Decimal("80"), dapur["toples"]: Decimal("1")}
+    # Dengan resepnya terpasang, produk baru ini langsung bisa dimasak.
+    r2 = k.post(f"/usaha/{u}/produksi", json={"produk_jadi_id": hasil["id"], "jumlah": "1"}, headers=kepala)
+    assert r2.status_code == 201, r2.text
+
+
+def test_produk_jadi_dicocokkan_dari_nama_dan_komposisi_ditimpa(dapur):
+    """Nama yang sama (apa pun besar-kecil hurufnya) mengubah produk yang sudah ada, bukan membuat duplikat."""
+    k, u, kepala = dapur["klien"], dapur["usaha"], dapur["kepala"]
+    r = k.post(
+        f"/usaha/{u}/produk-jadi",
+        json={
+            "nama": "sambal uji",  # nama produk yang sudah ada di fixture `dapur`, huruf kecil semua
+            "satuan": "toples",
+            "harga_jual": 22_000,
+            "bahan": [{"barang_id": dapur["toples"], "takaran": "1"}],
+        },
+        headers=kepala,
+    )
+    assert r.status_code == 201, r.text
+    hasil = r.json()
+    assert hasil["id"] == dapur["produk"]
+    assert hasil["harga_jual"] == 22_000
+    # Cabai dibuang dari komposisi, bukan ditambah di sampingnya.
+    assert [b["barang_id"] for b in hasil["resep"]] == [dapur["toples"]]
+
+
+def test_produk_jadi_bahan_dicatat_manual_ditolak(dapur):
+    k, u, kepala = dapur["klien"], dapur["usaha"], dapur["kepala"]
+    with Session(mesin()) as sesi:
+        manual = Barang(
+            usaha_id=u, nama="Tisu Uji", kategori="Lain", kode_barang="TSU", satuan="pak",
+            stok=Decimal("10"), sumber_batas_aman=SumberBatasAman.SENDIRI, dicatat_manual=True,
+        )
+        sesi.add(manual)
+        sesi.commit()
+        sesi.refresh(manual)
+    r = k.post(
+        f"/usaha/{u}/produk-jadi",
+        json={"nama": "Produk Uji Manual", "satuan": "pcs", "harga_jual": 1000, "bahan": [{"barang_id": manual.id, "takaran": "1"}]},
+        headers=kepala,
+    )
+    assert r.status_code == 422
+    assert "dicatat manual" in r.json()["detail"]

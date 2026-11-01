@@ -81,6 +81,7 @@ const KontrakRutin = lazy(() => import('@/pages/pesanan/KontrakRutin'))
 const Mitra = lazy(() => import('@/pages/pesanan/Mitra'))
 const LacakPesanan = lazy(() => import('@/pages/pesanan/LacakPesanan'))
 const RingkasanPenjualan = lazy(() => import('@/pages/penjualan/RingkasanPenjualan'))
+const RiwayatKasir = lazy(() => import('@/pages/penjualan/RiwayatKasir'))
 
 /* Kepala halaman */
 const Notifikasi = lazy(() => import('@/pages/Notifikasi'))
@@ -197,6 +198,7 @@ export default function App() {
           <Route path="/pesanan" element={<PesananDaftar />} />
           <Route path="/pesanan/lacak" element={<LacakPesanan />} />
           <Route path="/penjualan" element={<RingkasanPenjualan />} />
+          <Route path="/penjualan/riwayat" element={<RiwayatKasir />} />
           <Route path="/pesanan/:id" element={<PesananDetail />} />
           <Route path="/pesanan/:id/terima" element={<TerimaBarang />} />
           <Route path="/pesanan/:id/ulasan" element={<BeriPenilaian />} />

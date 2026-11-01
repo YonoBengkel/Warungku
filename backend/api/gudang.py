@@ -20,7 +20,7 @@ from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from sqlalchemy import text
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from warungku.basis_data import mesin
 from warungku.enum import JenisPergerakan
@@ -844,12 +844,23 @@ def nota_terbaru(
     batas: int = Query(default=10, ge=1, le=50),
     mulai: int = Query(default=0, ge=0, description="Lewati sekian nota terbaru, untuk halaman berikutnya."),
 ) -> list[NotaRingkas]:
-    """Nota terbaru apa adanya, untuk dicocokkan pemilik dengan yang tercetak di kasir."""
+    """Nota terbaru apa adanya, untuk dicocokkan pemilik dengan yang tercetak di kasir.
+
+    Nota berawalan ``DEMO-`` tidak ikut. Nota itu hanya pemicu variasi data demo,
+    dan Ringkasan Penjualan memang sudah tidak menghitungnya (lihat ``_NOTA`` di
+    ``penjualan.py``). Kalau ia tetap muncul di daftar ini, daftarnya tidak cocok
+    dengan total di atasnya, dan pemilik bisa menekan Batalkan pada nota yang
+    tidak pernah dihitung (revisi V7, Q168).
+    """
     with Session(mesin()) as sesi:
         _usaha_atau_404(sesi, usaha_id)
         nota = sesi.exec(
             select(Transaksi)
-            .where(Transaksi.usaha_id == usaha_id, Transaksi.dibatalkan == False)  # noqa: E712
+            .where(
+                Transaksi.usaha_id == usaha_id,
+                Transaksi.dibatalkan == False,  # noqa: E712
+                col(Transaksi.nomor_struk).not_like("DEMO-%"),
+            )
             .order_by(Transaksi.waktu.desc(), Transaksi.id.desc())
             .limit(batas)
             .offset(mulai)

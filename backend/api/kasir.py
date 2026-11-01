@@ -233,10 +233,18 @@ def tutup_shift(badan: TutupShift, usaha_id: int = Depends(kasir_atau_pemilik)) 
 
 
 @rute.get("/shift", response_model=list[ShiftKeluar])
-def riwayat_shift(usaha_id: int = Depends(usaha_saya), batas: int = Query(default=10, ge=1, le=50)) -> list[ShiftKeluar]:
+def riwayat_shift(
+    usaha_id: int = Depends(usaha_saya),
+    batas: int = Query(default=10, ge=1, le=50),
+    mulai: int = Query(default=0, ge=0, description="Lewati sekian shift terbaru, untuk halaman berikutnya."),
+) -> list[ShiftKeluar]:
     """Shift terbaru, untuk pemilik."""
     with Session(mesin()) as sesi:
         daftar = sesi.exec(
-            select(ShiftKas).where(ShiftKas.usaha_id == usaha_id).order_by(ShiftKas.dibuka_pada.desc(), ShiftKas.id.desc()).limit(batas)
+            select(ShiftKas)
+            .where(ShiftKas.usaha_id == usaha_id)
+            .order_by(ShiftKas.dibuka_pada.desc(), ShiftKas.id.desc())
+            .limit(batas)
+            .offset(mulai)
         ).all()
         return [_shift_keluar(sesi, s) for s in daftar]

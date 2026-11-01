@@ -15,7 +15,7 @@ import {
 import { KartuRingkasanPenjualan } from '@/components/domain/RingkasanPenjualan'
 import { ambilRingkasanUsaha } from '@/lib/apiPenjualan'
 import { Korsel } from '@/components/ui/korsel'
-import { Bagian, HanyaPembacaLayar, Kartu, Kerangka, KELAS_BAGIAN, Tombol } from '@/components/ui/dasar'
+import { Avatar, Bagian, HanyaPembacaLayar, Kartu, Kerangka, KELAS_BAGIAN, Tombol } from '@/components/ui/dasar'
 import { PengaturJumlah } from '@/components/ui/formulir'
 import { Lembar } from '@/components/ui/lembar'
 import {
@@ -47,8 +47,8 @@ import {
   sisaHariPeriode,
   distributorById,
 } from '@/data/dummy'
-import { LABEL_ARAH_PREDIKSI, LABEL_PESANAN, NADA_ARAH_PREDIKSI, PESANAN_BERJALAN } from '@/lib/label'
-import type { Pesanan, RekomendasiPrediksi } from '@/lib/types'
+import { LABEL_PESANAN, NADA_ARAH_PREDIKSI, PESANAN_BERJALAN } from '@/lib/label'
+import type { ArahPrediksi, Pesanan, RekomendasiPrediksi } from '@/lib/types'
 import { useAplikasi } from '@/store/aplikasi'
 
 /**
@@ -72,6 +72,31 @@ import { useAplikasi } from '@/store/aplikasi'
 /** Ambang "hampir kedaluwarsa". Sama persis dengan penyaring di layar Stok,
  *  supaya angka pada lencana dan panjang daftar yang dibuka tidak pernah beda. */
 const HARI_KEDALUWARSA_DEKAT = 14
+
+/**
+ * Di mana garis perkiraan berdiri pada jalur kartu Prediksi Stok, dalam persen
+ * (revisi V7, Q170).
+ *
+ * Garis ini TIDAK ikut bergeser mengikuti data. Kalau ia bergeser, posisinya
+ * berarti lain di tiap kartu dan dua kartu bersebelahan tidak bisa
+ * dibandingkan. Karena ia dipaku di 70%, sisa 30% jalur menjadi ruang untuk
+ * pemakaian yang sudah melewati perkiraan, yaitu sampai sekitar 143% darinya.
+ */
+const AMBANG_PERSEN = 70
+
+/**
+ * Label arah di kartu Prediksi Stok (revisi V7).
+ *
+ * `LABEL_ARAH_PREDIKSI` sengaja tidak dipakai di sini: kata-katanya dirancang
+ * sebagai potongan kalimat ("Saran tambah 12 kg bulan depan"), dan sejak
+ * kartunya ditata ulang label ini berdiri sendiri di bawah nama barang, di
+ * mana kata "tambah" saja tidak berbunyi apa-apa.
+ */
+const LABEL_ARAH_KARTU: Record<ArahPrediksi, string> = {
+  tambah: 'Perlu ditambah',
+  kurang: 'Perlu dikurangi',
+  tetap: 'Stok cukup',
+}
 
 /** Urutan pesanan di kartu Pesanan berjalan: yang menunggu jawaban distributor dulu. */
 const URUT_BERJALAN: Record<string, number> = { 'menunggu-konfirmasi': 0, disiapkan: 1, dikirim: 2, draf: 3 }
@@ -612,9 +637,9 @@ export default function Beranda() {
       >
         {!perkiraanSiap ? (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 [&>*]:min-w-0">
-            <Kerangka className="h-40 w-full rounded-lg" />
-            <Kerangka className="h-40 w-full rounded-lg hidden sm:block" />
-            <Kerangka className="h-40 w-full rounded-lg hidden lg:block" />
+            <Kerangka className="h-44 w-full rounded-lg" />
+            <Kerangka className="h-44 w-full rounded-lg hidden sm:block" />
+            <Kerangka className="h-44 w-full rounded-lg hidden lg:block" />
           </div>
         ) : rekomendasi.length === 0 ? (
           <Kartu padat>
@@ -633,19 +658,26 @@ export default function Beranda() {
                 aman: 'text-aman-ink',
               }[nada]
               const IkonArah = r.arah === 'tambah' ? IkonTrenNaik : IkonTrenTurun
-              const maks = Math.max(r.pemakaianBulanIni, r.perkiraanBulanDepan, 1)
-              // Warnanya sama dengan grafik Prediksi: pemakaian aktual seri-1,
-              // perkiraan merah.
-              const bar = [
-                { kunci: 'ini', label: 'Terpakai bulan ini', nilai: r.pemakaianBulanIni, warna: 'bg-seri-1' },
-                {
-                  kunci: 'depan',
-                  label: 'Perkiraan bulan depan',
-                  nilai: r.perkiraanBulanDepan,
-                  warna: 'bg-seri-perkiraan',
-                },
-              ]
               const bisaKeranjang = r.arah === 'tambah' && r.penawaranId != null
+
+              /* Satu jalur dengan garis ambang, bukan dua bar bersusun (revisi
+                 V7, Q170 dan Q171). Batangnya adalah pemakaian periode 30 hari
+                 terakhir, diskalakan terhadap perkiraan bulan depan, dan
+                 garisnya berdiri tetap di AMBANG_PERSEN.
+
+                 Cara membacanya sama di semua kartu: batang belum sampai garis
+                 berarti pemakaian masih akan naik, batang melewati garis
+                 berarti pemakaian diperkirakan menurun. Arah saran sendiri
+                 ("Perlu ditambah") dihitung dari sisa stok di gudang, jadi
+                 satu barang boleh melewati garis dan tetap perlu ditambah.
+
+                 Perkiraan nol: tidak ada pembagi, jadi garisnya di tepi kiri
+                 dan batangnya penuh. */
+              const adaPerkiraan = r.perkiraanBulanDepan > 0
+              const lebarBar = adaPerkiraan
+                ? Math.min(100, (r.pemakaianBulanIni / r.perkiraanBulanDepan) * AMBANG_PERSEN)
+                : 100
+              const mentok = adaPerkiraan && lebarBar >= 100
 
               return (
                 <Kartu key={r.barangId} padat className="flex flex-col">
@@ -653,46 +685,63 @@ export default function Beranda() {
                     to={`/prediksi?barang=${r.barangId}`}
                     className="block grow rounded-md p-1 -m-1 hover:bg-surface-2 transition-colors"
                   >
-                    <p className="text-kartu font-bold text-ink leading-snug">
-                      {b?.nama ?? 'Barang'}
-                    </p>
+                    <div className="flex items-center gap-2.5">
+                      <Avatar nama={b?.nama ?? 'Barang'} ukuran={34} />
+                      <div className="min-w-0">
+                        <p className="text-kartu font-bold text-ink leading-snug">
+                          {b?.nama ?? 'Barang'}
+                        </p>
+                        <span className={cx('inline-flex items-center gap-1 text-kecil font-bold', kelasArah)}>
+                          <IkonArah size={13} />
+                          {LABEL_ARAH_KARTU[r.arah]}
+                        </span>
+                      </div>
+                    </div>
 
                     {/* Angka saran sengaja jauh lebih besar dari kata-katanya:
                         yang ingin disorot memang angkanya. */}
-                    <p className="mt-2 flex flex-wrap items-baseline gap-x-1.5">
-                      <span className={cx('inline-flex items-center gap-1 text-isi font-bold', kelasArah)}>
-                        <IkonArah size={14} />
-                        {LABEL_ARAH_PREDIKSI[r.arah]}
-                      </span>
-                      <span className="text-[2.5rem] font-extrabold leading-none tracking-tight text-ink">
+                    <p className="mt-2.5 flex flex-wrap items-baseline gap-x-1.5">
+                      <span className="text-angka font-extrabold tracking-tight text-ink">
                         {angka(r.jumlah)}
                       </span>
                       <span className="text-isi font-semibold text-ink-2">
-                        {r.satuanSaran} — bulan depan
+                        {r.satuanSaran} bulan depan
                       </span>
                     </p>
 
-                    {/* Kedua bar mengukur PEMAKAIAN, bukan sisa stok: saran
-                        "tambah" muncul justru karena stok di gudang lebih kecil
-                        daripada kebutuhan bulan depan. */}
-                    <p className="mt-3 text-kecil text-ink-3">Pemakaian, bukan sisa stok:</p>
-                    <div className="mt-1.5 space-y-2">
-                      {bar.map((x) => (
-                        <div key={x.kunci}>
-                          <div className="flex items-baseline justify-between gap-2 text-kecil">
-                            <span className="text-ink-3">{x.label}</span>
-                            <span className="font-semibold text-ink-2 tabular">
-                              {b ? jumlahTampil(b, x.nilai) : angka(x.nilai)}
-                            </span>
-                          </div>
-                          <div className="mt-1 h-2 rounded-full bg-sunken overflow-hidden" aria-hidden="true">
-                            <div
-                              className={cx('h-full rounded-full', x.warna)}
-                              style={{ width: `${Math.max(2, Math.round((x.nilai / maks) * 100))}%` }}
-                            />
-                          </div>
-                        </div>
-                      ))}
+                    {/* Jalurnya mengukur PEMAKAIAN, bukan sisa stok. */}
+                    <div className="relative mt-3">
+                      <div className="h-2.5 rounded-full bg-sunken overflow-hidden" aria-hidden="true">
+                        <div
+                          className="h-full rounded-full bg-seri-1"
+                          style={{ width: `${Math.max(2, Math.round(lebarBar))}%` }}
+                        />
+                      </div>
+                      {/* Garis perkiraan, dengan bingkai sewarna permukaan supaya
+                          tetap kelihatan saat batangnya tepat menimpanya. */}
+                      <span
+                        aria-hidden="true"
+                        className="absolute -top-1 h-[18px] rounded-full bg-surface p-[2px] -translate-x-[3.5px]"
+                        style={{ left: `${adaPerkiraan ? AMBANG_PERSEN : 0}%` }}
+                      >
+                        <span className="block h-full w-[3px] rounded-full bg-seri-perkiraan" />
+                      </span>
+                      {mentok && (
+                        <IkonPanahKanan
+                          size={14}
+                          aria-hidden="true"
+                          className="absolute -top-0.5 -right-1 text-seri-1"
+                        />
+                      )}
+                    </div>
+                    <div className="mt-1.5 flex items-baseline justify-between gap-2 text-kecil">
+                      <span className="font-semibold text-ink-2 tabular">
+                        Terpakai {b ? jumlahTampil(b, r.pemakaianBulanIni) : angka(r.pemakaianBulanIni)}
+                      </span>
+                      <span className="inline-flex items-center gap-1 font-semibold text-ink-2 tabular">
+                        <span aria-hidden="true" className="inline-block h-3 w-[3px] rounded-full bg-seri-perkiraan" />
+                        Perkiraan {b ? jumlahTampil(b, r.perkiraanBulanDepan) : angka(r.perkiraanBulanDepan)}
+                      </span>
                     </div>
                   </Link>
 
@@ -700,6 +749,7 @@ export default function Beranda() {
                     <div className="mt-3 pt-3 border-t border-line">
                       <Tombol
                         ragam="sekunder"
+                        ukuran="kecil"
                         penuh
                         ikonKiri={<IkonKeranjang size={16} />}
                         onClick={() => bukaLembar(r)}

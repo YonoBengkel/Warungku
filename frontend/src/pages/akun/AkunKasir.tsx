@@ -4,11 +4,9 @@ import { JudulBagian, Kartu, Lencana, Pemisah, Tombol, TombolTautan } from '@/co
 import { Kolom } from '@/components/ui/formulir'
 import { Lembar } from '@/components/ui/lembar'
 import { KepalaHalaman, TabSegmen } from '@/components/ui/navigasi'
-import { TabMenuJual } from '@/pages/akun/TabMenuJual'
 import { BilahProgres, KeadaanKosong, Penjelasan, Peringatan } from '@/components/ui/umpanBalik'
 import {
   IkonCentangLingkaran,
-  IkonPanci,
   IkonJam,
   IkonKotak,
   IkonNota,
@@ -35,7 +33,7 @@ import { POS_TUNGGAL, daftarTransaksi, riwayatKasir } from '@/data/dummy'
 import { KartuStruk } from '@/components/domain/KartuStruk'
 import { useAplikasi } from '@/store/aplikasi'
 
-type Tab = 'sambungan' | 'beres' | 'resep' | 'menu' | 'riwayat'
+type Tab = 'sambungan' | 'beres' | 'riwayat'
 /** Tugas yang tidak berasal dari daftar menu, jadi keadaannya dipegang layar ini. */
 type TugasLain = 'salinan' | 'satuan'
 
@@ -70,7 +68,7 @@ export default function AkunKasir() {
 
   const onboarding = params.get('langkah') === 'mulai'
   const tabParam = params.get('tab')
-  const tab: Tab = tabParam === 'beres' || tabParam === 'resep' || tabParam === 'menu' || tabParam === 'riwayat' ? tabParam : 'sambungan'
+  const tab: Tab = tabParam === 'beres' || tabParam === 'riwayat' ? tabParam : 'sambungan'
 
   /* Bahan yang satuannya tidak sama dengan cara kasir menghitung porsi. Tugas
      penjualan kembar dan satuan porsi hanya ada di data contoh: server belum
@@ -140,8 +138,6 @@ export default function AkunKasir() {
             tab={[
               { nilai: 'sambungan', label: 'Sambungan' },
               { nilai: 'beres', label: 'Perlu Dibereskan', jumlah: jumlahPerluDibereskan },
-              { nilai: 'resep', label: 'Resep Menu' },
-              { nilai: 'menu', label: 'Menu & Harga' },
               { nilai: 'riwayat', label: 'Riwayat' },
             ]}
           />
@@ -160,8 +156,6 @@ export default function AkunKasir() {
             selesaikan={(t) => setTugasBeres((s) => [...s, t])}
           />
         )}
-        {tab === 'resep' && <TabResep />}
-        {tab === 'menu' && <TabMenuJual />}
         {tab === 'riwayat' && <TabRiwayat />}
       </div>
     </div>
@@ -866,80 +860,6 @@ function KartuTugas({
         {utama}
         {kedua}
       </div>
-    </div>
-  )
-}
-
-/* ================================================================== */
-/* Tab Resep Menu                                                     */
-/* ================================================================== */
-
-/**
- * Resep yang sudah dipasangkan: bahan apa saja yang berkurang setiap satu porsi
- * terjual. Menu yang bernama sama dengan barangnya (dijual apa adanya) tidak
- * ditampilkan satu per satu; isinya cuma "1 barang = 1 barang".
- */
-function TabResep() {
-  const resepMenu = useAplikasi((s) => s.resepMenu)
-  const barang = useAplikasi((s) => s.barang)
-  const resep = [...resepMenu.filter((r) => !r.langsung)].sort((a, b) => a.namaMenu.localeCompare(b.namaMenu, 'id'))
-  const langsung = resepMenu.length - resep.length
-
-  if (resep.length === 0) {
-    return (
-      <>
-        <h2 className="sr-only">Resep menu</h2>
-        <KeadaanKosong
-          ikon={<IkonPanci size={26} />}
-          judul="Belum ada resep menu"
-          pesan="Resep dibuat dari tab Perlu Dibereskan: pilih menu dari kasir, lalu tentukan bahan dan takarannya per porsi."
-          aksi={
-            <TombolTautan ke="/akun/kasir?tab=beres" ragam="garis">
-              Lihat yang Perlu Dibereskan
-            </TombolTautan>
-          }
-        />
-      </>
-    )
-  }
-
-  return (
-    <div>
-      <JudulBagian
-        id="resep-menu"
-        judul={`${resep.length} menu dengan resep`}
-        keterangan="Setiap porsi yang terjual di kasir mengurangi bahan di bawahnya."
-      />
-      <ul aria-labelledby="resep-menu" className="grid gap-3 lg:grid-cols-2 lg:items-start">
-        {resep.map((r) => (
-          <li key={r.id} className="bg-surface border border-line rounded-lg p-4 shadow-e1">
-            <div className="flex items-start justify-between gap-3">
-              <h3 className="min-w-0 text-kartu font-bold text-ink leading-snug">{r.namaMenu}</h3>
-              <TombolTautan ke={`/akun/kasir/pasangkan/${encodeURIComponent(r.id)}`} ragam="tautan" ukuran="kecil">
-                Ubah
-              </TombolTautan>
-            </div>
-            <ul className="mt-2 space-y-1">
-              {r.bahan.map((b) => {
-                const brg = barang.find((x) => x.id === b.barangId)
-                return (
-                  <li key={b.barangId} className="flex items-baseline justify-between gap-3 text-isi">
-                    <span className="min-w-0 text-ink-2">{brg?.nama ?? 'Bahan'}</span>
-                    <span className="shrink-0 font-semibold text-ink tabular">
-                      {brg ? jumlahSatuan(b.takaran, brg.satuan) : angka(b.takaran, 3)}
-                    </span>
-                  </li>
-                )
-              })}
-            </ul>
-          </li>
-        ))}
-      </ul>
-      {langsung > 0 && (
-        <p className="mt-4 text-isi text-ink-3 leading-relaxed max-w-[70ch]">
-          {langsung} barang lain dijual apa adanya: satu yang terjual di kasir mengurangi satu barang yang sama.
-        </p>
-      )}
     </div>
   )
 }

@@ -79,8 +79,8 @@ export async function tutupShift(sesi: SesiServer, uangDihitung: number, catatan
 }
 
 /** Riwayat shift untuk pemilik. */
-export async function ambilRiwayatShift(sesi: SesiServer, batas = 5): Promise<Shift[]> {
-  const isi = await minta<ShiftApi[]>(`/usaha/${sesi.usahaId}/shift?batas=${batas}`, { token: sesi.token })
+export async function ambilRiwayatShift(sesi: SesiServer, batas = 5, mulai = 0): Promise<Shift[]> {
+  const isi = await minta<ShiftApi[]>(`/usaha/${sesi.usahaId}/shift?batas=${batas}&mulai=${mulai}`, { token: sesi.token })
   return isi.map(keShift)
 }
 

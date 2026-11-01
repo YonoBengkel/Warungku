@@ -41,6 +41,7 @@ from .skema import (
     PenjualanRingkas,
     ProduksiBaru,
     ProduksiRingkas,
+    ProdukJadiBaru,
     ProdukJadiRingkas,
     RingkasanProduksi,
 )
@@ -227,6 +228,105 @@ def _angka(x) -> str:
     """Jumlah gaya Indonesia untuk pesan di layar: 20.000 dan 1,5, bukan 20000.000."""
     teks = f"{float(x):,.2f}".rstrip("0").rstrip(".")
     return teks.replace(",", "\u2009").replace(".", ",").replace("\u2009", ".")
+
+
+def _satu_produk_ringkas(sesi: Session, usaha_id: int, pj: ProdukJadi) -> ProdukJadiRingkas:
+    """Ringkasan satu produk, dengan rumus yang sama dengan `ringkasan()` di atas.
+
+    Dipakai sesudah menyimpan produk atau komposisinya (`POST /produk-jadi`),
+    supaya layar bisa langsung menampilkan stok yang bisa dibuat dan saran
+    masak tanpa memuat ulang seluruh `RingkasanProduksi`.
+    """
+    acuan = _tanggal_acuan(sesi, usaha_id)
+    bahan = [
+        BahanResep(
+            barang_id=b.id, nama=b.nama, satuan=b.satuan, takaran=r.takaran, stok=b.stok,
+            cukup_untuk=max(0, math.floor(Decimal(b.stok) / Decimal(r.takaran))),
+        )
+        for r, b in _resep(sesi, usaha_id).get(pj.id, [])
+    ]
+    harian: dict[date, Decimal] = {}
+    for tgl, jml in sesi.exec(
+        text(
+            """
+            SELECT (p.waktu AT TIME ZONE 'UTC')::date, SUM(pb.jumlah)
+              FROM penjualan_baris pb JOIN penjualan p ON p.id = pb.penjualan_id
+             WHERE p.usaha_id = :u AND pb.produk_jadi_id = :pj
+               AND (p.waktu AT TIME ZONE 'UTC')::date > :a - 28 AND (p.waktu AT TIME ZONE 'UTC')::date <= :a
+             GROUP BY 1
+            """
+        ).bindparams(u=usaha_id, pj=pj.id, a=acuan)
+    ).all():
+        harian[tgl] = Decimal(jml)
+    perkiraan = Decimal(0)
+    for k in range(1, 8):
+        t = acuan + timedelta(days=k)
+        lalu = [harian.get(t - timedelta(days=7 * j), Decimal(0)) for j in range(1, 5)]
+        perkiraan += sum(lalu) / 4
+    kurang = perkiraan + Decimal(pj.batas_aman) - Decimal(pj.stok)
+    return ProdukJadiRingkas(
+        id=pj.id, nama=pj.nama, satuan=pj.satuan, isi_bersih=pj.isi_bersih, stok=pj.stok,
+        batas_aman=pj.batas_aman, harga_jual=pj.harga_jual, ukuran_sesi=pj.ukuran_sesi, resep=bahan,
+        bisa_dibuat=min((x.cukup_untuk for x in bahan), default=0),
+        terjual_28_hari=sum(harian.values(), Decimal(0)),
+        perkiraan_7_hari=perkiraan.quantize(Decimal("1")),
+        saran_produksi=max(0, math.ceil(kurang / 6) * 6),
+    )
+
+
+@rute.post("/produk-jadi", response_model=ProdukJadiRingkas, status_code=201)
+def simpan_produk_jadi(badan: ProdukJadiBaru, usaha_id: int = Depends(usaha_saya)) -> ProdukJadiRingkas:
+    """
+    Tambah produk jadi baru, atau ubah satu yang sudah ada (dicocokkan dari nama,
+    sama seperti menu kasir) beserta komposisinya sekaligus (revisi V7, Q165).
+
+    Komposisi ditimpa seluruhnya seperti ``PUT /menu-kasir``: pemilik menulis
+    ulang daftar bahan, bukan menambah baris satu per satu. Bahan boleh kosong,
+    karena satu sesi masak pertama kadang dicatat sebelum resepnya pasti; dalam
+    keadaan itu produk belum bisa dimasak lewat `POST /produksi` (lihat
+    pesannya di sana), persis seperti menu kasir tanpa resep.
+    """
+    nama = badan.nama.strip()
+    if not nama:
+        raise HTTPException(422, "Nama produk belum diisi.")
+    ids = [b.barang_id for b in badan.bahan]
+    if len(set(ids)) != len(ids):
+        raise HTTPException(422, "Ada bahan yang tertulis dua kali. Gabungkan takarannya ke satu baris.")
+
+    with Session(mesin()) as sesi:
+        _usaha(sesi, usaha_id)
+        barang = {b.id: b for b in sesi.exec(select(Barang).where(Barang.id.in_(ids), Barang.usaha_id == usaha_id)).all()}
+        if len(barang) != len(ids):
+            raise HTTPException(404, "Sebagian bahan tidak ada di gudang usaha ini. Muat ulang daftar stok, lalu coba lagi.")
+        manual = [b.nama for b in barang.values() if b.dicatat_manual]
+        if manual:
+            raise HTTPException(
+                422,
+                "%s dicatat manual, jadi stoknya tidak dikurangi produksi. Pilih bahan lain, "
+                "atau ubah cara catatnya dulu di rincian barang." % ", ".join(manual),
+            )
+
+        pj = sesi.exec(
+            select(ProdukJadi).where(ProdukJadi.usaha_id == usaha_id, ProdukJadi.nama.ilike(nama))
+        ).first()
+        if pj is None:
+            pj = ProdukJadi(usaha_id=usaha_id, nama=nama, satuan=badan.satuan)
+            sesi.add(pj)
+            sesi.flush()
+        pj.satuan = badan.satuan
+        pj.isi_bersih = badan.isi_bersih
+        pj.harga_jual = badan.harga_jual
+        pj.batas_aman = badan.batas_aman
+        pj.ukuran_sesi = badan.ukuran_sesi
+        sesi.add(pj)
+        sesi.flush()
+
+        sesi.exec(text("DELETE FROM resep_bahan WHERE produk_jadi_id = :p").bindparams(p=pj.id))
+        for b in badan.bahan:
+            sesi.add(ResepBahan(produk_jadi_id=pj.id, barang_id=b.barang_id, takaran=b.takaran))
+        sesi.commit()
+        sesi.refresh(pj)
+        return _satu_produk_ringkas(sesi, usaha_id, pj)
 
 
 @rute.post("/produksi", response_model=ProduksiRingkas, status_code=201)

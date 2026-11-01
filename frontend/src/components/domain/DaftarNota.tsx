@@ -1,14 +1,18 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Bagian, Tombol } from '@/components/ui/dasar'
 import { Kolom } from '@/components/ui/formulir'
 import { Lembar } from '@/components/ui/lembar'
+import { IkonPanahKanan } from '@/icons'
 import { GalatApi } from '@/lib/api'
 import { ambilNotaTerbaru, batalkanNota } from '@/lib/apiMenu'
 import { angka, jam, rupiah, tanggalPendek } from '@/lib/format'
 import type { Transaksi } from '@/lib/types'
 import { useAplikasi } from '@/store/aplikasi'
 
-const HALAMAN_AWAL = 8
+/** Berapa nota yang tampil di bagian Ringkasan Penjualan (revisi V7, Q162). */
+const RINGKAS = 5
+const HALAMAN_AWAL = 25
 const HALAMAN_BERIKUT = 25
 const NAMA_CARA = { tunai: 'Tunai', qris: 'QRIS', transfer: 'Transfer' } as const
 
@@ -32,15 +36,21 @@ function gabung(baru: Transaksi[], lama: Transaksi[]): Transaksi[] {
 const hargaNota = (n: Transaksi) => Math.max(0, n.baris.reduce((a, b) => a + (b.harga ?? 0) * b.jumlah, 0) - n.diskon)
 
 /**
- * Nota dari kasir di bawah Ringkasan Penjualan (Portal POS): delapan terbaru, dan
- * "Lihat Semua Nota" memuat 25 lebih lama setiap ditekan. Tidak memuat semuanya
- * sekaligus, karena data simulasi punya nota ratusan hari. Nota baru dari kasir
- * masuk di atas daftar tanpa menutup yang sudah dibuka.
+ * Nota dari kasir (Portal POS), dalam dua wujud (revisi V7, Q162):
  *
- * Pemilik membatalkan nota dari sini (tahap 4). Kasir hanya bisa mengajukan, dan
- * alasannya muncul di baris nota sebagai bahan keputusan pemilik.
+ * - `ringkas`: lima nota terbaru di bawah Ringkasan Penjualan, dengan tautan ke
+ *   halaman Riwayat Kasir. Dulu di sini daftarnya memanjang ke bawah sampai
+ *   puluhan baris, dan itu yang menenggelamkan angka ringkasan di atasnya.
+ * - halaman penuh: 25 nota, dan "Muat 25 Nota Lagi" menambah yang lebih lama.
+ *   Tidak memuat semuanya sekaligus, karena data simulasi punya nota ratusan hari.
+ *
+ * Nota baru dari kasir masuk di atas daftar tanpa menutup yang sudah dibuka.
+ *
+ * Pemilik membatalkan nota dari sini (tahap 4), di kedua wujud. Kasir hanya bisa
+ * mengajukan, dan alasannya muncul di baris nota sebagai bahan keputusan pemilik.
  */
-export function DaftarNota({ setelahBatal }: { setelahBatal?: () => void }) {
+export function DaftarNota({ setelahBatal, ringkas = false }: { setelahBatal?: () => void; ringkas?: boolean }) {
+  const batasAwal = ringkas ? RINGKAS : HALAMAN_AWAL
   const sesi = useAplikasi((s) => s.sesiServer)
   const tanda = useAplikasi((s) => s.notaTerbaru?.map((n) => n.nomorStruk + (n.pengajuanBatal ? '!' : '')).join(','))
   const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
@@ -50,7 +60,6 @@ export function DaftarNota({ setelahBatal }: { setelahBatal?: () => void }) {
   // Nomor nota paling lama yang diketahui sudah menjadi ujung. Daftar yang pendek bukan tanda habis, dan
   // daftar yang dibuang lalu dimuat ulang otomatis tidak lagi berujung di nota itu.
   const [ujung, setUjung] = useState<string | null>(null)
-  const [diperluas, setDiperluas] = useState(false)
   const [galat, setGalat] = useState<string | null>(null)
   const [memuat, setMemuat] = useState(false)
   const [target, setTarget] = useState<Transaksi | null>(null)
@@ -61,7 +70,7 @@ export function DaftarNota({ setelahBatal }: { setelahBatal?: () => void }) {
   useEffect(() => {
     if (!sesi) return
     let batal = false
-    ambilNotaTerbaru(sesi, HALAMAN_AWAL)
+    ambilNotaTerbaru(sesi, batasAwal)
       .then((d) => {
         if (batal) return
         setDaftar((lama) => (lama ? gabung(d, lama) : d))
@@ -71,7 +80,7 @@ export function DaftarNota({ setelahBatal }: { setelahBatal?: () => void }) {
     return () => {
       batal = true
     }
-  }, [sesi, tanda])
+  }, [sesi, tanda, batasAwal])
 
   async function lihatLagi() {
     if (!sesi || !daftar) return
@@ -81,7 +90,6 @@ export function DaftarNota({ setelahBatal }: { setelahBatal?: () => void }) {
       const ada = new Set(daftar.map((n) => n.nomorStruk))
       const baru = [...daftar, ...d.filter((n) => !ada.has(n.nomorStruk))]
       setDaftar(baru)
-      setDiperluas(true)
       setUjung(d.length < HALAMAN_BERIKUT ? (baru[baru.length - 1]?.nomorStruk ?? null) : null)
     } catch {
       setGalat('Nota yang lebih lama belum bisa dimuat. Coba lagi sebentar lagi.')
@@ -128,6 +136,17 @@ export function DaftarNota({ setelahBatal }: { setelahBatal?: () => void }) {
       id="judul-nota-kasir"
       judul="Nota dari kasir"
       keterangan="Nama dan harga seperti tercetak di struk, yang terbaru di atas."
+      aksi={
+        ringkas ? (
+          <Link
+            to="/penjualan/riwayat"
+            className="inline-flex items-center gap-1 min-h-11 text-isi font-bold text-brand hover:underline"
+          >
+            Lihat Semua Nota
+            <IkonPanahKanan size={15} />
+          </Link>
+        ) : undefined
+      }
       className="mt-4"
     >
       {galat ? (
@@ -183,12 +202,12 @@ export function DaftarNota({ setelahBatal }: { setelahBatal?: () => void }) {
           })}
         </ul>
       )}
-      {daftar && daftar.length >= HALAMAN_AWAL && daftar[daftar.length - 1]?.nomorStruk !== ujung && (
+      {!ringkas && daftar && daftar.length >= batasAwal && daftar[daftar.length - 1]?.nomorStruk !== ujung && (
         <Tombol ragam="garis" className="mt-3" memuat={memuat} onClick={lihatLagi}>
-          {diperluas ? `Muat ${HALAMAN_BERIKUT} Nota Lagi` : 'Lihat Semua Nota'}
+          Muat {HALAMAN_BERIKUT} Nota Lagi
         </Tombol>
       )}
-      {daftar && daftar.length > HALAMAN_AWAL && daftar[daftar.length - 1]?.nomorStruk === ujung && (
+      {!ringkas && daftar && daftar.length > batasAwal && daftar[daftar.length - 1]?.nomorStruk === ujung && (
         <p className="mt-3 text-kecil text-ink-3">Itu nota paling awal yang tersimpan.</p>
       )}
 
