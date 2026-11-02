@@ -9,7 +9,7 @@ import { IkonMata, IkonMataTutup, IkonTelepon } from '@/icons'
 import { cx, nomorHp } from '@/lib/format'
 import { profilAwal } from '@/data/dummy'
 import { GalatApi, ServerTakTerjangkau } from '@/lib/api'
-import { AKUN_BU_RATMI, AKUN_KOPI_KITA } from '@/lib/akunSimulasi'
+import { AKUN_BU_RATMI, AKUN_KASIR, AKUN_KOPI_KITA } from '@/lib/akunSimulasi'
 import { useAplikasi } from '@/store/aplikasi'
 import { TandaMerek } from '@/components/ui/Merek'
 
@@ -26,6 +26,7 @@ export default function Masuk() {
   const navigate = useNavigate()
   const aturMasuk = useAplikasi((s) => s.aturMasuk)
   const masukServer = useAplikasi((s) => s.masukServer)
+  const masukPos = useAplikasi((s) => s.masukPos)
   const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
 
   const [tab, setTab] = useState<'hp' | 'email'>('hp')
@@ -73,12 +74,28 @@ export default function Masuk() {
       return
     }
 
-    masukServer(email.trim(), sandi)
-      .then(() => {
-        tampilkanRacun('Selamat datang kembali. Stok dan perkiraan sudah dimuat dari data usahamu.', 'aman')
-        navigate('/beranda')
-      })
-      .catch((e: unknown) => {
+    const cobaMasuk = email.trim().toLowerCase().startsWith('kasir')
+      ? masukPos(email.trim(), sandi).then(() => {
+          tampilkanRacun('Selamat datang di Portal POS.', 'aman')
+          navigate('/pos')
+        })
+      : masukServer(email.trim(), sandi).then(() => {
+          tampilkanRacun('Selamat datang kembali. Stok dan perkiraan sudah dimuat dari data usahamu.', 'aman')
+          navigate('/beranda')
+        })
+
+    cobaMasuk
+      .catch(async (e: unknown) => {
+        if (e instanceof GalatApi && e.status === 403 && e.message.includes('Portal POS')) {
+          try {
+            await masukPos(email.trim(), sandi)
+            tampilkanRacun('Selamat datang di Portal POS.', 'aman')
+            navigate('/pos')
+            return
+          } catch {
+            // lanjut ke penanganan galat biasa
+          }
+        }
         if (e instanceof ServerTakTerjangkau) {
           // Server belum dinyalakan: tetap bisa mencoba aplikasinya dengan data contoh.
           aturMasuk(true)
@@ -202,6 +219,15 @@ export default function Masuk() {
           Masuk ke portal distributor
         </Link>
       </p>
+      <p className="text-center text-isi text-ink-2">
+        Kamu kasir?{' '}
+        <Link
+          to="/masuk/pos"
+          className="inline-flex items-center min-h-11 px-1 font-bold text-brand hover:underline underline-offset-2"
+        >
+          Masuk ke Portal POS
+        </Link>
+      </p>
 
       {/* Purwarupa: satu ketukan untuk mencoba tanpa mengingat nomor contoh. */}
       <div className="mt-5 pt-4 border-t border-line">
@@ -216,7 +242,7 @@ export default function Masuk() {
             Isikan nomor akun contoh
           </button>
           <span className="block mt-1">
-            Untuk melihat angka dari mesin analitik, masuk lewat email dengan akun simulasi {AKUN_KOPI_KITA.email}.
+            Untuk melihat angka dari mesin analitik, masuk lewat email dengan akun simulasi:
           </span>
           <button
             type="button"
@@ -231,6 +257,13 @@ export default function Masuk() {
             className="flex items-center gap-1.5 min-h-11 text-isi font-bold underline underline-offset-2"
           >
             Isikan akun simulasi produsen: Dapur Sambal Bu Ratmi
+          </button>
+          <button
+            type="button"
+            onClick={() => isiAkunServer(AKUN_KASIR)}
+            className="flex items-center gap-1.5 min-h-11 text-isi font-bold underline underline-offset-2"
+          >
+            Isikan akun kasir: Rina Kasir (Portal POS)
           </button>
         </Peringatan>
       </div>

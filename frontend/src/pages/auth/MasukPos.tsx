@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Kartu, Tombol } from '@/components/ui/dasar'
 import { Kolom } from '@/components/ui/formulir'
 import { GalatApi, ServerTakTerjangkau } from '@/lib/api'
@@ -13,6 +13,7 @@ import { useAplikasi } from '@/store/aplikasi'
  */
 export default function MasukPos() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const sesi = useAplikasi((s) => s.sesiServer)
   const masukPos = useAplikasi((s) => s.masukPos)
   const [email, setEmail] = useState('')
@@ -23,6 +24,16 @@ export default function MasukPos() {
   useEffect(() => {
     if (sesi) navigate('/pos', { replace: true })
   }, [sesi, navigate])
+
+  useEffect(() => {
+    if (searchParams.get('kasir') === '1') {
+      setEmail(AKUN_KASIR.email)
+      setSandi(AKUN_KASIR.kataSandi)
+    } else if (searchParams.get('pemilik') === '1') {
+      setEmail(AKUN_KOPI_KITA.email)
+      setSandi(AKUN_KOPI_KITA.kataSandi)
+    }
+  }, [searchParams])
 
   function kirim() {
     setMemuat(true)
