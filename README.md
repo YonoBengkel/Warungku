@@ -43,9 +43,10 @@ Semua perintah untuk **Windows PowerShell** dan dijalankan dari **akar repo**.
 > Pakai branch **`main`**. Branch `Rombak#4` berhenti di revisi V5 dan tidak lagi
 > dikerjakan.
 >
-> **Portal POS (kasir) butuh backend `0.12.0` atau yang lebih baru, dan QR simulasi
-> (revisi V8) butuh `0.13.0`.** Keduanya terbit di Docker Hub pada 3 November 2026, jadi
-> `siapkan.cmd` membawa Portal POS, akun kasir simulasi, isi revisi V7, dan QR simulasi. Pemasangan lama cukup menjalankan `siapkan.cmd` lagi
+> **Portal POS (kasir) butuh backend `0.12.0` atau yang lebih baru, QR simulasi (revisi
+> V8) butuh `0.13.0`, dan geseran tanggal data simulasi butuh `0.14.0`.** Ketiganya terbit
+> di Docker Hub pada 3 November 2026, jadi `siapkan.cmd` membawa Portal POS, akun kasir
+> simulasi, isi revisi V7, QR simulasi, dan data yang berakhir paling lambat kemarin. Pemasangan lama cukup menjalankan `siapkan.cmd` lagi
 > (selama tidak ada perubahan lokal yang belum dikomit): kode dan image baru diunduh, dan
 > kontainer API memigrasi basis datanya sendiri.
 
@@ -627,7 +628,9 @@ shift) maupun isi revisi V7 (Riwayat Kasir, tab Menu di Produksi, `POST /produk-
 Keduanya ada di backend `0.12.0`, yang terbit 3 November 2026 dan dibangun dari komit
 `d1db428`. Backend `0.12.0` belum punya QR simulasi di kasir dan masih menerima nota
 transfer. Keduanya diubah di backend `0.13.0` (revisi V8), yang terbit di hari yang sama dan
-dibangun dari komit `dbce788`. Kontainer API menjalankan migrasi sendiri saat menyala, jadi
+dibangun dari komit `dbce788`. Backend `0.14.0` (komit `e0f046f`) menambahkan
+`dataset.geser_tanggal`, yang dijalankan `siapkan.cmd` untuk menggeser data simulasi sampai
+paling lambat kemarin. Kontainer API menjalankan migrasi sendiri saat menyala, jadi
 basis data `0.3.0` cukup, dan akun kasir simulasi dipasang oleh variasi demo yang dijalankan
 `siapkan.cmd`.
 
@@ -640,7 +643,7 @@ di atas `0.2.0` ia menjalankan Mesin 1 sekali (sekitar 4 menit) untuk mengisinya
 | Image | Tag yang dipakai | Isi | Halaman Docker Hub |
 | --- | --- | --- | --- |
 | `yonobengkel/turnify-flow-db` | **`0.3.0`** | PostgreSQL 16 yang memulihkan data simulasi (70 UMKM, 1 UMKM produsen, 8 distributor, 400 hari) saat pertama kali dinyalakan. Isinya salinan basis data tim per 27 Oktober 2026: deskripsi barang sudah dirapikan, variasi demo revisi V4 (termasuk dua kontrak yang minta berhenti), dan keluaran ketiga mesin termasuk uji balik bulanan | https://hub.docker.com/r/yonobengkel/turnify-flow-db/tags |
-| `yonobengkel/turnify-flow-backend` | **`0.13.0`** | Satu image untuk API (port 8000) dan layanan model (port 8001). Isinya hanya model produksi (LightGBM, Beta-Bernoulli + fuzzy, K-Prototypes), lihat [`requirements-produksi.txt`](requirements-produksi.txt); tanpa Chronos atau PyMC | https://hub.docker.com/r/yonobengkel/turnify-flow-backend/tags |
+| `yonobengkel/turnify-flow-backend` | **`0.14.0`** | Satu image untuk API (port 8000) dan layanan model (port 8001). Isinya hanya model produksi (LightGBM, Beta-Bernoulli + fuzzy, K-Prototypes), lihat [`requirements-produksi.txt`](requirements-produksi.txt); tanpa Chronos atau PyMC | https://hub.docker.com/r/yonobengkel/turnify-flow-backend/tags |
 
 **Tidak perlu mengunduh dengan tangan.** Perintah `docker compose ... up -d` di
 jalur A dan B, juga `nyalakan.cmd`, mengunduh image yang dibutuhkan secara
@@ -649,7 +652,7 @@ internet lambat):
 
 ```powershell
 docker pull yonobengkel/turnify-flow-db:0.3.0
-docker pull yonobengkel/turnify-flow-backend:0.13.0
+docker pull yonobengkel/turnify-flow-backend:0.14.0
 ```
 
 `nyalakan.cmd` dan jalur B hanya memakai image basis data. Image backend hanya
