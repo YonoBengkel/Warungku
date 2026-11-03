@@ -9,9 +9,13 @@ menyentuh data siapa pun.
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 
+from sqlalchemy import CheckConstraint, Column
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Field, SQLModel
+
+from .dasar import kolom_waktu
 
 
 class HariLiburNasional(SQLModel, table=True):
@@ -41,3 +45,30 @@ class HariLiburNasional(SQLModel, table=True):
     #: bukan enum: daftar jenisnya ditentukan pemerintah, bukan oleh kami,
     #: dan menambah jenis baru tidak boleh butuh migrasi.
     jenis: str = Field(max_length=20)
+
+
+class GeseranTanggal(SQLModel, table=True):
+    """
+    Seberapa jauh tanggal data simulasi sudah digeser maju (revisi V8, Q180). Satu baris.
+
+    Data simulasi dibangkitkan berakhir 5 Okt 2026 (`dataset.buat_dataset.AKHIR`).
+    `dataset.geser_tanggal` menggesernya maju kelipatan 7 hari supaya berakhir
+    paling lambat kemarin, dan pola hari tetap (Sabtu tetap Sabtu). Bukan data
+    acuan dari luar, tetapi sama seperti acuan: milik seluruh basis data, bukan
+    milik satu usaha, dan tidak berubah karena transaksi.
+
+    `id_simulasi` memetakan nama tabel ke id baris simulasinya (teks
+    `int8multirange`), diambil sekali pada geseran pertama. Baris yang dibuat
+    sesudahnya, lewat layar atau Portal POS, tidak pernah ikut digeser.
+    """
+
+    __tablename__ = "geseran_tanggal"
+    __table_args__ = (CheckConstraint("id = 1", name="ck_geseran_tanggal_satu"),)
+
+    id: int = Field(default=1, primary_key=True)
+    #: Jumlah hari yang sudah digeser sejak data dibangkitkan, selalu kelipatan 7.
+    hari: int = Field(default=0)
+    #: Tanggal terakhir data simulasi sekarang: AKHIR + hari.
+    akhir_data: date
+    id_simulasi: dict = Field(default_factory=dict, sa_column=Column(JSONB, nullable=False))
+    diperbarui_pada: datetime = Field(sa_column=kolom_waktu(nullable=False))

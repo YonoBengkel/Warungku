@@ -106,6 +106,8 @@ PELUANG_TERMURAH = 0.70
 #: masuk ke akun mana pun saat mencoba. Jangan pernah dipakai di luar simulasi.
 KATA_SANDI_CONTOH = "warungku123"
 
+#: Akhir data saat dibangkitkan. Sesudah terpasang, `dataset.geser_tanggal` menggesernya
+#: maju kelipatan 7 hari (revisi V8); akhir yang berlaku ada di tabel `geseran_tanggal`.
 AKHIR = date(2026, 10, 5)
 MULAI = AKHIR - timedelta(days=HARI_SIMULASI - 1)
 BATAS_UJI = AKHIR - timedelta(days=HARI_UJI - 1)

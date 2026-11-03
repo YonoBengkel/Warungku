@@ -59,6 +59,7 @@ erDiagram
 | Tabel | Isi | Kunci asing | Batasan |
 |---|---|---|---|
 | `hari_libur_nasional` | Tanggal merah dan cuti bersama, mengutip SKB 3 Menteri. | - | - |
+| `geseran_tanggal` | Satu baris (revisi V8, migrasi `d4f7a2c9e1b3`): berapa hari data simulasi sudah digeser maju, tanggal akhirnya sekarang, dan id baris simulasi per tabel (`id_simulasi`, teks `int8multirange` di JSONB) yang dicatat pada geseran pertama. Ditulis `dataset.geser_tanggal`. | - | cek `ck_geseran_tanggal_satu` (id = 1) |
 
 ## Gudang: stok, menu, dan nota kasir
 

@@ -11,7 +11,8 @@ saat demo. Skrip ini menambah variasi untuk Kopi Kita Jogja (umkm1) dan Dapur
 Sambal Bu Ratmi (produksi1):
 
 * **Stok**: beberapa barang dibuat habis dan menipis lewat baris `koreksi`
-  pada hari terakhir data (5 Okt 2026). Koreksi tidak masuk data latih Mesin 1,
+  pada hari terakhir data (5 Okt 2026, atau sesudah digeser `dataset.geser_tanggal`).
+  Koreksi tidak masuk data latih Mesin 1,
   jadi perkiraan tidak berubah dan pemeriksaan konsistensi tetap lolos. Supaya
   setiap penyaring di halaman Stok berisi: beberapa barang diberi pengingat
   kedaluwarsa yang dekat, beberapa batas amannya dikembalikan ke bawaan, dan
@@ -68,6 +69,7 @@ from warungku.model import (
 )
 
 from .buat_dataset import AKHIR, _wkt
+from .geser_tanggal import akhir_data, id_simulasi
 from .katalog import DISTRIBUTOR, deskripsi_kemasan
 
 OLEH = "Variasi demo"
@@ -405,7 +407,7 @@ def hapus(kon, usaha_id: int) -> None:
 
 def _variasi_stok(kon, usaha_id: int, email: str) -> int:
     barang = _barang(kon, usaha_id)
-    waktu = _wkt(AKHIR, 21, 45)
+    waktu = _wkt(akhir_data(kon), 21, 45)
     n = 0
     for kelompok, daftar in STOK[email].items():
         for nama in daftar:
@@ -452,6 +454,7 @@ def _barang_baru(kon, usaha_id: int, email: str) -> int:
     pos = kon.execute(
         text("SELECT status::text FROM data_kasir WHERE usaha_id = :u"), {"u": usaha_id}
     ).scalar() == "terhubung"
+    akhir = akhir_data(kon)
     n = 0
     for urut, (nama, jumlah, hari_lalu, catatan) in enumerate(BARANG_BARU[email], start=1):
         pm = kon.execute(
@@ -495,7 +498,7 @@ def _barang_baru(kon, usaha_id: int, email: str) -> int:
         kon.execute(
             Pergerakan.__table__.insert(),
             {
-                "usaha_id": usaha_id, "barang_id": bid, "waktu": _wkt(AKHIR - timedelta(days=hari_lalu), 10, 0),
+                "usaha_id": usaha_id, "barang_id": bid, "waktu": _wkt(akhir - timedelta(days=hari_lalu), 10, 0),
                 "jenis": JenisPergerakan.MASUK, "jumlah": stok, "stok_sesudah": stok,
                 "keterangan": "Dibeli langsung, belum dipakai", "oleh": OLEH,
             },
@@ -816,10 +819,22 @@ def hapus_distributor(kon) -> None:
         kon.execute(text(sql), {"j": judul})
 
 
-#: Awal hari sesudah data simulasi berakhir. Pesanan yang dibuat sebelum ini
+#: Awal hari sesudah data simulasi asli berakhir. Pesanan yang dibuat sebelum ini
 #: berasal dari pembangkit dataset; yang sesudahnya dibuat orang lewat aplikasi
 #: dan tidak boleh diubah oleh skrip ini.
 BATAS_SIMULASI = datetime.combine(AKHIR + timedelta(days=1), time(0, 0), tzinfo=timezone(timedelta(hours=7)))
+
+
+def _pesanan_simulasi(kon) -> tuple[str, dict]:
+    """
+    Syarat SQL untuk pesanan buatan pembangkit. Sesudah tanggal data digeser, pesanan
+    simulasi bisa lebih baru dari pesanan sungguhan, jadi dipakai id yang dicatat
+    geseran pertama.
+    """
+    r = id_simulasi(kon, "pesanan")
+    if r is not None:
+        return "id::int8 <@ CAST(:sim AS int8multirange)", {"sim": r}
+    return "dibuat_pada < :sim", {"sim": BATAS_SIMULASI}
 
 
 def _ada_kolom(kon, tabel: str, kolom: str) -> bool:
@@ -861,19 +876,20 @@ def _lengkapi_kiriman(kon) -> int:
     pada akhir simulasi kosong. Pesanan yang dibuat lewat aplikasi tidak disentuh:
     distributor boleh sengaja mengosongkannya.
     """
+    simulasi, p = _pesanan_simulasi(kon)
     return kon.execute(
         text(
-            """
+            f"""
             UPDATE pesanan
                SET kirim_kurir = coalesce(kirim_kurir, 'Armada sendiri'),
                    kirim_pengantar = coalesce(kirim_pengantar, 'Kurir distributor'),
                    kirim_nomor_resi = coalesce(kirim_nomor_resi, 'RSI-' || replace(nomor, 'PS-', ''))
              WHERE status IN ('dikirim', 'selesai', 'selesai-catatan')
-               AND dibuat_pada < :akhir
+               AND {simulasi}
                AND (kirim_kurir IS NULL OR kirim_pengantar IS NULL OR kirim_nomor_resi IS NULL)
             """
         ),
-        {"akhir": BATAS_SIMULASI},
+        p,
     ).rowcount
 
 
@@ -885,18 +901,19 @@ def perbaiki_simulasi(kon) -> dict[str, int]:
 def _tandai_terlambat_sampai(kon, sekarang: datetime) -> int:
     """Kiriman simulasi yang perkiraan tibanya lewat jauh: ditandai sampai oleh distributornya."""
     batas = sekarang - TERLAMBAT
+    simulasi, p = _pesanan_simulasi(kon)
     ids = [
         r[0]
         for r in kon.execute(
             text(
-                """
+                f"""
                 SELECT id FROM pesanan
                  WHERE status = 'dikirim' AND kirim_waktu_sampai IS NULL
-                   AND perkiraan_tiba < :b AND dibuat_pada < :akhir
+                   AND perkiraan_tiba < :b AND {simulasi}
                    AND nomor NOT LIKE 'PS-%-V%' AND nomor NOT LIKE 'PS-%-W%'
                 """
             ),
-            {"b": batas, "akhir": BATAS_SIMULASI},
+            p | {"b": batas},
         )
     ]
     for pid in ids:
@@ -1011,6 +1028,13 @@ def basi(kon) -> bool:
         text("SELECT MAX(dibuat_pada) FROM pesanan WHERE nomor LIKE 'PS-%-V%'")
     ).scalar()
     if terbaru is None or datetime.now(timezone.utc) - terbaru > UMUR_BASI:
+        return True
+    # Koreksi stok variasi bertanggal akhir data. Sesudah data digeser, koreksi yang
+    # dipasang setelah geseran pertama tertinggal di akhir data yang lama.
+    koreksi = kon.execute(
+        text("SELECT max(waktu) FROM pergerakan WHERE oleh = :o AND jenis = 'koreksi'"), {"o": OLEH}
+    ).scalar()
+    if koreksi is not None and koreksi < _wkt(akhir_data(kon), 21, 45):
         return True
     # Basis data yang variasinya dipasang sebelum menu demo atau variasi
     # portal distributor ada.

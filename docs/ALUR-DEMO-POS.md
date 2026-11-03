@@ -36,6 +36,8 @@ ditolak di halaman Masuk Portal UMKM.
 
 ## Yang perlu dikatakan terus terang
 
+- **Data simulasi digeser ke minggu ini.** Data dibangkitkan berakhir 5 Okt 2026, lalu `siapkan.cmd` dan `nyalakan.cmd`
+  menggesernya maju kelipatan 7 hari supaya berakhir paling lambat kemarin. Nota yang dibuat saat demo tidak ikut digeser.
 - **Prediksi tidak berubah seketika.** Stok, laporan, dan pemberitahuan langsung. Angka Prediksi menunggu penjadwal
   mesin (02.00 dan tiap 4 jam), karena model menulis ke tabel dan halaman hanya membacanya.
 - **Uang hanya dicatat.** Pilihan bayar tinggal tunai dan QRIS (Transfer dihapus di revisi V8). QR di kasir adalah

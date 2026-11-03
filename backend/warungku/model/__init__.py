@@ -3,7 +3,7 @@ Seluruh tabel Warungku, disusun lima lapis.
 
 Pembagian lapis ini bukan kosmetik — ia menentukan siapa boleh menulis ke mana:
 
-0. **Acuan** (`hari_libur_nasional`) — data yang tidak dimiliki siapa pun
+0. **Acuan** (`hari_libur_nasional`, `geseran_tanggal`) — data yang tidak dimiliki siapa pun
 1. **Katalog** (`produk_master`) — kosakata bersama, ditulis admin
 2. **Identitas** (`pengguna`, `usaha`, `keanggotaan`, `distributor`)
 3. **Gudang** (`barang`, `pergerakan`, `transaksi`, pemetaan menu) — ditulis UMKM
@@ -14,7 +14,7 @@ Pembagian lapis ini bukan kosmetik — ia menentukan siapa boleh menulis ke mana
 """
 
 from .analitik import FiturPesanan, PermintaanHarian, Prediksi, RekomendasiSkor
-from .referensi import HariLiburNasional
+from .referensi import GeseranTanggal, HariLiburNasional
 from .segmen import SegmenPelanggan
 from .gudang import (
     Barang,
@@ -93,4 +93,5 @@ __all__ = [
     "SegmenPelanggan",
     # Lapis 0
     "HariLiburNasional",
+    "GeseranTanggal",
 ]

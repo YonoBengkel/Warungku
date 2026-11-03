@@ -16,7 +16,9 @@ sama dengan Mesin 1 dan halaman Produksi: data simulasi menyimpan jam setempat
 sebagai UTC.
 
 Rentang bawaan: 30 hari yang berakhir di tanggal data terakhir, bukan hari ini.
-Data simulasi berhenti 5 Okt 2026, dan rentang yang berakhir hari ini akan kosong.
+Data simulasi berhenti 5 Okt 2026 dan digeser maju `dataset.geser_tanggal` supaya
+berakhir paling lambat kemarin. Selama geseran belum jalan, rentang yang berakhir
+hari ini akan kosong.
 """
 
 from __future__ import annotations

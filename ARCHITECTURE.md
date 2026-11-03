@@ -25,6 +25,17 @@ flowchart LR
   resep tetap masuk nota, dilaporkan, dan muncul di daftar yang perlu dipasangkan (`GET /usaha/{id}/menu-kasir`).
 - **Model menulis ke tabel, API membaca tabel.** API tidak memanggil model saat halaman dibuka. Akibatnya nota baru
   langsung mengubah stok, tetapi prediksi baru berubah pada jadwal penjadwal berikutnya.
+- **Tanggal data simulasi digeser (revisi V8).** Data simulasi dibangkitkan berakhir 5 Okt 2026. `dataset.geser_tanggal`,
+  yang dijalankan `siapkan.cmd` dan `nyalakan.cmd` sebelum variasi demo, menggeser semua tanggalnya maju kelipatan 7 hari
+  dalam satu transaksi, supaya data berakhir paling lambat kemarin dan pola harinya tetap. Yang ikut pindah: nota simulasi
+  (bernomor `YYYYMMDD-UUU-NNN`, tanggal di nomornya ikut diganti), wilayah simulasi `permintaan_harian`, pergerakan,
+  produksi, penjualan, dan pesanan buatan pembangkit beserta jejak, ulasan, dan fiturnya, serta jalan Mesin 1 yang
+  berpangkal di akhir data simulasi. Baris buatan pembangkit dikenali dari id yang dicatat geseran pertama di
+  `geseran_tanggal`, jadi nota Portal POS dan isian lewat layar tidak pernah ikut pindah. Bagian nota sungguhan di
+  `permintaan_harian` dipisah dulu dan dikembalikan ke tanggalnya. Hari bolong antara akhir data dan nota sungguhan
+  sesudahnya diisi nol berstatus stok habis, yang dibaca Mesin 1 sebagai data hilang. Di salinan basis data `0.3.0`
+  geseran pertama (28 hari) butuh sekitar dua menit. Keluaran Mesin 2 dan 3 tidak digeser, karena dihitung ulang tiap
+  empat jam.
 
 ## Portal POS
 

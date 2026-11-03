@@ -74,6 +74,9 @@ Yang dikerjakan skrip itu:
   dan menu kasir yang belum dipasangkan) serta portal distributor (pesanan masuk,
   kontrak termasuk yang minta berhenti, promo), bertanggal hari ini dan disegarkan
   kalau umurnya lebih dari tiga hari atau image backend membawa variasi yang lebih baru;
+- menggeser tanggal data simulasi supaya berakhir paling lambat kemarin, kalau sudah
+  lewat seminggu dari geseran terakhir (lihat [Tanggal data](#akun-simulasi)); geseran
+  pertama di laptop baru butuh sekitar dua menit;
 - memasang paket frontend dan menyalakannya di jendela yang diperkecil ke taskbar;
 - membuka peramban di halaman Masuk.
 
@@ -126,6 +129,8 @@ dikerjakan sekaligus:
 - paket Python dan frontend dipasang bila belum ada;
 - `backend\.env` disiapkan, termasuk rahasia login acak;
 - skema dinaikkan dan UMKM produsen ditambahkan bila belum ada;
+- tanggal data simulasi digeser supaya berakhir paling lambat kemarin, bila sudah
+  lewat seminggu dari geseran terakhir;
 - variasi demo untuk akun simulasi disegarkan bila umurnya lebih dari tiga hari
   atau skripnya lebih baru dari yang terpasang (lihat [Akun simulasi](#akun-simulasi));
 - API, layanan model, dan frontend dibuka di tiga jendela;
@@ -360,8 +365,12 @@ dengan tangan (mengembalikan pesanan dan kontrak demo ke keadaan awal):
 `python -m dataset.variasi_demo`. Rinciannya di
 [`data/dataset/variasi_demo.py`](data/dataset/variasi_demo.py).
 
-**Tanggal data.** Data simulasi berjalan 400 hari dan berhenti pada **5 Oktober
-2026**. Grafik menulis "data terakhir", bukan "hari ini". Mencatat kiriman baru
+**Tanggal data.** Data simulasi berjalan 400 hari. Saat dibangkitkan ia berhenti pada
+5 Oktober 2026, dan sejak revisi V8 `siapkan.cmd` dan `nyalakan.cmd` menggesernya maju
+kelipatan 7 hari (`python -m dataset.geser_tanggal`), jadi data berakhir paling lambat
+kemarin dan pola harinya tetap (Sabtu tetap Sabtu). Nota Portal POS dan isian lewat
+layar tidak ikut digeser. Lonjakan musiman seperti Lebaran ikut bergeser beberapa minggu
+dari tanggal liburnya. Grafik menulis "data terakhir", bukan "hari ini". Mencatat kiriman baru
 membuat jendela 28 hari ikut maju ke hari-hari tanpa data, sehingga perkiraan
 pesanan pekan depan di tab Produksi turun.
 

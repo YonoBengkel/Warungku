@@ -303,6 +303,19 @@ foreach ($l in @(@{ Nama = 'API'; Url = 'http://localhost:8000/sehat' }, @{ Nama
     Oke "$($l.Nama) siap: $($l.Url)"
 }
 
+# Data simulasi berakhir 5 Okt 2026. Tanggalnya digeser maju kelipatan 7 hari supaya
+# berakhir paling lambat kemarin (revisi V8); nota Portal POS dan isian lewat layar
+# tidak ikut digeser. Belum genap seminggu sejak geseran terakhir: tidak ada yang
+# berubah. Dijalankan sebelum variasi demo, yang ikut memakai akhir data yang baru.
+Info 'Menyesuaikan tanggal data simulasi (bisa sampai beberapa menit kalau perlu digeser)...'
+$keluaranGeser = cmd /c "docker exec turnify-api python -m dataset.geser_tanggal 2>&1"
+if ($LASTEXITCODE -eq 0) {
+    Oke ($keluaranGeser | Where-Object { $_ -match '^Data simulasi' } | Select-Object -First 1)
+} else {
+    $keluaranGeser | Select-Object -Last 5 | ForEach-Object { Write-Host "    $_" }
+    Awas 'Tanggal data simulasi belum digeser; aplikasi tetap bisa dipakai.'
+}
+
 # Deskripsi barang di basis data 0.2.0 ke bawah masih ditulis pembangkit lama
 # ("20000 gram per karung"). Skripnya ada di image backend dan menulis ulang
 # hanya pola lama menjadi "1 karung = 20 kg", jadi aman dijalankan berulang.

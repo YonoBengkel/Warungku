@@ -183,6 +183,19 @@ if ($LASTEXITCODE -ne 0) {
 $produsenBaru = [bool]($keluaranProdusen -match '^Selesai')
 if ($produsenBaru) { Oke 'UMKM produsen (Dapur Sambal Bu Ratmi) ditambahkan' } else { Oke 'Skema terbaru, UMKM produsen sudah ada' }
 
+# Data simulasi berakhir 5 Okt 2026. Tanggalnya digeser maju kelipatan 7 hari supaya
+# berakhir paling lambat kemarin (revisi V8); nota Portal POS dan isian lewat layar
+# tidak ikut digeser. Belum genap seminggu sejak geseran terakhir: tidak ada yang
+# berubah. Dijalankan sebelum variasi demo, yang ikut memakai akhir data yang baru.
+Info 'Menyesuaikan tanggal data simulasi (bisa sampai beberapa menit kalau perlu digeser)...'
+$keluaranGeser = cmd /c "`"$Python`" -m dataset.geser_tanggal 2>&1"
+if ($LASTEXITCODE -eq 0) {
+    Oke ($keluaranGeser | Where-Object { $_ -match '^Data simulasi' } | Select-Object -First 1)
+} else {
+    $keluaranGeser | Select-Object -Last 5 | ForEach-Object { Write-Host "    $_" }
+    Write-Host '    Tanggal data simulasi belum digeser; aplikasi tetap bisa dipakai.' -ForegroundColor Yellow
+}
+
 # Variasi pesanan, kontrak, dan stok untuk dua akun demo dan portal
 # distributor1 (termasuk dua kontrak yang minta berhenti). Tanggalnya relatif
 # terhadap hari ini, jadi disegarkan kalau umurnya lebih dari tiga hari, atau
