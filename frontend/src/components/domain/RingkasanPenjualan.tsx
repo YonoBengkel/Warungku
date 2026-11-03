@@ -457,7 +457,11 @@ function BatangPerHari({ perHari }: { perHari: RingkasanPenjualan['perHari'] }) 
   const atas = 22
   const celah = 4
   const w = (lebar - celah * (perHari.length - 1)) / perHari.length
-  const maks = Math.max(...perHari.map((h) => h.total), 1)
+  const maks = Math.max(...perHari.map((h) => h.total))
+  // Rentang tanpa penjualan sama sekali tidak punya batang tertinggi. Dulu nilai
+  // nol dipaksa jadi 1 untuk skala, sehingga puncaknya tidak pernah ketemu dan
+  // seluruh Beranda gagal tampil untuk usaha yang belum punya nota.
+  if (maks <= 0) return null
   const iPuncak = perHari.findIndex((h) => h.total === maks)
   const puncak = perHari[iPuncak]
   const label = `${rupiahRingkas(puncak.total)} · ${tanggalRingkas(tanggalLokal(puncak.tanggal))}`
@@ -613,7 +617,7 @@ export function KartuRingkasanPenjualan({
             ))}
           </ul>
 
-          {data.perHari.length > 1 && (
+          {data.perHari.length > 1 && data.perHari.some((h) => h.total > 0) && (
             <div className="mt-4 pt-4 border-t border-line">
               <p className="flex items-baseline justify-between gap-3 mb-2">
                 <span className="text-isi font-bold text-ink">Penjualan per hari</span>
