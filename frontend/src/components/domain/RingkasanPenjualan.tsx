@@ -104,6 +104,7 @@ function Petak({
   bawah,
   pita,
   lebar,
+  gambar,
 }: {
   label: string
   nilai: string
@@ -112,10 +113,26 @@ function Petak({
   pita: string
   /** Di HP selebar dua kolom: angka rupiah besar tidak muat setengah layar 360px. */
   lebar?: boolean
+  /**
+   * Ikon Flaticon gaya Mihimihi Flat di `public/gambar/penjualan/` (revisi V8):
+   * tiga yang sama dengan kartu Beranda, ditambah kalender dan orang. Hiasan,
+   * maknanya tetap di label.
+   */
+  gambar: string
 }) {
   return (
     <Kartu padat className={cx('border-b-4 min-w-0', pita, lebar && 'col-span-2 lg:col-span-1')}>
-      <p className="text-isi text-ink-2 leading-snug">{label}</p>
+      <p className="flex items-center gap-2.5 min-w-0">
+        <img
+          src={`${import.meta.env.BASE_URL}gambar/penjualan/${gambar}`}
+          alt=""
+          aria-hidden="true"
+          width={40}
+          height={40}
+          className="size-10 shrink-0"
+        />
+        <span className="text-isi text-ink-2 leading-snug">{label}</span>
+      </p>
       {/* Tanpa break-words: angka hanya boleh turun baris di spasi ("Rp" | angka), tidak di tengah angka. */}
       <p className="mt-1 text-[1.125rem] sm:text-[1.375rem] font-extrabold text-ink tabular leading-tight">{nilai}</p>
       {bawah && <div className="mt-1">{bawah}</div>}
@@ -281,6 +298,7 @@ export function TampilanRingkasan({
                 label={istilah.total}
                 nilai={rupiah(data.total)}
                 pita="border-b-brand"
+                gambar="ikon-penjualan-total.png"
                 lebar
                 bawah={<Banding sekarang={data.total} lalu={data.pembandingTotal} hari={panjang} />}
               />
@@ -288,14 +306,16 @@ export function TampilanRingkasan({
                 label={`Jumlah ${istilah.transaksi}`}
                 nilai={angka(data.jumlahTransaksi)}
                 pita="border-b-aksen"
+                gambar="ikon-penjualan-nota.png"
                 bawah={<Banding sekarang={data.jumlahTransaksi} lalu={data.pembandingJumlah} hari={panjang} />}
               />
-              <Petak label={`Rata-rata per ${istilah.transaksi}`} nilai={rupiah(data.rataRata)} pita="border-b-kuning" />
+              <Petak label={`Rata-rata per ${istilah.transaksi}`} nilai={rupiah(data.rataRata)} pita="border-b-kuning" gambar="ikon-penjualan-rata.png" />
               {data.jumlahPihak != null && istilah.pihak ? (
-                <Petak label={`Jumlah ${istilah.pihak}`} nilai={angka(data.jumlahPihak)} pita="border-b-info" lebar />
+                <Petak label={`Jumlah ${istilah.pihak}`} nilai={angka(data.jumlahPihak)} pita="border-b-info" gambar="ikon-penjualan-pembeli.png" lebar />
               ) : (
                 <Petak
                   label="Hari tersibuk"
+                  gambar="ikon-penjualan-hari.png"
                   nilai={tersibuk && tersibuk.total > 0 ? tanggalRingkas(tanggalLokal(tersibuk.tanggal)) : '–'}
                   pita="border-b-info"
                   lebar
