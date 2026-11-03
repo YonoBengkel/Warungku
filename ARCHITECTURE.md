@@ -19,6 +19,10 @@ flowchart LR
   Portal POS mengikuti pola Portal Distributor, yaitu `/pos` dengan halaman masuk `/masuk/pos`.
 - **Dua portal bisa dibuka bersamaan.** Sesi disimpan di `sessionStorage`, jadi tiap tab atau jendela punya sesinya
   sendiri (`frontend/src/lib/api.ts`).
+- **Stok diubah lewat endpoint, bukan di peramban (audit 3 Nov 2026).** Tambah Barang, Ubah Barang, Koreksi Stok, Catat
+  Pemakaian, Batas Aman (satu dan massal), dan Kelola Kategori memanggil `backend/api/stok.py` di mode data server. Dulu
+  semuanya hanya mengubah store, jadi hilang saat halaman dimuat ulang. Stok awal dan koreksi dicatat sebagai pergerakan
+  `koreksi`, pemakaian manual sebagai `terjual`, sehingga invarian stok sama dengan jumlah pergerakan tetap berlaku.
 - **Nota adalah pintu masuk.** `POST /usaha/{id}/transaksi` (`backend/api/gudang.py`) menyimpan nota, menerjemahkan
   menu ke bahan lewat `pemetaan_menu`, menulis `pergerakan`, memotong `barang.stok`, dan menambah
   `permintaan_harian` dalam satu transaksi basis data. Nomor struk yang sama tidak diproses dua kali. Menu tanpa

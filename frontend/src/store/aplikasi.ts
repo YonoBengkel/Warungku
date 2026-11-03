@@ -69,6 +69,12 @@ import { jumlahTampil } from '@/lib/satuan'
 import {
   ambilBarang,
   ambilPemakaianBulanan,
+  batasAmanIkutSaranServer,
+  catatPemakaianServer,
+  gantiKategoriServer,
+  koreksiStokServer,
+  tambahBarangServer,
+  ubahBarangServer,
   masukDistributor,
   masukUmkm,
   masukPos as masukPosApi,
@@ -249,15 +255,24 @@ interface KeadaanAplikasi {
   periksaNotaMasuk: () => Promise<void>
   /** Alat uji purwarupa: kirim satu nota berisi menu yang ada, seperti dari kasir. */
   kirimNotaContoh: () => Promise<void>
-  catatPemakaianHarian: (pemakaian: Record<string, number>) => void
+  /**
+   * Aksi tulis stok di bawah ini menyimpan ke server di mode data server (audit 3 Nov 2026),
+   * dan hanya ke memori di mode data contoh. Hasilnya `true` (atau id barang) kalau tersimpan.
+   */
+  catatPemakaianHarian: (pemakaian: Record<string, number>) => Promise<boolean>
 
   /* Stok */
   /** Menyimpan sisa hasil hitung di rak. Selisihnya dicatat sebagai pergerakan berjenis koreksi. */
-  koreksiStok: (barangId: string, stokBaru: number) => void
-  aturBatasAman: (barangId: string, batas: number, sumber: 'sistem' | 'sendiri') => void
-  aturBatasAmanMassal: (barangIds: string[]) => void
-  tambahBarang: (b: Barang) => void
+  koreksiStok: (barangId: string, stokBaru: number) => Promise<boolean>
+  aturBatasAman: (barangId: string, batas: number, sumber: 'sistem' | 'sendiri', hariKirim?: number) => Promise<boolean>
+  aturBatasAmanMassal: (barangIds: string[]) => Promise<boolean>
+  /** Id barang yang tersimpan (dari server di mode data server), atau null kalau gagal. */
+  tambahBarang: (b: Barang) => Promise<string | null>
+  /** Ubah barang di memori saja, untuk keadaan turunan. Ubahan dari layar memakai `simpanBarang`. */
   ubahBarang: (barangId: string, p: Partial<Barang>) => void
+  simpanBarang: (barangId: string, p: Partial<Barang>) => Promise<boolean>
+  /** Ganti nama satu kategori atau gabungkan beberapa kategori ke satu nama. */
+  gantiKategori: (dari: string[], ke: string) => Promise<boolean>
 
   /* Keranjang */
   tambahKeKeranjang: (
@@ -352,6 +367,11 @@ function temaAwal(): 'terang' | 'gelap' {
 
 function stempel(): string {
   return new Date().toISOString()
+}
+
+/** Pesan saat tulisan ke server gagal: pesan server kalau ada, selain itu kalimat bawaan. */
+function galatSimpan(e: unknown, apa: string): string {
+  return e instanceof Error && e.message ? e.message : `${apa} belum tersimpan. Coba lagi sebentar lagi.`
 }
 
 /**
@@ -1034,7 +1054,25 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
     }
   },
 
-  catatPemakaianHarian: (pemakaian) => {
+  catatPemakaianHarian: async (pemakaian) => {
+    const sesi = get().sesiServer
+    if (sesi) {
+      try {
+        const h = await catatPemakaianServer(sesi, pemakaian)
+        // Tulisannya sudah tersimpan: gagal menyegarkan daftar bukan gagal menyimpan.
+        await get().segarkanGudangServer().catch(() => {})
+        get().tampilkanRacun(
+          h.stokKurang.length > 0
+            ? `Pemakaian ${h.tercatat} barang tersimpan. Stok ${h.stokKurang.join(', ')} tercatat lebih kecil dari pemakaiannya, jadi yang dipotong hanya sisanya. Hitung rak lalu koreksi.`
+            : `Pemakaian ${h.tercatat} barang tersimpan.`,
+          h.stokKurang.length > 0 ? 'menipis' : 'aman',
+        )
+        return true
+      } catch (e) {
+        get().tampilkanRacun(galatSimpan(e, 'Pemakaian'), 'kritis')
+        return false
+      }
+    }
     const s = get()
     const catatan: Pergerakan[] = []
     const barangBaru = s.barang.map((b) => {
@@ -1057,16 +1095,29 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
     })
     set({ barang: barangBaru, pergerakan: [...catatan, ...s.pergerakan] })
     get().tampilkanRacun(`Pemakaian ${catatan.length} barang tersimpan.`, 'aman')
+    return true
   },
 
-  koreksiStok: (barangId, stokBaruMentah) => {
+  koreksiStok: async (barangId, stokBaruMentah) => {
     const barang = get().barang.find((b) => b.id === barangId)
-    if (!barang) return
+    if (!barang) return false
     const stokBaru = Math.max(0, Math.round(stokBaruMentah * 100) / 100)
+    const sesi = get().sesiServer
+    if (sesi) {
+      try {
+        const baru = await koreksiStokServer(sesi, barangId, stokBaru)
+        set((s) => ({ barang: s.barang.map((b) => (b.id === barangId ? baru : b)) }))
+        get().tampilkanRacun(`Stok ${barang.nama} jadi ${jumlahTampil(baru, stokBaru)}.`, 'aman')
+        return true
+      } catch (e) {
+        get().tampilkanRacun(galatSimpan(e, 'Koreksi stok'), 'kritis')
+        return false
+      }
+    }
     // Selisih dari angka yang tampil (stok minus ditampilkan 0), supaya riwayat
     // berbunyi sama dengan yang dilihat pemilik usaha saat mengoreksi.
     const selisih = Math.round((stokBaru - Math.max(0, barang.stok)) * 100) / 100
-    if (selisih === 0) return
+    if (selisih === 0) return true
     const jejak: Pergerakan = {
       id: `pg-${Date.now()}`,
       barangId,
@@ -1086,29 +1137,86 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
       pergerakan: [jejak, ...s.pergerakan],
     }))
     get().tampilkanRacun(`Stok ${barang.nama} jadi ${jumlahTampil(barang, stokBaru)}.`, 'aman')
+    return true
   },
 
-  aturBatasAman: (barangId, batas, sumber) =>
-    set((s) => ({
-      barang: s.barang.map((b) => (b.id === barangId ? { ...b, batasAman: batas, sumberBatasAman: sumber } : b)),
-    })),
+  aturBatasAman: (barangId, batas, sumber, hariKirim) =>
+    get().simpanBarang(barangId, { batasAman: batas, sumberBatasAman: sumber, ...(hariKirim !== undefined ? { hariKirim } : {}) }),
 
-  aturBatasAmanMassal: (barangIds) => {
+  aturBatasAmanMassal: async (barangIds) => {
+    const sesi = get().sesiServer
+    if (sesi) {
+      try {
+        const n = await batasAmanIkutSaranServer(sesi, barangIds)
+        await get().segarkanGudangServer().catch(() => {})
+        get().tampilkanRacun(`Batas aman ${n} barang mengikuti saran sistem.`, 'aman')
+        return true
+      } catch (e) {
+        get().tampilkanRacun(galatSimpan(e, 'Batas aman'), 'kritis')
+        return false
+      }
+    }
     set((s) => ({
       barang: s.barang.map((b) =>
         barangIds.includes(b.id) ? { ...b, batasAman: b.batasAmanSaran, sumberBatasAman: 'sistem' } : b,
       ),
     }))
     get().tampilkanRacun(`Batas aman ${barangIds.length} barang mengikuti saran sistem.`, 'aman')
+    return true
   },
 
-  tambahBarang: (b) => {
+  tambahBarang: async (b) => {
+    const sesi = get().sesiServer
+    if (sesi) {
+      try {
+        const baru = await tambahBarangServer(sesi, b)
+        set((s) => ({ barang: [baru, ...s.barang] }))
+        get().tampilkanRacun(`${baru.nama} ditambahkan ke daftar stok.`, 'aman')
+        return baru.id
+      } catch (e) {
+        get().tampilkanRacun(galatSimpan(e, 'Barang baru'), 'kritis')
+        return null
+      }
+    }
     set((s) => ({ barang: [b, ...s.barang] }))
     get().tampilkanRacun(`${b.nama} ditambahkan ke daftar stok.`, 'aman')
+    return b.id
   },
 
   ubahBarang: (barangId, p) =>
     set((s) => ({ barang: s.barang.map((b) => (b.id === barangId ? { ...b, ...p } : b)) })),
+
+  simpanBarang: async (barangId, p) => {
+    const sesi = get().sesiServer
+    if (sesi) {
+      try {
+        const baru = await ubahBarangServer(sesi, barangId, p)
+        set((s) => ({ barang: s.barang.map((b) => (b.id === barangId ? baru : b)) }))
+        return true
+      } catch (e) {
+        get().tampilkanRacun(galatSimpan(e, 'Perubahan barang'), 'kritis')
+        return false
+      }
+    }
+    get().ubahBarang(barangId, p)
+    return true
+  },
+
+  gantiKategori: async (dari, ke) => {
+    const sesi = get().sesiServer
+    if (sesi) {
+      try {
+        await gantiKategoriServer(sesi, dari, ke)
+        await get().segarkanGudangServer().catch(() => {})
+        return true
+      } catch (e) {
+        get().tampilkanRacun(galatSimpan(e, 'Perubahan kategori'), 'kritis')
+        return false
+      }
+    }
+    set((s) => ({ barang: s.barang.map((b) => (dari.includes(b.kategori) ? { ...b, kategori: ke } : b)) }))
+    return true
+  },
 
   tambahKeKeranjang: (distributorId, penawaranId, jumlah, saranSistem = null, kontrakIdDiminta = null) => {
     // Pengajuan yang belum disetujui (atau kontrak yang sudah berakhir) tidak

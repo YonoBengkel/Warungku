@@ -39,6 +39,7 @@ export default function StokKoreksi() {
      tercatat supaya orang cukup menggeser angkanya, bukan mengetik dari nol. */
   const [nilai, setNilai] = useState(() => (barang ? keTampilBulat(barang, Math.max(0, barang.stok)) : 0))
   const [dicoba, setDicoba] = useState(false)
+  const [menyimpan, setMenyimpan] = useState(false)
 
   if (!barang) {
     return (
@@ -66,10 +67,13 @@ export default function StokKoreksi() {
 
   /* Ditulis sebagai const supaya penjagaan "barang tidak ditemukan" di atas
      tetap berlaku di dalam penangan ini. */
-  const simpan = () => {
+  const simpan = async () => {
     setDicoba(true)
     if (sama) return
-    koreksiStok(barang.id, stokBaru)
+    setMenyimpan(true)
+    const tersimpan = await koreksiStok(barang.id, stokBaru)
+    setMenyimpan(false)
+    if (!tersimpan) return // Toast galatnya sudah tampil; angkanya tetap di layar.
     // Mengganti formulir di riwayat supaya tombol kembali tidak membukanya lagi (revisi V3, Q78).
     navigasi(`/stok/${barang.id}`, { replace: true })
   }
@@ -119,7 +123,7 @@ export default function StokKoreksi() {
           )}
 
           <div className="mt-4 flex flex-col sm:flex-row gap-2.5">
-            <Tombol penuh onClick={simpan}>
+            <Tombol penuh memuat={menyimpan} onClick={simpan}>
               Simpan Koreksi
             </Tombol>
             <Tombol ragam="garis" penuh onClick={() => kembali(`/stok/${barang.id}`)}>

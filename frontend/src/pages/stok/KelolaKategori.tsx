@@ -31,7 +31,7 @@ interface Baris {
 
 export default function KelolaKategori() {
   const barang = useAplikasi((s) => s.barang)
-  const ubahBarang = useAplikasi((s) => s.ubahBarang)
+  const gantiKategori = useAplikasi((s) => s.gantiKategori)
   const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
 
   /* Kategori tidak punya tabel sendiri: ia hidup di dalam barang. Kategori baru
@@ -94,26 +94,26 @@ export default function KelolaKategori() {
     tutup()
   }
 
-  function simpanUbah() {
+  async function simpanUbah() {
     const pesan = periksaNama(teks, target)
     if (pesan) {
       setGalat(pesan)
       return
     }
     const bersih = teks.trim()
-    for (const b of barang) if (b.kategori === target) ubahBarang(b.id, { kategori: bersih })
+    if (barang.some((b) => b.kategori === target) && !(await gantiKategori([target], bersih))) return
     setKategoriKosong((lama) => lama.map((k) => (k === target ? bersih : k)))
     tampilkanRacun(`Kategori ${target} sekarang bernama ${bersih}.`, 'aman')
     tutup()
   }
 
-  function simpanGabung() {
+  async function simpanGabung() {
     if (!tujuan) {
       setGalat('Pilih dulu kategori tujuannya. Kategori yang kamu pilih akan menampung semua barang di sini.')
       return
     }
     const dipindah = barang.filter((b) => b.kategori === target).length
-    for (const b of barang) if (b.kategori === target) ubahBarang(b.id, { kategori: tujuan })
+    if (dipindah > 0 && !(await gantiKategori([target], tujuan))) return
     setKategoriKosong((lama) => lama.filter((k) => k !== target))
     tampilkanRacun(
       dipindah > 0

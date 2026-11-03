@@ -79,7 +79,7 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
   const semuaBarang = useAplikasi((s) => s.barang)
   const pergerakan = useAplikasi((s) => s.pergerakan)
   const tambahBarang = useAplikasi((s) => s.tambahBarang)
-  const ubahBarang = useAplikasi((s) => s.ubahBarang)
+  const simpanBarang = useAplikasi((s) => s.simpanBarang)
   const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
 
   const mengubah = barang != null
@@ -119,6 +119,7 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
   const [dicatatManual, setDicatatManual] = useState(() => barang?.dicatatManual ?? false)
   const [catatan, setCatatan] = useState(() => barang?.catatan ?? '')
   const [dicoba, setDicoba] = useState(false)
+  const [menyimpan, setMenyimpan] = useState(false)
   const [konfirmasiKemasan, setKonfirmasiKemasan] = useState(false)
 
   const daftarKategori = useMemo(
@@ -251,7 +252,7 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
     terapkan()
   }
 
-  function terapkan() {
+  async function terapkan() {
     /* Kosong atau 0 berarti pemilik usaha belum memutuskan: pakai bawaan 10,
        bukan 0 — batas 0 membuat barang tidak pernah menipis sampai habis.
        Angka 10 yang dibiarkan apa adanya pada barang yang masih memakai bawaan
@@ -263,7 +264,8 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
     const sumber: SumberBatasAman = ikutSaran && !kosong ? 'sistem' : masihBawaan ? 'bawaan' : 'sendiri'
 
     if (barang) {
-      ubahBarang(barang.id, {
+      setMenyimpan(true)
+      const tersimpan = await simpanBarang(barang.id, {
         nama: nama.trim(),
         deskripsi: deskripsi.trim() || null,
         namaLain,
@@ -281,6 +283,9 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
         dicatatManual,
         catatan: catatan.trim() || null,
       })
+      setMenyimpan(false)
+      // Gagal: toast galatnya sudah tampil, dan isian tetap di layar untuk dicoba lagi.
+      if (!tersimpan) return
       tampilkanRacun(`Perubahan ${nama.trim()} tersimpan.`, 'aman')
       navigasi(`/stok/${barang.id}`, { replace: true })
       return
@@ -310,9 +315,13 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
       dicatatManual,
       catatan: catatan.trim() || null,
     }
-    tambahBarang(baru)
+    setMenyimpan(true)
+    const id = await tambahBarang(baru)
+    setMenyimpan(false)
+    if (!id) return
     // Mengganti formulir di riwayat: tombol kembali di rincian barang tidak membukanya lagi (revisi V3, Q78).
-    navigasi(`/stok/${baru.id}`, { replace: true })
+    // Di mode data server id-nya dari server, bukan id sementara buatan layar ini.
+    navigasi(`/stok/${id}`, { replace: true })
   }
 
   return (
@@ -739,7 +748,7 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
         }
       >
         <div className="grid grid-cols-[2fr_1fr] gap-2.5">
-          <Tombol penuh ukuran="besar" onClick={kirim}>
+          <Tombol penuh ukuran="besar" memuat={menyimpan} onClick={kirim}>
             {mengubah ? 'Simpan Perubahan' : 'Simpan Barang'}
           </Tombol>
           <Tombol ragam="garis" ukuran="besar" penuh onClick={() => kembali(barang ? `/stok/${barang.id}` : '/stok')}>

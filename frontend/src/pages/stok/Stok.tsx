@@ -543,7 +543,7 @@ export default function Stok() {
           judul={`${belumDiaturIds.length} barang masih memakai batas bawaan ${BATAS_AMAN_BAWAAN}`}
           className="mt-3 lg:shrink-0"
           aksi={
-            <Tombol ukuran="kecil" onClick={() => aturBatasAmanMassal(belumDiaturIds)}>
+            <Tombol ukuran="kecil" onClick={() => void aturBatasAmanMassal(belumDiaturIds)}>
               {belumDiaturIds.length === 1
                 ? `Pakai saran sistem untuk ${tersaring.find((b) => b.id === belumDiaturIds[0])?.nama}`
                 : 'Pakai saran sistem untuk semua barang ini'}

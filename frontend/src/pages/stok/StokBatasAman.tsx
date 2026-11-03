@@ -32,7 +32,6 @@ export default function StokBatasAman() {
   const navigasi = useNavigate()
   const barang = useAplikasi((s) => s.barang.find((b) => b.id === id))
   const aturBatasAman = useAplikasi((s) => s.aturBatasAman)
-  const ubahBarang = useAplikasi((s) => s.ubahBarang)
   const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
 
   const [aturSendiri, setAturSendiri] = useState(false)
@@ -90,8 +89,8 @@ export default function StokBatasAman() {
 
   /* Ditulis sebagai const supaya penjagaan "barang tidak ditemukan" di atas
      tetap berlaku di dalam kedua penangan ini. */
-  const pakaiSaran = () => {
-    aturBatasAman(barang.id, saran, 'sistem')
+  const pakaiSaran = async () => {
+    if (!(await aturBatasAman(barang.id, saran, 'sistem'))) return
     tampilkanRacun(
       `Batas aman ${barang.nama} jadi ${jumlahTampil(barang, saran)}, mengikuti saran sistem.`,
       'aman',
@@ -110,11 +109,12 @@ export default function StokBatasAman() {
         }.`
       : undefined
 
-  const simpanSendiri = () => {
+  const simpanSendiri = async () => {
     setDicoba(true)
     if (hariKirimGalat || nilai <= 0) return
-    aturBatasAman(barang.id, dariTampil(barang, nilai), 'sendiri')
-    if (hariKirimAngka !== barang.hariKirim) ubahBarang(barang.id, { hariKirim: hariKirimAngka })
+    // Batas aman dan lama kirim satu permintaan, supaya tidak ada yang tersimpan separuh.
+    const hariKirimBaru = hariKirimAngka !== barang.hariKirim ? hariKirimAngka : undefined
+    if (!(await aturBatasAman(barang.id, dariTampil(barang, nilai), 'sendiri', hariKirimBaru))) return
     tampilkanRacun(
       `Batas aman ${barang.nama} kamu atur jadi ${angkaTampil(barang, dariTampil(barang, nilai))} ${satuanTampil(barang).nama}.`,
       'aman',

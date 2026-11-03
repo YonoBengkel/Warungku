@@ -54,11 +54,11 @@ export default function BatasAmanAwal() {
 
   const jumlahIkutSaran = daftar.filter((b) => ikutSaran(b, nilai[b.id] ?? '')).length
 
-  function pakaiSemuaSaran() {
+  async function pakaiSemuaSaran() {
+    if (!(await aturBatasAmanMassal(daftar.map((b) => b.id)))) return
     setNilai(Object.fromEntries(daftar.map((b) => [b.id, teksSaran(b)])))
     setGalat({})
     setSemuaSaran(true)
-    aturBatasAmanMassal(daftar.map((b) => b.id))
   }
 
   function ubahNilai(id: string, v: string) {
@@ -77,7 +77,7 @@ export default function BatasAmanAwal() {
     setSemuaSaran(false)
   }
 
-  function simpan() {
+  async function simpan() {
     const baru: Record<string, string> = {}
     for (const b of daftar) {
       const n = bacaAngkaIndonesia(nilai[b.id] ?? '')
@@ -94,11 +94,15 @@ export default function BatasAmanAwal() {
       return
     }
 
-    for (const b of daftar) {
-      const teks = nilai[b.id] ?? ''
-      const sama = ikutSaran(b, teks)
-      aturBatasAman(b.id, sama ? b.batasAmanSaran : dariTampil(b, bacaAngkaIndonesia(teks)), sama ? 'sistem' : 'sendiri')
-    }
+    const hasil = await Promise.all(
+      daftar.map((b) => {
+        const teks = nilai[b.id] ?? ''
+        const sama = ikutSaran(b, teks)
+        return aturBatasAman(b.id, sama ? b.batasAmanSaran : dariTampil(b, bacaAngkaIndonesia(teks)), sama ? 'sistem' : 'sendiri')
+      }),
+    )
+    // Toast galat tiap barang yang gagal sudah tampil; layar ini tetap terbuka untuk dicoba lagi.
+    if (hasil.some((ok) => !ok)) return
     tampilkanRacun(`Pengingat stok tipis menyala untuk ${daftar.length} barang.`, 'aman')
     navigate('/beranda')
   }

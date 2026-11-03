@@ -523,6 +523,12 @@ turnify-flow/
 | GET | `/auth/saya` | Siapa pemegang token ini |
 | GET | `/usaha/{usaha_id}/barang` | Daftar barang di gudang, termasuk pemakaian rata-rata 28 hari, harga per satuan, dan hari sejak terakhir terpakai (`hari_tanpa_pemakaian`, dihitung dari hari terakhir data) |
 | GET | `/usaha/{usaha_id}/barang/{barang_id}/perkiraan` | Perkiraan terbaru Mesin 1 (p10, p50, p90 per hari), termasuk uji balik 14 hari (`uji_balik`) |
+| POST | `/usaha/{usaha_id}/barang` | Tambah barang. Stok awalnya dicatat sebagai pergerakan koreksi, dan kode kosong dibuatkan dari id |
+| PATCH | `/usaha/{usaha_id}/barang/{barang_id}` | Ubah barang, termasuk batas aman, lama kirim, kemasan, dan kedaluwarsa. Satuan barang yang sudah punya riwayat stok tidak bisa diganti |
+| POST | `/usaha/{usaha_id}/barang/{barang_id}/koreksi` | Stok hasil hitung rak. Selisihnya dicatat sebagai pergerakan koreksi |
+| POST | `/usaha/{usaha_id}/pemakaian` | Pemakaian hari ini yang dicatat dengan tangan. Yang dipotong paling banyak sisa stok |
+| POST | `/usaha/{usaha_id}/batas-aman/ikut-saran` | Batas aman beberapa barang mengikuti saran sistem |
+| POST | `/usaha/{usaha_id}/kategori/ganti` | Ganti nama satu kategori, atau gabungkan beberapa kategori |
 | GET | `/usaha/{usaha_id}/barang/{barang_id}/riwayat` | Pemakaian harian terakhir; hari stok habis ditandai |
 | GET | `/usaha/{usaha_id}/barang/{barang_id}/saran` | Saran distributor terbaru Mesin 2, dibaca dari tabel |
 | GET | `/usaha/{usaha_id}/saran-distributor` | Saran Mesin 2 dirangkum per distributor: rata-rata skor, peluang lancar, barang yang menempatkannya di urutan pertama |

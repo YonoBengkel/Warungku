@@ -81,79 +81,84 @@ def _harga_per_satuan(harga_kemasan: int, kemasan: list[KemasanRingkas]) -> Deci
 def daftar_barang(usaha_id: int = Depends(usaha_saya)) -> list[BarangRingkas]:
     with Session(mesin()) as sesi:
         _usaha_atau_404(sesi, usaha_id)
-        barang = sesi.exec(
-            select(Barang).where(Barang.usaha_id == usaha_id).order_by(Barang.nama)
+        return ringkas_barang(sesi, usaha_id)
+
+
+def ringkas_barang(sesi: Session, usaha_id: int) -> list[BarangRingkas]:
+    """Semua barang usaha ini dalam bentuk layar. Dipakai juga endpoint tulis di `api.stok`."""
+    barang = sesi.exec(
+        select(Barang).where(Barang.usaha_id == usaha_id).order_by(Barang.nama)
+    ).all()
+    kemasan: dict[int, list[KemasanRingkas]] = {}
+    for k in sesi.exec(
+        select(Kemasan).join(Barang, Barang.id == Kemasan.barang_id)
+        .where(Barang.usaha_id == usaha_id).order_by(Kemasan.isi)
+    ).all():
+        kemasan.setdefault(k.barang_id, []).append(KemasanRingkas(nama=k.nama, isi=k.isi))
+    # Rata-rata 28 hari terakhir yang tercatat, tanpa hari tersensor stok habis.
+    pakai = dict(
+        sesi.exec(
+            text(
+                """
+                SELECT barang_id, avg(jumlah) FILTER (WHERE NOT stok_habis)
+                  FROM permintaan_harian
+                 WHERE usaha_id = :u
+                   AND tanggal > (SELECT max(tanggal) FROM permintaan_harian WHERE usaha_id = :u) - 28
+                 GROUP BY barang_id
+                """
+            ).bindparams(u=usaha_id)
         ).all()
-        kemasan: dict[int, list[KemasanRingkas]] = {}
-        for k in sesi.exec(
-            select(Kemasan).join(Barang, Barang.id == Kemasan.barang_id)
-            .where(Barang.usaha_id == usaha_id).order_by(Kemasan.isi)
-        ).all():
-            kemasan.setdefault(k.barang_id, []).append(KemasanRingkas(nama=k.nama, isi=k.isi))
-        # Rata-rata 28 hari terakhir yang tercatat, tanpa hari tersensor stok habis.
-        pakai = dict(
-            sesi.exec(
-                text(
-                    """
-                    SELECT barang_id, avg(jumlah) FILTER (WHERE NOT stok_habis)
-                      FROM permintaan_harian
-                     WHERE usaha_id = :u
-                       AND tanggal > (SELECT max(tanggal) FROM permintaan_harian WHERE usaha_id = :u) - 28
-                     GROUP BY barang_id
-                    """
-                ).bindparams(u=usaha_id)
-            ).all()
+    )
+    # Terakhir terpakai per barang, dan hari acuan usaha: data simulasi berhenti
+    # sebelum hari ini, jadi "sudah lama tidak terpakai" diukur dari hari
+    # terakhir yang tercatat. Kalau diukur dari hari ini, semua barang lambat
+    # laun terbaca tidak bergerak.
+    terakhir = {
+        r[0]: r[1]
+        for r in sesi.exec(
+            text(
+                """
+                SELECT barang_id, max((waktu AT TIME ZONE 'UTC')::date)
+                  FROM pergerakan WHERE usaha_id = :u AND jenis = 'terjual'
+                 GROUP BY barang_id
+                """
+            ).bindparams(u=usaha_id)
+        ).all()
+    }
+    acuan = sesi.exec(
+        text("SELECT max(tanggal) FROM permintaan_harian WHERE usaha_id = :u").bindparams(u=usaha_id)
+    ).scalar()
+    acuan = max([t for t in [acuan, *terakhir.values()] if t is not None], default=None)
+    return [
+        BarangRingkas(
+            id=b.id,
+            nama=b.nama,
+            deskripsi=b.deskripsi,
+            nama_lain=list(b.nama_lain or []),
+            kategori=b.kategori,
+            kode_barang=b.kode_barang,
+            satuan=b.satuan,
+            satuan_tampil=b.satuan_tampil,
+            kemasan=kemasan.get(b.id, []),
+            stok=b.stok,
+            batas_aman=b.batas_aman,
+            batas_aman_saran=b.batas_aman_saran,
+            sumber_batas_aman=str(getattr(b.sumber_batas_aman, "value", b.sumber_batas_aman)),
+            hari_kirim=b.hari_kirim,
+            harga_beli_terakhir=b.harga_beli_terakhir,
+            harga_beli_per_satuan=_harga_per_satuan(b.harga_beli_terakhir, kemasan.get(b.id, [])),
+            pemakaian_harian=Decimal(pakai.get(b.id) or 0).quantize(Decimal("0.001")),
+            hari_data_terkumpul=b.hari_data_terkumpul,
+            ingatkan_kedaluwarsa=b.ingatkan_kedaluwarsa,
+            kedaluwarsa=b.kedaluwarsa,
+            terhubung_kasir=b.terhubung_kasir,
+            status=_status(b.stok, b.batas_aman),
+            dicatat_manual=b.dicatat_manual,
+            catatan=b.catatan,
+            hari_tanpa_pemakaian=(acuan - terakhir[b.id]).days if b.id in terakhir else None,
         )
-        # Terakhir terpakai per barang, dan hari acuan usaha: data simulasi berhenti
-        # sebelum hari ini, jadi "sudah lama tidak terpakai" diukur dari hari
-        # terakhir yang tercatat. Kalau diukur dari hari ini, semua barang lambat
-        # laun terbaca tidak bergerak.
-        terakhir = {
-            r[0]: r[1]
-            for r in sesi.exec(
-                text(
-                    """
-                    SELECT barang_id, max((waktu AT TIME ZONE 'UTC')::date)
-                      FROM pergerakan WHERE usaha_id = :u AND jenis = 'terjual'
-                     GROUP BY barang_id
-                    """
-                ).bindparams(u=usaha_id)
-            ).all()
-        }
-        acuan = sesi.exec(
-            text("SELECT max(tanggal) FROM permintaan_harian WHERE usaha_id = :u").bindparams(u=usaha_id)
-        ).scalar()
-        acuan = max([t for t in [acuan, *terakhir.values()] if t is not None], default=None)
-        return [
-            BarangRingkas(
-                id=b.id,
-                nama=b.nama,
-                deskripsi=b.deskripsi,
-                nama_lain=list(b.nama_lain or []),
-                kategori=b.kategori,
-                kode_barang=b.kode_barang,
-                satuan=b.satuan,
-                satuan_tampil=b.satuan_tampil,
-                kemasan=kemasan.get(b.id, []),
-                stok=b.stok,
-                batas_aman=b.batas_aman,
-                batas_aman_saran=b.batas_aman_saran,
-                sumber_batas_aman=str(getattr(b.sumber_batas_aman, "value", b.sumber_batas_aman)),
-                hari_kirim=b.hari_kirim,
-                harga_beli_terakhir=b.harga_beli_terakhir,
-                harga_beli_per_satuan=_harga_per_satuan(b.harga_beli_terakhir, kemasan.get(b.id, [])),
-                pemakaian_harian=Decimal(pakai.get(b.id) or 0).quantize(Decimal("0.001")),
-                hari_data_terkumpul=b.hari_data_terkumpul,
-                ingatkan_kedaluwarsa=b.ingatkan_kedaluwarsa,
-                kedaluwarsa=b.kedaluwarsa,
-                terhubung_kasir=b.terhubung_kasir,
-                status=_status(b.stok, b.batas_aman),
-                dicatat_manual=b.dicatat_manual,
-                catatan=b.catatan,
-                hari_tanpa_pemakaian=(acuan - terakhir[b.id]).days if b.id in terakhir else None,
-            )
-            for b in barang
-        ]
+        for b in barang
+    ]
 
 
 @rute.get("/barang/{barang_id}/riwayat", response_model=list[RiwayatHarian])

@@ -237,6 +237,91 @@ export async function ambilBarang(sesi: SesiServer): Promise<Barang[]> {
   return isi.map(keBarang)
 }
 
+/* Tulis stok (audit 3 Nov 2026). Dulu layar Stok hanya mengubah data di peramban. */
+
+/** Angka desimal untuk kolom Numeric(14,3): paling banyak tiga angka di belakang koma. */
+const desimal = (x: number) => String(Math.round(x * 1000) / 1000)
+
+function keBadanBarang(p: Partial<Barang>): Record<string, unknown> {
+  const badan: Record<string, unknown> = {}
+  if (p.nama !== undefined) badan.nama = p.nama
+  if (p.deskripsi !== undefined) badan.deskripsi = p.deskripsi
+  if (p.namaLain !== undefined) badan.nama_lain = p.namaLain
+  if (p.kategori !== undefined) badan.kategori = p.kategori
+  if (p.kodeBarang) badan.kode_barang = p.kodeBarang
+  if (p.satuan !== undefined) badan.satuan = p.satuan
+  if (p.satuanTampil !== undefined) badan.satuan_tampil = p.satuanTampil
+  if (p.kemasan !== undefined) badan.kemasan = p.kemasan.map((k) => ({ nama: k.nama, isi: desimal(k.isi) }))
+  if (p.batasAman !== undefined) badan.batas_aman = desimal(p.batasAman)
+  if (p.sumberBatasAman !== undefined) badan.sumber_batas_aman = p.sumberBatasAman
+  if (p.hariKirim !== undefined) badan.hari_kirim = p.hariKirim
+  if (p.ingatkanKedaluwarsa !== undefined) badan.ingatkan_kedaluwarsa = p.ingatkanKedaluwarsa
+  if (p.kedaluwarsa !== undefined) badan.kedaluwarsa = p.kedaluwarsa
+  if (p.dicatatManual !== undefined) badan.dicatat_manual = p.dicatatManual
+  if (p.catatan !== undefined) badan.catatan = p.catatan
+  return badan
+}
+
+export async function tambahBarangServer(sesi: SesiServer, b: Barang): Promise<Barang> {
+  const isi = await minta<BarangApi>(`/usaha/${sesi.usahaId}/barang`, {
+    method: 'POST',
+    token: sesi.token,
+    body: JSON.stringify({ ...keBadanBarang(b), stok_awal: desimal(b.stok) }),
+  })
+  return keBarang(isi)
+}
+
+export async function ubahBarangServer(sesi: SesiServer, barangId: string, p: Partial<Barang>): Promise<Barang> {
+  const isi = await minta<BarangApi>(`/usaha/${sesi.usahaId}/barang/${barangId}`, {
+    method: 'PATCH',
+    token: sesi.token,
+    body: JSON.stringify(keBadanBarang(p)),
+  })
+  return keBarang(isi)
+}
+
+export async function koreksiStokServer(sesi: SesiServer, barangId: string, stok: number): Promise<Barang> {
+  const isi = await minta<BarangApi>(`/usaha/${sesi.usahaId}/barang/${barangId}/koreksi`, {
+    method: 'POST',
+    token: sesi.token,
+    body: JSON.stringify({ stok: desimal(stok) }),
+  })
+  return keBarang(isi)
+}
+
+export async function catatPemakaianServer(
+  sesi: SesiServer,
+  pemakaian: Record<string, number>,
+): Promise<{ tercatat: number; stokKurang: string[] }> {
+  const baris = Object.entries(pemakaian)
+    .filter(([, n]) => n > 0)
+    .map(([id, n]) => ({ barang_id: Number(id), jumlah: desimal(n) }))
+  const isi = await minta<{ tercatat: number; stok_kurang: string[] }>(`/usaha/${sesi.usahaId}/pemakaian`, {
+    method: 'POST',
+    token: sesi.token,
+    body: JSON.stringify({ baris }),
+  })
+  return { tercatat: isi.tercatat, stokKurang: isi.stok_kurang }
+}
+
+export async function batasAmanIkutSaranServer(sesi: SesiServer, barangIds: string[]): Promise<number> {
+  const isi = await minta<{ diubah: number }>(`/usaha/${sesi.usahaId}/batas-aman/ikut-saran`, {
+    method: 'POST',
+    token: sesi.token,
+    body: JSON.stringify({ barang_id: barangIds.map(Number) }),
+  })
+  return isi.diubah
+}
+
+export async function gantiKategoriServer(sesi: SesiServer, dari: string[], ke: string): Promise<number> {
+  const isi = await minta<{ diubah: number }>(`/usaha/${sesi.usahaId}/kategori/ganti`, {
+    method: 'POST',
+    token: sesi.token,
+    body: JSON.stringify({ dari, ke }),
+  })
+  return isi.diubah
+}
+
 /* ------------------------------------------------------------------ */
 /* Keluaran mesin analitik                                             */
 /* ------------------------------------------------------------------ */

@@ -171,6 +171,99 @@ class KemasanRingkas(BaseModel):
     isi: Decimal
 
 
+# ---------------------------------------------------------------------------
+# Tulis stok dari layar (audit 3 Nov 2026). Dulu layar Stok hanya mengubah data
+# di peramban, jadi semuanya hilang begitu halaman dimuat ulang.
+# ---------------------------------------------------------------------------
+
+
+class KemasanMasuk(BaseModel):
+    nama: str = Field(min_length=1, max_length=30)
+    #: Isi satu kemasan dalam satuan dasar barang.
+    isi: Decimal = Field(gt=0, max_digits=14, decimal_places=3)
+
+
+class BarangMasuk(BaseModel):
+    """Barang baru dari layar Tambah Barang. Stok awalnya dicatat sebagai pergerakan koreksi."""
+
+    nama: str = Field(min_length=2, max_length=120)
+    deskripsi: str | None = Field(default=None, max_length=160)
+    nama_lain: list[str] = Field(default_factory=list, max_length=20)
+    kategori: str = Field(min_length=1, max_length=60)
+    #: Kosong: dibuatkan dari id barang.
+    kode_barang: str = Field(default="", max_length=40)
+    satuan: str = Field(min_length=1, max_length=10)
+    satuan_tampil: str | None = Field(default=None, max_length=20)
+    kemasan: list[KemasanMasuk] = Field(default_factory=list, max_length=10)
+    stok_awal: Decimal = Field(default=Decimal(0), ge=0, max_digits=14, decimal_places=3)
+    batas_aman: Decimal = Field(ge=0, max_digits=14, decimal_places=3)
+    sumber_batas_aman: Literal["sistem", "sendiri", "bawaan"] = "sendiri"
+    hari_kirim: int = Field(default=2, ge=0, le=60)
+    ingatkan_kedaluwarsa: bool = False
+    kedaluwarsa: date | None = None
+    dicatat_manual: bool = False
+    catatan: str | None = Field(default=None, max_length=500)
+
+
+class BarangUbah(BaseModel):
+    """Ubahan sebagian. Hanya kolom yang dikirim yang diubah; `kemasan` mengganti seluruh daftar."""
+
+    nama: str | None = Field(default=None, min_length=2, max_length=120)
+    deskripsi: str | None = Field(default=None, max_length=160)
+    nama_lain: list[str] | None = Field(default=None, max_length=20)
+    kategori: str | None = Field(default=None, min_length=1, max_length=60)
+    kode_barang: str | None = Field(default=None, min_length=1, max_length=40)
+    satuan: str | None = Field(default=None, min_length=1, max_length=10)
+    satuan_tampil: str | None = Field(default=None, max_length=20)
+    kemasan: list[KemasanMasuk] | None = Field(default=None, max_length=10)
+    batas_aman: Decimal | None = Field(default=None, ge=0, max_digits=14, decimal_places=3)
+    sumber_batas_aman: Literal["sistem", "sendiri", "bawaan"] | None = None
+    hari_kirim: int | None = Field(default=None, ge=0, le=60)
+    ingatkan_kedaluwarsa: bool | None = None
+    kedaluwarsa: date | None = None
+    dicatat_manual: bool | None = None
+    catatan: str | None = Field(default=None, max_length=500)
+
+
+class KoreksiStok(BaseModel):
+    """Hasil hitung rak: stok yang sebenarnya, bukan selisihnya."""
+
+    stok: Decimal = Field(ge=0, max_digits=14, decimal_places=3)
+    keterangan: str | None = Field(default=None, max_length=200)
+
+
+class BarisPemakaian(BaseModel):
+    barang_id: int = Field(ge=1)
+    jumlah: Decimal = Field(gt=0, max_digits=14, decimal_places=3)
+
+
+class PemakaianMasuk(BaseModel):
+    """Pemakaian hari ini untuk barang yang tidak terpotong otomatis oleh nota kasir."""
+
+    baris: list[BarisPemakaian] = Field(min_length=1, max_length=500)
+
+
+class HasilPemakaian(BaseModel):
+    tercatat: int
+    #: Barang yang pemakaiannya melebihi stok tercatat: yang dipotong hanya sisa stoknya.
+    stok_kurang: list[str] = []
+
+
+class DaftarIdBarang(BaseModel):
+    barang_id: list[int] = Field(min_length=1, max_length=1000)
+
+
+class GantiKategori(BaseModel):
+    """Ganti nama satu kategori, atau gabungkan beberapa kategori ke satu nama."""
+
+    dari: list[str] = Field(min_length=1, max_length=50)
+    ke: str = Field(min_length=1, max_length=60)
+
+
+class HasilUbahBanyak(BaseModel):
+    diubah: int
+
+
 class BarangRingkas(BaseModel):
     """
     Satu barang di gudang, dengan bentuk yang sama dengan `Barang` di frontend.

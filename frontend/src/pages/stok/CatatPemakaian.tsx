@@ -120,7 +120,7 @@ export default function CatatPemakaian() {
     setDilewati((lama) => [...lama, ...kosong])
   }
 
-  function simpan() {
+  async function simpan() {
     const pemakaian: Record<string, number> = {}
     const catatan: Tercatat[] = []
     for (const b of barang) {
@@ -135,7 +135,8 @@ export default function CatatPemakaian() {
         })
       }
     }
-    catatPemakaianHarian(pemakaian)
+    // Isian tetap di layar kalau gagal tersimpan; toast galatnya sudah tampil.
+    if (!(await catatPemakaianHarian(pemakaian))) return
     setTersimpan(catatan)
     setTeks({})
     setDilewati([])
