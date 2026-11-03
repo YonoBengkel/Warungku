@@ -289,6 +289,14 @@ if ($volumeLama -and $versiImageDb -and ($asalData -ne "turnify-flow-db $versiIm
 }
 Oke 'Basis data siap di port 5433'
 
+# Alamat Wi-Fi laptop untuk QR simulasi di Portal POS (revisi V8): HP di jaringan yang
+# sama membuka tautan di QR itu, dan kontainer API tidak bisa melihat alamat laptop
+# sendiri. Kalau tidak ketemu, kasir tetap bisa memakai tombol Anggap Sudah Dibayar.
+$ipLan = Get-NetIPConfiguration -ErrorAction SilentlyContinue |
+    Where-Object { $_.IPv4DefaultGateway -and $_.NetAdapter.Status -eq 'Up' } |
+    ForEach-Object { $_.IPv4Address.IPAddress } | Select-Object -First 1
+if ($ipLan) { $env:WARUNGKU_ALAMAT_QR = "http://${ipLan}:8000" }
+
 if (-not (Tampil "$Compose up -d")) { Gagal 'API dan layanan model tidak bisa dinyalakan. Lihat pesan docker di atas.' }
 foreach ($l in @(@{ Nama = 'API'; Url = 'http://localhost:8000/sehat' }, @{ Nama = 'Layanan model'; Url = 'http://localhost:8001/sehat' })) {
     if (-not (Tunggu-Url $l.Url 180)) { Gagal "$($l.Nama) belum menjawab di $($l.Url). Lihat: docker compose -f deployment/docker-compose.yml logs" }

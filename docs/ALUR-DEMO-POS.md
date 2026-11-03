@@ -5,11 +5,13 @@ pemberitahuan berubah di jendela lain tanpa memuat ulang.
 
 ## Persiapan
 
-1. Nyalakan dari kode repo dengan `nyalakan.cmd` (jalur Docker `siapkan.cmd` belum membawa Portal POS, lihat catatan di
-   bawah). Skrip itu menaikkan skema, memasang variasi demo, dan membuka aplikasi.
+1. Nyalakan dengan `siapkan.cmd` (jalur Docker) atau `nyalakan.cmd` (dari kode repo). Keduanya menaikkan skema, memasang
+   variasi demo, dan membuka aplikasi.
 2. Buka **dua jendela peramban berdampingan**, supaya sesinya terpisah:
    - **Portal UMKM:** `/masuk`, tab Pakai Email, tombol **Isikan akun simulasi: Kopi Kita**, lalu buka **Stok**.
-   - **Portal POS:** `/masuk/pos`, tombol **Isikan akun kasir** (Rina Kasir).
+   - **Portal POS:** `/masuk/pos`, tombol **Isikan akun kasir** (Rina Kasir). Bisa juga dari Portal UMKM: Akun, kotak
+     Alat uji purwarupa, **Masuk Kasir**, yang membuka tab baru dan langsung masuk sebagai Rina Kasir.
+   - **HP** di jaringan yang sama dengan laptop, untuk memindai QR simulasi di langkah 7.
 3. Kata sandi akun simulasi ada di [README.md](../README.md) bagian Akun simulasi. Tombol isi otomatis sudah memakainya.
 
 ## Langkah
@@ -22,11 +24,12 @@ pemberitahuan berubah di jendela lain tanpa memuat ulang.
 | 4 | UMKM | Lihat tanpa menyentuh apa pun (sekitar 3 detik) | Toast "Nota masuk dari kasir", baris bahan Es Kopi Susu menyala di tabel Stok, lonceng menambah pemberitahuan |
 | 5 | UMKM | Lonceng, Pasangkan, Pakai Resep Saran, Simpan Pemasangan | Layar terisi bahan dan takaran, masih bisa diubah sebelum disimpan |
 | 6 | POS | Jual Kentang Goreng lagi | Di UMKM stok Kentang Beku dan Minyak Goreng menyala dan turun |
-| 7 | POS | Nota, Ajukan Pembatalan pada nota pertama, alasan "Salah pesan" | Lencana Menunggu pemilik. Kasir tidak punya tombol Batalkan |
-| 8 | UMKM | Toast pengajuan, Ringkasan Penjualan, Batalkan | Stok kembali, total Ringkasan turun, nota hilang dari daftar |
-| 9 | POS | Shift, hitung uang di laci, tutup kas | Seharusnya = modal + tunai. Selisih Pas, Lebih, atau Kurang |
-| 10 | UMKM | Ringkasan Penjualan, bagian Shift kasir | Selisih dan tunai shift tadi |
-| 11 | UMKM | Akun, Pengguna & Hak Akses, Tambah Kasir | Akun kasir baru, bisa dinonaktifkan. Daftar yang boleh dan tidak boleh dilakukan kasir |
+| 7 | POS | Jual 1 Es Kopi Susu, pilih QRIS, Tampilkan QR Pembayaran, lalu pindai QR-nya dengan kamera HP | HP membuka halaman "Simulasi, bukan QRIS sungguhan" dan layar kasir lanjut sendiri ke struk. Tanpa HP: Anggap Sudah Dibayar |
+| 8 | POS | Nota, Ajukan Pembatalan pada nota pertama, alasan "Salah pesan" | Lencana Menunggu pemilik. Kasir tidak punya tombol Batalkan |
+| 9 | UMKM | Toast pengajuan, Ringkasan Penjualan, Batalkan | Stok kembali, total Ringkasan turun, nota hilang dari daftar |
+| 10 | POS | Shift, hitung uang di laci, tutup kas | Seharusnya = modal + tunai. Nota QRIS tidak masuk laci. Selisih Pas, Lebih, atau Kurang |
+| 11 | UMKM | Ringkasan Penjualan, bagian Shift kasir | Selisih dan tunai shift tadi |
+| 12 | UMKM | Akun, Pengguna & Hak Akses, Tambah Kasir | Akun kasir baru, bisa dinonaktifkan. Daftar yang boleh dan tidak boleh dilakukan kasir |
 
 Tambahan untuk menunjukkan peran: kasir membuka `/beranda` dan langsung dialihkan ke `/pos`. Akun kasir juga
 ditolak di halaman Masuk Portal UMKM.
@@ -35,7 +38,8 @@ ditolak di halaman Masuk Portal UMKM.
 
 - **Prediksi tidak berubah seketika.** Stok, laporan, dan pemberitahuan langsung. Angka Prediksi menunggu penjadwal
   mesin (02.00 dan tiap 4 jam), karena model menulis ke tabel dan halaman hanya membacanya.
-- **Uang hanya dicatat.** QRIS dan transfer tidak lewat aplikasi, dan tidak masuk hitungan laci.
+- **Uang hanya dicatat.** Pilihan bayar tinggal tunai dan QRIS (Transfer dihapus di revisi V8). QR di kasir adalah
+  simulasi berisi tautan biasa, bukan QRIS: tidak ada uang yang berpindah, dan nota QRIS tidak masuk hitungan laci.
 - **Resep saran adalah contoh.** Kopi Susu Pandan memakai Sirup Vanila sebagai pengganti sirup pandan, yang belum ada
   di katalog.
 - **Satu laci per usaha.** Hanya satu shift boleh terbuka.
@@ -49,6 +53,10 @@ ditolak di halaman Masuk Portal UMKM.
   repo, atau `nyalakan.cmd` lagi.
 - **Resep saran tidak mengisi semua bahan:** Roti Tawar atau Minyak Goreng tidak punya penawaran di data simulasi, jadi
   tidak ditambahkan. Bahan yang ada tetap terisi.
-- **Portal POS tidak ada di `siapkan.cmd`:** pemasangan itu masih memakai backend `0.11.0`. Jalankan `siapkan.cmd` lagi
-  supaya kode dan image `0.12.0` diunduh. Kalau ada perubahan lokal yang belum dikomit, `siapkan.cmd` tidak memperbarui
-  kodenya, jadi komit atau buang dulu perubahan itu.
+- **QR simulasi tidak bisa dipindai HP:** HP dan laptop harus di jaringan yang sama, dan Wi-Fi kampus sering memblokir
+  sambungan antarperangkat. Sambungkan laptop ke hotspot HP, lalu jalankan `siapkan.cmd` atau `nyalakan.cmd` lagi supaya
+  alamatnya ikut berganti. `nyalakan.cmd` membuka API ke jaringan, jadi Windows bisa sekali meminta izin firewall untuk
+  Python: pilih jaringan pribadi. Kalau tetap tidak bisa, pakai tombol Anggap Sudah Dibayar.
+- **Portal POS atau QR simulasi tidak ada sesudah `siapkan.cmd`:** pemasangan itu masih memakai backend lama. Jalankan
+  `siapkan.cmd` lagi supaya kode dan image backend terbaru diunduh (versinya di README, bagian Image yang diunduh). Kalau
+  ada perubahan lokal yang belum dikomit, `siapkan.cmd` tidak memperbarui kodenya, jadi komit atau buang dulu perubahan itu.

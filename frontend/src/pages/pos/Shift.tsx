@@ -104,7 +104,8 @@ function ShiftBerjalan({ shift, onTutup }: { shift: Shift; onTutup: (s: Shift) =
             <Angka label={`Nota (${shift.jumlahNota})`} nilai={rupiah(shift.tunai + shift.qris + shift.transfer)} />
             <Angka label="Tunai" nilai={rupiah(shift.tunai)} />
             <Angka label="QRIS (tidak masuk laci)" nilai={rupiah(shift.qris)} />
-            <Angka label="Transfer (tidak masuk laci)" nilai={rupiah(shift.transfer)} />
+            {/* Transfer tidak ditawarkan lagi sejak revisi V8; barisnya tinggal untuk nota lama. */}
+            {shift.transfer > 0 && <Angka label="Transfer (tidak masuk laci)" nilai={rupiah(shift.transfer)} />}
             <Angka label="Uang yang seharusnya ada di laci" nilai={rupiah(shift.tunaiDiharapkan)} tebal />
           </dl>
         </Kartu>
@@ -153,7 +154,7 @@ function RekapTutup({ shift, onBaru }: { shift: Shift; onBaru: () => void }) {
             <Angka label="Uang modal" nilai={rupiah(shift.modalAwal)} />
             <Angka label={`Tunai dari ${shift.jumlahNota} nota`} nilai={rupiah(shift.tunai)} />
             <Angka label="QRIS" nilai={rupiah(shift.qris)} />
-            <Angka label="Transfer" nilai={rupiah(shift.transfer)} />
+            {shift.transfer > 0 && <Angka label="Transfer" nilai={rupiah(shift.transfer)} />}
             <Angka label="Seharusnya di laci" nilai={rupiah(shift.tunaiDiharapkan)} />
             <Angka label="Dihitung di laci" nilai={rupiah(shift.uangDihitung ?? 0)} />
           </dl>

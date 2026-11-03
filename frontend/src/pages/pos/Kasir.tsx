@@ -5,19 +5,23 @@ import { Chip } from '@/components/ui/navigasi'
 import { KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
 import { IkonCari, IkonNota } from '@/icons'
 import { GalatApi } from '@/lib/api'
-import { ambilShiftAktif, type Shift } from '@/lib/apiKasir'
+import { GambarQr } from '@/components/domain/GambarQr'
+import { ambilShiftAktif, buatQr, lunaskanQr, statusQr, type Shift, type TagihanQr } from '@/lib/apiKasir'
 import { ambilMenuJual, kirimNota, type MenuJual } from '@/lib/apiMenu'
 import { angka, bacaAngkaIndonesia, jam, rupiah, tanggalPendek } from '@/lib/format'
 import { useAplikasi } from '@/store/aplikasi'
 import { BukaKas } from './BukaKas'
 
-type CaraBayar = 'tunai' | 'qris' | 'transfer'
+/** Transfer tidak lagi ditawarkan sejak revisi V8 (Q179). Nota lama bertransfer tetap terbaca di daftar nota. */
+type CaraBayar = 'tunai' | 'qris'
 
 const CARA: Array<{ nilai: CaraBayar; label: string }> = [
   { nilai: 'tunai', label: 'Tunai' },
   { nilai: 'qris', label: 'QRIS' },
-  { nilai: 'transfer', label: 'Transfer' },
 ]
+
+/** Seberapa sering layar kasir menanyakan apakah QR simulasi sudah dipindai. */
+const JEDA_CEK_QR = 1500
 const UANG_CEPAT = [50_000, 100_000]
 
 interface BarisNota {
@@ -67,8 +71,13 @@ function bacaRupiah(teks: string): number {
  * Menu tanpa resep tetap bisa dijual: notanya masuk, tetapi stok bahannya belum
  * terpotong, dan pemiliknya melihatnya sebagai menu yang perlu dipasangkan.
  *
- * Pembayaran hanya dicatat (tahap 3): tunai dengan kembalian, QRIS, atau transfer.
- * Uangnya tidak lewat aplikasi ini. Uang tunai yang dikosongkan dianggap pas.
+ * Pembayaran hanya dicatat (tahap 3): tunai dengan kembalian, atau QRIS. Uangnya tidak
+ * lewat aplikasi ini. Uang tunai yang dikosongkan dianggap pas.
+ *
+ * QRIS memakai QR simulasi (revisi V8, Q178): layar menampilkan QR berisi tautan ke
+ * server, HP pelanggan membukanya di jaringan yang sama, dan nota baru dikirim sesudah
+ * tagihannya lunas. Bukan QRIS sungguhan. Tombol "Anggap Sudah Dibayar" menjadi
+ * cadangan kalau HP tidak bisa menjangkau laptop (Wi-Fi kampus sering memblokirnya).
  */
 export default function Kasir() {
   const sesi = useAplikasi((s) => s.sesiServer)
@@ -84,6 +93,9 @@ export default function Kasir() {
   const [mengirim, setMengirim] = useState(false)
   const [galatKirim, setGalatKirim] = useState<string | null>(null)
   const [struk, setStruk] = useState<Struk | null>(null)
+  const [tagihan, setTagihan] = useState<TagihanQr | null>(null)
+  const [membuatQr, setMembuatQr] = useState(false)
+  const [galatQr, setGalatQr] = useState<string | null>(null)
   const nomor = useRef(buatNomor())
   // undefined: belum dicek. null: belum ada shift terbuka, jadi kasir diminta membuka kas lebih dulu.
   const [shift, setShift] = useState<Shift | null | undefined>(undefined)
@@ -131,6 +143,8 @@ export default function Kasir() {
   const bisaKirim = nota.length > 0 && !mengirim && kurang === 0
 
   function tambah(m: MenuJual) {
+    // Selama QR simulasi tampil, jumlah tagihannya sudah dibekukan di server.
+    if (tagihan) return
     setGalatKirim(null)
     setNota((n) =>
       n.some((b) => b.namaMenu === m.namaMenu)
@@ -174,7 +188,57 @@ export default function Kasir() {
     }
   }
 
+  async function mulaiQr() {
+    if (!sesi || !bisaKirim) return
+    setMembuatQr(true)
+    setGalatQr(null)
+    try {
+      setTagihan(await buatQr(sesi, nomor.current, total))
+    } catch (e) {
+      setGalatQr(e instanceof GalatApi ? e.message : 'QR belum bisa dibuat. Periksa sambungan, lalu coba lagi.')
+    } finally {
+      setMembuatQr(false)
+    }
+  }
+
+  async function anggapDibayar() {
+    if (!sesi || !tagihan) return
+    setGalatQr(null)
+    try {
+      setTagihan(await lunaskanQr(sesi, tagihan.token))
+    } catch (e) {
+      setGalatQr(e instanceof GalatApi ? e.message : 'Belum bisa ditandai lunas. Coba lagi.')
+    }
+  }
+
+  // Tanyakan status tagihan selama menunggu dipindai, dan berhenti begitu lunas
+  // atau kedaluwarsa. Hanya selama tab ini terlihat, seperti pengecekan nota masuk.
+  const tokenMenunggu = tagihan?.status === 'menunggu' ? tagihan.token : null
+  useEffect(() => {
+    if (!sesi || !tokenMenunggu) return
+    const id = window.setInterval(() => {
+      if (document.visibilityState !== 'visible') return
+      statusQr(sesi, tokenMenunggu)
+        .then((q) => {
+          if (q.status !== 'menunggu') setTagihan(q)
+        })
+        .catch(() => undefined)
+    }, JEDA_CEK_QR)
+    return () => window.clearInterval(id)
+  }, [sesi, tokenMenunggu])
+
+  // Lunas, lewat pindai maupun tombol: kirim notanya sekali saja.
+  const sudahDikirim = useRef<string | null>(null)
+  useEffect(() => {
+    if (tagihan?.status !== 'lunas' || sudahDikirim.current === tagihan.token) return
+    sudahDikirim.current = tagihan.token
+    void kirim()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- kirim memakai keadaan nota saat itu
+  }, [tagihan])
+
   function transaksiBaru() {
+    setTagihan(null)
+    setGalatQr(null)
     setStruk(null)
     setNota([])
     setDiskonTeks('')
@@ -238,7 +302,7 @@ export default function Kasir() {
                 <li key={m.namaMenu}>
                   <button
                     type="button"
-                    disabled={struk !== null}
+                    disabled={struk !== null || tagihan !== null}
                     onClick={() => tambah(m)}
                     className="w-full h-full min-h-28 flex flex-col gap-1 p-3.5 text-left rounded-lg border border-line bg-surface transition-colors duration-150 hover:border-brand hover:bg-brand-soft disabled:opacity-55 disabled:hover:border-line disabled:hover:bg-surface"
                   >
@@ -256,6 +320,19 @@ export default function Kasir() {
       <aside aria-label={struk ? 'Struk' : 'Nota berjalan'} className="flex flex-col min-h-0 bg-surface border-t lg:border-t-0 lg:border-l border-line">
         {struk ? (
           <StrukLayar struk={struk} namaUsaha={profil.namaUsaha} onBaru={transaksiBaru} />
+        ) : tagihan ? (
+          <PanelQr
+            tagihan={tagihan}
+            mengirim={mengirim}
+            galat={galatQr ?? galatKirim}
+            onAnggapDibayar={anggapDibayar}
+            onQrBaru={mulaiQr}
+            membuatQr={membuatQr}
+            onBatal={() => {
+              setTagihan(null)
+              setGalatQr(null)
+            }}
+          />
         ) : (
           <>
             <div className="shrink-0 px-4 pt-4 pb-3 border-b border-line">
@@ -336,8 +413,8 @@ export default function Kasir() {
                   )}
                 </div>
               ) : (
-                <p className="text-kecil text-ink-3 leading-snug">
-                  Hanya dicatat. Pembayarannya dilakukan di luar aplikasi ini.
+                <p className="text-kecil text-ink-2 leading-snug">
+                  Pelanggan memindai QR simulasi dari layar ini dengan HP. Bukan QRIS sungguhan, tidak ada uang yang berpindah.
                 </p>
               )}
 
@@ -360,12 +437,18 @@ export default function Kasir() {
                 </div>
               </div>
 
-              <Tombol penuh ukuran="besar" disabled={!bisaKirim} memuat={mengirim} onClick={kirim}>
-                Bayar dan Kirim Nota
-              </Tombol>
-              {galatKirim && (
+              {caraBayar === 'qris' ? (
+                <Tombol penuh ukuran="besar" disabled={!bisaKirim} memuat={membuatQr} onClick={mulaiQr}>
+                  Tampilkan QR Pembayaran
+                </Tombol>
+              ) : (
+                <Tombol penuh ukuran="besar" disabled={!bisaKirim} memuat={mengirim} onClick={kirim}>
+                  Bayar dan Kirim Nota
+                </Tombol>
+              )}
+              {(galatKirim || galatQr) && (
                 <p role="alert" className="text-kecil font-semibold text-kritis-ink leading-snug">
-                  {galatKirim}
+                  {galatQr ?? galatKirim}
                 </p>
               )}
             </div>
@@ -376,7 +459,83 @@ export default function Kasir() {
   )
 }
 
-const NAMA_CARA: Record<CaraBayar, string> = { tunai: 'Tunai', qris: 'QRIS', transfer: 'Transfer' }
+const NAMA_CARA: Record<CaraBayar, string> = { tunai: 'Tunai', qris: 'QRIS' }
+
+/**
+ * Panel kanan selama QR simulasi menunggu dipindai. Nota baru dikirim sesudah lunas,
+ * jadi menekan Batal tidak meninggalkan nota apa pun: tagihannya kedaluwarsa sendiri.
+ */
+function PanelQr({
+  tagihan,
+  mengirim,
+  galat,
+  membuatQr,
+  onAnggapDibayar,
+  onQrBaru,
+  onBatal,
+}: {
+  tagihan: TagihanQr
+  mengirim: boolean
+  galat: string | null
+  membuatQr: boolean
+  onAnggapDibayar: () => void
+  onQrBaru: () => void
+  onBatal: () => void
+}) {
+  const kedaluwarsa = tagihan.status === 'kedaluwarsa'
+  return (
+    <div className="flex-1 min-h-0 overflow-y-auto p-4 flex flex-col items-center text-center">
+      <span className="rounded-full bg-brand-soft px-3 py-1 text-kecil font-bold text-brand-soft-ink">
+        Simulasi, bukan QRIS sungguhan
+      </span>
+      <h1 className="mt-3 text-kartu font-extrabold text-ink">Pindai untuk membayar</h1>
+      <p className="mt-1 text-angka font-extrabold text-ink tracking-tight">{rupiah(tagihan.jumlah)}</p>
+
+      <div className={kedaluwarsa ? 'mt-4 opacity-30' : 'mt-4'}>
+        <GambarQr isi={tagihan.url} label={`QR simulasi pembayaran ${rupiah(tagihan.jumlah)}`} />
+      </div>
+
+      <p role="status" className="mt-3 text-isi font-semibold text-ink-2">
+        {mengirim
+          ? 'Lunas. Mengirim nota\u2026'
+          : tagihan.status === 'lunas'
+            ? 'Lunas.'
+            : kedaluwarsa
+              ? 'QR ini sudah kedaluwarsa. Buat QR baru.'
+              : 'Menunggu dipindai dari HP pelanggan\u2026'}
+      </p>
+
+      {!tagihan.terjangkauHp && !kedaluwarsa && (
+        <Peringatan nada="menipis" className="mt-3 text-left" judul="HP mungkin tidak bisa membuka QR ini">
+          Alamat jaringan laptop tidak diketahui. Pakai tombol Anggap Sudah Dibayar.
+        </Peringatan>
+      )}
+      <p className="mt-2 text-kecil text-ink-3 leading-snug max-w-[18rem]">
+        HP dan laptop harus di jaringan yang sama. Kalau Wi-Fi memblokir, sambungkan laptop ke hotspot HP.
+      </p>
+
+      <div className="mt-4 w-full space-y-2">
+        {kedaluwarsa ? (
+          <Tombol penuh memuat={membuatQr} onClick={onQrBaru}>
+            Buat QR Baru
+          </Tombol>
+        ) : (
+          <Tombol penuh ragam="garis" disabled={tagihan.status === 'lunas' || mengirim} onClick={onAnggapDibayar}>
+            Anggap Sudah Dibayar
+          </Tombol>
+        )}
+        <Tombol penuh ragam="sunyi" disabled={mengirim} onClick={onBatal}>
+          Batal
+        </Tombol>
+      </div>
+      {galat && (
+        <p role="alert" className="mt-3 text-kecil font-semibold text-kritis-ink leading-snug">
+          {galat}
+        </p>
+      )}
+    </div>
+  )
+}
 
 /** Struk di layar sesudah nota diterima. Satu-satunya tombolnya membuka transaksi baru. */
 function StrukLayar({ struk, namaUsaha, onBaru }: { struk: Struk; namaUsaha: string; onBaru: () => void }) {

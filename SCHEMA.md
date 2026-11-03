@@ -10,6 +10,7 @@ dan kodenya yang berlaku kalau keduanya berbeda. Tidak ada data sungguhan di sin
   (`backend/api/otentikasi.py`), sehingga satu usaha tidak bisa membaca data usaha lain.
 - **Pemisahan tugas:** layanan model menulis tabel analitik, API hanya membacanya.
 - **Idempotensi nota:** `transaksi` unik per `usaha_id` dan `nomor_struk`, jadi nota yang dikirim ulang tidak memotong stok dua kali.
+- **Satu-satunya akses tanpa token:** halaman `/bayar/{token}` dan `POST /bayar/{token}/lunas` untuk QR simulasi. Kuncinya token acak 32 karakter di `pembayaran_qr`, dan yang bisa dilakukan hanya menandai tagihan itu lunas.
 - **Buku besar stok:** `pergerakan` hanya ditambah, tidak pernah diubah atau dihapus.
 
 ## Relasi inti
@@ -67,6 +68,7 @@ erDiagram
 | `data_kasir` | Keadaan sambungan POS per usaha. Satu baris per usaha. | `usaha_id` ke `usaha` | unik (usaha_id) |
 | `pemetaan_menu` | Jembatan antara nama menu di struk kasir dan bahan di gudang. | `usaha_id` ke `usaha` | unik (usaha_id, nama_menu) |
 | `shift_kas` | Satu shift kasir: buka dengan uang modal, tutup dengan uang yang dihitung di laci. | `dibuka_oleh` ke `pengguna`, `usaha_id` ke `usaha` | cek `ck_shift_modal` |
+| `pembayaran_qr` | Satu tagihan QR simulasi Portal POS (revisi V8, migrasi `b8e2f5a1c4d7`). Bukan QRIS: HP yang membuka tautan di QR menandainya lunas, tanpa uang yang berpindah. Kedaluwarsa 10 menit. | `usaha_id` ke `usaha` | unik (token); cek `ck_pembayaran_qr_jumlah`, `ck_pembayaran_qr_status` (menunggu, lunas) |
 | `kemasan` | Lapisan tampilan: 1 dus = 1.000 pcs. `isi` selalu dalam satuan dasar barang. | `barang_id` ke `barang` | unik (barang_id, nama) |
 | `pemetaan_menu_bahan` | Satu bahan dalam satu menu, beserta takarannya dalam satuan dasar barang. | `barang_id` ke `barang`, `pemetaan_id` ke `pemetaan_menu` | cek `ck_takaran_positif`; unik (pemetaan_id, barang_id) |
 | `transaksi` | Satu struk dari kasir, apa adanya. | `shift_id` ke `shift_kas`, `usaha_id` ke `usaha` | unik (usaha_id, nomor_struk) |

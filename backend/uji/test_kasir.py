@@ -43,6 +43,7 @@ def kasir(kedai):  # noqa: F811
         p = {"u": u}
         kon.execute(text("UPDATE transaksi SET shift_id = NULL WHERE usaha_id = :u"), p)
         kon.execute(text("DELETE FROM shift_kas WHERE usaha_id = :u"), p)
+        kon.execute(text("DELETE FROM pembayaran_qr WHERE usaha_id = :u"), p)
         kon.execute(text("DELETE FROM keanggotaan WHERE usaha_id = :u AND peran = 'pegawai'"), p)
         kon.execute(text("DELETE FROM pengguna WHERE email = :e"), {"e": email})
 
@@ -167,3 +168,58 @@ def test_shift_buka_jual_tutup_dan_selisih(kasir):
 def test_modal_negatif_ditolak(kasir):
     ids, _, kepala_kasir, klien, _, _ = kasir
     assert klien.post(f"/usaha/{ids['u1']}/shift/buka", headers=kepala_kasir, json={"modal_awal": -1}).status_code == 422
+
+
+# ------------------------------------------------------- QR simulasi (V8)
+
+
+def test_qr_dibuat_kasir_lalu_lunas_saat_halaman_pindai_dibuka(kasir):
+    ids, _, kepala_kasir, klien, _, _ = kasir
+    u = ids["u1"]
+    r = klien.post(f"/usaha/{u}/qr", headers=kepala_kasir, json={"nomor_struk": "POS-UJI-QR1", "jumlah": 36000})
+    assert r.status_code == 201, r.text
+    qr = r.json()
+    assert qr["status"] == "menunggu" and qr["url"].endswith("/bayar/" + qr["token"])
+    # Halaman pindai bisa dibuka tanpa masuk, berlabel simulasi, dan memuat jumlahnya.
+    halaman = klien.get(f"/bayar/{qr['token']}")
+    assert halaman.status_code == 200 and "Simulasi, bukan QRIS sungguhan" in halaman.text and "Rp 36.000" in halaman.text
+    # Membuka halaman saja belum melunasi: lunas dikirim lewat POST dari halamannya.
+    assert klien.get(f"/usaha/{u}/qr/{qr['token']}", headers=kepala_kasir).json()["status"] == "menunggu"
+    assert klien.post(f"/bayar/{qr['token']}/lunas").json()["status"] == "lunas"
+    assert klien.get(f"/usaha/{u}/qr/{qr['token']}", headers=kepala_kasir).json()["status"] == "lunas"
+    # Memindai ulang tidak mengubah apa pun.
+    assert klien.post(f"/bayar/{qr['token']}/lunas").status_code == 200
+
+
+def test_qr_tombol_cadangan_dan_tagihan_kedaluwarsa(kasir):
+    ids, _, kepala_kasir, klien, _, _ = kasir
+    u = ids["u1"]
+    qr = klien.post(f"/usaha/{u}/qr", headers=kepala_kasir, json={"nomor_struk": "POS-UJI-QR2", "jumlah": 18000}).json()
+    assert klien.post(f"/usaha/{u}/qr/{qr['token']}/lunas", headers=kepala_kasir).json()["status"] == "lunas"
+
+    lama = klien.post(f"/usaha/{u}/qr", headers=kepala_kasir, json={"nomor_struk": "POS-UJI-QR3", "jumlah": 18000}).json()
+    with mesin().begin() as kon:
+        kon.execute(text("UPDATE pembayaran_qr SET kedaluwarsa_pada = now() - interval '1 minute' WHERE token = :t"), {"t": lama["token"]})
+    assert klien.get(f"/usaha/{u}/qr/{lama['token']}", headers=kepala_kasir).json()["status"] == "kedaluwarsa"
+    assert klien.post(f"/bayar/{lama['token']}/lunas").status_code == 410
+    assert klien.post("/bayar/token-yang-tidak-ada/lunas").status_code == 404
+
+
+def test_qr_usaha_lain_tidak_bisa_melihat_atau_melunasi(kasir):
+    ids, _, kepala_kasir, klien, _, _ = kasir
+    u = ids["u1"]
+    qr = klien.post(f"/usaha/{u}/qr", headers=kepala_kasir, json={"nomor_struk": "POS-UJI-QR4", "jumlah": 18000}).json()
+    # Token kasir usaha ini tidak berlaku untuk usaha lain, dan sebaliknya.
+    assert klien.get(f"/usaha/{u + 100_000}/qr/{qr['token']}", headers=kepala_kasir).status_code == 403
+    assert klien.post(f"/usaha/{u}/qr", json={"nomor_struk": "X", "jumlah": 1}).status_code in (401, 403)
+
+
+def test_transfer_ditolak_untuk_nota_baru(kasir):
+    ids, kepala_pemilik, kepala_kasir, klien, _, _ = kasir
+    u = ids["u1"]
+    _simpan(klien, u, kepala_pemilik)
+    assert _bayar(klien, u, kepala_kasir, "POS-UJI-T1", cara_bayar="transfer").status_code == 422
+    assert _bayar(klien, u, kepala_kasir, "POS-UJI-T2", cara_bayar="qris").status_code == 200
+    # Rincian pendapatan tidak lagi memuat baris Transfer yang nol.
+    rincian = klien.get(f"/usaha/{u}/ringkasan-penjualan", headers=kepala_pemilik).json()["rincian"]
+    assert "Transfer" not in [r["label"] for r in rincian]

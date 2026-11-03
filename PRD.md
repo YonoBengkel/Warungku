@@ -25,7 +25,7 @@ Target saat ini adalah demo di desktop dengan akun simulasi Kopi Kita Jogja.
 | 0. Rancangan (selesai) | Dokumen ini, ARCHITECTURE.md, mockup | Disetujui Ilham |
 | 1. Portal dan jual dasar (selesai) | Portal terpisah di `/pos`, masuk dengan akun usaha yang sudah ada, keranjang, kirim nota. Daftar menu dan harga jual diatur pemilik di Portal UMKM, POS hanya membaca | Satu penjualan memotong stok dan tersimpan sebagai nota |
 | 2. Interaksi langsung dan pemasangan resep (selesai) | Portal UMKM yang terbuka menangkap nota baru tanpa dimuat ulang: baris stok menyala, pemberitahuan "Nota masuk", dan baris data kasir berubah. Ringkasan Penjualan mendapat ringkasan nota dan Lihat Semua Nota. Menu tanpa resep tetap bisa dijual, masuk ke panel lonceng, dan bisa dipasangkan dengan resep saran | Perubahan terlihat dalam beberapa detik. Sesudah resep dipasangkan, penjualan berikutnya memotong stok |
-| 3. Pembayaran (selesai) | Tunai dengan kembalian, QRIS dan transfer yang hanya dicatat, diskon per nota, struk di layar. Total Ringkasan Penjualan dipotong diskon dan dirinci per cara bayar | Nota menyimpan cara bayar, diskon, dan uang diterima |
+| 3. Pembayaran (selesai) | Tunai dengan kembalian, QRIS yang hanya dicatat (sejak revisi V8 lewat QR simulasi, dan transfer dihapus), diskon per nota, struk di layar. Total Ringkasan Penjualan dipotong diskon dan dirinci per cara bayar | Nota menyimpan cara bayar, diskon, dan uang diterima |
 | 4. Batal (selesai) | Kasir mengajukan pembatalan dengan alasan di halaman Nota Portal POS. Pemilik membatalkan di Ringkasan Penjualan, dan stok kembali lewat pergerakan koreksi. Retur barang yang sudah dibawa pembeli belum termasuk | Stok dan Ringkasan Penjualan tetap cocok |
 | 5. Shift dan peran (selesai) | Pemilik membuat akun kasir di Pengguna & Hak Akses. Kasir hanya bisa membuka Portal POS, dan server menolak semua yang bukan daftar pendek POS. Buka kas dengan uang modal, tutup kas dengan uang yang dihitung dan selisihnya | Kasir tidak bisa membatalkan nota atau mengubah menu dan harga. Rekap shift dan selisih laci tampil bagi pemilik |
 | 6. Kesiapan demo (selesai) | Data demo, README, `siapkan.cmd` diarahkan ke `main`, alur demo satu halaman ([ALUR-DEMO-POS.md](docs/ALUR-DEMO-POS.md)), tampilan HP dasar, dan image backend 0.12.0 di Docker Hub (terbit 3 November 2026) | Alur demo jalan dari pemasangan baru, lewat `nyalakan.cmd` maupun `siapkan.cmd` |
@@ -60,7 +60,8 @@ mengubahnya sebelum menyimpan. Pemasangan berlaku untuk penjualan berikutnya, ti
 
 - Pembayaran sungguhan atau payment gateway. Uang hanya dicatat.
 - Tampilan HP. Menyusul sesudah versi desktop.
-- QR pembayaran. Rencana berikutnya adalah QR simulasi yang jelas berlabel simulasi dan tidak bisa dipakai membayar.
+- QR pembayaran sungguhan. Yang ada sejak revisi V8 adalah QR simulasi: berlabel simulasi, berisi tautan biasa (bukan QRIS),
+  dan HP di jaringan yang sama yang membukanya menandai tagihan lunas tanpa uang yang berpindah.
 - Kasir saat internet putus dan cetak struk ke printer.
 - Pajak, faktur, dan kepatuhan untuk warung sungguhan.
 - Konektor ke aplikasi kasir pihak ketiga.

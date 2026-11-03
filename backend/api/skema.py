@@ -43,7 +43,9 @@ class StrukMasuk(BaseModel):
     sumber: str = Field(default="pos", max_length=20)
     baris: list[BarisStruk] = Field(min_length=1)
     #: Hanya dicatat. Kasir lama tidak mengirimnya, jadi semuanya opsional.
-    cara_bayar: Literal["tunai", "qris", "transfer"] | None = None
+    #: Transfer tidak lagi diterima untuk nota baru (revisi V8, Q179). Nota lama
+    #: bertransfer tetap terbaca dan terhitung di Rincian pendapatan.
+    cara_bayar: Literal["tunai", "qris"] | None = None
     diskon: int = Field(default=0, ge=0, le=100_000_000)
     uang_diterima: int | None = Field(default=None, ge=0, le=1_000_000_000)
 

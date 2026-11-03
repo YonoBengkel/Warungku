@@ -89,6 +89,11 @@ sama. Datanya tetap tersimpan.
   (lihat [Image yang diunduh](#image-yang-diunduh)).
 - **`siapkan.cmd` dan `nyalakan.cmd` memakai port yang sama.** Kalau sebelumnya
   memakai yang satu, jalankan `matikan.cmd` dulu sebelum memakai yang lain.
+- **QR simulasi di Portal POS dipindai dengan HP** yang tersambung ke jaringan yang sama
+  dengan laptop. `siapkan.cmd` mencatat alamat Wi-Fi laptop saat menyala, jadi kalau
+  laptop pindah jaringan (misalnya ke hotspot HP, karena Wi-Fi kampus sering memblokir
+  sambungan antarperangkat), jalankan `siapkan.cmd` lagi. Kalau HP tetap tidak bisa
+  membukanya, pakai tombol Anggap Sudah Dibayar di layar kasir.
 
 ### Yang harus terpasang
 
@@ -521,6 +526,10 @@ turnify-flow/
 | GET, POST | `/usaha/{usaha_id}/kasir` | Daftar akun kasir; buat akun kasir baru (peran pegawai) |
 | PATCH | `/usaha/{usaha_id}/kasir/{pengguna_id}` | Nonaktifkan atau aktifkan lagi akun kasir, atau atur ulang kata sandinya |
 | GET, POST | `/usaha/{usaha_id}/shift/aktif`, `/shift/buka`, `/shift/tutup` | Buka shift kasir (modal awal), tutup shift kasir (hitung fisik), cek shift aktif |
+| POST | `/usaha/{usaha_id}/qr` | Kasir membuat tagihan QR simulasi untuk satu nota (bukan QRIS, tanpa uang yang berpindah) |
+| GET | `/usaha/{usaha_id}/qr/{token}` | Status tagihan QR: menunggu, lunas, atau kedaluwarsa |
+| POST | `/usaha/{usaha_id}/qr/{token}/lunas` | Tombol cadangan "Anggap Sudah Dibayar" di layar kasir |
+| GET, POST | `/bayar/{token}`, `/bayar/{token}/lunas` | Halaman yang dibuka HP dari QR simulasi, tanpa masuk, untuk menandai tagihan lunas |
 | GET | `/usaha/{usaha_id}/shift?batas=&mulai=` | Riwayat shift kasir beserta rekap tunai/QRIS/transfer dan selisih laci kas |
 | GET | `/usaha/{usaha_id}/produksi/ringkasan` | UMKM produsen: barang jadi, resep, jumlah yang bisa dibuat, perkiraan pesanan 7 hari, saran masak, pembeli, omset bulanan |
 | POST | `/usaha/{usaha_id}/produk-jadi` | Tambah produk jadi baru atau perbarui resep/komposisi bahannya sekaligus (UMKM produsen) |

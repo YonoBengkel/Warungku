@@ -163,8 +163,10 @@ def _nota(sesi: Session, usaha_id: int, dari: date | None, sampai: date | None) 
              ORDER BY total DESC, nama LIMIT :n""",
         sql_pihak=None,
     )
-    # Nota tanpa cara bayar (kasir lain, data simulasi) hanya disebut kalau ada.
-    hasil.rincian = [r for r in hasil.rincian if r.label != "Belum dicatat" or r.nilai > 0]
+    # Nota tanpa cara bayar (kasir lain, data simulasi) hanya disebut kalau ada. Transfer
+    # juga: sejak revisi V8 (Q179) kasir tidak menawarkannya lagi, jadi barisnya hanya
+    # muncul untuk nota lama bertransfer di rentang itu.
+    hasil.rincian = [r for r in hasil.rincian if r.label not in ("Belum dicatat", "Transfer") or r.nilai > 0]
     return hasil
 
 

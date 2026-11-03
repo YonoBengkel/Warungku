@@ -290,7 +290,8 @@ def test_ringkasan_memotong_diskon_dan_memisah_cara_bayar(kedai):
     klien.post(f"/usaha/{u}/transaksi", headers=kepala, json=_nota("POS-UJI-R3", "Americano", 18000))  # 36.000, tanpa cara bayar
     r = klien.get(f"/usaha/{u}/ringkasan-penjualan", headers=kepala).json()
     assert r["total"] == 30000 + 36000 + 36000 and r["jumlah_transaksi"] == 3
-    assert {x["label"]: x["nilai"] for x in r["rincian"]} == {"Tunai": 30000, "QRIS": 36000, "Transfer": 0, "Belum dicatat": 36000}
+    # Baris Transfer yang nol tidak ikut sejak revisi V8 (Q179): kasir tidak menawarkannya lagi.
+    assert {x["label"]: x["nilai"] for x in r["rincian"]} == {"Tunai": 30000, "QRIS": 36000, "Belum dicatat": 36000}
     # Terlaris tetap harga baris sebelum diskon.
     assert r["terlaris"][0]["total"] == 3 * 36000
 

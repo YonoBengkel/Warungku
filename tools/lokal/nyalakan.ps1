@@ -217,7 +217,7 @@ if (Test-Path $BerkasPid) {
 
 $layanan = @(
     @{ Nama = 'API'; Port = 8000; Url = 'http://localhost:8000/sehat'; Judul = 'Turnify API (8000)'; CekKode = $true;
-       Perintah = "& '$Python' -m uvicorn api.utama:app --port 8000" },
+       Perintah = "& '$Python' -m uvicorn api.utama:app --host 0.0.0.0 --port 8000" },
     @{ Nama = 'Layanan model'; Port = 8001; Url = 'http://localhost:8001/sehat'; Judul = 'Turnify layanan model (8001)'; CekKode = $true;
        Perintah = "& '$Python' -m uvicorn ml.layanan:app --port 8001" },
     @{ Nama = 'Frontend'; Port = 5173; Url = 'http://localhost:5173'; Judul = 'Turnify frontend (5173)';

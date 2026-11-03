@@ -50,6 +50,10 @@ x-backend: &backend
     # tidak hangus setiap kali kontainer dinyalakan ulang. Kalau kosong, API
     # membuat rahasia acak sendiri: tetap aman, hanya harus login ulang.
     WARUNGKU_RAHASIA: ${WARUNGKU_RAHASIA:-}
+    # Awal tautan di QR simulasi Portal POS, mis. http://192.168.1.6:8000, supaya HP di
+    # jaringan yang sama bisa membukanya. siapkan.cmd mengisinya dengan alamat Wi-Fi
+    # laptop; kontainer tidak bisa melihat alamat itu sendiri. Kosong = tombol cadangan saja.
+    WARUNGKU_ALAMAT_QR: ${WARUNGKU_ALAMAT_QR:-}
     TZ: Asia/Jakarta
 
 services:

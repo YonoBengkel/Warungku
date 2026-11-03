@@ -219,6 +219,39 @@ class ShiftKas(SQLModel, table=True):
     catatan: str | None = Field(default=None, max_length=200)
 
 
+class PembayaranQr(SQLModel, table=True):
+    """
+    Satu tagihan QR simulasi di Portal POS (revisi V8, Q178).
+
+    Ini BUKAN QRIS: QR-nya berisi tautan biasa ke halaman `/bayar/{token}` di API
+    ini, dan membukanya dari HP di jaringan yang sama menandai tagihan lunas. Tidak
+    ada uang yang berpindah. Kasir menunggu status lunas sebelum nota dikirim.
+
+    Token acak yang panjang adalah satu-satunya kunci halaman pindai, jadi halaman
+    itu tidak butuh masuk. Tagihan kedaluwarsa sesudah `UMUR_QR` di `api/kasir.py`.
+    """
+
+    __tablename__ = "pembayaran_qr"
+    __table_args__ = (
+        CheckConstraint("jumlah > 0", name="ck_pembayaran_qr_jumlah"),
+        CheckConstraint("status IN ('menunggu', 'lunas')", name="ck_pembayaran_qr_status"),
+        Index("ix_pembayaran_qr_usaha", "usaha_id", "dibuat_pada"),
+    )
+
+    id: int | None = Field(default=None, primary_key=True)
+    usaha_id: int = Field(foreign_key="usaha.id")
+    token: str = Field(max_length=64, unique=True)
+    #: Nomor nota yang sedang dibayar, mis. POS-20261103-085304-1845.
+    nomor_struk: str = Field(max_length=60)
+    jumlah: int = Field(sa_column=kolom_uang(nullable=False))
+    status: str = Field(default="menunggu", max_length=12)
+    dibuat_pada: datetime = Field(sa_column=kolom_waktu(nullable=False))
+    kedaluwarsa_pada: datetime = Field(sa_column=kolom_waktu(nullable=False))
+    lunas_pada: datetime | None = Field(default=None, sa_column=kolom_waktu(nullable=True))
+    #: 'pindai' (HP membuka tautan di QR) atau 'tombol' (kasir menekan Anggap Sudah Dibayar).
+    cara_lunas: str | None = Field(default=None, max_length=12)
+
+
 class TransaksiBaris(SQLModel, table=True):
     """
     Satu baris struk.

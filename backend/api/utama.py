@@ -45,6 +45,7 @@ app.add_middleware(
 app.include_router(otentikasi.rute)
 app.include_router(gudang.rute)
 app.include_router(kasir.rute)
+app.include_router(kasir.rute_publik)
 app.include_router(distributor.rute)
 app.include_router(katalog.rute)
 app.include_router(katalog.rute_distributor)

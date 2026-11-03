@@ -141,3 +141,60 @@ export async function ubahKasir(sesi: SesiServer, penggunaId: number, isi: { akt
   })
   return keAkun(r)
 }
+
+/* ------------------------------------------------------------------ */
+/* QR simulasi (revisi V8, Q178)                                       */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Tagihan QR simulasi untuk satu nota. Bukan QRIS: QR-nya berisi tautan ke API, dan
+ * HP yang membukanya di jaringan yang sama menandai tagihan lunas.
+ */
+export interface TagihanQr {
+  token: string
+  /** Tautan yang digambar di QR. */
+  url: string
+  /** False kalau server tidak tahu alamat jaringan laptop, sehingga HP kemungkinan tidak bisa membukanya. */
+  terjangkauHp: boolean
+  jumlah: number
+  status: 'menunggu' | 'lunas' | 'kedaluwarsa'
+  kedaluwarsaPada: string
+}
+
+interface TagihanQrApi {
+  token: string
+  url: string
+  terjangkau_hp: boolean
+  jumlah: number
+  status: TagihanQr['status']
+  kedaluwarsa_pada: string
+}
+
+const keTagihan = (q: TagihanQrApi): TagihanQr => ({
+  token: q.token,
+  url: q.url,
+  terjangkauHp: q.terjangkau_hp,
+  jumlah: q.jumlah,
+  status: q.status,
+  kedaluwarsaPada: q.kedaluwarsa_pada,
+})
+
+export async function buatQr(sesi: SesiServer, nomorStruk: string, jumlah: number): Promise<TagihanQr> {
+  const q = await minta<TagihanQrApi>(`/usaha/${sesi.usahaId}/qr`, {
+    method: 'POST',
+    token: sesi.token,
+    body: JSON.stringify({ nomor_struk: nomorStruk, jumlah }),
+  })
+  return keTagihan(q)
+}
+
+export async function statusQr(sesi: SesiServer, token: string): Promise<TagihanQr> {
+  return keTagihan(await minta<TagihanQrApi>(`/usaha/${sesi.usahaId}/qr/${encodeURIComponent(token)}`, { token: sesi.token }))
+}
+
+/** Tombol cadangan "Anggap Sudah Dibayar", untuk jaringan yang tidak bisa dijangkau HP. */
+export async function lunaskanQr(sesi: SesiServer, token: string): Promise<TagihanQr> {
+  return keTagihan(
+    await minta<TagihanQrApi>(`/usaha/${sesi.usahaId}/qr/${encodeURIComponent(token)}/lunas`, { method: 'POST', token: sesi.token }),
+  )
+}
