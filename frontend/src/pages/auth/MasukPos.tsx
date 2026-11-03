@@ -7,6 +7,13 @@ import { AKUN_KASIR, AKUN_KOPI_KITA } from '@/lib/akunSimulasi'
 import { useAplikasi } from '@/store/aplikasi'
 import { LayarAuth } from '@/components/ui/LayarAuth'
 
+function pesanGalat(e: unknown): string {
+  if (e instanceof ServerTakTerjangkau) {
+    return 'Turnify Flow belum bisa dihubungi. Portal POS butuh server, jadi pastikan layanannya menyala.'
+  }
+  return e instanceof GalatApi ? e.message : 'Gagal masuk. Coba lagi sebentar lagi.'
+}
+
 /**
  * Masuk ke Portal POS, untuk pemilik dan untuk akun kasir yang dibuat pemilik di
  * Pengguna & Hak Akses. Sesi tersimpan per tab, jadi portal ini bisa terbuka
@@ -22,9 +29,34 @@ export default function MasukPos() {
   const [memuat, setMemuat] = useState(false)
   const [galat, setGalat] = useState<string | null>(null)
 
+  /* "Masuk Kasir" di Alat uji purwarupa membuka halaman ini di tab baru dengan
+     ?kasir=1&langsung=1 (revisi V8, Q174): kasir simulasi langsung masuk tanpa
+     menekan tombol. Selama itu, sesi lain yang mungkin sudah ada di tab ini
+     tidak dipakai untuk melompat ke /pos, supaya tab ini benar-benar milik kasir. */
+  const langsung = searchParams.get('kasir') === '1' && searchParams.get('langsung') === '1'
+
   useEffect(() => {
-    if (sesi) navigate('/pos', { replace: true })
-  }, [sesi, navigate])
+    if (sesi && !langsung) navigate('/pos', { replace: true })
+  }, [sesi, langsung, navigate])
+
+  useEffect(() => {
+    if (!langsung) return
+    let batal = false
+    setMemuat(true)
+    masukPos(AKUN_KASIR.email, AKUN_KASIR.kataSandi)
+      .then(() => {
+        if (!batal) navigate('/pos', { replace: true })
+      })
+      .catch((e: unknown) => {
+        if (!batal) setGalat(pesanGalat(e))
+      })
+      .finally(() => {
+        if (!batal) setMemuat(false)
+      })
+    return () => {
+      batal = true
+    }
+  }, [langsung, masukPos, navigate])
 
   useEffect(() => {
     if (searchParams.get('kasir') === '1') {
@@ -40,15 +72,8 @@ export default function MasukPos() {
     setMemuat(true)
     setGalat(null)
     masukPos(email.trim(), sandi)
-      .catch((e: unknown) => {
-        setGalat(
-          e instanceof ServerTakTerjangkau
-            ? 'Turnify Flow belum bisa dihubungi. Portal POS butuh server, jadi pastikan layanannya menyala.'
-            : e instanceof GalatApi
-              ? e.message
-              : 'Gagal masuk. Coba lagi sebentar lagi.',
-        )
-      })
+      .then(() => navigate('/pos', { replace: true }))
+      .catch((e: unknown) => setGalat(pesanGalat(e)))
       .finally(() => setMemuat(false))
   }
 

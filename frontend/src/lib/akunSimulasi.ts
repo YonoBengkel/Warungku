@@ -12,13 +12,16 @@
  */
 export interface AkunSimulasi {
   namaUsaha: string
+  /** Untuk label tombol yang sempit, mis. "Pindah ke Bu Ratmi". */
+  namaPendek?: string
   email: string
   kataSandi: string
 }
 
-export const AKUN_KOPI_KITA: AkunSimulasi = { namaUsaha: 'Kopi Kita Jogja', email: 'umkm1@warungku.test', kataSandi: 'warungku123' }
+export const AKUN_KOPI_KITA: AkunSimulasi = { namaUsaha: 'Kopi Kita Jogja', namaPendek: 'Kopi Kita', email: 'umkm1@warungku.test', kataSandi: 'warungku123' }
 export const AKUN_BU_RATMI: AkunSimulasi = {
   namaUsaha: 'Dapur Sambal Bu Ratmi',
+  namaPendek: 'Bu Ratmi',
   email: 'produksi1@warungku.test',
   kataSandi: AKUN_KOPI_KITA.kataSandi,
 }

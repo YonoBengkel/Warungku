@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useHref, useNavigate } from 'react-router-dom'
 import { Avatar, Lencana, Tombol } from '@/components/ui/dasar'
 import { Konfirmasi } from '@/components/ui/lembar'
 import { KepalaHalaman } from '@/components/ui/navigasi'
@@ -14,12 +14,13 @@ import {
   IkonKunci,
   IkonLonceng,
   IkonMatahari,
+  IkonNota,
   IkonProfil,
   IkonGrafik,
   IkonSinkron,
   IkonToko,
 } from '@/icons'
-import { AKUN_DISTRIBUTOR, AKUN_SIMULASI_UMKM, type AkunSimulasi } from '@/lib/akunSimulasi'
+import { AKUN_DISTRIBUTOR, AKUN_KASIR, AKUN_KOPI_KITA, AKUN_SIMULASI_UMKM, type AkunSimulasi } from '@/lib/akunSimulasi'
 import { tanggalPanjang } from '@/lib/format'
 import { JUDUL, LABEL_JENIS_USAHA } from '@/lib/label'
 import { useAplikasi } from '@/store/aplikasi'
@@ -52,6 +53,7 @@ export default function Akun() {
   const sambungDistributor = useAplikasi((s) => s.sambungDistributor)
   const [membukaPortal, setMembukaPortal] = useState(false)
   const [galatPortal, setGalatPortal] = useState<string | null>(null)
+  const alamatKasir = useHref('/masuk/pos?kasir=1&langsung=1')
 
   // Pindah akun hanya untuk dua akun simulasi UMKM. Sesi yang tersimpan sebelum
   // email ikut disimpan dikenali dari nama usahanya.
@@ -95,6 +97,23 @@ export default function Akun() {
     aturPeran('distributor')
     navigate('/distributor-portal')
   }
+
+  /* Portal POS dengan kasir simulasi di tab baru (revisi V8, Q174), supaya tab
+     ini tetap Portal UMKM dan nota masuknya bisa dilihat berdampingan. Bukan di
+     tab yang sama: Portal POS memakai kunci sesi yang sama, jadi sesi pemilik
+     akan terganti. `noopener` menjaga tab baru mulai tanpa salinan sesi ini. */
+  function bukaKasir() {
+    window.open(alamatKasir, '_blank', 'noopener')
+  }
+
+  const kasirSendiri = akunIni?.email === AKUN_KOPI_KITA.email
+  const tampilKasir = sumberData === 'server'
+  const jumlahKolom = 2 + (akunIni && akunLain ? 1 : 0) + (tampilKasir ? 1 : 0)
+  // Empat kolom baru muat mulai sekitar 1400 px (tiap kolom sekitar 245 px, tombol
+  // terlebar 221 px). Di bawah itu dua kolom, supaya tombolnya tidak bertumpuk.
+  // Rentangnya sengaja tidak tumpang tindih: Tailwind menaruh varian min-[...]
+  // sebelum lg di CSS, jadi lg:grid-cols-2 biasa akan selalu menimpa empat kolom.
+  const kelasKolom = { 2: 'lg:grid-cols-2', 3: 'lg:grid-cols-2 xl:grid-cols-3', 4: 'lg:max-[1399px]:grid-cols-2 min-[1400px]:grid-cols-4' }[jumlahKolom]
 
   const belumDipasangkan = kasir.menuBelumDipasangkan.length
 
@@ -209,10 +228,11 @@ export default function Akun() {
         {/* Alat uji. Sengaja tidak disembunyikan: purwarupa ini dipakai untuk
             memeriksa dua akun simulasi sekaligus sisi distributor, dan
             menyimpannya di menu rahasia membuat penguji tidak pernah menemukannya.
-            Sejak revisi V5 (Q103) satu baris tiga kolom di desktop: pengantar,
-            Akun simulasi, dan Peran akun, dengan tombol sejajar di dasar kolom. */}
+            Sejak revisi V5 (Q103) satu baris di desktop: pengantar, Akun simulasi,
+            Masuk Kasir (revisi V8, Q174), dan Peran akun, dengan tombol sejajar di
+            dasar kolom. Kolom yang tidak berlaku (mode data contoh) tidak dihitung. */}
         <section aria-labelledby="judul-alat-uji">
-          <div className="rounded-lg border border-dashed border-line-strong bg-surface-2 p-4 grid gap-5 lg:grid-cols-3 lg:gap-6">
+          <div className={`rounded-lg border border-dashed border-line-strong bg-surface-2 p-4 grid gap-5 lg:gap-6 ${kelasKolom}`}>
             <div>
               <h2 id="judul-alat-uji" className="text-kartu font-bold text-ink">
                 Alat uji purwarupa
@@ -238,13 +258,29 @@ export default function Akun() {
                     memuat={berpindah}
                     onClick={() => pindahAkun(akunLain)}
                   >
-                    Pindah ke {akunLain.namaUsaha}
+                    Pindah ke {akunLain.namaPendek ?? akunLain.namaUsaha}
                   </Tombol>
                   {galatPindah && (
                     <p role="alert" className="mt-2 text-isi text-kritis leading-relaxed">
                       {galatPindah}
                     </p>
                   )}
+                </div>
+              </div>
+            )}
+
+            {tampilKasir && (
+              <div className="flex flex-col">
+                <h3 className="text-isi font-bold text-ink">Masuk Kasir</h3>
+                <p className="mt-1 text-isi text-ink-3 leading-relaxed">
+                  {kasirSendiri
+                    ? 'Membuka Portal POS di tab baru sebagai Rina Kasir. Nota yang ia kirim langsung masuk ke tab ini.'
+                    : `Kasir simulasi milik ${AKUN_KASIR.namaUsaha}. Tombol ini membuka Portal POS-nya di tab baru sebagai Rina Kasir.`}
+                </p>
+                <div className="mt-auto pt-3">
+                  <Tombol ragam="garis" ikonKiri={<IkonNota size={17} />} onClick={bukaKasir}>
+                    Masuk Kasir
+                  </Tombol>
                 </div>
               </div>
             )}
