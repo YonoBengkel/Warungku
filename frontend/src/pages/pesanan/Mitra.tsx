@@ -167,7 +167,8 @@ export default function Mitra() {
             {/* Angka di sini dibiarkan berukuran sedang, bukan angka raksasa: isinya
                 sering berupa dua satuan sekaligus ("30 kg + 10 dus") yang akan
                 melewati tepi layar 360px kalau ditulis besar. Tiap keterangan di
-                bawah angka menerangkan angka itu sendiri, bukan angka tetangganya. */}
+                bawah angka menerangkan angka itu sendiri, bukan angka tetangganya, jadi
+                ditulis sebagai dd kedua: di dalam dl hanya dt dan dd yang sah. */}
             <dl className="grid grid-cols-2 gap-x-4 gap-y-3.5">
               <div className="min-w-0">
                 <dt className="flex items-center gap-1.5 text-kecil font-semibold uppercase tracking-wide text-ink-3">
@@ -177,9 +178,9 @@ export default function Mitra() {
                 <dd className="mt-1 text-subjudul font-extrabold text-ink leading-snug break-words">
                   {kewajibanTeks || 'Belum ada'}
                 </dd>
-                <p className="mt-0.5 text-kecil text-ink-3 leading-snug">
+                <dd className="mt-0.5 text-kecil text-ink-3 leading-snug">
                   Gabungan dari {kontrakAktif.length} kontrak
-                </p>
+                </dd>
               </div>
               <div className="min-w-0">
                 <dt className="text-kecil font-semibold uppercase tracking-wide text-ink-3">
@@ -193,9 +194,9 @@ export default function Mitra() {
                 >
                   {adaSisa ? sisaTeks : 'Terpenuhi'}
                 </dd>
-                <p className="mt-0.5 text-kecil text-ink-3 leading-snug">
+                <dd className="mt-0.5 text-kecil text-ink-3 leading-snug">
                   {adaSisa ? 'Dihitung per satuan, tidak dicampur' : 'Semua kuota sudah terpenuhi'}
-                </p>
+                </dd>
               </div>
               <div className="min-w-0">
                 <dt className="text-kecil font-semibold uppercase tracking-wide text-ink-3">
@@ -204,18 +205,18 @@ export default function Mitra() {
                 <dd className="mt-1 text-subjudul font-extrabold text-ink leading-snug break-words">
                   {rupiah(nilaiBulanan)}
                 </dd>
-                <p className="mt-0.5 text-kecil text-ink-3 leading-snug">
+                <dd className="mt-0.5 text-kecil text-ink-3 leading-snug">
                   Kalau kuota minimum diambil penuh
-                </p>
+                </dd>
               </div>
               <div className="min-w-0">
                 <dt className="text-kecil font-semibold uppercase tracking-wide text-ink-3">Pesanan selesai</dt>
                 <dd className="mt-1 text-subjudul font-extrabold text-ink leading-snug">
                   {angka(selesai)} pesanan
                 </dd>
-                <p className="mt-0.5 text-kecil text-ink-3 leading-snug">
+                <dd className="mt-0.5 text-kecil text-ink-3 leading-snug">
                   Dari {riwayatPesanan.length} pesanan ke pemasok ini
-                </p>
+                </dd>
               </div>
             </dl>
 
