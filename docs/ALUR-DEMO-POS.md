@@ -49,4 +49,6 @@ ditolak di halaman Masuk Portal UMKM.
   repo, atau `nyalakan.cmd` lagi.
 - **Resep saran tidak mengisi semua bahan:** Roti Tawar atau Minyak Goreng tidak punya penawaran di data simulasi, jadi
   tidak ditambahkan. Bahan yang ada tetap terisi.
-- **Portal POS tidak ada di `siapkan.cmd`:** image backend `0.12.0` belum diterbitkan. Pakai `nyalakan.cmd`.
+- **Portal POS tidak ada di `siapkan.cmd`:** pemasangan itu masih memakai backend `0.11.0`. Jalankan `siapkan.cmd` lagi
+  supaya kode dan image `0.12.0` diunduh. Kalau ada perubahan lokal yang belum dikomit, `siapkan.cmd` tidak memperbarui
+  kodenya, jadi komit atau buang dulu perubahan itu.
