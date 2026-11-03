@@ -20,6 +20,7 @@ import { Avatar } from '@/components/ui/dasar'
 import { LoncengMelayang, usePemberitahuanUsaha } from '@/components/domain/Pemberitahuan'
 import { MenuSamping } from '@/components/ui/MenuSamping'
 import { IsiHalaman } from '@/layouts/IsiHalaman'
+import { PitaDataContoh } from '@/components/domain'
 
 /**
  * Kerangka lima tab.
@@ -146,6 +147,7 @@ export default function KerangkaAplikasi() {
       />
 
       <div className="flex-1 min-w-0 flex flex-col">
+        <PitaDataContoh portal="umkm" />
         {/* Kepala halaman global: tiga ikon tetap di semua tab */}
         <header className="lg:hidden sticky top-0 z-40 bg-surface/95 backdrop-blur border-b border-line pt-aman">
           <div className="h-14 px-4 sm:px-6 flex items-center gap-2 max-w-[1400px] mx-auto w-full">

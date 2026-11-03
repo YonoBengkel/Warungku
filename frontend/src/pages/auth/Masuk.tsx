@@ -94,8 +94,9 @@ export default function Masuk() {
           }
         }
         if (e instanceof ServerTakTerjangkau) {
-          // Server belum dinyalakan: tetap bisa mencoba aplikasinya dengan data contoh.
-          aturMasuk(true)
+          // Server belum dinyalakan: tetap bisa mencoba aplikasinya dengan data contoh,
+          // dan penanda di kerangka terus mengingatkannya sesudah toast ini hilang.
+          aturMasuk(true, 'tak-terjangkau')
           tampilkanRacun('Data usahamu belum bisa dimuat, jadi yang tampil adalah data contoh.', 'info')
           navigate('/beranda')
           return

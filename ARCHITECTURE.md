@@ -101,7 +101,7 @@ Lihat [README.md](README.md) bagian Mulai cepat. Singkatnya `nyalakan.cmd` di ak
 
 | Lapisan | Keadaan sekarang |
 |---|---|
-| Front end | React 19, Vite 7, Tailwind v4, react-router-dom 7, Zustand. Tetap jalan dengan data contoh kalau API mati |
+| Front end | React 19, Vite 7, Tailwind v4, react-router-dom 7, Zustand. Tetap jalan dengan data contoh kalau API mati, dengan penanda tetap `PitaDataContoh` di kerangka supaya data contoh tidak terbaca sebagai data usaha (`alasanContoh` di store membedakan sengaja mencoba dan gagal dimuat) |
 | API | FastAPI |
 | Data | PostgreSQL 16, SQLModel, Alembic |
 | Auth | JWT dan kata sandi argon2. Tiap endpoint usaha memeriksa token lewat `usaha_saya`. Belum ada penyegaran token dan OTP |

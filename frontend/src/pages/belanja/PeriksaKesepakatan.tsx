@@ -103,6 +103,7 @@ export default function PeriksaKesepakatan() {
   const [centang3, setCentang3] = useState(false)
   const [centang4, setCentang4] = useState(false)
   const [diajukanPada, setDiajukanPada] = useState<Date | null>(null)
+  const [mengajukan, setMengajukan] = useState(false)
   const [konfirmasiBatal, setKonfirmasiBatal] = useState(false)
 
   if (!penawaran || !paket || !distributor || paket.penawaranId !== penawaran.id) {
@@ -157,8 +158,11 @@ export default function PeriksaKesepakatan() {
     `Diajukan oleh: ${profil.namaUsaha} (${profil.namaPemilik})`,
   ].join('\n')
 
-  function ajukan() {
-    ajukanKontrak(idPaket)
+  async function ajukan() {
+    setMengajukan(true)
+    const id = await ajukanKontrak(idPaket)
+    setMengajukan(false)
+    if (!id) return // Toast galatnya sudah tampil; isian dan centangnya tetap di layar.
     setDiajukanPada(new Date())
     window.scrollTo(0, 0)
   }
@@ -490,6 +494,7 @@ export default function PeriksaKesepakatan() {
               penuh
               ukuran="besar"
               disabled={!semuaTercentang}
+              memuat={mengajukan}
               onClick={ajukan}
               ikonKiri={<IkonKontrak size={18} />}
             >

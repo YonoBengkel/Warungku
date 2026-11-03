@@ -6,7 +6,7 @@ import { Kolom, kelasBingkai } from '@/components/ui/formulir'
 import { IkonKembali, IkonMata, IkonMataTutup } from '@/icons'
 import { cx, nomorHp } from '@/lib/format'
 import { useAplikasi } from '@/store/aplikasi'
-import { LayarAuth } from '@/components/ui/LayarAuth'
+import { CATATAN_LUPA_SANDI, LayarAuth } from '@/components/ui/LayarAuth'
 
 const JEDA_KIRIM_ULANG = 60
 
@@ -67,7 +67,7 @@ export default function LupaSandi() {
     setKode(Array(6).fill(''))
     setGalatKode(undefined)
     kotakRef.current[0]?.focus()
-    tampilkanRacun(`Kode baru terkirim lewat SMS ke ${nomorHp(hp)}.`, 'info')
+    tampilkanRacun(`Kode baru untuk ${nomorHp(hp)} juga tidak benar-benar dikirim di purwarupa ini.`, 'info')
   }
 
   function isiKotak(i: number, nilai: string) {
@@ -131,13 +131,13 @@ export default function LupaSandi() {
     setMemuat(true)
     window.setTimeout(() => {
       setMemuat(false)
-      tampilkanRacun('Kata sandi baru tersimpan. Silakan masuk memakai sandi itu.', 'aman')
+      tampilkanRacun('Kata sandi akun tidak berubah di purwarupa ini. Masuk dengan akun simulasi untuk mencoba.', 'info')
       navigate('/masuk')
     }, 700)
   }
 
   return (
-    <LayarAuth>
+    <LayarAuth purwarupa={CATATAN_LUPA_SANDI}>
       {tahap === 'nomor' && (
         <form
           noValidate

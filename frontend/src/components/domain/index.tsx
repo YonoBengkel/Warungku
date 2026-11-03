@@ -1,5 +1,5 @@
 import { useId, useState, type ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import type { Barang, BuktiPengiriman, Kontrak, Perkiraan, Pesanan, StatusStok } from '@/lib/types'
 import {
   BANTUAN,
@@ -192,6 +192,48 @@ function BarisStatus({
 /* ================================================================== */
 /* Banner status akun                                                 */
 /* ================================================================== */
+
+/**
+ * Penanda tetap di kerangka selama yang tampil data contoh (audit 3 Nov 2026).
+ * Toast saat masuk hilang dalam beberapa detik, padahal angka di semua layar
+ * sesudahnya tetap contoh dan perubahannya tidak tersimpan. Tidak bisa ditutup.
+ */
+export function PitaDataContoh({ portal }: { portal: 'umkm' | 'distributor' }) {
+  const contohUmkm = useAplikasi((s) => s.sumberData === 'contoh')
+  const tidakTerjangkau = useAplikasi((s) => s.alasanContoh === 'tak-terjangkau')
+  const contohDistributor = useAplikasi((s) => s.pesananMasukServer === null)
+  const aturMasuk = useAplikasi((s) => s.aturMasuk)
+  const navigate = useNavigate()
+
+  if (portal === 'umkm' ? !contohUmkm : !contohDistributor) return null
+  const kalimat =
+    portal === 'distributor'
+      ? 'Portal ini memakai data contoh. Perubahan di mode ini tidak tersimpan.'
+      : tidakTerjangkau
+        ? 'Data usahamu belum bisa dimuat, jadi yang tampil data contoh. Perubahan di mode ini tidak tersimpan.'
+        : 'Kamu sedang melihat data contoh. Perubahan di mode ini tidak tersimpan.'
+
+  return (
+    <div role="status" className="border-b border-menipis/30 bg-menipis-soft text-menipis-ink">
+      <p className="max-w-[1400px] mx-auto px-4 sm:px-6 py-2 text-isi font-semibold leading-snug">
+        <IkonPeringatan size={16} className="inline-block align-[-3px] mr-1.5" />
+        {kalimat}{' '}
+        {/* Menyatu dengan kalimat supaya di 360 px tidak makan satu baris lagi. Padding
+            dengan margin negatif menjaga area ketuknya 44 px tanpa menambah tinggi baris. */}
+        <button
+          type="button"
+          onClick={() => {
+            if (portal === 'umkm') aturMasuk(false)
+            navigate(portal === 'umkm' ? '/masuk' : '/masuk/distributor')
+          }}
+          className="inline-block py-3 -my-3 font-bold underline underline-offset-2"
+        >
+          {portal === 'distributor' ? 'Masuk sebagai distributor' : tidakTerjangkau ? 'Masuk lagi' : 'Masuk dengan akun usaha'}
+        </button>
+      </p>
+    </div>
+  )
+}
 
 /**
  * Bisa diciutkan, tapi tidak bisa ditutup. Akun yang datanya ditolak harus

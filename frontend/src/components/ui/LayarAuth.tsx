@@ -2,6 +2,15 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { TandaMerek } from '@/components/ui/Merek'
 import { IkonKembali } from '@/icons'
+import { Peringatan } from '@/components/ui/umpanBalik'
+
+/** Pendaftaran belum memanggil POST /auth/umkm/daftar: isiannya hanya mengisi profil di peramban. */
+export const CATATAN_DAFTAR =
+  'Isian pendaftaran ini hanya tercatat di peramban ini dan belum membuat akun yang bisa dipakai masuk. Untuk mencoba Turnify Flow dengan data sungguhan, masuk dengan akun simulasi.'
+
+/** Lupa Sandi belum mengirim kode dan belum mengubah kata sandi akun mana pun. */
+export const CATATAN_LUPA_SANDI =
+  'Kode tidak benar-benar dikirim, dan kata sandi akun tidak berubah. Untuk mencoba Turnify Flow, masuk dengan akun simulasi.'
 
 const KELAS_TAUTAN_KEMBALI =
   'inline-flex items-center gap-1.5 h-11 -ml-1.5 pr-2.5 pl-1.5 rounded-md text-isi font-semibold text-ink-2 hover:text-ink hover:bg-sunken transition-colors'
@@ -17,6 +26,9 @@ const KELAS_TAUTAN_KEMBALI =
  *
  * Tautan itu berbeda dari `kembaliKe`, yang mundur satu langkah pendaftaran.
  *
+ * `purwarupa` memasang catatan jujur di atas isi kotak, untuk alur yang belum
+ * mengirim apa pun ke Turnify Flow (Daftar dan Lupa Sandi, audit 3 Nov 2026).
+ *
  * Penyebut bilah langkah dikunci ke 5 di ketiga layar pendaftaran: alurnya baru
  * selesai sesudah data kasir dan batas aman, dan penyebut yang berbeda antar
  * layar membuat bilah progres mundur di tengah jalan.
@@ -27,6 +39,7 @@ export function LayarAuth({
   judul,
   kembaliKe,
   kartu = true,
+  purwarupa,
 }: {
   children: ReactNode
   /** Langkah pendaftaran, 1 sampai 5. Tampil bersama `judul` di atas isi kotak. */
@@ -36,6 +49,7 @@ export function LayarAuth({
   kembaliKe?: string
   /** Halaman yang menaruh judulnya di luar kotak (Masuk Distributor, Masuk POS) memasang kotaknya sendiri. */
   kartu?: boolean
+  purwarupa?: string
 }) {
   const isi = (
     <>
@@ -65,6 +79,11 @@ export function LayarAuth({
             <span className="text-isi font-semibold text-ink-3 shrink-0">Langkah {langkah} dari 5</span>
           </div>
         </div>
+      )}
+      {purwarupa && (
+        <Peringatan nada="info" judul="Masih purwarupa" className="mb-4">
+          {purwarupa}
+        </Peringatan>
       )}
       {children}
     </>

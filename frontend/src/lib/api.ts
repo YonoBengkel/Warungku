@@ -34,6 +34,22 @@ const RUTE_TIDAK_DIKENAL = new Set(['Not Found', 'Method Not Allowed'])
 const PESAN_RUTE_TIDAK_DIKENAL =
   'Bagian ini belum ada di aplikasi yang sedang menyala. Matikan lalu nyalakan ulang aplikasinya (matikan.cmd, lalu nyalakan.cmd).'
 
+/* Galat validasi (422) dari pydantic berupa daftar berbahasa Inggris. Yang tampil
+   cukup nama kolomnya dalam bahasa layar, supaya pemilik usaha tahu isian mana
+   yang harus diperbaiki (audit 3 Nov 2026). */
+function pesanValidasi(daftar: Array<{ loc?: unknown }>): string {
+  const kolom = [
+    ...new Set(
+      daftar
+        .map((d) => (Array.isArray(d.loc) ? d.loc[d.loc.length - 1] : null))
+        .filter((k): k is string => typeof k === 'string')
+        .map((k) => k.replace(/_/g, ' ')),
+    ),
+  ]
+  if (kolom.length === 0) return 'Ada isian yang belum sesuai. Periksa lagi isiannya, lalu coba simpan ulang.'
+  return `Isian ${kolom.map((k) => `"${k}"`).join(', ')} belum sesuai. Periksa lagi isinya, lalu coba simpan ulang.`
+}
+
 export interface SesiServer {
   token: string
   usahaId: number
@@ -91,6 +107,7 @@ export async function minta<T>(jalur: string, opsi: RequestInit & { token?: stri
     try {
       const isi = await jawab.json()
       if (typeof isi?.detail === 'string') pesan = isi.detail
+      else if (Array.isArray(isi?.detail) && isi.detail.length > 0) pesan = pesanValidasi(isi.detail)
     } catch {
       /* Badan bukan JSON; pakai pesan bawaan. */
     }

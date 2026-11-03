@@ -9,7 +9,7 @@ import { LayarAuth } from '@/components/ui/LayarAuth'
 
 function pesanGalat(e: unknown): string {
   if (e instanceof ServerTakTerjangkau) {
-    return 'Turnify Flow belum bisa dihubungi. Portal POS butuh server, jadi pastikan layanannya menyala.'
+    return 'Turnify Flow belum bisa dihubungi, padahal Portal POS tidak punya data contoh. Nyalakan dulu layanannya (siapkan.cmd atau nyalakan.cmd), lalu coba masuk lagi.'
   }
   return e instanceof GalatApi ? e.message : 'Gagal masuk. Coba lagi sebentar lagi.'
 }

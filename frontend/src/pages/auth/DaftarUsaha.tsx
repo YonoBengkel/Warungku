@@ -6,7 +6,7 @@ import { IkonLokasi } from '@/icons'
 import { LABEL_CARA_HITUNG, LABEL_JENIS_USAHA, URUTAN_JENIS_USAHA } from '@/lib/label'
 import type { CaraHitungStok, JenisUsaha } from '@/lib/types'
 import { useAplikasi } from '@/store/aplikasi'
-import { LayarAuth } from '@/components/ui/LayarAuth'
+import { CATATAN_DAFTAR, LayarAuth } from '@/components/ui/LayarAuth'
 
 /* Urutan kartu dikunci: yang paling sering dipilih pemilik warung ada di atas. */
 const URUTAN_CARA: CaraHitungStok[] = ['racikan', 'kemasan', 'keduanya']
@@ -110,13 +110,13 @@ export default function DaftarUsaha() {
       /* Tidak lagi menyebut "tinggal satu langkah": sesudah legalitas masih ada
          data kasir dan batas aman, dan janji yang meleset di sini membuat dua
          layar berikutnya terasa seperti jebakan. */
-      tampilkanRacun(`Data ${namaUsaha.trim()} tersimpan. Lanjut ke data legalitas.`, 'aman')
+      tampilkanRacun(`Data ${namaUsaha.trim()} tercatat di peramban ini. Lanjut ke data legalitas.`, 'info')
       navigate('/daftar/legalitas')
     }, 650)
   }
 
   return (
-    <LayarAuth langkah={2} judul="Tentang Usaha Kamu" kembaliKe="/daftar">
+    <LayarAuth langkah={2} judul="Tentang Usaha Kamu" kembaliKe="/daftar" purwarupa={CATATAN_DAFTAR}>
       <form
         noValidate
         onSubmit={(e) => {

@@ -179,6 +179,11 @@ interface KeadaanAplikasi {
    * Bagian lain (pesanan, kontrak, katalog) masih data contoh di kedua mode.
    */
   sumberData: 'contoh' | 'server'
+  /**
+   * Kenapa data contoh yang tampil, untuk penanda di kerangka (audit 3 Nov 2026):
+   * `coba` sengaja mencoba, `tak-terjangkau` data usahanya gagal dimuat.
+   */
+  alasanContoh: 'coba' | 'tak-terjangkau'
   sesiServer: SesiServer | null
   /** True selama sesi dari tab ini sedang dipulihkan sesudah halaman dimuat ulang. */
   memulihkanSesi: boolean
@@ -202,7 +207,7 @@ interface KeadaanAplikasi {
 
   /* Tampilan & sesi */
   aturTema: (t: 'terang' | 'gelap') => void
-  aturMasuk: (v: boolean) => void
+  aturMasuk: (v: boolean, alasan?: 'coba' | 'tak-terjangkau') => void
   /** Masuk lewat API. Melempar GalatApi (ditolak) atau ServerTakTerjangkau (server mati). */
   masukServer: (email: string, kataSandi: string) => Promise<void>
   /** Masuk lewat pintu Portal POS. Kasir mendapat sesi minimal: gudang tidak dimuat, karena ia tidak boleh membacanya. */
@@ -293,7 +298,8 @@ interface KeadaanAplikasi {
   majukanSemuaPesananMasuk: (ids: string[], bukti?: Record<string, string | null>) => void
 
   /* Kontrak */
-  ajukanKontrak: (paketId: string) => string
+  /** Id kontrak kalau pengajuannya diterima, null kalau gagal terkirim. */
+  ajukanKontrak: (paketId: string) => Promise<string | null>
   ajukanBerhenti: (kontrakId: string, alasan: string) => void
 
   // Portal distributor — kontrak
@@ -617,6 +623,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
   // membuka /beranda langsung tetap boleh dan memang dipakai saat memeriksa layar.
   masuk: false,
   sumberData: 'contoh',
+  alasanContoh: 'coba',
   sesiServer: null,
   memulihkanSesi: sesiTersimpan() != null,
   sesiDistributor: null,
@@ -638,14 +645,15 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
     set({ tema: t })
   },
 
-  aturMasuk: (v) => {
-    if (v) return set({ masuk: true })
+  aturMasuk: (v, alasan = 'coba') => {
+    if (v) return set({ masuk: true, alasanContoh: alasan })
     // Keluar: sesi server dilepas dan gudang kembali ke data contoh.
     simpanSesi(null)
     pasangDataServer(null)
     set({
       masuk: false,
       sumberData: 'contoh',
+      alasanContoh: 'coba',
       sesiServer: null,
       barang: daftarBarang,
       pesanan: daftarPesanan,
@@ -705,10 +713,11 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
       const isi = await muatSemuaServer(sesi)
       set((s) => ({ ...keadaanServer(s, sesi, isi), memulihkanSesi: false }))
     } catch {
-      // Token hangus (server dimuat ulang) atau server mati: mulai lagi dari data contoh.
+      // Token hangus (server dimuat ulang) atau server mati: mulai lagi dari data contoh,
+      // dan penanda di kerangka menyebutnya terang-terangan.
       simpanSesi(null)
       pasangDataServer(null)
-      set({ memulihkanSesi: false })
+      set({ memulihkanSesi: false, alasanContoh: 'tak-terjangkau' })
     }
   },
 
@@ -1766,16 +1775,19 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
       .finally(() => set((s) => ({ pesananDiproses: s.pesananDiproses.filter((x) => !baru.includes(x)) })))
   },
 
-  ajukanKontrak: (paketId) => {
+  ajukanKontrak: async (paketId) => {
     const sesi = get().sesiServer
     if (sesi && /^\d+$/.test(paketId)) {
-      ajukanKontrakServer(sesi, paketId)
-        .then((k) => {
-          set((s) => ({ kontrak: [k, ...s.kontrak.filter((x) => x.id !== k.id)] }))
-          get().tampilkanRacun('Pengajuan kontrak terkirim. Menunggu persetujuan distributor.', 'info')
-        })
-        .catch((e: unknown) => get().tampilkanRacun(e instanceof Error ? e.message : 'Pengajuan gagal dikirim.', 'kritis'))
-      return `srv-ajuan-${paketId}`
+      // Layar "terkirim" baru boleh tampil sesudah server menjawab (audit 3 Nov 2026).
+      try {
+        const k = await ajukanKontrakServer(sesi, paketId)
+        set((s) => ({ kontrak: [k, ...s.kontrak.filter((x) => x.id !== k.id)] }))
+        get().tampilkanRacun('Pengajuan kontrak terkirim. Menunggu persetujuan distributor.', 'info')
+        return k.id
+      } catch (e) {
+        get().tampilkanRacun(e instanceof Error ? e.message : 'Pengajuan belum terkirim. Coba lagi sebentar lagi.', 'kritis')
+        return null
+      }
     }
     const id = `k-ajuan-${paketId}`
     const paket = paketById(paketId, get().paketKontrak)

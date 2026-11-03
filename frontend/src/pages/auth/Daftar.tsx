@@ -6,7 +6,7 @@ import { Kolom, kelasBingkai } from '@/components/ui/formulir'
 import { IkonMata, IkonMataTutup } from '@/icons'
 import { cx } from '@/lib/format'
 import { useAplikasi } from '@/store/aplikasi'
-import { LayarAuth } from '@/components/ui/LayarAuth'
+import { CATATAN_DAFTAR, LayarAuth } from '@/components/ui/LayarAuth'
 
 /**
  * Langkah 1 dari 5: hanya nomor HP dan kata sandi.
@@ -47,13 +47,13 @@ export default function Daftar() {
     window.setTimeout(() => {
       setMemuat(false)
       ubahProfil({ nomorHp: hp.replace(/\D/g, '') })
-      tampilkanRacun('Akun tersimpan. Nomor HP kamu sudah bisa dipakai masuk.', 'aman')
+      tampilkanRacun('Langkah 1 tercatat di peramban ini. Lanjut ke data usaha.', 'info')
       navigate('/daftar/usaha')
     }, 650)
   }
 
   return (
-    <LayarAuth langkah={1} judul="Buat Akun">
+    <LayarAuth langkah={1} judul="Buat Akun" purwarupa={CATATAN_DAFTAR}>
       <form
         noValidate
         onSubmit={(e) => {

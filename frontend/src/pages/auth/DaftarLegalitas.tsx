@@ -6,7 +6,7 @@ import { Kolom, KotakCentang } from '@/components/ui/formulir'
 import { Lembar } from '@/components/ui/lembar'
 import { IkonBantuan, IkonCentangLingkaran, IkonSampah, IkonUnggah } from '@/icons'
 import { useAplikasi } from '@/store/aplikasi'
-import { LayarAuth } from '@/components/ui/LayarAuth'
+import { CATATAN_DAFTAR, LayarAuth } from '@/components/ui/LayarAuth'
 
 /**
  * Langkah 3 dari 5: data legalitas, lalu langsung diantar ke sumber data penjualan.
@@ -107,7 +107,7 @@ export default function DaftarLegalitas() {
         verifikasi: 'menunggu',
         tingkatVerifikasi: belumPunyaNib ? 'dasar' : 'penuh',
       })
-      tampilkanRacun('Data legalitas tersimpan. Kami kabari lewat WhatsApp begitu pemeriksaan selesai.', 'aman')
+      tampilkanRacun('Data legalitas tercatat di peramban ini. Pemeriksaan sungguhan belum berjalan di purwarupa ini.', 'info')
       navigate('/akun/kasir?langkah=mulai')
     }, 700)
   }
@@ -121,7 +121,7 @@ export default function DaftarLegalitas() {
   }
 
   return (
-    <LayarAuth langkah={3} judul="Data Legalitas" kembaliKe="/daftar/usaha">
+    <LayarAuth langkah={3} judul="Data Legalitas" kembaliKe="/daftar/usaha" purwarupa={CATATAN_DAFTAR}>
       <form
         noValidate
         onSubmit={(e) => {

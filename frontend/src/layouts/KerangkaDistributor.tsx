@@ -18,6 +18,7 @@ import { TandaMerek } from '@/components/ui/Merek'
 import { LoncengMelayang, useDibacaDistributor, usePemberitahuanDistributor } from '@/components/domain/Pemberitahuan'
 import { MenuSamping } from '@/components/ui/MenuSamping'
 import { IsiHalaman } from '@/layouts/IsiHalaman'
+import { PitaDataContoh } from '@/components/domain'
 
 /**
  * Kerangka Portal Distributor: sistem desain yang sama dengan KerangkaAplikasi.
@@ -110,6 +111,7 @@ export default function KerangkaDistributor() {
       />
 
       <div className="flex-1 min-w-0 flex flex-col">
+        <PitaDataContoh portal="distributor" />
         {/* Kepala halaman: siapa yang sedang dilihat, dan apa yang menunggu */}
         <header className="lg:hidden sticky top-0 z-40 bg-surface/95 backdrop-blur border-b border-line pt-aman">
           <div className="h-14 px-4 sm:px-6 flex items-center gap-2 max-w-[1400px] mx-auto w-full">

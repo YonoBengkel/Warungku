@@ -104,7 +104,7 @@ export default function Produksi() {
         <KeadaanKosong
           ikon={<IkonPanci size={26} />}
           judul="Halaman ini butuh akun usaha"
-          pesan="Menu dan komposisinya tersimpan di server, jadi data contoh tidak punya isinya. Masuk dengan akun usahamu untuk mengaturnya."
+          pesan="Menu dan komposisinya hanya ada di data usahamu, jadi data contoh tidak punya isinya. Masuk dengan akun usahamu untuk mengaturnya."
           aksi={<TombolTautan ke="/masuk">Masuk</TombolTautan>}
         />
       </div>
