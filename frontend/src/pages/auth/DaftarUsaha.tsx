@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react'
-import type { ReactNode } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { Tombol } from '@/components/ui/dasar'
 import { AreaTeks, Kolom, Pilihan, PilihanKartu } from '@/components/ui/formulir'
-import { IkonKembali, IkonLokasi } from '@/icons'
+import { IkonLokasi } from '@/icons'
 import { LABEL_CARA_HITUNG, LABEL_JENIS_USAHA, URUTAN_JENIS_USAHA } from '@/lib/label'
 import type { CaraHitungStok, JenisUsaha } from '@/lib/types'
 import { useAplikasi } from '@/store/aplikasi'
-import { TandaMerek } from '@/components/ui/Merek'
+import { LayarAuth } from '@/components/ui/LayarAuth'
 
 /* Urutan kartu dikunci: yang paling sering dipilih pemilik warung ada di atas. */
 const URUTAN_CARA: CaraHitungStok[] = ['racikan', 'kemasan', 'keduanya']
@@ -279,62 +278,3 @@ function sorotGalatPertama() {
   kolom?.focus({ preventScroll: true })
 }
 
-/**
- * Penyebut progres dikunci ke 5, sama dengan layar pendaftaran lain, karena
- * alurnya baru selesai setelah data kasir dan batas aman. Penyebut yang
- * berbeda antar layar membuat bilah progres mundur di tengah jalan.
- */
-function LayarAuth({
-  langkah,
-  judul,
-  kembaliKe,
-  children,
-}: {
-  langkah: number
-  judul: string
-  kembaliKe: string
-  children: ReactNode
-}) {
-  return (
-    <div className="min-h-dvh bg-bg px-4 pt-aman pb-aman">
-      <div className="w-full max-w-[28rem] mx-auto py-8 sm:py-12">
-        <div className="flex items-center justify-center gap-2.5 mb-6">
-          <TandaMerek ukuran={36} />
-          <span className="text-[1.125rem] font-extrabold text-ink tracking-tight">Turnify Flow</span>
-        </div>
-
-        <div className="bg-surface border border-line rounded-lg shadow-e1 p-5 sm:p-6 anim-muncul">
-          <Link
-            to={kembaliKe}
-            className="inline-flex items-center gap-1.5 h-11 -ml-1.5 pr-2.5 pl-1.5 rounded-md text-isi font-semibold text-ink-2 hover:text-ink hover:bg-sunken transition-colors"
-          >
-            <IkonKembali size={18} />
-            Kembali
-          </Link>
-
-          <div className="mt-2 mb-4">
-            <div
-              className="h-1 w-full rounded-full bg-sunken overflow-hidden"
-              role="progressbar"
-              aria-valuenow={langkah}
-              aria-valuemin={1}
-              aria-valuemax={5}
-              aria-label={`Langkah ${langkah} dari 5`}
-            >
-              <div
-                className="h-full rounded-full bg-brand transition-[width] duration-500"
-                style={{ width: `${(langkah / 5) * 100}%` }}
-              />
-            </div>
-            <div className="mt-2 flex items-baseline justify-between gap-3">
-              <h1 className="text-judul font-extrabold text-ink tracking-tight">{judul}</h1>
-              <span className="text-isi font-semibold text-ink-3 shrink-0">Langkah {langkah} dari 5</span>
-            </div>
-          </div>
-
-          {children}
-        </div>
-      </div>
-    </div>
-  )
-}

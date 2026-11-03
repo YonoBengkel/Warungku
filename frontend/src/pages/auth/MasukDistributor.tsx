@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { KartuSambungDistributor } from '@/components/domain/SambungDistributor'
 import { useAplikasi } from '@/store/aplikasi'
+import { LayarAuth } from '@/components/ui/LayarAuth'
 
 /**
  * Masuk ke portal distributor.
@@ -23,17 +24,7 @@ export default function MasukDistributor() {
   }, [sesi, aturPeran, navigate])
 
   return (
-    <div className="min-h-dvh bg-bg px-4 pt-aman pb-aman">
-      <div className="w-full max-w-[28rem] mx-auto py-8 sm:py-12">
-        <div className="flex items-center justify-center gap-2.5 mb-6">
-          <span
-            className="size-9 rounded-md bg-brand text-ink-inverse grid place-items-center font-extrabold text-[1.125rem] leading-none"
-            aria-hidden="true"
-          >
-            T
-          </span>
-          <span className="text-[1.125rem] font-extrabold text-ink tracking-tight">Turnify Flow</span>
-        </div>
+    <LayarAuth kartu={false}>
         <h1 className="text-judul font-extrabold text-ink tracking-tight text-center">Masuk ke Portal Distributor</h1>
         <p className="mt-1 mb-4 text-isi text-ink-3 leading-relaxed text-center">
           Kelola pesanan masuk, kontrak, promo, dan lihat segmen pelangganmu.
@@ -48,7 +39,6 @@ export default function MasukDistributor() {
             Masuk di sini
           </Link>
         </p>
-      </div>
-    </div>
+    </LayarAuth>
   )
 }

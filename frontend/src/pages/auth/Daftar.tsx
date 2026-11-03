@@ -6,7 +6,7 @@ import { Kolom, kelasBingkai } from '@/components/ui/formulir'
 import { IkonMata, IkonMataTutup } from '@/icons'
 import { cx } from '@/lib/format'
 import { useAplikasi } from '@/store/aplikasi'
-import { TandaMerek } from '@/components/ui/Merek'
+import { LayarAuth } from '@/components/ui/LayarAuth'
 
 /**
  * Langkah 1 dari 5: hanya nomor HP dan kata sandi.
@@ -128,58 +128,6 @@ function BilahLanjut({ children }: { children: ReactNode }) {
   return (
     <div className="sticky bottom-0 mt-6 -mx-5 sm:-mx-6 -mb-5 sm:-mb-6 px-5 sm:px-6 pt-3 pb-4 bg-surface/95 backdrop-blur-sm border-t border-line rounded-b-lg">
       {children}
-    </div>
-  )
-}
-
-/**
- * Kerangka langkah pendaftaran: logo, bar progres tipis, lalu kartu isian.
- *
- * Penyebutnya 5, bukan 3, karena alur sebenarnya belum selesai di layar
- * legalitas: masih ada data kasir dan batas aman. Penyebut yang berbeda antar
- * layar membuat bilah progres mundur dari penuh ke 80% tepat setelah pengguna
- * diberi tahu ia menyelesaikan langkah terakhir.
- */
-function LayarAuth({
-  langkah,
-  judul,
-  children,
-}: {
-  langkah: number
-  judul: string
-  children: ReactNode
-}) {
-  return (
-    <div className="min-h-dvh bg-bg px-4 pt-aman pb-aman">
-      <div className="w-full max-w-[28rem] mx-auto py-8 sm:py-12">
-        <div className="flex items-center justify-center gap-2.5 mb-6">
-          <TandaMerek ukuran={36} />
-          <span className="text-[1.125rem] font-extrabold text-ink tracking-tight">Turnify Flow</span>
-        </div>
-
-        <div className="bg-surface border border-line rounded-lg shadow-e1 p-5 sm:p-6 anim-muncul">
-          <div className="mb-4">
-            <div
-              className="h-1 w-full rounded-full bg-sunken overflow-hidden"
-              role="progressbar"
-              aria-valuenow={langkah}
-              aria-valuemin={1}
-              aria-valuemax={5}
-              aria-label={`Langkah ${langkah} dari 5`}
-            >
-              <div
-                className="h-full rounded-full bg-brand transition-[width] duration-500"
-                style={{ width: `${(langkah / 5) * 100}%` }}
-              />
-            </div>
-            <div className="mt-2 flex items-baseline justify-between gap-3">
-              <h1 className="text-judul font-extrabold text-ink tracking-tight">{judul}</h1>
-              <span className="text-isi font-semibold text-ink-3 shrink-0">Langkah {langkah} dari 5</span>
-            </div>
-          </div>
-          {children}
-        </div>
-      </div>
     </div>
   )
 }

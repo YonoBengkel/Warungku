@@ -1,12 +1,12 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import type { KeyboardEvent, ReactNode } from 'react'
+import type { KeyboardEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Tombol } from '@/components/ui/dasar'
 import { Kolom, kelasBingkai } from '@/components/ui/formulir'
 import { IkonKembali, IkonMata, IkonMataTutup } from '@/icons'
 import { cx, nomorHp } from '@/lib/format'
 import { useAplikasi } from '@/store/aplikasi'
-import { TandaMerek } from '@/components/ui/Merek'
+import { LayarAuth } from '@/components/ui/LayarAuth'
 
 const JEDA_KIRIM_ULANG = 60
 
@@ -326,20 +326,6 @@ function sorotGalatPertama() {
   const kolom = document.querySelector<HTMLElement>('input[aria-invalid="true"]')
   kolom?.scrollIntoView({ block: 'center', behavior: 'smooth' })
   kolom?.focus({ preventScroll: true })
-}
-
-function LayarAuth({ children }: { children: ReactNode }) {
-  return (
-    <div className="min-h-dvh bg-bg px-4 pt-aman pb-aman">
-      <div className="w-full max-w-[28rem] mx-auto py-8 sm:py-12">
-        <div className="flex items-center justify-center gap-2.5 mb-6">
-          <TandaMerek ukuran={36} />
-          <span className="text-[1.125rem] font-extrabold text-ink tracking-tight">Turnify Flow</span>
-        </div>
-        <div className="bg-surface border border-line rounded-lg shadow-e1 p-5 sm:p-6 anim-muncul">{children}</div>
-      </div>
-    </div>
-  )
 }
 
 /* Warna bingkai tidak ditulis di sini: `kelasBingkai` memilih abu-abu atau

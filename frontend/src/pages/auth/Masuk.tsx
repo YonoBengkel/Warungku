@@ -1,5 +1,4 @@
 import { useEffect, useId, useState } from 'react'
-import type { ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Tombol } from '@/components/ui/dasar'
 import { Kolom } from '@/components/ui/formulir'
@@ -11,7 +10,7 @@ import { profilAwal } from '@/data/dummy'
 import { GalatApi, ServerTakTerjangkau } from '@/lib/api'
 import { AKUN_BU_RATMI, AKUN_KASIR, AKUN_KOPI_KITA } from '@/lib/akunSimulasi'
 import { useAplikasi } from '@/store/aplikasi'
-import { TandaMerek } from '@/components/ui/Merek'
+import { LayarAuth } from '@/components/ui/LayarAuth'
 
 /**
  * Masuk berdiri di luar kerangka 4 tab, jadi ia membangun tata letaknya sendiri:
@@ -272,21 +271,6 @@ export default function Masuk() {
 /* ================================================================== */
 /* Bagian yang hanya dipakai layar ini                                */
 /* ================================================================== */
-
-/** Kerangka layar di luar 4 tab: satu kolom terpusat, kartu di tengah. */
-function LayarAuth({ children }: { children: ReactNode }) {
-  return (
-    <div className="min-h-dvh bg-bg px-4 pt-aman pb-aman">
-      <div className="w-full max-w-[28rem] mx-auto py-8 sm:py-12">
-        <div className="flex items-center justify-center gap-2.5 mb-6">
-          <TandaMerek ukuran={36} />
-          <span className="text-[1.125rem] font-extrabold text-ink tracking-tight">Turnify Flow</span>
-        </div>
-        <div className="bg-surface border border-line rounded-lg shadow-e1 p-5 sm:p-6 anim-muncul">{children}</div>
-      </div>
-    </div>
-  )
-}
 
 const KELAS_SANDI =
   'w-full h-12 pl-3.5 pr-14 rounded-md bg-surface text-ink text-kartu ' +

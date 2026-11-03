@@ -5,6 +5,7 @@ import { Kolom } from '@/components/ui/formulir'
 import { GalatApi, ServerTakTerjangkau } from '@/lib/api'
 import { AKUN_KASIR, AKUN_KOPI_KITA } from '@/lib/akunSimulasi'
 import { useAplikasi } from '@/store/aplikasi'
+import { LayarAuth } from '@/components/ui/LayarAuth'
 
 /**
  * Masuk ke Portal POS, untuk pemilik dan untuk akun kasir yang dibuat pemilik di
@@ -52,8 +53,7 @@ export default function MasukPos() {
   }
 
   return (
-    <div className="min-h-dvh bg-bg px-4 pt-aman pb-aman">
-      <div className="w-full max-w-[28rem] mx-auto py-8 sm:py-12">
+    <LayarAuth kartu={false}>
         <h1 className="text-judul font-extrabold text-ink tracking-tight text-center">Masuk ke Portal POS</h1>
         <p className="mt-1 mb-4 text-isi text-ink-3 leading-relaxed text-center">
           Catat penjualan di konter. Stok usahamu ikut berkurang dari setiap nota.
@@ -123,7 +123,6 @@ export default function MasukPos() {
             Masuk ke Portal UMKM
           </Link>
         </p>
-      </div>
-    </div>
+    </LayarAuth>
   )
 }
