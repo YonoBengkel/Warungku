@@ -44,6 +44,8 @@ export default function KerangkaPos() {
               className={({ isActive }) =>
                 cx(
                   'h-11 sm:h-10 px-3 sm:px-3.5 inline-flex items-center rounded-md text-isi font-semibold transition-colors',
+                  // Di desktop terlihat 40 px; area sentuhnya tetap 44 px (audit 3 Nov 2026).
+                  'relative after:absolute after:inset-x-0 after:-top-0.5 after:-bottom-0.5 after:content-[""]',
                   isActive ? 'bg-brand-soft text-brand-soft-ink' : 'text-ink-2 hover:bg-sunken hover:text-ink',
                 )
               }

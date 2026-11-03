@@ -42,7 +42,7 @@ Daftar; kerangka halaman tidak memasangnya sendiri.
 | Teks kedua | `text-ink-2` | `#48545f` | `#a8b6c2` | Keterangan yang **perlu dibaca** |
 | Teks ketiga | `text-ink-3` | `#5a6773` | `#7d8c99` | Keterangan yang **boleh dilewati** |
 | Teks pembalik | `text-ink-inverse` | `#ffffff` | `#08121a` | Teks di atas warna penuh |
-| Merek | `bg-brand`, `text-brand` | `#4a148c` | `#a26ce5` | Tombol utama, tautan, cincin fokus |
+| Merek | `bg-brand`, `text-brand` | `#4a148c` | `#a571e7` | Tombol utama, tautan, cincin fokus. Gelapnya dicerahkan dari `#a26ce5` supaya teks ungu di `surface-2` lolos 4,5:1 (audit 3 Nov 2026) |
 | Merek lembut | `bg-brand-soft` + `text-brand-soft-ink` | `#f3ecfb` / `#3a0a73` | `#1d0f33` / `#c4a3f2` | Keadaan terpilih, tombol sekunder |
 | Aksen coral | `bg-aksen` + `text-aksen-ink` | `#ff7f50` / `#111a23` | `#e9744b` / `#0b1116` | Isian sorotan: pil potongan di kartu promo berfoto, garis sorot ubin Perlu Tindakan |
 | Aksen kuning | `bg-kuning` + `text-kuning-ink` | `#ffcc00` / `#111a23` | sama | Isian sorotan kecil (landing page) |

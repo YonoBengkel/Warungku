@@ -501,7 +501,10 @@ export function Pemisah({ className }: { className?: string }) {
   return <hr className={cx('border-0 border-t border-line', className)} />
 }
 
-/** Baris label-nilai untuk ringkasan dan detail. */
+/**
+ * Baris label-nilai untuk ringkasan dan detail. Isinya `div` dan `span`, bukan
+ * `dt` dan `dd`, jadi bungkus dengan `div`, jangan `dl` (axe definition-list).
+ */
 export function BarisData({
   label,
   nilai,

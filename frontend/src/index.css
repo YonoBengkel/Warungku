@@ -167,13 +167,14 @@
   --c-ink-inverse: #08121a;
 
   /* Ungu #4A148C dicerahkan untuk permukaan gelap (rona 267° yang sama):
-     vs ink-inverse 5,23:1, sebagai teks di surface 4,77:1 dan di bg 5,26:1;
-     soft-ink vs soft 8,45:1. */
-  --c-brand: #a26ce5;
+     vs ink-inverse 5,5:1, sebagai teks di surface 5,02:1, di surface-2 4,65:1,
+     dan di bg 5,53:1; soft-ink vs soft 8,45:1. Dulu #a26ce5, yang hanya 4,42:1
+     di surface-2 (audit 3 Nov 2026). */
+  --c-brand: #a571e7;
   --c-brand-hover: #bb93ec;
   --c-brand-soft: #1d0f33;
   --c-brand-soft-ink: #c4a3f2;
-  --c-brand-ring: #a26ce540;
+  --c-brand-ring: #a571e740;
 
   /* Coral sedikit diredam supaya tidak menyilaukan di permukaan gelap;
      aksen-ink vs aksen 6,4:1. */
@@ -449,6 +450,15 @@ body {
   background: transparent;
   border: 0;
   border-radius: 999px;
+}
+/* Tombol zoom bawaan Leaflet hanya 30 px (34 px di layar sentuh); dibuat 44 px
+   seperti target sentuh lain di aplikasi ini (audit 3 Nov 2026). Pemilih ganda
+   supaya menang atas `.leaflet-touch .leaflet-bar a` yang dimuat belakangan. */
+.peta-lacak.leaflet-container .leaflet-bar a {
+  width: 44px;
+  height: 44px;
+  line-height: 44px;
+  font-size: 20px;
 }
 /* Tema gelap: ubin dibalik warnanya supaya peta tidak menyilaukan. */
 .dark .peta-lacak .leaflet-tile-pane {

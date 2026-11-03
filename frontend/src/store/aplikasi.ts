@@ -251,8 +251,8 @@ interface KeadaanAplikasi {
   hubungkanKasir: () => void
   /** Simpan resep satu menu, baru atau ubahan. Hasilnya: tersimpan atau tidak. */
   pasangkanMenu: (menuId: string, bahan: BahanMenu[]) => Promise<boolean>
-  /** Mode data server: muat ulang menu kasir, resep, dan nota terbaru. */
-  muatMenuKasir: () => Promise<void>
+  /** Mode data server: muat ulang menu kasir, resep, dan nota terbaru. Hasilnya: keduanya terbaca atau tidak. */
+  muatMenuKasir: () => Promise<boolean>
   /**
    * Tanya server apakah ada nota baru dari kasir (Portal POS). Kalau ada: stok dan
    * menu dimuat ulang, barang yang berubah menyala sebentar, dan muncul pemberitahuan.
@@ -989,7 +989,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
 
   muatMenuKasir: async () => {
     const sesi = get().sesiServer
-    if (get().sumberData !== 'server' || !sesi) return
+    if (get().sumberData !== 'server' || !sesi) return false
     const [menu, nota] = await Promise.all([
       ambilMenuKasir(sesi).catch(() => null),
       ambilNotaTerbaru(sesi).catch(() => null),
@@ -998,6 +998,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
       ...(menu ? { kasir: kasirServer(menu), resepMenu: menu.resep } : {}),
       ...(nota ? { notaTerbaru: nota } : {}),
     })
+    return menu !== null && nota !== null
   },
 
   periksaNotaMasuk: async () => {
@@ -1474,9 +1475,8 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
         return { barisId: b.barisId!, jumlah: info.jumlah, alasan: info.alasan, catatan: info.catatan }
       })
       terimaBarangServer(sesi, pesananId, baris)
-        .then(async (baru) => {
-          const barang = await muatGudangServer(sesi)
-          set((st) => ({ barang, pesanan: st.pesanan.map((p) => (p.id === baru.id ? baru : p)) }))
+        .then((baru) => {
+          set((st) => ({ pesanan: st.pesanan.map((p) => (p.id === baru.id ? baru : p)) }))
           const catatan = baru.status === 'selesai-catatan'
           get().tampilkanRacun(
             catatan
@@ -1484,6 +1484,16 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
               : 'Barang diterima. Stok gudang bertambah.',
             catatan ? 'menipis' : 'aman',
           )
+          // Penerimaannya sudah tersimpan. Gudang yang gagal dimuat ulang tidak boleh
+          // dilaporkan sebagai penerimaan gagal: percobaan ulang akan ditolak (409).
+          muatGudangServer(sesi)
+            .then((barang) => set({ barang }))
+            .catch(() =>
+              get().tampilkanRacun(
+                'Barang sudah tercatat, tetapi stok di layar belum bisa diperbarui. Muat ulang halaman sebentar lagi.',
+                'menipis',
+              ),
+            )
         })
         .catch((e: unknown) =>
           get().tampilkanRacun(e instanceof Error ? e.message : 'Penerimaan gagal disimpan.', 'kritis'),
@@ -2222,7 +2232,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
     const tersambung = get().pesananMasukServer !== null
     get().tampilkanRacun(
       tersambung
-        ? `${penawaran.nama} ${ada ? 'diperbarui' : 'ditambahkan'} di layar ini saja. Purwarupa ini belum menyimpannya di server.`
+        ? `${penawaran.nama} ${ada ? 'diperbarui' : 'ditambahkan'} di layar ini saja. Purwarupa ini belum menyimpannya.`
         : ada
           ? `${penawaran.nama} diperbarui. Pemilik usaha melihat harga dan stok yang baru.`
           : `${penawaran.nama} ditambahkan ke katalogmu.`,
@@ -2236,7 +2246,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
     set((s) => ({ katalog: s.katalog.map((p) => (p.id === id ? { ...p, aktif } : p)) }))
     get().tampilkanRacun(
       get().pesananMasukServer !== null
-        ? `${pw.nama} ${aktif ? 'dijual lagi' : 'disembunyikan'} di layar ini saja. Purwarupa ini belum menyimpannya di server.`
+        ? `${pw.nama} ${aktif ? 'dijual lagi' : 'disembunyikan'} di layar ini saja. Purwarupa ini belum menyimpannya.`
         : aktif
           ? `${pw.nama} dijual lagi dan kembali tampil di katalog pemilik usaha.`
           : `${pw.nama} disembunyikan dari katalog. Pesanan dan kontrak yang sudah ada tidak terpengaruh.`,

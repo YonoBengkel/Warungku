@@ -53,9 +53,10 @@ function keterangan(p: Posisi, aktif: boolean): string {
   const warna = p.titik.warna
   const padaKondisi = p.titik.perWarna[warna]
   const kondisiLain = p.titik.jumlahPesanan - padaKondisi
+  // Diawali angka yang tertulis di titik (total pesanan), supaya namanya memuat teks yang terlihat (WCAG 2.5.3).
   return (
-    `${p.nama}. ${angka(padaKondisi)} pesanan ${LABEL_TITIK[warna].toLowerCase()}` +
-    (kondisiLain > 0 ? `, ${angka(kondisiLain)} pesanan pada kondisi lain. ` : '. ') +
+    `${angka(p.titik.jumlahPesanan)} pesanan dari ${p.nama}: ${angka(padaKondisi)} ${LABEL_TITIK[warna].toLowerCase()}` +
+    (kondisiLain > 0 ? `, ${angka(kondisiLain)} pada kondisi lain. ` : '. ') +
     (aktif ? 'Sedang terpilih, tekan lagi untuk menutup rincian.' : 'Tekan untuk melihat rincian toko.')
   )
 }

@@ -198,7 +198,7 @@ export default function PenawaranDetail() {
               </div>
             )}
 
-            <dl className="mt-3.5">
+            <div className="mt-3.5">
               {/* Stok distributor dan waktu pembaruannya wajib tampil: angka stok
                   tanpa stempel waktu membuat orang memesan barang yang sudah habis. */}
               <BarisData
@@ -220,7 +220,7 @@ export default function PenawaranDetail() {
                 }
               />
               <BarisData label="Area kirim" nilai={distributor.areaKirim.join(', ')} />
-            </dl>
+            </div>
 
             {/* Penjualnya dibaca di kartu yang sama dengan harganya: harga, stok,
                 dan area kirim di atas adalah janji distributor ini, jadi rekam

@@ -120,7 +120,7 @@ export default function PenggunaUndang() {
             </p>
           </div>
           <CatatanPurwarupa className="mt-3">
-            Tautan ini belum bisa dipakai untuk masuk. Undangan pengguna belum tersambung ke server.
+            Tautan ini belum bisa dipakai untuk masuk, karena undangannya belum tercatat di Turnify Flow.
           </CatatanPurwarupa>
 
           <Kartu className="mt-5">
@@ -312,7 +312,7 @@ export default function PenggunaUndang() {
           Buat Tautan Undangan
         </Tombol>
         <CatatanPurwarupa className="mt-2">
-          Tautan undangannya belum bisa dipakai untuk masuk. Undangan pengguna belum tersambung ke server.
+          Tautan undangannya belum bisa dipakai untuk masuk, karena undangannya belum tercatat di Turnify Flow.
         </CatatanPurwarupa>
       </BilahAksi>
     </div>

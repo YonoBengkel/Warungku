@@ -39,7 +39,7 @@ export default function BarangDijual() {
       />
 
       <CatatanPurwarupa portal="distributor" className="mt-3">
-        Barang yang kamu tambah, ubah, atau sembunyikan di sini belum tersimpan di server, jadi pemilik usaha belum
+        Barang yang kamu tambah, ubah, atau sembunyikan di sini belum tersimpan, jadi pemilik usaha belum
         melihat perubahannya.
       </CatatanPurwarupa>
 

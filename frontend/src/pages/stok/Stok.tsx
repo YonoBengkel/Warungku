@@ -803,8 +803,9 @@ function TombolAngka({
       onClick={onClick}
       aria-pressed={aktif}
       /* Angka sendirian ("1 · Habis") tidak menyebut satuannya. Pembaca layar
-         perlu mendengar apa yang dihitung dan apa yang terjadi kalau ditekan. */
-      aria-label={`${angka(nilai)} barang ${label.toLowerCase()}. ${
+         perlu mendengar apa yang dihitung dan apa yang terjadi kalau ditekan.
+         Diawali teks yang terlihat supaya bisa disebut lewat perintah suara (WCAG 2.5.3). */
+      aria-label={`${angka(nilai)} ${label}: ${angka(nilai)} barang ${label.toLowerCase()}. ${
         aktif ? 'Ketuk untuk melepas penyaring ini.' : 'Ketuk untuk menyaring daftar.'
       }`}
       className={cx(
@@ -815,7 +816,7 @@ function TombolAngka({
     >
       <span aria-hidden="true" className={cx('text-subjudul font-extrabold leading-none tabular', warna)}>
         {angka(nilai)}
-      </span>
+      </span>{' '}
       <span aria-hidden="true" className="text-isi font-semibold text-ink-2 leading-none">
         {label}
       </span>

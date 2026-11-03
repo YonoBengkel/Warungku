@@ -123,7 +123,8 @@ export function GrafikBatang({
         const aktif = sorot === i
         const r = Math.min(4, t / 2)
         return (
-          <g key={d.label + i} onPointerEnter={() => setSorot(i)}>
+          // Dengan pemisah: label "12" urutan ke-8 dan label "1" urutan ke-28 dulu sama-sama menjadi "128".
+          <g key={`${i}-${d.label}`} onPointerEnter={() => setSorot(i)}>
             {/* Sasaran sentuh lebih lebar daripada batangnya */}
             <rect
               x={sisi.kiri + g.slot * i}

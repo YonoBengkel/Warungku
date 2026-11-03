@@ -227,7 +227,7 @@ export default function PengaturanPengingat() {
               />
               <Pemisah className="my-3" />
               <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 grow opacity-60">
+                <div className="min-w-0 grow">
                   <Sakelar
                     aktif={false}
                     ubah={() => undefined}
@@ -322,7 +322,7 @@ export default function PengaturanPengingat() {
           {berubah ? 'Simpan Pengaturan' : 'Belum ada yang diubah'}
         </Tombol>
         <CatatanPurwarupa className="mt-2">
-          Pengaturan pengingat belum disimpan di server, jadi kembali seperti semula saat halaman ini dibuka lagi.
+          Pengaturan pengingat belum tersimpan, jadi kembali seperti semula saat halaman ini dibuka lagi.
         </CatatanPurwarupa>
       </BilahAksi>
     </div>

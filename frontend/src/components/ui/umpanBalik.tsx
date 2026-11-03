@@ -91,7 +91,9 @@ export function Peringatan({
       <div className="min-w-0 grow">
         {judul && <p className="text-isi font-bold leading-snug">{judul}</p>}
         {children && (
-          <div className={cx('text-isi leading-relaxed opacity-90', judul && 'mt-1')}>
+          /* Tanpa opacity: pudar 90% menurunkan tautan dan tombol ungu di dalamnya
+             di bawah kontras 4,5:1 pada tema gelap (audit 3 Nov 2026). */
+          <div className={cx('text-isi leading-relaxed', judul && 'mt-1')}>
             {children}
           </div>
         )}
@@ -321,13 +323,19 @@ export function Toast({
         <button
           type="button"
           onClick={aksi}
-          className="min-h-11 px-1 text-isi font-bold underline underline-offset-2 shrink-0 opacity-90 hover:opacity-100"
+          className="min-h-11 px-1 text-isi font-bold underline underline-offset-2 shrink-0"
         >
           {aksiLabel}
         </button>
       )}
       {tutup && (
-        <button type="button" onClick={tutup} aria-label="Tutup" className="shrink-0 opacity-70 hover:opacity-100">
+        // Sasaran 44 px; margin negatif menjaga tinggi baris toast tetap.
+        <button
+          type="button"
+          onClick={tutup}
+          aria-label="Tutup"
+          className="shrink-0 -my-2.5 -mr-2.5 size-11 grid place-items-center rounded-md"
+        >
           <IkonSilang size={16} />
         </button>
       )}

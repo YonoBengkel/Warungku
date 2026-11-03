@@ -126,6 +126,8 @@ export function MenuSamping({
                 className={cx('shrink-0 transition-[scale] duration-200', !tampilAktif && 'group-hover:scale-110')}
               />
               <span className="grow min-w-0 truncate">{b.label}</span>
+              {/* Spasi tak tampil (anak flex) supaya teksnya terbaca "Pesanan 6", bukan "Pesanan6",
+                  dan cocok dengan aria-label (axe label-content-name-mismatch). */}{' '}
               {b.angka !== undefined && b.angka > 0 && (
                 <span
                   aria-hidden="true"

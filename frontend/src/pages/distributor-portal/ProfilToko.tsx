@@ -35,7 +35,7 @@ export default function ProfilToko() {
           <Kartu>
             <p className="text-isi text-ink-2 leading-relaxed">{distributor.deskripsi}</p>
             {distributor.info ? (
-              <dl className="mt-3 pt-3 border-t border-line">
+              <div className="mt-3 pt-3 border-t border-line">
                 <BarisData label="Alamat gudang" nilai={distributor.info.alamatGudang} />
                 <BarisData label="Nomor HP" nilai={nomorHp(distributor.info.nomorHp)} />
                 <BarisData label="Jam operasional" nilai={distributor.info.jamOperasional} />
@@ -43,7 +43,7 @@ export default function ProfilToko() {
                   label="Minimum pesanan"
                   nilai={distributor.info.minimumPesanan > 0 ? rupiah(distributor.info.minimumPesanan) : 'Tanpa minimum'}
                 />
-              </dl>
+              </div>
             ) : (
               <p className="mt-3 pt-3 border-t border-line text-isi text-ink-2 leading-relaxed">
                 Belum diisi. Lengkapi alamat gudang, kontak, dan jam operasional supaya pemilik usaha tahu kapan

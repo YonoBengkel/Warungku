@@ -191,6 +191,9 @@ export default function PesananMasukDaftar() {
   const [tanyaTerimaSemua, setTanyaTerimaSemua] = useState(false)
   const majukanSemuaPesananMasuk = useAplikasi((s) => s.majukanSemuaPesananMasuk)
   const [lembarMajuSemua, setLembarMajuSemua] = useState(false)
+  /* Tombol baris membuka lembar bukti antar yang sama dengan rincian. Dulu langsung
+     mengirim tanpa menanyakan kurir dan resi (audit 3 Nov 2026). */
+  const [lembarSatu, setLembarSatu] = useState<PesananMasuk | null>(null)
   const majukanPesananMasuk = useAplikasi((s) => s.majukanPesananMasuk)
 
   const [pesananDitolak, setPesananDitolak] = useState<PesananMasuk | null>(null)
@@ -294,12 +297,23 @@ export default function PesananMasukDaftar() {
                 pesanan={p}
                 terima={() => terimaPesananMasuk(p.id)}
                 tolak={() => setPesananDitolak(p)}
-                majukan={() => majukanPesananMasuk(p.id)}
+                majukan={() => setLembarSatu(p)}
               />
             ))}
           </div>
         )}
       </section>
+
+      {lembarSatu && (lembarSatu.status === 'disiapkan' || lembarSatu.status === 'dikirim') && (
+        <LembarBukti
+          tahap={lembarSatu.status}
+          tutup={() => setLembarSatu(null)}
+          kirim={(bukti) => {
+            majukanPesananMasuk(lembarSatu.id, bukti)
+            setLembarSatu(null)
+          }}
+        />
+      )}
 
       {lembarMajuSemua && (tahap === 'disiapkan' || tahap === 'dikirim') && (
         <LembarBukti
@@ -534,8 +548,8 @@ export function LembarBukti({
       keterangan={
         massal > 0
           ? berangkat
-            ? 'Jasa kirim dan pengantar dipakai untuk semua pesanan yang berangkat bersama. Nomor resi diisi per pesanan di rinciannya.'
-            : 'Nama penerima dan catatan bisa diisi per pesanan di rinciannya.'
+            ? 'Jasa kirim dan pengantar dipakai untuk semua pesanan yang berangkat bersama. Nomor resi tidak ditanyakan di sini. Kalau tiap pesanan punya resi sendiri, tandai satu per satu.'
+            : 'Nama penerima dan catatan tidak ditanyakan di sini. Kalau perlu dicatat, tandai satu per satu.'
           : berangkat
             ? 'Isian ini tampil di rincian pesanan pemilik usaha. Boleh dikosongkan.'
             : 'Stok pemilik usaha bertambah setelah ia menghitung barangnya sendiri.'

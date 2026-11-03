@@ -417,7 +417,8 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
                           type="button"
                           aria-label={`Hapus sebutan ${n}`}
                           onClick={() => setNamaLain((lama) => lama.filter((x) => x !== n))}
-                          className="size-7 grid place-items-center rounded-full hover:bg-line"
+                          // Terlihat 28 px, tetapi area sentuhnya 44 px lewat pseudo-element (audit 3 Nov 2026).
+                          className="relative size-7 grid place-items-center rounded-full hover:bg-line after:absolute after:-inset-2 after:content-['']"
                         >
                           <IkonSilang size={14} />
                         </button>

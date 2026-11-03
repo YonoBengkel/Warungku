@@ -226,7 +226,8 @@ function DaftarAnggota({ sesi, segmen, nama }: { sesi: SesiDistributor; segmen: 
         <p className="text-isi text-ink-3">Memuat anggota&hellip;</p>
       ) : (
         <Kartu className="p-0 overflow-hidden">
-          <div className="overflow-x-auto">
+          {/* Bisa difokus supaya tabel yang lebih lebar dari layar bisa digeser dengan papan ketik. */}
+          <div className="overflow-x-auto" tabIndex={0} role="region" aria-label={`Tabel anggota segmen ${nama}`}>
             <table className="w-full text-isi">
               <caption className="sr-only">Anggota segmen {nama}</caption>
               <thead className="bg-surface-2 text-ink-3 text-left">

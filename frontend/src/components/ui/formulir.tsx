@@ -335,12 +335,9 @@ export function Sakelar({
   nonaktif?: boolean
 }) {
   return (
-    <label
-      className={cx(
-        'flex items-start gap-3 py-2 cursor-pointer',
-        nonaktif && 'opacity-50 cursor-not-allowed',
-      )}
-    >
+    /* Yang dipudarkan hanya sakelarnya. Dulu seluruh baris ikut pudar, sehingga
+       label dan keterangannya tidak terbaca (kontras 1,5:1, audit 3 Nov 2026). */
+    <label className={cx('flex items-start gap-3 py-2', nonaktif ? 'cursor-not-allowed' : 'cursor-pointer')}>
       <button
         type="button"
         role="switch"
@@ -354,6 +351,7 @@ export function Sakelar({
           // area sentuhnya diperluas ke 44px lewat pseudo-element.
           'after:absolute after:inset-x-0 after:-top-2.5 after:-bottom-2.5 after:content-[""]',
           aktif ? 'bg-brand' : 'bg-line-strong',
+          nonaktif && 'opacity-50',
         )}
       >
         <span

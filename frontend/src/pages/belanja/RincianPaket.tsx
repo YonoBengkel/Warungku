@@ -211,7 +211,7 @@ export default function RincianPaket() {
         <div className="lg:col-span-5">
           <Kartu>
             <h2 className="text-kartu font-bold text-ink mb-1">Isi paket {paket.kode}</h2>
-            <dl>
+            <div>
               <BarisData label="Barang" nilai={penawaran.nama} />
               <BarisData label="Distributor" nilai={distributor.nama} />
               <BarisData label="Durasi" nilai={`${paket.durasiBulan} bulan`} />
@@ -227,7 +227,7 @@ export default function RincianPaket() {
                 nada={hematRupiah > 0 ? 'aman' : 'biasa'}
                 tebal
               />
-            </dl>
+            </div>
             <p className="mt-2.5 text-kecil text-ink-3 leading-relaxed">
               Hemat itu baru nyata kalau seluruh kuota benar-benar kamu ambil. Kalau tidak, yang tersisa justru
               kewajiban.

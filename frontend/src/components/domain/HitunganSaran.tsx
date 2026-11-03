@@ -55,11 +55,11 @@ export function HitunganSaran({
 
   return (
     <div>
-      <dl>
+      <div>
         {!ringkas && <BarisData label="Terpakai bulan ini" nilai={jumlahTampil(barang, rekomendasi.pemakaianBulanIni)} />}
         <BarisData label="Perkiraan bulan depan" nilai={jumlahTampil(barang, perkiraan)} />
         <BarisData label="Sisa tercatat" nilai={<>&minus; {jumlahTampil(barang, sisa)}</>} />
-      </dl>
+      </div>
 
       <div className="mt-1.5 pt-1.5 border-t border-line">
         {rekomendasi.arah === 'tambah' ? (

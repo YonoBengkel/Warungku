@@ -8,7 +8,7 @@
  * Gambarnya dipotong dari docs/aset/logo-turnify-flow.jpeg (lihat docs/aset/logo-mark.png).
  * Sejak revisi 23 Okt 2026 tokonya ungu #4A148C. Ungu sepekat itu hanya 1,4:1
  * di permukaan gelap, jadi tema gelap memakai versi ungu terang
- * (logo-mark-gelap.png, #A26CE5 seperti warna merek tema gelap). Kedua gambar
+ * (logo-mark-gelap.png, #A26CE5, hampir sama dengan warna merek tema gelap #A571E7). Kedua gambar
  * dipasang dan kelas `dark:` memilih salah satunya, karena tema bisa diganti
  * pengguna tanpa memuat ulang halaman.
  */

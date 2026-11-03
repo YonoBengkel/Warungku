@@ -398,7 +398,7 @@ function DaftarKonektor() {
 
       <CatatanPurwarupa className="pt-3">
         Di mode ini penjualan selalu dibaca dari {POS_TUNGGAL.nama}. Gmail, Spreadsheet, unggah berkas, dan pilihan
-        catat sendiri belum disimpan di server.
+        catat sendiri belum tersimpan.
       </CatatanPurwarupa>
       <p className="pt-3 text-kecil text-ink-3 leading-relaxed">
         Bisa diganti nanti lewat Akun &rsaquo; Data dari Kasir; harga jual tetap tinggal di kasirmu.
@@ -507,9 +507,13 @@ function KeadaanTersambung({ jumlahPerluDibereskan }: { jumlahPerluDibereskan: n
     if (server) {
       // Kasir mengirim nota sendiri ke server; yang perlu hanya membaca ulang.
       setMemuatServer(true)
-      muatMenuKasir().finally(() => {
+      // Dulu selalu "sudah yang terbaru", juga saat muat ulangnya gagal (audit 3 Nov 2026).
+      muatMenuKasir().then((terbaca) => {
         setMemuatServer(false)
-        tampilkanRacun('Data dari kasir sudah yang terbaru.', 'aman')
+        tampilkanRacun(
+          terbaca ? 'Data dari kasir sudah yang terbaru.' : 'Data dari kasir belum bisa dimuat ulang. Coba lagi sebentar lagi.',
+          terbaca ? 'aman' : 'kritis',
+        )
       })
       return
     }

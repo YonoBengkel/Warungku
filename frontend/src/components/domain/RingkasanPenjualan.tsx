@@ -339,7 +339,13 @@ export function TampilanRingkasan({
             {data.total === 0 ? (
               <p className="text-isi text-ink-3">Belum ada penjualan di rentang ini.</p>
             ) : (
-              <div className="overflow-x-auto no-scrollbar">
+              // Bisa difokus supaya pengguna papan ketik juga bisa menggeser grafiknya (axe scrollable-region-focusable).
+              <div
+                className="overflow-x-auto no-scrollbar"
+                tabIndex={0}
+                role="region"
+                aria-label="Grafik penjualan per hari. Geser ke samping untuk melihat semua hari."
+              >
                 <div className={cx(batang.length > 14 && 'min-w-[36rem]')}>
                   <GrafikBatang data={batang} satuan="Rupiah" tinggi={200} format={rupiah} formatSumbu={rupiahSumbu} lebarSumbu={52} />
                 </div>

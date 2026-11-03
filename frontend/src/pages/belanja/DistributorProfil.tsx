@@ -166,7 +166,7 @@ export default function DistributorProfil() {
             {/* Diisi distributor sendiri di portalnya. Minimum pesanan ditulis di
                 sini supaya tidak baru ketahuan setelah pesanan ditolak. */}
             {distributor.info && (
-              <dl className="mt-3.5 border-t border-line pt-2.5">
+              <div className="mt-3.5 border-t border-line pt-2.5">
                 <BarisData label="Jam operasional" nilai={distributor.info.jamOperasional} />
                 <BarisData
                   label="Minimum pesanan"
@@ -174,7 +174,7 @@ export default function DistributorProfil() {
                 />
                 <BarisData label="Kirim ke" nilai={distributor.areaKirim.join(', ')} />
                 <BarisData label="Kontak" nilai={nomorHp(distributor.info.nomorHp)} />
-              </dl>
+              </div>
             )}
           </Kartu>
 

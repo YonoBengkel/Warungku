@@ -44,7 +44,8 @@ export function PerluTindakan({ pintasan, className }: { pintasan: Pintasan[]; c
           <li key={p.kunci} className="min-w-0">
             <Link
               to={p.ke}
-              aria-label={p.jumlah > 0 ? `${p.label}, ${p.jumlah} ${p.satuan}` : `${p.label}, tidak ada ${p.satuan}`}
+              // Diawali teks yang terlihat (angka lalu label) supaya pengguna perintah suara bisa menyebutnya (WCAG 2.5.3).
+              aria-label={`${p.jumlah > 99 ? '99+' : p.jumlah} ${p.label}, ${p.jumlah > 0 ? `${p.jumlah} ${p.satuan}` : `tidak ada ${p.satuan}`}`}
               className="group relative flex flex-col items-center gap-2.5 rounded-xl px-2 pt-4 pb-5 sm:px-3 sm:pt-5 sm:pb-[1.375rem] text-center transition-[background-color,translate,box-shadow] duration-200 hover:bg-brand-soft hover:shadow-e2 focus-visible:bg-brand-soft motion-safe:hover:-translate-y-1"
             >
               <span aria-hidden="true" className="flex items-center justify-center gap-2.5 sm:gap-3">
@@ -64,6 +65,8 @@ export function PerluTindakan({ pintasan, className }: { pintasan: Pintasan[]; c
                   {p.jumlah > 99 ? '99+' : p.jumlah}
                 </span>
               </span>
+              {/* Spasi ini tidak tampil (anak flex), tetapi membuat teks terlihat terbaca "4 Stok Habis",
+                  bukan "4Stok Habis", sehingga cocok dengan aria-label (axe label-content-name-mismatch). */}{' '}
               <span
                 aria-hidden="true"
                 className="text-isi font-semibold text-ink-2 leading-tight transition-colors group-hover:text-brand"

@@ -99,13 +99,24 @@ export default function Kasir() {
   const nomor = useRef(buatNomor())
   // undefined: belum dicek. null: belum ada shift terbuka, jadi kasir diminta membuka kas lebih dulu.
   const [shift, setShift] = useState<Shift | null | undefined>(undefined)
+  // Gagal dicek tidak sama dengan belum ada shift: dulu kasir langsung diminta membuka
+  // kas, padahal shift-nya mungkin sudah berjalan (audit 3 Nov 2026).
+  const [galatShift, setGalatShift] = useState<string | null>(null)
 
-  useEffect(() => {
+  function periksaShift() {
     if (!sesi) return
+    setGalatShift(null)
     ambilShiftAktif(sesi)
       .then(setShift)
-      .catch(() => setShift(null))
-  }, [sesi])
+      .catch((e: unknown) =>
+        setGalatShift(
+          e instanceof GalatApi ? e.message : 'Shift yang sedang berjalan belum bisa dicek. Periksa sambungan, lalu coba lagi.',
+        ),
+      )
+  }
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- dicek ulang hanya saat sesi berganti
+  useEffect(periksaShift, [sesi])
 
   function muat() {
     if (!sesi) return
@@ -248,6 +259,22 @@ export default function Kasir() {
     nomor.current = buatNomor()
   }
 
+  if (galatShift)
+    return (
+      <div className="p-4 sm:p-6 max-w-xl">
+        <Peringatan
+          nada="kritis"
+          judul="Shift belum bisa dicek"
+          aksi={
+            <Tombol ragam="garis" ukuran="kecil" onClick={periksaShift}>
+              Coba Lagi
+            </Tombol>
+          }
+        >
+          {galatShift}
+        </Peringatan>
+      </div>
+    )
   if (shift === null) return <BukaKas onBuka={setShift} />
 
   return (
