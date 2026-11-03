@@ -74,18 +74,16 @@ export default function Masuk() {
       return
     }
 
-    const cobaMasuk = email.trim().toLowerCase().startsWith('kasir')
-      ? masukPos(email.trim(), sandi).then(() => {
-          tampilkanRacun('Selamat datang di Portal POS.', 'aman')
-          navigate('/pos')
-        })
-      : masukServer(email.trim(), sandi).then(() => {
-          tampilkanRacun('Selamat datang kembali. Stok dan perkiraan sudah dimuat dari data usahamu.', 'aman')
-          navigate('/beranda')
-        })
-
-    cobaMasuk
+    masukServer(email.trim(), sandi)
+      .then(() => {
+        tampilkanRacun('Selamat datang kembali. Stok dan perkiraan sudah dimuat dari data usahamu.', 'aman')
+        navigate('/beranda')
+      })
       .catch(async (e: unknown) => {
+        // Akun kasir ditolak pintu UMKM dengan 403 yang menyebut Portal POS, lalu
+        // kredensial yang sama dicoba di pintu POS. Bentuk email tidak ditebak:
+        // akun kasir buatan pemilik boleh beremail apa saja, dan pemilik yang
+        // emailnya kebetulan diawali "kasir" tetap harus masuk ke Beranda.
         if (e instanceof GalatApi && e.status === 403 && e.message.includes('Portal POS')) {
           try {
             await masukPos(email.trim(), sandi)

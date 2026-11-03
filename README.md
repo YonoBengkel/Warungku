@@ -503,7 +503,7 @@ turnify-flow/
 | --- | --- | --- |
 | POST | `/auth/umkm/daftar` | Buat akun pemilik usaha beserta usahanya (satu akun, satu usaha) |
 | POST | `/auth/umkm/masuk` | Masuk sebagai pemilik usaha |
-| POST | `/auth/pos/masuk` | Masuk sebagai kasir pegawai untuk Portal POS |
+| POST | `/auth/pos/masuk` | Masuk ke Portal POS: kasir mendapat token kasir, pemilik mendapat token pemilik |
 | POST | `/auth/distributor/masuk` | Masuk sebagai distributor |
 | GET | `/auth/saya` | Siapa pemegang token ini |
 | GET | `/usaha/{usaha_id}/barang` | Daftar barang di gudang, termasuk pemakaian rata-rata 28 hari, harga per satuan, dan hari sejak terakhir terpakai (`hari_tanpa_pemakaian`, dihitung dari hari terakhir data) |
@@ -519,7 +519,7 @@ turnify-flow/
 | GET, PUT | `/usaha/{usaha_id}/menu-jual` | Menu Portal POS: harga jual, kategori, dan status dijual, diatur di Portal UMKM |
 | GET, PUT | `/usaha/{usaha_id}/menu-kasir` | Menu dari nota yang belum punya bahan, resep yang sudah ada, nota terakhir dan jumlah hari ini; simpan resep satu menu (hanya berlaku untuk nota berikutnya) |
 | GET, POST | `/usaha/{usaha_id}/kasir` | Daftar akun kasir; buat akun kasir baru (peran pegawai) |
-| PATCH | `/usaha/{usaha_id}/kasir/{pengguna_id}` | Aktifkan atau nonaktifkan akun kasir pegawai |
+| PATCH | `/usaha/{usaha_id}/kasir/{pengguna_id}` | Nonaktifkan atau aktifkan lagi akun kasir, atau atur ulang kata sandinya |
 | GET, POST | `/usaha/{usaha_id}/shift/aktif`, `/shift/buka`, `/shift/tutup` | Buka shift kasir (modal awal), tutup shift kasir (hitung fisik), cek shift aktif |
 | GET | `/usaha/{usaha_id}/shift?batas=&mulai=` | Riwayat shift kasir beserta rekap tunai/QRIS/transfer dan selisih laci kas |
 | GET | `/usaha/{usaha_id}/produksi/ringkasan` | UMKM produsen: barang jadi, resep, jumlah yang bisa dibuat, perkiraan pesanan 7 hari, saran masak, pembeli, omset bulanan |
