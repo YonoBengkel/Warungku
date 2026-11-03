@@ -296,6 +296,24 @@ def test_ringkasan_memotong_diskon_dan_memisah_cara_bayar(kedai):
     assert r["terlaris"][0]["total"] == 3 * 36000
 
 
+def test_rincian_berjumlah_sama_dengan_total_walau_berpecahan(kedai):
+    ids, kepala, _, klien = kedai
+    u = ids["u1"]
+    _simpan(klien, u, kepala)
+    # Setengah porsi x 18.001 = 9.000,5 per nota. Totalnya 27.001,5, dibulatkan 27.002.
+    # Dipotong per bagian jadi 27.000, dibulatkan per bagian jadi 27.003.
+    for nomor, cara in (("POS-UJI-P1", "tunai"), ("POS-UJI-P2", "qris"), ("POS-UJI-P3", None)):
+        badan = _nota(nomor, "Americano", 18001)
+        badan["baris"][0]["jumlah"] = 0.5
+        if cara:
+            badan |= {"cara_bayar": cara, "uang_diterima": 10000 if cara == "tunai" else None}
+        assert klien.post(f"/usaha/{u}/transaksi", headers=kepala, json=badan).status_code == 200
+    r = klien.get(f"/usaha/{u}/ringkasan-penjualan", headers=kepala).json()
+    assert r["total"] == 27002
+    assert sum(x["nilai"] for x in r["rincian"]) == r["total"]
+    assert {x["label"]: x["nilai"] for x in r["rincian"]} == {"Tunai": 9001, "QRIS": 9001, "Belum dicatat": 9000}
+
+
 def _stok(barang_id: int) -> Decimal:
     with mesin().connect() as kon:
         return kon.execute(text("SELECT stok FROM barang WHERE id = :b"), {"b": barang_id}).scalar_one()

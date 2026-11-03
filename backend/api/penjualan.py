@@ -23,7 +23,9 @@ hari ini akan kosong.
 
 from __future__ import annotations
 
+import math
 from datetime import date, timedelta
+from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text
@@ -78,6 +80,21 @@ def _isi_hari(awal: date, akhir: date, baris) -> list[PenjualanHarian]:
     return hasil
 
 
+def _rincian_bulat(rincian, total: int) -> list[RincianNilai]:
+    """
+    Rincian dalam Rupiah bulat yang jumlahnya sama persis dengan `total`, yang dibulatkan
+    sekali di SQL. Tiap bagian dibulatkan ke bawah, lalu sisa Rupiahnya diberikan ke
+    bagian berpecahan terbesar (metode sisa terbesar). Membulatkan atau memotong tiap
+    bagian sendiri-sendiri bisa meleset satu-dua Rupiah dari total.
+    """
+    nilai = {k: Decimal(v or 0) for k, v in rincian._mapping.items()}
+    bulat = {k: math.floor(v) for k, v in nilai.items()}
+    sisa = total - sum(bulat.values())
+    for k in sorted(nilai, key=lambda k: nilai[k] - bulat[k], reverse=True)[: max(sisa, 0)]:
+        bulat[k] += 1
+    return [RincianNilai(label=k, nilai=v) for k, v in bulat.items()]
+
+
 def _ringkasan(
     sesi: Session,
     *,
@@ -118,7 +135,7 @@ def _ringkasan(
         rata_rata=round(nilai / jumlah) if jumlah else 0,
         pembanding_total=int(lalu.total or 0),
         pembanding_jumlah=int(lalu.jumlah or 0),
-        rincian=[RincianNilai(label=k, nilai=int(v or 0)) for k, v in rincian._mapping.items()] if rincian else [],
+        rincian=_rincian_bulat(rincian, nilai) if rincian else [],
         per_hari=_isi_hari(awal, akhir, harian),
         terlaris=[BarisTerlaris(nama=r.nama, satuan=r.satuan, jumlah=float(r.jumlah), total=int(r.total)) for r in terlaris],
         pihak_teratas=[PihakTeratas(nama=r.nama, jumlah=int(r.jumlah), total=int(r.total)) for r in pihak],
