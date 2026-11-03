@@ -590,6 +590,69 @@ class SampaiPesanan(BaseModel):
     catatan: str | None = Field(default=None, max_length=500)
 
 
+class UlasanBaru(BaseModel):
+    """Penilaian pesanan yang selesai. Rating dihitung server dari rata-rata tiga aspek."""
+
+    aspek_ketepatan_waktu: int = Field(ge=1, le=5)
+    aspek_jumlah_sesuai: int = Field(ge=1, le=5)
+    aspek_kondisi_barang: int = Field(ge=1, le=5)
+    isi: str | None = Field(default=None, max_length=1000)
+
+
+JenisUsahaTeks = Literal[
+    "kedai-kopi", "kedai-minuman", "warung-makan", "roti-kue", "warung-kelontong", "produksi-makanan", "lainnya"
+]
+
+
+class ProfilUsahaLengkap(BaseModel):
+    """Profil usaha yang sedang masuk, untuk Akun (audit 3 Nov 2026). Dulu layarnya memakai data contoh."""
+
+    model_config = {"from_attributes": True}
+
+    id: int
+    nama: str
+    jenis_usaha: str
+    nama_pemilik: str
+    nib: str | None
+    npwp: str | None
+    alamat: str
+    kota: str
+    nomor_hp: str
+    email: str | None
+    bio: str | None
+    warna: str
+    cara_hitung: str
+    verifikasi: str
+    tingkat_verifikasi: str
+    bergabung_sejak: date
+    tampilkan_alamat: bool
+    tampilkan_nomor_hp: bool
+
+
+class UbahProfilUsaha(BaseModel):
+    """
+    Ubahan sebagian profil usaha. Kolom yang tidak dikirim tidak berubah. Status
+    verifikasi tidak bisa diisi langsung: `ajukan_verifikasi` hanya mengembalikannya
+    ke "menunggu", seperti Kirim Ulang di layar Data Usaha.
+    """
+
+    nama: str | None = Field(default=None, min_length=1, max_length=120)
+    jenis_usaha: JenisUsahaTeks | None = None
+    nama_pemilik: str | None = Field(default=None, min_length=1, max_length=120)
+    nib: str | None = Field(default=None, max_length=40)
+    npwp: str | None = Field(default=None, max_length=40)
+    alamat: str | None = Field(default=None, max_length=500)
+    kota: str | None = Field(default=None, max_length=80)
+    nomor_hp: str | None = Field(default=None, pattern=r"^08[0-9]{8,11}$")
+    email: str | None = Field(default=None, max_length=160)
+    bio: str | None = Field(default=None, max_length=1000)
+    warna: str | None = Field(default=None, pattern=r"^#[0-9a-fA-F]{6}$")
+    cara_hitung: Literal["racikan", "kemasan", "keduanya"] | None = None
+    tampilkan_alamat: bool | None = None
+    tampilkan_nomor_hp: bool | None = None
+    ajukan_verifikasi: bool = False
+
+
 # --------------------------------------------------------------------------
 # Katalog (Tahap 4)
 # --------------------------------------------------------------------------
@@ -931,8 +994,11 @@ class ProdukJadiBaru(BaseModel):
     satuan: str = Field(min_length=1, max_length=20)
     isi_bersih: str | None = Field(default=None, max_length=40)
     harga_jual: int = Field(ge=0)
-    batas_aman: Decimal = Field(default=Decimal(0), ge=0)
-    ukuran_sesi: int = Field(default=60, gt=0, le=100_000)
+    #: Kosong saat mengubah produk yang sudah ada: nilai lamanya dipertahankan (audit 3 Nov
+    #: 2026; dulu tab Menu Produksi selalu mengirim 0 dan 60, jadi nilai lamanya tertimpa).
+    #: Produk baru tanpa nilai memakai 0 dan 60.
+    batas_aman: Decimal | None = Field(default=None, ge=0)
+    ukuran_sesi: int | None = Field(default=None, gt=0, le=100_000)
     bahan: list[BahanResepMasuk] = Field(max_length=30)
 
 

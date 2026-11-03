@@ -3,6 +3,7 @@ import { KepalaHalaman, BilahAksi } from '@/components/ui/navigasi'
 import { JudulBagian, Kartu, Lencana, Pemisah, Tombol } from '@/components/ui/dasar'
 import { Sakelar } from '@/components/ui/formulir'
 import { Peringatan } from '@/components/ui/umpanBalik'
+import { CatatanPurwarupa } from '@/components/domain'
 import { IkonJam, IkonKeranjang, IkonKontrak, IkonLonceng, IkonPasokan, IkonPeringatan } from '@/icons'
 import type { KategoriNotifikasi } from '@/lib/types'
 import { useAplikasi } from '@/store/aplikasi'
@@ -78,6 +79,7 @@ function gabungNama(daftar: string[]): string {
 
 export default function PengaturanPengingat() {
   const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
+  const server = useAplikasi((s) => s.sumberData === 'server')
 
   const [aktif, setAktif] = useState<Record<KunciPengingat, boolean>>(AKTIF_AWAL)
   const [dalamAplikasi, setDalamAplikasi] = useState(true)
@@ -96,6 +98,10 @@ export default function PengaturanPengingat() {
 
   function simpan() {
     setTersimpan({ aktif, dalamAplikasi })
+    if (server) {
+      tampilkanRacun('Pilihanmu belum disimpan di purwarupa ini, jadi pengingat tetap datang seperti biasa.', 'info')
+      return
+    }
 
     if (!dalamAplikasi) {
       tampilkanRacun(
@@ -315,6 +321,9 @@ export default function PengaturanPengingat() {
         <Tombol penuh ukuran="besar" disabled={!berubah} onClick={simpan}>
           {berubah ? 'Simpan Pengaturan' : 'Belum ada yang diubah'}
         </Tombol>
+        <CatatanPurwarupa className="mt-2">
+          Pengaturan pengingat belum disimpan di server, jadi kembali seperti semula saat halaman ini dibuka lagi.
+        </CatatanPurwarupa>
       </BilahAksi>
     </div>
   )

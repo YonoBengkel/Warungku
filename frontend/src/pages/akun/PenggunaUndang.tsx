@@ -3,6 +3,7 @@ import { BilahAksi, KepalaHalaman } from '@/components/ui/navigasi'
 import { JudulBagian, Kartu, Lencana, Pemisah, Tombol, TombolTautan } from '@/components/ui/dasar'
 import { Kolom, PilihanKartu } from '@/components/ui/formulir'
 import { Peringatan } from '@/components/ui/umpanBalik'
+import { CatatanPurwarupa } from '@/components/domain'
 import { IkonCentang, IkonCentangLingkaran, IkonSalin, IkonSilang } from '@/icons'
 import { nomorHp as formatHp } from '@/lib/format'
 import { useAplikasi } from '@/store/aplikasi'
@@ -118,6 +119,9 @@ export default function PenggunaUndang() {
               sendiri, bukan memakai akunmu.
             </p>
           </div>
+          <CatatanPurwarupa className="mt-3">
+            Tautan ini belum bisa dipakai untuk masuk. Undangan pengguna belum tersambung ke server.
+          </CatatanPurwarupa>
 
           <Kartu className="mt-5">
             <div className="flex items-start justify-between gap-3">
@@ -307,6 +311,9 @@ export default function PenggunaUndang() {
         <Tombol penuh ukuran="besar" onClick={buatTautan}>
           Buat Tautan Undangan
         </Tombol>
+        <CatatanPurwarupa className="mt-2">
+          Tautan undangannya belum bisa dipakai untuk masuk. Undangan pengguna belum tersambung ke server.
+        </CatatanPurwarupa>
       </BilahAksi>
     </div>
   )

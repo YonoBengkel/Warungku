@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Kartu, Lencana, Tombol } from '@/components/ui/dasar'
 import { KepalaHalaman } from '@/components/ui/navigasi'
+import { CatatanPurwarupa } from '@/components/domain'
 import { IkonKotak, IkonMata, IkonMataTutup, IkonPena, IkonTambah } from '@/icons'
 import { angka, cx, rupiah, tanggalPendek } from '@/lib/format'
 import type { Penawaran } from '@/lib/types'
@@ -36,6 +37,11 @@ export default function BarangDijual() {
           </Tombol>
         }
       />
+
+      <CatatanPurwarupa portal="distributor" className="mt-3">
+        Barang yang kamu tambah, ubah, atau sembunyikan di sini belum tersimpan di server, jadi pemilik usaha belum
+        melihat perubahannya.
+      </CatatanPurwarupa>
 
       <ul className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3 [&>*]:min-w-0">
         {penawaranSaya.map((pw) => {

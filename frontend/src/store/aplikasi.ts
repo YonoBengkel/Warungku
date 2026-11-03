@@ -73,8 +73,10 @@ import {
   catatPemakaianServer,
   gantiKategoriServer,
   koreksiStokServer,
+  ambilProfilServer,
   tambahBarangServer,
   ubahBarangServer,
+  ubahProfilServer,
   masukDistributor,
   masukUmkm,
   masukPos as masukPosApi,
@@ -88,10 +90,12 @@ import { ambilProfilDistributor, simpanInfoUsaha, simpanLayanan, simpanLokasiGud
 import type { ProfilServer } from '@/lib/apiDistributor'
 import {
   aksiPesananMasuk,
+  ajukanDrafServer,
   ambilPesanan,
   ambilPesananMasuk,
   batalkanPesananServer,
   buatPesanan,
+  kirimUlasanServer,
   terimaBarangServer,
 } from '@/lib/apiPesanan'
 import type { AksiDistributor } from '@/lib/apiPesanan'
@@ -108,6 +112,7 @@ import {
   hapusPaketServer,
   rutinKontrakServer,
   simpanPaketServer,
+  tarikKontrakServer,
 } from '@/lib/apiKontrak'
 import type { AksiKontrak } from '@/lib/apiKontrak'
 import { akhiriPromoServer, simpanPromoServer } from '@/lib/apiPromo'
@@ -240,7 +245,8 @@ interface KeadaanAplikasi {
   aturPeran: (p: 'umkm' | 'distributor') => void
 
   /* Profil & kasir */
-  ubahProfil: (p: Partial<ProfilUsaha>) => void
+  /** Mode data server: disimpan lewat PATCH /profil. Hasilnya tersimpan atau tidak; galatnya sudah tampil. */
+  ubahProfil: (p: Partial<ProfilUsaha>) => Promise<boolean>
   ubahKasir: (p: Partial<DataKasir>) => void
   hubungkanKasir: () => void
   /** Simpan resep satu menu, baru atau ubahan. Hasilnya: tersimpan atau tidak. */
@@ -290,16 +296,17 @@ interface KeadaanAplikasi {
   kirimKeranjangServer: () => Promise<HasilKirim | null>
 
   /* Pesanan */
-  kirimDraf: (pesananId: string) => void
+  /** Hasilnya terkirim atau tidak; racun galatnya sudah tampil. Begitu juga batal dan penilaian. */
+  kirimDraf: (pesananId: string) => Promise<boolean>
   terimaBarang: (
     pesananId: string,
     diterima: Record<string, { jumlah: number; alasan: AlasanSelisih | null; catatan: string }>,
     tanggal: string,
   ) => void
-  batalkanPesanan: (pesananId: string, alasan: string) => void
+  batalkanPesanan: (pesananId: string, alasan: string) => Promise<boolean>
   unggahBukti: (pesananId: string) => void
   tandaiBayarTunai: (pesananId: string) => void
-  tandaiSudahDiulas: (pesananId: string, ulasan?: UlasanPelanggan) => void
+  tandaiSudahDiulas: (pesananId: string, ulasan: UlasanPelanggan) => Promise<boolean>
 
   /* Pesanan masuk (portal distributor) */
   /** `diam`: tanpa pemberitahuan per pesanan; dipakai aksi massal yang memberi satu ringkasan. */
@@ -315,6 +322,8 @@ interface KeadaanAplikasi {
   /* Kontrak */
   /** Id kontrak kalau pengajuannya diterima, null kalau gagal terkirim. */
   ajukanKontrak: (paketId: string) => Promise<string | null>
+  /** Tarik pengajuan yang belum dijawab distributor. Hasilnya: berhasil ditarik atau tidak. */
+  tarikKontrak: (kontrakId: string) => Promise<boolean>
   ajukanBerhenti: (kontrakId: string, alasan: string) => void
 
   // Portal distributor — kontrak
@@ -547,6 +556,7 @@ interface IsiServer {
   kontrak: Kontrak[]
   katalog: Awaited<ReturnType<typeof ambilKatalog>> | null
   menu: RingkasanMenuKasir | null
+  profil: Awaited<ReturnType<typeof ambilProfilServer>> | null
 }
 
 /**
@@ -567,14 +577,16 @@ function kasirServer(menu: RingkasanMenuKasir | null): DataKasir {
 
 /** Semua yang dibaca dari server saat masuk: gudang, pesanan, dan katalog. */
 async function muatSemuaServer(sesi: SesiServer): Promise<IsiServer> {
-  const [barang, pesanan, katalog, kontrak, menu] = await Promise.all([
+  const [barang, pesanan, katalog, kontrak, menu, profil] = await Promise.all([
     muatGudangServer(sesi),
     ambilPesanan(sesi).catch(() => [] as Pesanan[]),
     ambilKatalog(sesi).catch(() => null),
     ambilKontrak(sesi).catch(() => [] as Kontrak[]),
     ambilMenuKasir(sesi).catch(() => null),
+    // Backend sebelum 3 Nov 2026 belum punya /profil: profil dirakit dari katalog seperti dulu.
+    ambilProfilServer(sesi).catch(() => null),
   ])
-  return { barang, pesanan, katalog, kontrak, menu }
+  return { barang, pesanan, katalog, kontrak, menu, profil }
 }
 
 /**
@@ -607,13 +619,15 @@ function keadaanServer(s: KeadaanAplikasi, sesi: SesiServer, isi: IsiServer): Pa
           keranjang: bacaKeranjang(kunciKeranjang(sesi), k.penawaran),
         }
       : {}),
-    profil: {
-      ...s.profil,
-      id: String(sesi.usahaId),
-      namaUsaha: k?.usaha.nama ?? sesi.namaUsaha ?? s.profil.namaUsaha,
-      namaPemilik: sesi.namaPengguna,
-      ...(k ? { jenisUsaha: k.usaha.jenisUsaha, kota: k.usaha.kota, alamat: k.usaha.alamat } : {}),
-    },
+    profil: isi.profil
+      ? { ...s.profil, ...isi.profil, alasanPerbaikan: [] }
+      : {
+          ...s.profil,
+          id: String(sesi.usahaId),
+          namaUsaha: k?.usaha.nama ?? sesi.namaUsaha ?? s.profil.namaUsaha,
+          namaPemilik: sesi.namaPengguna,
+          ...(k ? { jenisUsaha: k.usaha.jenisUsaha, kota: k.usaha.kota, alamat: k.usaha.alamat } : {}),
+        },
   }
 }
 
@@ -695,7 +709,11 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
     const sesi = await masukUmkm(email, kataSandi)
     const isi = await muatSemuaServer(sesi)
     simpanSesi(sesi)
-    set((s) => ({ ...keadaanServer(s, sesi, isi), profil: { ...keadaanServer(s, sesi, isi).profil, email } }))
+    // Email usaha dari profil server lebih dulu; kalau kosong, email yang dipakai masuk.
+    set((s) => {
+      const k = keadaanServer(s, sesi, isi)
+      return { ...k, profil: { ...k.profil, email: isi.profil?.email || email } }
+    })
   },
 
   masukPos: async (email, kataSandi) => {
@@ -902,7 +920,22 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
   // akun yang masuk, bukan dari tombol yang bisa ditekan siapa saja.
   aturPeran: (p) => set({ peran: p }),
 
-  ubahProfil: (p) => set((s) => ({ profil: { ...s.profil, ...p } })),
+  ubahProfil: async (p) => {
+    const sesi = get().sesiServer
+    // Di luar mode data server (dan untuk akun kasir yang tidak punya Akun) profil hanya hidup di memori.
+    if (!sesi || sesi.peran === 'kasir') {
+      set((s) => ({ profil: { ...s.profil, ...p } }))
+      return true
+    }
+    try {
+      const baru = await ubahProfilServer(sesi, p)
+      set((s) => ({ profil: { ...s.profil, ...baru, alasanPerbaikan: p.alasanPerbaikan ?? s.profil.alasanPerbaikan } }))
+      return true
+    } catch (e) {
+      get().tampilkanRacun(galatSimpan(e, 'Profil usaha'), 'kritis')
+      return false
+    }
+  },
   ubahKasir: (p) => set((s) => ({ kasir: { ...s.kasir, ...p } })),
 
   /**
@@ -1377,16 +1410,26 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
     return hasil
   },
 
-  kirimDraf: (pesananId) => {
+  kirimDraf: async (pesananId) => {
     const pesanan = get().pesanan.find((p) => p.id === pesananId)
     // Hanya draf yang boleh dikirim. Tanpa penjaga ini, menekan tombolnya dua
     // kali akan menghitung kuota kontraknya dua kali.
-    if (!pesanan || pesanan.status !== 'draf') return
+    if (!pesanan || pesanan.status !== 'draf') return false
+    const sesi = get().sesiServer
+    let dariServer: Pesanan | null = null
+    if (sesi && pesanan.baris.every((b) => b.barisId)) {
+      try {
+        dariServer = await ajukanDrafServer(sesi, pesananId)
+      } catch (e) {
+        get().tampilkanRacun(e instanceof Error ? e.message : 'Pesanan belum terkirim. Coba lagi sebentar lagi.', 'kritis')
+        return false
+      }
+    }
     set((s) => ({
       pesanan: s.pesanan.map((p) =>
         p.id !== pesananId
           ? p
-          : {
+          : dariServer ?? {
               ...p,
               status: 'menunggu-konfirmasi' as StatusPesanan,
               jejak: [
@@ -1407,6 +1450,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
       }),
     }))
     get().tampilkanRacun('Pesanan terkirim ke distributor.', 'aman')
+    return true
   },
 
   /**
@@ -1539,32 +1583,34 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
     )
   },
 
-  batalkanPesanan: (pesananId, alasan) => {
+  batalkanPesanan: async (pesananId, alasan) => {
     const s = get()
     const pesanan = s.pesanan.find((p) => p.id === pesananId)
-    if (s.sesiServer && pesanan?.baris.every((b) => b.barisId)) {
-      batalkanPesananServer(s.sesiServer, pesananId, alasan || 'Dibatalkan pemilik usaha')
-        .then((baru) => {
-          set((st) => ({ pesanan: st.pesanan.map((p) => (p.id === baru.id ? baru : p)) }))
-          get().tampilkanRacun('Pesanan dibatalkan.', 'menipis')
-        })
-        .catch((e: unknown) => get().tampilkanRacun(e instanceof Error ? e.message : 'Pembatalan gagal.', 'kritis'))
-      return
+    if (!pesanan) return false
+    let dariServer: Pesanan | null = null
+    if (s.sesiServer && pesanan.baris.every((b) => b.barisId)) {
+      try {
+        dariServer = await batalkanPesananServer(s.sesiServer, pesananId, alasan || 'Dibatalkan pemilik usaha')
+      } catch (e) {
+        get().tampilkanRacun(e instanceof Error ? e.message : 'Pembatalan gagal.', 'kritis')
+        return false
+      }
     }
     set((st) => ({
       pesanan: st.pesanan.map((p) =>
         p.id !== pesananId
           ? p
-          : {
+          : dariServer ?? {
               ...p,
               status: 'batal' as StatusPesanan,
               jejak: [...p.jejak, { waktu: stempel(), status: 'batal' as StatusPesanan, keterangan: `Dibatalkan: ${alasan}` }],
             },
       ),
       // Pesanan batal wajib menghapus jumlahnya dari angka "sedang dikirim",
-      // supaya peringatan stok tipis muncul lagi seperti seharusnya.
+      // supaya peringatan stok tipis muncul lagi seperti seharusnya. Draf belum
+      // pernah dihitung, jadi tidak ada yang dihapus.
       kontrak: st.kontrak.map((k) => {
-        if (!pesanan || k.id !== pesanan.kontrakId) return k
+        if (pesanan.status === 'draf' || k.id !== pesanan.kontrakId) return k
         const dipesan = pesanan.baris
           .filter((b) => b.penawaranId === k.penawaranId)
           .reduce((a, b) => a + b.jumlah, 0)
@@ -1572,6 +1618,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
       }),
     }))
     get().tampilkanRacun('Pesanan dibatalkan.', 'menipis')
+    return true
   },
 
   unggahBukti: (pesananId) => {
@@ -1580,24 +1627,46 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
         p.id !== pesananId ? p : { ...p, statusBayar: 'bukti-terkirim', jumlahBukti: p.jumlahBukti + 1 },
       ),
     }))
-    get().tampilkanRacun('Bukti transfer tersimpan.', 'aman')
+    get().tampilkanRacun(
+      get().sumberData === 'server'
+        ? 'Bukti tercatat di layar ini saja. Purwarupa ini belum mengirimkannya ke distributor.'
+        : 'Bukti transfer tersimpan.',
+      get().sumberData === 'server' ? 'info' : 'aman',
+    )
   },
 
   tandaiBayarTunai: (pesananId) => {
     set((s) => ({
       pesanan: s.pesanan.map((p) => (p.id !== pesananId ? p : { ...p, statusBayar: 'bukti-terkirim' })),
     }))
-    get().tampilkanRacun('Ditandai sudah dibayar tunai.', 'aman')
+    get().tampilkanRacun(
+      get().sumberData === 'server'
+        ? 'Ditandai dibayar tunai di layar ini saja. Purwarupa ini belum mengirimkannya ke distributor.'
+        : 'Ditandai sudah dibayar tunai.',
+      get().sumberData === 'server' ? 'info' : 'aman',
+    )
   },
 
   /* Isi penilaiannya ikut disimpan di pesanan, supaya distributor membaca
      penilaian yang sama di pesanan yang sama. */
-  tandaiSudahDiulas: (pesananId, ulasan) =>
+  tandaiSudahDiulas: async (pesananId, ulasan) => {
+    const sesi = get().sesiServer
+    const pesanan = get().pesanan.find((p) => p.id === pesananId)
+    if (sesi && pesanan?.baris.every((b) => b.barisId)) {
+      try {
+        const baru = await kirimUlasanServer(sesi, pesananId, ulasan)
+        set((s) => ({ pesanan: s.pesanan.map((p) => (p.id === baru.id ? baru : p)) }))
+        return true
+      } catch (e) {
+        get().tampilkanRacun(e instanceof Error ? e.message : 'Penilaian belum terkirim. Coba lagi sebentar lagi.', 'kritis')
+        return false
+      }
+    }
     set((s) => ({
-      pesanan: s.pesanan.map((p) =>
-        p.id !== pesananId ? p : { ...p, sudahDiulas: true, ulasan: ulasan ?? p.ulasan ?? null },
-      ),
-    })),
+      pesanan: s.pesanan.map((p) => (p.id !== pesananId ? p : { ...p, sudahDiulas: true, ulasan })),
+    }))
+    return true
+  },
 
   terimaPesananMasuk: (id, diam = false) => {
     if (get().pesananMasukServer) return aksiServer(get, 'konfirmasi', id, {}, 'Pesanan kamu terima. Sekarang masuk antrean gudang.')
@@ -1940,6 +2009,24 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
     return id
   },
 
+  tarikKontrak: async (kontrakId) => {
+    const sesi = get().sesiServer
+    if (sesi && /^\d+$/.test(kontrakId)) {
+      try {
+        await tarikKontrakServer(sesi, kontrakId)
+      } catch (e) {
+        get().tampilkanRacun(
+          e instanceof Error ? e.message : 'Pengajuan belum bisa ditarik. Coba lagi sebentar lagi.',
+          'kritis',
+        )
+        return false
+      }
+    }
+    set((s) => ({ kontrak: s.kontrak.filter((k) => k.id !== kontrakId) }))
+    get().tampilkanRacun('Pengajuan kontrak ditarik. Tidak ada kewajiban yang tertinggal.', 'menipis')
+    return true
+  },
+
   /**
    * Kontrak tidak bisa dihentikan sepihak: pengajuan ini hanya tersimpan dan
    * menunggu jawaban distributor. Sampai dijawab, kewajiban kuota tetap ada.
@@ -2131,11 +2218,15 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
     set((s) => ({
       katalog: ada ? s.katalog.map((p) => (p.id === penawaran.id ? penawaran : p)) : [...s.katalog, penawaran],
     }))
+    // Penawaran belum punya jalur tulis di server, jadi portal yang tersambung tidak dijanjikan apa-apa.
+    const tersambung = get().pesananMasukServer !== null
     get().tampilkanRacun(
-      ada
-        ? `${penawaran.nama} diperbarui. Pemilik usaha melihat harga dan stok yang baru.`
-        : `${penawaran.nama} ditambahkan ke katalogmu.`,
-      'aman',
+      tersambung
+        ? `${penawaran.nama} ${ada ? 'diperbarui' : 'ditambahkan'} di layar ini saja. Purwarupa ini belum menyimpannya di server.`
+        : ada
+          ? `${penawaran.nama} diperbarui. Pemilik usaha melihat harga dan stok yang baru.`
+          : `${penawaran.nama} ditambahkan ke katalogmu.`,
+      tersambung ? 'info' : 'aman',
     )
   },
 
@@ -2144,9 +2235,11 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
     if (!pw) return
     set((s) => ({ katalog: s.katalog.map((p) => (p.id === id ? { ...p, aktif } : p)) }))
     get().tampilkanRacun(
-      aktif
-        ? `${pw.nama} dijual lagi dan kembali tampil di katalog pemilik usaha.`
-        : `${pw.nama} disembunyikan dari katalog. Pesanan dan kontrak yang sudah ada tidak terpengaruh.`,
+      get().pesananMasukServer !== null
+        ? `${pw.nama} ${aktif ? 'dijual lagi' : 'disembunyikan'} di layar ini saja. Purwarupa ini belum menyimpannya di server.`
+        : aktif
+          ? `${pw.nama} dijual lagi dan kembali tampil di katalog pemilik usaha.`
+          : `${pw.nama} disembunyikan dari katalog. Pesanan dan kontrak yang sudah ada tidak terpengaruh.`,
       'info',
     )
   },

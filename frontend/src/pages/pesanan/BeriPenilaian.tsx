@@ -46,6 +46,7 @@ export default function BeriPenilaian() {
   })
   const [isi, setIsi] = useState('')
   const [galat, setGalat] = useState<string | null>(null)
+  const [mengirim, setMengirim] = useState(false)
 
   if (!pesanan) {
     return (
@@ -121,7 +122,7 @@ export default function BeriPenilaian() {
   )
   const labelSistem = `Terverifikasi · ${jumlahPesananSelesai} pesanan · pelanggan sejak ${sejak}`
 
-  function kirim() {
+  async function kirim() {
     const belum = ASPEK.find((a) => nilai[a.kunci] === 0)
     if (belum) {
       setGalat(
@@ -130,7 +131,8 @@ export default function BeriPenilaian() {
       return
     }
     const rata = (nilai.ketepatanWaktu + nilai.jumlahSesuai + nilai.kondisiBarang) / 3
-    tandaiSudahDiulas(ps.id, {
+    setMengirim(true)
+    const terkirim = await tandaiSudahDiulas(ps.id, {
       rating: Math.round(rata),
       isi: isi.trim(),
       waktu: new Date().toISOString(),
@@ -140,6 +142,8 @@ export default function BeriPenilaian() {
         kondisiBarang: nilai.kondisiBarang,
       },
     })
+    setMengirim(false)
+    if (!terkirim) return // Racun galatnya sudah tampil; bintang dan ceritanya tetap di layar.
     tampilkanRacun(
       `Penilaian ${angka(rata, 1)} bintang untuk ${distributor?.nama ?? 'distributor'} terkirim${
         isi.trim() ? ' bersama ceritamu' : ''
@@ -263,7 +267,7 @@ export default function BeriPenilaian() {
       )}
 
       <BilahAksi>
-        <Tombol penuh ukuran="besar" onClick={kirim}>
+        <Tombol penuh ukuran="besar" memuat={mengirim} onClick={kirim}>
           Kirim Penilaian
         </Tombol>
         <button

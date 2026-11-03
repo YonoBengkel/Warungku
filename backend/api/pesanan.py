@@ -2,11 +2,14 @@
 Jalur tulis pesanan: dari keranjang pemilik usaha sampai barang diterima.
 
     UMKM        POST /usaha/{u}/pesanan                  -> menunggu-konfirmasi
+                POST /usaha/{u}/pesanan/{p}/ajukan       draf -> menunggu-konfirmasi
+                POST /usaha/{u}/pesanan/{p}/batal        draf / menunggu-konfirmasi -> batal
     Distributor POST /distributor/{d}/pesanan/{p}/konfirmasi -> disiapkan
                 POST /distributor/{d}/pesanan/{p}/tolak      -> batal
                 POST /distributor/{d}/pesanan/{p}/kirim      -> dikirim
                 POST /distributor/{d}/pesanan/{p}/sampai     -> (tetap dikirim, bukti antar tercatat)
     UMKM        POST /usaha/{u}/pesanan/{p}/terima       -> selesai / selesai-catatan
+                POST /usaha/{u}/pesanan/{p}/ulasan       (penilaian, sekali per pesanan)
 
 Tiga aturan dijaga di sini:
 
@@ -44,6 +47,7 @@ from warungku.model import (
     Pesanan,
     PesananBaris,
     PesananJejak,
+    Ulasan,
     Usaha,
 )
 
@@ -59,6 +63,7 @@ from .skema import (
     PesananLengkap,
     SampaiPesanan,
     TolakPesanan,
+    UlasanBaru,
 )
 
 rute_umkm = APIRouter(prefix="/usaha/{usaha_id}", tags=["pesanan"])
@@ -154,8 +159,11 @@ def _kunci_pesanan(sesi: Session, pesanan_id: int, *, usaha_id: int | None = Non
     return p
 
 
-def _lepas_dalam_perjalanan(sesi: Session, p: Pesanan) -> None:
-    """Pesanan berkontrak yang batal tidak lagi dihitung "sedang dikirim" pada kuotanya."""
+def _geser_dalam_perjalanan(sesi: Session, p: Pesanan, arah: int) -> None:
+    """
+    Pesanan berkontrak yang berangkat (arah 1) dihitung "sedang dikirim" pada kuotanya,
+    yang batal (arah -1) dilepas lagi.
+    """
     if p.kontrak_id is None:
         return
     k = sesi.exec(select(Kontrak).where(Kontrak.id == p.kontrak_id).with_for_update()).first()
@@ -164,8 +172,9 @@ def _lepas_dalam_perjalanan(sesi: Session, p: Pesanan) -> None:
     dipesan = sum(
         Decimal(b.jumlah) for b in sesi.exec(select(PesananBaris).where(PesananBaris.pesanan_id == p.id)).all()
     )
-    k.dalam_perjalanan = max(Decimal(0), Decimal(k.dalam_perjalanan) - dipesan)
+    k.dalam_perjalanan = max(Decimal(0), Decimal(k.dalam_perjalanan) + arah * dipesan)
     sesi.add(k)
+
 
 
 def _jejak(sesi: Session, p: Pesanan, status: StatusPesanan, keterangan: str) -> None:
@@ -318,15 +327,37 @@ def buat_pesanan(badan: PesananBaru, usaha_id: int = Depends(usaha_saya)):
         return [_lengkap(sesi, p) for p in dibuat]
 
 
-@rute_umkm.post("/pesanan/{pesanan_id}/batal", response_model=PesananLengkap)
-def batalkan(badan: TolakPesanan, pesanan_id: int = Path(ge=1), usaha_id: int = Depends(usaha_saya)):
-    """Pemilik usaha membatalkan pesanan yang belum dijawab distributor."""
+@rute_umkm.post("/pesanan/{pesanan_id}/ajukan", response_model=PesananLengkap)
+def ajukan_draf(pesanan_id: int = Path(ge=1), usaha_id: int = Depends(usaha_saya)):
+    """
+    Kirim draf (misalnya draf pesanan rutin) ke distributor (audit 3 Nov 2026). Dulu tombol
+    Kirim Pesanan Sekarang hanya mengubah data di peramban. Seperti pesanan baru, pesanan
+    berkontrak ikut dihitung "sedang dikirim" pada kuotanya.
+    """
     with Session(mesin()) as sesi:
         p = _kunci_pesanan(sesi, pesanan_id, usaha_id=usaha_id)
-        _wajib_status(p, StatusPesanan.MENUNGGU_KONFIRMASI)
+        _wajib_status(p, StatusPesanan.DRAF)
+        p.status = StatusPesanan.MENUNGGU_KONFIRMASI
+        p.dibuat_pada = _sekarang()
+        sesi.add(p)
+        _geser_dalam_perjalanan(sesi, p, 1)
+        _jejak(sesi, p, StatusPesanan.MENUNGGU_KONFIRMASI, "Draf dikirim ke distributor.")
+        sesi.commit()
+        return _lengkap(sesi, p)
+
+
+@rute_umkm.post("/pesanan/{pesanan_id}/batal", response_model=PesananLengkap)
+def batalkan(badan: TolakPesanan, pesanan_id: int = Path(ge=1), usaha_id: int = Depends(usaha_saya)):
+    """Pemilik usaha membatalkan draf atau pesanan yang belum dijawab distributor."""
+    with Session(mesin()) as sesi:
+        p = _kunci_pesanan(sesi, pesanan_id, usaha_id=usaha_id)
+        _wajib_status(p, StatusPesanan.DRAF, StatusPesanan.MENUNGGU_KONFIRMASI)
+        draf = _nilai(p.status) == StatusPesanan.DRAF.value
         p.status = StatusPesanan.BATAL
         sesi.add(p)
-        _lepas_dalam_perjalanan(sesi, p)
+        # Draf belum pernah dihitung "sedang dikirim", jadi tidak ada yang dilepas.
+        if not draf:
+            _geser_dalam_perjalanan(sesi, p, -1)
         _jejak(sesi, p, StatusPesanan.BATAL, f"Dibatalkan pemilik usaha: {badan.alasan}")
         sesi.commit()
         return _lengkap(sesi, p)
@@ -514,6 +545,40 @@ def _tulis_fitur(sesi: Session, p: Pesanan, baris: list[PesananBaris]) -> None:
     )
 
 
+@rute_umkm.post("/pesanan/{pesanan_id}/ulasan", response_model=PesananLengkap, status_code=201)
+def beri_ulasan(badan: UlasanBaru, pesanan_id: int = Path(ge=1), usaha_id: int = Depends(usaha_saya)):
+    """
+    Penilaian sesudah pesanan selesai (audit 3 Nov 2026). Dulu hanya tersimpan di peramban.
+    Rating di katalog dan fitur Mesin 2 dibaca dari tabel `ulasan`, jadi penilaian ini
+    langsung ikut dihitung.
+    """
+    with Session(mesin()) as sesi:
+        p = _kunci_pesanan(sesi, pesanan_id, usaha_id=usaha_id)
+        _wajib_status(p, StatusPesanan.SELESAI, StatusPesanan.SELESAI_CATATAN)
+        if p.sudah_diulas or sesi.exec(select(Ulasan.id).where(Ulasan.pesanan_id == p.id)).first() is not None:
+            raise HTTPException(409, "Pesanan ini sudah kamu nilai.")
+        aspek = (badan.aspek_ketepatan_waktu, badan.aspek_jumlah_sesuai, badan.aspek_kondisi_barang)
+        isi = (badan.isi or "").strip() or None
+        sesi.add(
+            Ulasan(
+                pesanan_id=p.id,
+                usaha_id=usaha_id,
+                distributor_id=p.distributor_id,
+                # Rata-rata tiga angka bulat tidak pernah tepat di tengah, jadi round() aman.
+                rating=round(sum(aspek) / 3),
+                isi=isi,
+                waktu=_sekarang(),
+                aspek_ketepatan_waktu=aspek[0],
+                aspek_jumlah_sesuai=aspek[1],
+                aspek_kondisi_barang=aspek[2],
+            )
+        )
+        p.sudah_diulas = True
+        sesi.add(p)
+        sesi.commit()
+        return _lengkap(sesi, p)
+
+
 # --------------------------------------------------------------------------
 # Sisi distributor
 # --------------------------------------------------------------------------
@@ -567,7 +632,7 @@ def tolak(badan: TolakPesanan, pesanan_id: int = Path(ge=1), distributor_id: int
         p.status = StatusPesanan.BATAL
         p.alasan_tolak = badan.alasan
         sesi.add(p)
-        _lepas_dalam_perjalanan(sesi, p)
+        _geser_dalam_perjalanan(sesi, p, -1)
         _jejak(sesi, p, StatusPesanan.BATAL, f"Ditolak distributor: {badan.alasan}")
         sesi.commit()
         return _lengkap(sesi, p)

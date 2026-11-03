@@ -2,6 +2,7 @@
 Kontrak berjangka dengan kuota bulanan: dari pengajuan sampai berhenti.
 
     UMKM        POST /usaha/{u}/kontrak                         -> menunggu-persetujuan
+                POST /usaha/{u}/kontrak/{k}/tarik               (pengajuan yang belum dijawab dihapus)
                 POST /usaha/{u}/kontrak/{k}/berhenti            (pengajuan berhenti; kontrak tetap jalan)
                 POST /usaha/{u}/kontrak/{k}/rutin               (pesanan rutin hidup/mati)
     Distributor POST /distributor/{d}/kontrak/{k}/setujui       -> aktif, masa dihitung sejak hari ini
@@ -201,6 +202,20 @@ def ajukan(badan: AjukanKontrak, usaha_id: int = Depends(usaha_saya)):
         sesi.add(k)
         sesi.commit()
         return lengkap(sesi, k)
+
+
+@rute_umkm.post("/kontrak/{kontrak_id}/tarik", status_code=204)
+def tarik(kontrak_id: int = Path(ge=1), usaha_id: int = Depends(usaha_saya)) -> None:
+    """
+    Tarik pengajuan yang belum dijawab distributor (audit 3 Nov 2026). Barisnya dihapus,
+    bukan ditandai ditolak, karena distributor tidak pernah menolaknya. Pengajuan belum
+    punya periode kuota maupun pesanan, jadi tidak ada yang tertinggal.
+    """
+    with Session(mesin()) as sesi:
+        k = _kunci(sesi, kontrak_id, usaha_id=usaha_id)
+        _wajib(k, StatusKontrak.MENUNGGU_PERSETUJUAN)
+        sesi.delete(k)
+        sesi.commit()
 
 
 @rute_umkm.post("/kontrak/{kontrak_id}/berhenti", response_model=KontrakLengkap)

@@ -1,4 +1,14 @@
-import type { Barang, KematanganPerkiraan, SumberBatasAman, TingkatLayanan } from '@/lib/types'
+import type {
+  Barang,
+  CaraHitungStok,
+  JenisUsaha,
+  KematanganPerkiraan,
+  ProfilUsaha,
+  StatusVerifikasi,
+  SumberBatasAman,
+  TingkatLayanan,
+  TingkatVerifikasi,
+} from '@/lib/types'
 import type { BulananBarang } from '@/data/dummy'
 
 /**
@@ -320,6 +330,94 @@ export async function gantiKategoriServer(sesi: SesiServer, dari: string[], ke: 
     body: JSON.stringify({ dari, ke }),
   })
   return isi.diubah
+}
+
+/* ------------------------------------------------------------------ */
+/* Profil usaha                                                        */
+/* ------------------------------------------------------------------ */
+
+interface ProfilUsahaApi {
+  id: number
+  nama: string
+  jenis_usaha: JenisUsaha
+  nama_pemilik: string
+  nib: string | null
+  npwp: string | null
+  alamat: string
+  kota: string
+  nomor_hp: string
+  email: string | null
+  bio: string | null
+  warna: string
+  cara_hitung: CaraHitungStok
+  verifikasi: StatusVerifikasi
+  tingkat_verifikasi: TingkatVerifikasi
+  bergabung_sejak: string
+  tampilkan_alamat: boolean
+  tampilkan_nomor_hp: boolean
+}
+
+/** Profil dari server. Alasan perbaikan belum disimpan server, jadi tidak ikut di sini. */
+function keProfil(p: ProfilUsahaApi): Omit<ProfilUsaha, 'alasanPerbaikan'> {
+  return {
+    id: String(p.id),
+    namaUsaha: p.nama,
+    jenisUsaha: p.jenis_usaha,
+    namaPemilik: p.nama_pemilik,
+    nib: p.nib ?? '',
+    npwp: p.npwp ?? '',
+    alamat: p.alamat,
+    kota: p.kota,
+    nomorHp: p.nomor_hp,
+    email: p.email ?? '',
+    bio: p.bio ?? '',
+    warna: p.warna,
+    caraHitung: p.cara_hitung,
+    verifikasi: p.verifikasi,
+    tingkatVerifikasi: p.tingkat_verifikasi,
+    bergabungSejak: p.bergabung_sejak,
+    tampilkanAlamatKeDistributor: p.tampilkan_alamat,
+    tampilkanNomorHpKeDistributor: p.tampilkan_nomor_hp,
+  }
+}
+
+export async function ambilProfilServer(sesi: SesiServer): Promise<Omit<ProfilUsaha, 'alasanPerbaikan'>> {
+  return keProfil(await minta<ProfilUsahaApi>(`/usaha/${sesi.usahaId}/profil`, { token: sesi.token }))
+}
+
+/**
+ * Simpan sebagian profil. Hanya kolom yang ada di `p` yang dikirim. Status verifikasi
+ * tidak bisa diisi: "menunggu" dikirim sebagai pengajuan pemeriksaan ulang.
+ */
+export async function ubahProfilServer(
+  sesi: SesiServer,
+  p: Partial<ProfilUsaha>,
+): Promise<Omit<ProfilUsaha, 'alasanPerbaikan'>> {
+  const badan: Record<string, unknown> = {}
+  const pasang: Array<[keyof ProfilUsaha, string]> = [
+    ['namaUsaha', 'nama'],
+    ['jenisUsaha', 'jenis_usaha'],
+    ['namaPemilik', 'nama_pemilik'],
+    ['nib', 'nib'],
+    ['npwp', 'npwp'],
+    ['alamat', 'alamat'],
+    ['kota', 'kota'],
+    ['nomorHp', 'nomor_hp'],
+    ['email', 'email'],
+    ['bio', 'bio'],
+    ['warna', 'warna'],
+    ['caraHitung', 'cara_hitung'],
+    ['tampilkanAlamatKeDistributor', 'tampilkan_alamat'],
+    ['tampilkanNomorHpKeDistributor', 'tampilkan_nomor_hp'],
+  ]
+  for (const [kunci, kolom] of pasang) if (p[kunci] !== undefined) badan[kolom] = p[kunci]
+  if (p.verifikasi === 'menunggu') badan.ajukan_verifikasi = true
+  const isi = await minta<ProfilUsahaApi>(`/usaha/${sesi.usahaId}/profil`, {
+    method: 'PATCH',
+    token: sesi.token,
+    body: JSON.stringify(badan),
+  })
+  return keProfil(isi)
 }
 
 /* ------------------------------------------------------------------ */

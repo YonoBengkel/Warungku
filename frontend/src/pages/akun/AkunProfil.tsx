@@ -43,6 +43,14 @@ const MAKS_BIO = 160
  * tombol perbaikannya.
  */
 export default function AkunProfil() {
+  /* Isian awal diambil dari profil saat layar dibuka. Sesudah muat ulang, profil
+     server baru tiba belakangan, jadi formulirnya dipasang ulang supaya Simpan
+     tidak menimpa data server dengan isi data contoh (audit 3 Nov 2026). */
+  const idProfil = useAplikasi((s) => s.profil.id)
+  return <FormProfil key={idProfil} />
+}
+
+function FormProfil() {
   const profil = useAplikasi((s) => s.profil)
   const ubahProfil = useAplikasi((s) => s.ubahProfil)
   const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
@@ -56,6 +64,7 @@ export default function AkunProfil() {
   const [email, setEmail] = useState(profil.email)
   const [warna, setWarna] = useState(profil.warna)
   const [sudahDicoba, setSudahDicoba] = useState(false)
+  const [menyimpan, setMenyimpan] = useState(false)
 
   const galat = useMemo(() => {
     const g: Record<string, string> = {}
@@ -85,10 +94,11 @@ export default function AkunProfil() {
     email !== profil.email ||
     warna !== profil.warna
 
-  function simpan() {
+  async function simpan() {
     setSudahDicoba(true)
     if (Object.keys(galat).length > 0) return
-    ubahProfil({
+    setMenyimpan(true)
+    const tersimpan = await ubahProfil({
       namaUsaha: namaUsaha.trim(),
       jenisUsaha,
       bio: bio.trim(),
@@ -98,6 +108,8 @@ export default function AkunProfil() {
       email: email.trim(),
       warna,
     })
+    setMenyimpan(false)
+    if (!tersimpan) return // Racun galatnya sudah tampil; isiannya tetap di layar.
     /* Racun menyebut apa yang berubah, bukan sekadar "tersimpan": setelah
        menekan Simpan yang ingin diketahui pemilik usaha adalah versi mana yang
        sekarang dilihat distributor. */
@@ -263,8 +275,8 @@ export default function AkunProfil() {
               <div className="mt-3 space-y-1 divide-y divide-line">
                 <SakelarPrivasi
                   aktif={profil.tampilkanAlamatKeDistributor}
-                  ubah={(v) => {
-                    ubahProfil({ tampilkanAlamatKeDistributor: v })
+                  ubah={async (v) => {
+                    if (!(await ubahProfil({ tampilkanAlamatKeDistributor: v }))) return
                     tampilkanRacun(
                       v ? 'Alamat lengkap kini terlihat oleh semua distributor.' : 'Alamat lengkap disembunyikan.',
                       'info',
@@ -276,8 +288,8 @@ export default function AkunProfil() {
                 />
                 <SakelarPrivasi
                   aktif={profil.tampilkanNomorHpKeDistributor}
-                  ubah={(v) => {
-                    ubahProfil({ tampilkanNomorHpKeDistributor: v })
+                  ubah={async (v) => {
+                    if (!(await ubahProfil({ tampilkanNomorHpKeDistributor: v }))) return
                     tampilkanRacun(
                       v ? 'Nomor HP kini terlihat oleh semua distributor.' : 'Nomor HP disembunyikan.',
                       'info',
@@ -319,7 +331,7 @@ export default function AkunProfil() {
             )
           }
         >
-          <Tombol penuh ukuran="besar" onClick={simpan}>
+          <Tombol penuh ukuran="besar" memuat={menyimpan} onClick={simpan}>
             Simpan Perubahan
           </Tombol>
         </BilahAksi>

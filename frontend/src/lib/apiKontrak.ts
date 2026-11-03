@@ -149,6 +149,11 @@ export async function ajukanKontrakServer(sesi: SesiServer, paketId: string): Pr
   return keKontrak(k)
 }
 
+/** Tarik pengajuan yang belum dijawab distributor. Server menghapusnya. */
+export async function tarikKontrakServer(sesi: SesiServer, kontrakId: string): Promise<void> {
+  await minta<void>(`/usaha/${sesi.usahaId}/kontrak/${kontrakId}/tarik`, { method: 'POST', token: sesi.token })
+}
+
 export async function berhentiKontrakServer(sesi: SesiServer, kontrakId: string, alasan: string): Promise<Kontrak> {
   const k = await minta<KontrakApi>(`/usaha/${sesi.usahaId}/kontrak/${kontrakId}/berhenti`, {
     method: 'POST',

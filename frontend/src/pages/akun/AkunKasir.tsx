@@ -31,6 +31,7 @@ import { JUDUL } from '@/lib/label'
 import type { Barang, RiwayatKasir } from '@/lib/types'
 import { POS_TUNGGAL, daftarTransaksi, riwayatKasir } from '@/data/dummy'
 import { KartuStruk } from '@/components/domain/KartuStruk'
+import { CatatanPurwarupa } from '@/components/domain'
 import { useAplikasi } from '@/store/aplikasi'
 
 type Tab = 'sambungan' | 'beres' | 'riwayat'
@@ -266,6 +267,7 @@ function DaftarKonektor() {
   const ubahKasir = useAplikasi((s) => s.ubahKasir)
   const hubungkanKasir = useAplikasi((s) => s.hubungkanKasir)
   const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
+  const server = useAplikasi((s) => s.sumberData === 'server')
 
   const [unggah, setUnggah] = useState(false)
 
@@ -281,7 +283,12 @@ function DaftarKonektor() {
 
   function pilihManual() {
     ubahKasir({ sumber: 'catat-manual', status: 'manual', merek: null })
-    tampilkanRacun('Mode catat pemakaian harian aktif.', 'aman')
+    tampilkanRacun(
+      server
+        ? 'Mode catat pemakaian harian aktif di layar ini saja. Pemakaian yang kamu catat tetap tersimpan, tetapi sesudah dimuat ulang sumbernya kembali ke kasir.'
+        : 'Mode catat pemakaian harian aktif.',
+      server ? 'info' : 'aman',
+    )
     navigate('/stok/pemakaian')
   }
 
@@ -389,6 +396,10 @@ function DaftarKonektor() {
         />
       </ul>
 
+      <CatatanPurwarupa className="pt-3">
+        Di mode ini penjualan selalu dibaca dari {POS_TUNGGAL.nama}. Gmail, Spreadsheet, unggah berkas, dan pilihan
+        catat sendiri belum disimpan di server.
+      </CatatanPurwarupa>
       <p className="pt-3 text-kecil text-ink-3 leading-relaxed">
         Bisa diganti nanti lewat Akun &rsaquo; Data dari Kasir; harga jual tetap tinggal di kasirmu.
       </p>

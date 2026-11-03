@@ -55,16 +55,26 @@ function kolomUntukAlasan(alasan: string): KunciKolom | null {
  * mengirim ulang kesalahan yang sama.
  */
 export default function DataUsaha() {
+  /* Isian awal diambil dari profil saat layar dibuka. Sesudah muat ulang, profil
+     server baru tiba belakangan, jadi formulirnya dipasang ulang supaya Simpan
+     tidak menimpa data server dengan isi data contoh (audit 3 Nov 2026). */
+  const idProfil = useAplikasi((s) => s.profil.id)
+  return <FormDataUsaha key={idProfil} />
+}
+
+function FormDataUsaha() {
   const navigate = useNavigate()
   const profil = useAplikasi((s) => s.profil)
   const ubahProfil = useAplikasi((s) => s.ubahProfil)
   const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
+  const server = useAplikasi((s) => s.sumberData === 'server')
 
   const [nib, setNib] = useState(profil.nib)
   const [npwp, setNpwp] = useState(profil.npwp)
   const [namaPemilik, setNamaPemilik] = useState(profil.namaPemilik)
   const [alamat, setAlamat] = useState(profil.alamat)
   const [sudahDicoba, setSudahDicoba] = useState(false)
+  const [menyimpan, setMenyimpan] = useState(false)
 
   const perluDiperbaiki = profil.verifikasi === 'perlu-diperbaiki'
   const alasan = profil.alasanPerbaikan
@@ -117,10 +127,11 @@ export default function DataUsaha() {
      selama belum ada yang dibetulkan, kecuali memang sedang ditolak. */
   const bolehKirim = berubah || perluDiperbaiki
 
-  function kirimUlang() {
+  async function kirimUlang() {
     setSudahDicoba(true)
     if (adaGalat) return
-    ubahProfil({
+    setMenyimpan(true)
+    const tersimpan = await ubahProfil({
       nib: nib.replace(/\D/g, ''),
       npwp: npwp.replace(/\D/g, ''),
       namaPemilik: namaPemilik.trim(),
@@ -128,7 +139,14 @@ export default function DataUsaha() {
       verifikasi: 'menunggu',
       alasanPerbaikan: [],
     })
-    tampilkanRacun('Data usaha terkirim. Kami kabari lewat WhatsApp begitu pemeriksaan selesai.', 'info')
+    setMenyimpan(false)
+    if (!tersimpan) return // Racun galatnya sudah tampil; isiannya tetap di layar.
+    tampilkanRacun(
+      server
+        ? 'Data usaha tersimpan dan statusnya kini sedang diperiksa. Petugas pemeriksa belum ada di purwarupa ini, jadi statusnya tidak berubah sendiri.'
+        : 'Data usaha terkirim. Kami kabari lewat WhatsApp begitu pemeriksaan selesai.',
+      'info',
+    )
     // Mengganti formulir di riwayat supaya tombol kembali tidak membukanya lagi (revisi V3, Q78).
     navigate('/akun/profil', { replace: true })
   }
@@ -229,37 +247,40 @@ export default function DataUsaha() {
         </Kartu>
 
         {/* Alat uji tampilan. Diberi bingkai putus-putus dan label eksplisit
-            supaya tidak pernah terbaca sebagai pengaturan akun sungguhan. */}
-        <div className="rounded-lg border border-dashed border-line-strong bg-surface-2 p-4">
-          <h2 className="text-kartu font-bold text-ink">Alat uji tampilan verifikasi</h2>
-          <p className="mt-1 text-isi text-ink-3 leading-relaxed">
-            Hanya untuk pengembang: ganti keadaan verifikasi tanpa mengirim apa pun.
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {(
-              [
-                { nilai: 'terverifikasi', label: 'Terverifikasi' },
-                { nilai: 'menunggu', label: 'Sedang diperiksa' },
-                { nilai: 'perlu-diperbaiki', label: 'Perlu diperbaiki' },
-              ] as const
-            ).map((o) => (
-              <button
-                key={o.nilai}
-                type="button"
-                aria-pressed={profil.verifikasi === o.nilai}
-                onClick={() => ujiKeadaan(o.nilai)}
-                className={cx(
-                  'h-11 px-3.5 rounded-md text-isi font-semibold border transition-colors',
-                  profil.verifikasi === o.nilai
-                    ? 'bg-brand-soft text-brand-soft-ink border-brand'
-                    : 'bg-surface text-ink-2 border-line-strong hover:text-ink',
-                )}
-              >
-                {o.label}
-              </button>
-            ))}
+            supaya tidak pernah terbaca sebagai pengaturan akun sungguhan. Di mode
+            data server tidak tampil: status verifikasi tidak bisa diisi dari sini. */}
+        {!server && (
+          <div className="rounded-lg border border-dashed border-line-strong bg-surface-2 p-4">
+            <h2 className="text-kartu font-bold text-ink">Alat uji tampilan verifikasi</h2>
+            <p className="mt-1 text-isi text-ink-3 leading-relaxed">
+              Hanya untuk pengembang: ganti keadaan verifikasi tanpa mengirim apa pun.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {(
+                [
+                  { nilai: 'terverifikasi', label: 'Terverifikasi' },
+                  { nilai: 'menunggu', label: 'Sedang diperiksa' },
+                  { nilai: 'perlu-diperbaiki', label: 'Perlu diperbaiki' },
+                ] as const
+              ).map((o) => (
+                <button
+                  key={o.nilai}
+                  type="button"
+                  aria-pressed={profil.verifikasi === o.nilai}
+                  onClick={() => ujiKeadaan(o.nilai)}
+                  className={cx(
+                    'h-11 px-3.5 rounded-md text-isi font-semibold border transition-colors',
+                    profil.verifikasi === o.nilai
+                      ? 'bg-brand-soft text-brand-soft-ink border-brand'
+                      : 'bg-surface text-ink-2 border-line-strong hover:text-ink',
+                  )}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <BilahAksi
@@ -276,14 +297,16 @@ export default function DataUsaha() {
               </p>
             ) : (
               <p className="text-isi text-ink-3">
-                Pemeriksaan biasanya selesai dalam 1 hari kerja. Kabarnya lewat WhatsApp ke nomor di profilmu.
+                {server
+                  ? 'Statusnya jadi sedang diperiksa. Petugas pemeriksa belum ada di purwarupa ini.'
+                  : 'Pemeriksaan biasanya selesai dalam 1 hari kerja. Kabarnya lewat WhatsApp ke nomor di profilmu.'}
               </p>
             )}
           </div>
         }
       >
         <div className="max-w-2xl mx-auto">
-          <Tombol penuh ukuran="besar" disabled={!bolehKirim} onClick={kirimUlang}>
+          <Tombol penuh ukuran="besar" disabled={!bolehKirim} memuat={menyimpan} onClick={kirimUlang}>
             {perluDiperbaiki ? 'Kirim Ulang untuk Diperiksa' : 'Simpan dan Minta Diperiksa Ulang'}
           </Tombol>
         </div>

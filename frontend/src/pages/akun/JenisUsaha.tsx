@@ -42,16 +42,28 @@ const CONTOH: Record<CaraHitungStok, { ikon: typeof IkonToko; contoh: string; be
 }
 
 export default function JenisUsaha() {
+  /* Isian awal diambil dari profil saat layar dibuka. Sesudah muat ulang, profil
+     server baru tiba belakangan, jadi formulirnya dipasang ulang supaya Simpan
+     tidak menimpa data server dengan isi data contoh (audit 3 Nov 2026). */
+  const idProfil = useAplikasi((s) => s.profil.id)
+  return <FormJenisUsaha key={idProfil} />
+}
+
+function FormJenisUsaha() {
   const navigate = useNavigate()
   const caraHitung = useAplikasi((s) => s.profil.caraHitung)
   const ubahProfil = useAplikasi((s) => s.ubahProfil)
   const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
 
   const [pilihan, setPilihan] = useState<CaraHitungStok>(caraHitung)
+  const [menyimpan, setMenyimpan] = useState(false)
   const berubah = pilihan !== caraHitung
 
-  function simpan() {
-    ubahProfil({ caraHitung: pilihan })
+  async function simpan() {
+    setMenyimpan(true)
+    const tersimpan = await ubahProfil({ caraHitung: pilihan })
+    setMenyimpan(false)
+    if (!tersimpan) return // Racun galatnya sudah tampil; pilihannya tetap di layar.
     tampilkanRacun(`Tersimpan. Detail Barang sekarang mengikuti pilihan "${LABEL_CARA_HITUNG[pilihan].judul}".`, 'aman')
     // Mengganti formulir di riwayat supaya tombol kembali tidak membukanya lagi (revisi V3, Q78).
     navigate('/akun', { replace: true })
@@ -146,7 +158,7 @@ export default function JenisUsaha() {
           ) : undefined
         }
       >
-        <Tombol penuh ukuran="besar" disabled={!berubah} onClick={simpan}>
+        <Tombol penuh ukuran="besar" disabled={!berubah} memuat={menyimpan} onClick={simpan}>
           {berubah ? 'Simpan Pilihan' : 'Belum ada yang diubah'}
         </Tombol>
       </BilahAksi>

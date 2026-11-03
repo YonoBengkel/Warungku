@@ -1,6 +1,6 @@
 import { useRef, useState, type ChangeEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ChipPesanan, KartuBuktiPengiriman, TombolTerkunci, useTerkunci } from '@/components/domain'
+import { CatatanPurwarupa, ChipPesanan, KartuBuktiPengiriman, TombolTerkunci, useTerkunci } from '@/components/domain'
 import { KALIMAT_PROMO, LencanaPromo } from '@/components/domain/KartuPromo'
 import { PetaPesanan, useSekarang } from '@/components/domain/Lacak'
 import { Avatar, Kartu, Lencana, Pemisah, Tombol, TombolIkon, TombolTautan } from '@/components/ui/dasar'
@@ -78,6 +78,7 @@ export default function PesananDetail() {
   const [dialogBatal, setDialogBatal] = useState<'langsung' | 'ajukan' | null>(null)
   const [alasan, setAlasan] = useState<string>(ALASAN_BATAL[0])
   const [pembatalanDiajukan, setPembatalanDiajukan] = useState(false)
+  const [mengirimDraf, setMengirimDraf] = useState(false)
 
   if (!pesanan) {
     return (
@@ -158,12 +159,18 @@ export default function PesananDetail() {
     e.target.value = ''
   }
 
+  async function kirimSekarang() {
+    setMengirimDraf(true)
+    await kirimDraf(ps.id)
+    setMengirimDraf(false)
+  }
+
   function konfirmasiBatal() {
     if (dialogBatal === 'ajukan') {
       setPembatalanDiajukan(true)
       tampilkanRacun('Permintaan pembatalan terkirim. Distributor akan mengabari.', 'info')
     } else {
-      batalkanPesanan(ps.id, alasan)
+      void batalkanPesanan(ps.id, alasan)
     }
     setDialogBatal(null)
   }
@@ -508,6 +515,9 @@ export default function PesananDetail() {
               )}
             </div>
 
+            <CatatanPurwarupa className="mt-2">
+              Bukti dan tanda bayar tunai belum dikirim ke distributor, dan hilang saat halaman dimuat ulang.
+            </CatatanPurwarupa>
             <p className="mt-2 text-kecil text-ink-3 leading-relaxed">{BANTUAN.bayarLuarPanjang}</p>
           </section>
 
@@ -542,7 +552,7 @@ export default function PesananDetail() {
               {terkunci ? (
                 <TombolTerkunci label="Kirim Pesanan Sekarang" penuh />
               ) : (
-                <Tombol penuh ukuran="besar" onClick={() => kirimDraf(ps.id)}>
+                <Tombol penuh ukuran="besar" memuat={mengirimDraf} onClick={kirimSekarang}>
                   Kirim Pesanan Sekarang
                 </Tombol>
               )}
@@ -580,6 +590,13 @@ export default function PesananDetail() {
               {pesanan.pengiriman ? (
                 <p className="text-center text-isi text-ink-3 leading-snug">
                   Barang sudah diserahkan. Kalau jumlahnya beda atau ada yang rusak, catat di langkah berikutnya.
+                </p>
+              ) : sumberData === 'server' ? (
+                /* Permintaan pembatalan belum punya jalur ke distributor di server,
+                   jadi tombolnya tidak ditawarkan (audit 3 Nov 2026). */
+                <p className="text-center text-isi text-ink-3 leading-snug">
+                  Barang mungkin sudah disiapkan. Pembatalan lewat aplikasi belum tersedia di purwarupa ini, jadi
+                  hubungi distributornya langsung.
                 </p>
               ) : !pembatalanDiajukan && (
                 <>

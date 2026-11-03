@@ -25,6 +25,7 @@ import {
   IkonKunci,
   IkonPetir,
   IkonKotak,
+  IkonInfo,
 } from '@/icons'
 import { Kartu, Lencana, Tombol, TombolTautan, Avatar } from '@/components/ui/dasar'
 import { BilahProgres } from '@/components/ui/umpanBalik'
@@ -232,6 +233,32 @@ export function PitaDataContoh({ portal }: { portal: 'umkm' | 'distributor' }) {
         </button>
       </p>
     </div>
+  )
+}
+
+/**
+ * Catatan di samping kontrol yang di mode data server belum tersimpan di server
+ * (audit 3 Nov 2026). Di mode data contoh tidak tampil, karena pita di atas sudah
+ * bilang perubahan tidak tersimpan.
+ */
+export function CatatanPurwarupa({
+  children,
+  portal = 'umkm',
+  className,
+}: {
+  children: ReactNode
+  portal?: 'umkm' | 'distributor'
+  className?: string
+}) {
+  const server = useAplikasi((s) => (portal === 'umkm' ? s.sumberData === 'server' : s.pesananMasukServer !== null))
+  if (!server) return null
+  return (
+    <p className={cx('flex items-start gap-2 text-kecil text-ink-3 leading-relaxed', className)}>
+      <IkonInfo size={14} className="shrink-0 mt-0.5" />
+      <span>
+        <strong className="font-semibold text-ink-2">Masih purwarupa.</strong> {children}
+      </span>
+    </p>
   )
 }
 

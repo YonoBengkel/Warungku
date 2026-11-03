@@ -521,6 +521,8 @@ turnify-flow/
 | POST | `/auth/pos/masuk` | Masuk ke Portal POS: kasir mendapat token kasir, pemilik mendapat token pemilik |
 | POST | `/auth/distributor/masuk` | Masuk sebagai distributor |
 | GET | `/auth/saya` | Siapa pemegang token ini |
+| GET | `/usaha/{usaha_id}/profil` | Profil usaha yang sedang masuk |
+| PATCH | `/usaha/{usaha_id}/profil` | Ubah sebagian profil usaha. Status verifikasi tidak bisa diisi, hanya bisa dikembalikan ke menunggu pemeriksaan |
 | GET | `/usaha/{usaha_id}/barang` | Daftar barang di gudang, termasuk pemakaian rata-rata 28 hari, harga per satuan, dan hari sejak terakhir terpakai (`hari_tanpa_pemakaian`, dihitung dari hari terakhir data) |
 | GET | `/usaha/{usaha_id}/barang/{barang_id}/perkiraan` | Perkiraan terbaru Mesin 1 (p10, p50, p90 per hari), termasuk uji balik 14 hari (`uji_balik`) |
 | POST | `/usaha/{usaha_id}/barang` | Tambah barang. Stok awalnya dicatat sebagai pergerakan koreksi, dan kode kosong dibuatkan dari id |
@@ -555,12 +557,15 @@ turnify-flow/
 | GET | `/usaha/{usaha_id}/pesanan` | Pesanan usaha ini beserta baris dan jejaknya |
 | POST | `/usaha/{usaha_id}/pesanan` | Kirim keranjang; satu pesanan per distributor, harga disalin saat itu |
 | GET | `/usaha/{usaha_id}/pesanan/{pesanan_id}` | Rincian satu pesanan |
-| POST | `/usaha/{usaha_id}/pesanan/{pesanan_id}/batal` | Batalkan pesanan yang belum dijawab distributor |
+| POST | `/usaha/{usaha_id}/pesanan/{pesanan_id}/ajukan` | Kirim draf, misalnya draf pesanan rutin, ke distributor |
+| POST | `/usaha/{usaha_id}/pesanan/{pesanan_id}/batal` | Batalkan draf atau pesanan yang belum dijawab distributor |
 | POST | `/usaha/{usaha_id}/pesanan/{pesanan_id}/terima` | Hitung barang yang datang: stok naik, data latih Mesin 2 tertulis |
+| POST | `/usaha/{usaha_id}/pesanan/{pesanan_id}/ulasan` | Penilaian pesanan yang selesai, sekali per pesanan. Rating dihitung dari rata-rata tiga aspek |
 | GET | `/usaha/{usaha_id}/katalog` | Distributor (rating dari ulasan), penawaran, paket kontrak, dan promo |
 | GET | `/usaha/{usaha_id}/distributor/{distributor_id}/ulasan` | Ulasan terbaru satu distributor |
 | GET | `/usaha/{usaha_id}/kontrak` | Kontrak usaha ini beserta kuota per bulan |
 | POST | `/usaha/{usaha_id}/kontrak` | Ajukan kontrak dari satu paket; harga dan kuota disalin saat itu |
+| POST | `/usaha/{usaha_id}/kontrak/{kontrak_id}/tarik` | Tarik pengajuan yang belum dijawab distributor |
 | POST | `/usaha/{usaha_id}/kontrak/{kontrak_id}/berhenti` | Ajukan berhenti; kontrak tetap jalan sampai dijawab |
 | POST | `/usaha/{usaha_id}/kontrak/{kontrak_id}/rutin` | Pesanan rutin hidup atau mati |
 | GET | `/distributor/{distributor_id}/pesanan` | Ringkasan pesanan yang masuk, terbaru dulu |

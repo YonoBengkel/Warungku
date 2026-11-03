@@ -194,6 +194,8 @@ def test_produk_jadi_baru_tersimpan_dengan_komposisi(dapur):
 def test_produk_jadi_dicocokkan_dari_nama_dan_komposisi_ditimpa(dapur):
     """Nama yang sama (apa pun besar-kecil hurufnya) mengubah produk yang sudah ada, bukan membuat duplikat."""
     k, u, kepala = dapur["klien"], dapur["usaha"], dapur["kepala"]
+    with mesin().begin() as kon:
+        kon.execute(text("UPDATE produk_jadi SET batas_aman = 7, ukuran_sesi = 25 WHERE id = :p"), {"p": dapur["produk"]})
     r = k.post(
         f"/usaha/{u}/produk-jadi",
         json={
@@ -210,6 +212,8 @@ def test_produk_jadi_dicocokkan_dari_nama_dan_komposisi_ditimpa(dapur):
     assert hasil["harga_jual"] == 22_000
     # Cabai dibuang dari komposisi, bukan ditambah di sampingnya.
     assert [b["barang_id"] for b in hasil["resep"]] == [dapur["toples"]]
+    # Layar Menu tidak mengirim batas aman dan ukuran sesi, jadi nilai lamanya tetap (audit 3 Nov 2026).
+    assert Decimal(hasil["batas_aman"]) == 7 and hasil["ukuran_sesi"] == 25
 
 
 def test_produk_jadi_bahan_dicatat_manual_ditolak(dapur):

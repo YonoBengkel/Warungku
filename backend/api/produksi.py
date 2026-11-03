@@ -310,14 +310,20 @@ def simpan_produk_jadi(badan: ProdukJadiBaru, usaha_id: int = Depends(usaha_saya
             select(ProdukJadi).where(ProdukJadi.usaha_id == usaha_id, ProdukJadi.nama.ilike(nama))
         ).first()
         if pj is None:
-            pj = ProdukJadi(usaha_id=usaha_id, nama=nama, satuan=badan.satuan)
+            pj = ProdukJadi(
+                usaha_id=usaha_id, nama=nama, satuan=badan.satuan,
+                batas_aman=badan.batas_aman if badan.batas_aman is not None else Decimal(0),
+                ukuran_sesi=badan.ukuran_sesi or 60,
+            )
             sesi.add(pj)
             sesi.flush()
         pj.satuan = badan.satuan
         pj.isi_bersih = badan.isi_bersih
         pj.harga_jual = badan.harga_jual
-        pj.batas_aman = badan.batas_aman
-        pj.ukuran_sesi = badan.ukuran_sesi
+        if badan.batas_aman is not None:
+            pj.batas_aman = badan.batas_aman
+        if badan.ukuran_sesi is not None:
+            pj.ukuran_sesi = badan.ukuran_sesi
         sesi.add(pj)
         sesi.flush()
 

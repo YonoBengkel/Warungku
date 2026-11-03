@@ -252,8 +252,9 @@ export async function simpanProdukJadi(
       satuan: data.satuan,
       isi_bersih: data.isiBersih || null,
       harga_jual: data.hargaJual,
-      batas_aman: String(data.batasAman ?? 0),
-      ukuran_sesi: data.ukuranSesi ?? 60,
+      // Tidak dikirim berarti nilai lama dipertahankan server (audit 3 Nov 2026).
+      ...(data.batasAman !== undefined ? { batas_aman: String(data.batasAman) } : {}),
+      ...(data.ukuranSesi !== undefined ? { ukuran_sesi: data.ukuranSesi } : {}),
       bahan: data.bahan.map((b) => ({ barang_id: Number(b.barangId), takaran: String(b.takaran) })),
     }),
   })

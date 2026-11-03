@@ -4,6 +4,7 @@ import { Kartu, Lencana, Pemisah, Tombol, TombolTautan } from '@/components/ui/d
 import { Kolom, PengaturJumlah, Sakelar } from '@/components/ui/formulir'
 import { BarisChip, BilahAksi, Chip, KepalaHalaman } from '@/components/ui/navigasi'
 import { KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
+import { CatatanPurwarupa } from '@/components/domain'
 import { IkonBulan, IkonKontrak, IkonKunci, IkonPetir } from '@/icons'
 import { angka, rupiah, tanggalPendek } from '@/lib/format'
 import { BANTUAN } from '@/lib/label'
@@ -35,6 +36,7 @@ export default function KontrakRutin() {
   const kontrak = useAplikasi((s) => s.kontrak.find((k) => k.id === id))
   const ubahPesananRutin = useAplikasi((s) => s.ubahPesananRutin)
   const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
+  const server = useAplikasi((s) => s.sumberData === 'server')
 
   const [jumlah, setJumlah] = useState(kontrak?.kuotaMinPerBulan ?? 1)
   const [jadwal, setJadwal] = useState<Jadwal>('mingguan')
@@ -75,10 +77,12 @@ export default function KontrakRutin() {
     const sebelumnyaMati = !kt.pesananRutinAktif
     ubahPesananRutin(kt.id, true)
     tampilkanRacun(
-      sebelumnyaMati
-        ? `Pesanan rutin ${kt.namaBarang} dinyalakan dan jadwalnya tersimpan. Draf pertama muncul H-2 sebelum jadwal, bukan langsung terkirim.`
-        : `Jadwal pesanan rutin ${kt.namaBarang} tersimpan. Drafnya muncul H-2 sebelum jadwal, bukan langsung terkirim.`,
-      'aman',
+      server
+        ? `Pesanan rutin ${kt.namaBarang} ${sebelumnyaMati ? 'dinyalakan' : 'tetap hidup'}. Jumlah dan jadwalnya belum tersimpan di purwarupa ini, dan draf belum dibuat otomatis.`
+        : sebelumnyaMati
+          ? `Pesanan rutin ${kt.namaBarang} dinyalakan dan jadwalnya tersimpan. Draf pertama muncul H-2 sebelum jadwal, bukan langsung terkirim.`
+          : `Jadwal pesanan rutin ${kt.namaBarang} tersimpan. Drafnya muncul H-2 sebelum jadwal, bukan langsung terkirim.`,
+      server ? 'info' : 'aman',
     )
     // Mengganti formulir di riwayat supaya tombol kembali tidak membukanya lagi (revisi V3, Q78).
     navigate(`/kontrak/${kt.id}`, { replace: true })
@@ -107,7 +111,9 @@ export default function KontrakRutin() {
                   ubahPesananRutin(kt.id, v)
                   tampilkanRacun(
                     v
-                      ? 'Pesanan rutin dinyalakan. Draf pertama dibuat H-2 sebelum jadwal.'
+                      ? server
+                        ? 'Pesanan rutin dinyalakan. Draf belum dibuat otomatis di purwarupa ini.'
+                        : 'Pesanan rutin dinyalakan. Draf pertama dibuat H-2 sebelum jadwal.'
                       : 'Pesanan rutin dimatikan. Tidak ada draf baru yang dibuat.',
                     v ? 'aman' : 'info',
                   )
@@ -291,6 +297,10 @@ export default function KontrakRutin() {
         <Tombol penuh ukuran="besar" onClick={simpan}>
           {kontrak.pesananRutinAktif ? 'Simpan Jadwal Rutin' : 'Nyalakan & Simpan Jadwal Rutin'}
         </Tombol>
+        <CatatanPurwarupa className="mt-2">
+          Yang tersimpan baru hidup atau matinya pesanan rutin. Jumlah, jadwal, dan libur bulan ini belum, dan draf
+          belum dibuat otomatis.
+        </CatatanPurwarupa>
       </BilahAksi>
     </div>
   )

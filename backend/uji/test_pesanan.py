@@ -28,13 +28,23 @@ from sqlmodel import Session
 from api.otentikasi import acak_kata_sandi
 from api.utama import app
 from warungku.basis_data import mesin
-from warungku.enum import CaraHitungStok, JenisUsaha, PeranPengguna, StatusVerifikasi, SumberBatasAman
+from warungku.enum import (
+    CaraHitungStok,
+    JenisUsaha,
+    PeranPengguna,
+    StatusBayar,
+    StatusPesanan,
+    StatusVerifikasi,
+    SumberBatasAman,
+)
 from warungku.model import (
     Barang,
     Distributor,
     Keanggotaan,
     Penawaran,
     Pengguna,
+    Pesanan,
+    PesananBaris,
     ProdukMaster,
     RekomendasiSkor,
     Usaha,
@@ -142,6 +152,7 @@ def dunia():
     with mesin().begin() as kon:
         u, d = ids["usaha"], ids["distributor"]
         kon.execute(text("DELETE FROM fitur_pesanan WHERE usaha_id = :u"), {"u": u})
+        kon.execute(text("DELETE FROM ulasan WHERE usaha_id = :u"), {"u": u})
         kon.execute(text("DELETE FROM pergerakan WHERE usaha_id = :u"), {"u": u})
         kon.execute(text("DELETE FROM pesanan_jejak WHERE pesanan_id IN (SELECT id FROM pesanan WHERE usaha_id = :u)"), {"u": u})
         kon.execute(text("DELETE FROM pesanan_baris WHERE pesanan_id IN (SELECT id FROM pesanan WHERE usaha_id = :u)"), {"u": u})
@@ -294,6 +305,121 @@ def test_katalog_mencocokkan_penawaran_ke_barang_pemanggil(dunia):
     r = klien.get(f"/usaha/{w['usaha']}/katalog", headers=w["kepala_dist"])
     assert r.status_code == 403
 
+
+
+def _draf(w: dict, kontrak_id: int | None = None, jumlah: str = "2") -> int:
+    """Draf seperti draf pesanan rutin di data simulasi. Belum ada endpoint yang membuatnya."""
+    with Session(mesin()) as sesi:
+        p = Pesanan(
+            nomor=f"PS-DRAF-{_cap()}",
+            usaha_id=w["usaha"],
+            distributor_id=w["distributor"],
+            kontrak_id=kontrak_id,
+            dibuat_pada=datetime.now(timezone.utc),
+            status=StatusPesanan.DRAF,
+            status_bayar=StatusBayar.BELUM_DIBAYAR,
+            dari_rutin=True,
+        )
+        sesi.add(p)
+        sesi.flush()
+        sesi.add(PesananBaris(pesanan_id=p.id, penawaran_id=w["penawaran"], barang_id=w["barang"], nama="Biji Kopi Uji 1 kg",
+                              jumlah=Decimal(jumlah), satuan="kg", harga_satuan=140_000, isi_per_satuan=Decimal("1000")))
+        sesi.commit()
+        return p.id
+
+
+def test_draf_dikirim_atau_dibatalkan_pemilik(dunia):
+    w, klien = dunia, TestClient(app)
+    u = f"/usaha/{w['usaha']}"
+    kid = klien.post(f"{u}/kontrak", headers=w["kepala_umkm"], json={"paket_id": _paket(w)}).json()["id"]
+    assert klien.post(f"/distributor/{w['distributor']}/kontrak/{kid}/setujui", headers=w["kepala_dist"], json={}).status_code == 200
+
+    # Draf belum terlihat distributor dan belum dihitung "sedang dikirim".
+    pid = _draf(w, kontrak_id=kid)
+    masuk = klien.get(f"/distributor/{w['distributor']}/pesanan-masuk", headers=w["kepala_dist"]).json()
+    assert pid not in [x["id"] for x in masuk]
+    r = klien.post(f"{u}/pesanan/{pid}/ajukan", headers=w["kepala_umkm"])
+    assert r.status_code == 200 and r.json()["status"] == "menunggu-konfirmasi", r.text
+    assert r.json()["jejak"][-1]["keterangan"] == "Draf dikirim ke distributor."
+    [k] = [x for x in klien.get(f"{u}/kontrak", headers=w["kepala_umkm"]).json() if x["id"] == kid]
+    assert k["dalam_perjalanan"] == "2.000"
+    masuk = klien.get(f"/distributor/{w['distributor']}/pesanan-masuk", headers=w["kepala_dist"]).json()
+    assert pid in [x["id"] for x in masuk]
+    # Mengirim dua kali tidak menghitung kuota dua kali.
+    assert klien.post(f"{u}/pesanan/{pid}/ajukan", headers=w["kepala_umkm"]).status_code == 409
+
+    # Draf yang dibatalkan tidak melepas kuota yang tidak pernah dihitung.
+    pid2 = _draf(w, kontrak_id=kid)
+    r = klien.post(f"{u}/pesanan/{pid2}/batal", headers=w["kepala_umkm"], json={"alasan": "Belum perlu"})
+    assert r.status_code == 200 and r.json()["status"] == "batal", r.text
+    [k] = [x for x in klien.get(f"{u}/kontrak", headers=w["kepala_umkm"]).json() if x["id"] == kid]
+    assert k["dalam_perjalanan"] == "2.000"
+    # Distributor tidak bisa mengirim draf milik usaha.
+    assert klien.post(f"{u}/pesanan/{_draf(w)}/ajukan", headers=w["kepala_dist"]).status_code == 403
+
+
+def test_penilaian_sekali_per_pesanan_dan_jadi_rating(dunia):
+    w, klien = dunia, TestClient(app)
+    u = f"/usaha/{w['usaha']}"
+    p = _buat(klien, w)
+    nilai = {"aspek_ketepatan_waktu": 5, "aspek_jumlah_sesuai": 4, "aspek_kondisi_barang": 4, "isi": "  Rapi.  "}
+    # Belum selesai: belum boleh dinilai.
+    assert klien.post(f"{u}/pesanan/{p['id']}/ulasan", headers=w["kepala_umkm"], json=nilai).status_code == 409
+    _majukan_sampai_dikirim(klien, w, p["id"])
+    r = klien.post(f"{u}/pesanan/{p['id']}/terima", headers=w["kepala_umkm"],
+                   json={"baris": [{"baris_id": p["baris"][0]["id"], "jumlah_diterima": "3"}]})
+    assert r.status_code == 200
+    assert klien.post(f"{u}/pesanan/{p['id']}/ulasan", headers=w["kepala_umkm"],
+                      json={**nilai, "aspek_kondisi_barang": 0}).status_code == 422
+
+    r = klien.post(f"{u}/pesanan/{p['id']}/ulasan", headers=w["kepala_umkm"], json=nilai)
+    assert r.status_code == 201 and r.json()["sudah_diulas"] is True, r.text
+    assert klien.post(f"{u}/pesanan/{p['id']}/ulasan", headers=w["kepala_umkm"], json=nilai).status_code == 409
+    katalog = klien.get(f"{u}/katalog", headers=w["kepala_umkm"]).json()
+    [d] = [x for x in katalog["distributor"] if x["id"] == w["distributor"]]
+    assert d["jumlah_ulasan"] == 1 and d["rating"] == 4
+    [ul] = klien.get(f"{u}/distributor/{w['distributor']}/ulasan", headers=w["kepala_umkm"]).json()
+    assert ul["isi"] == "Rapi." and ul["rating"] == 4 and ul["aspek_ketepatan_waktu"] == 5
+
+
+def test_pengajuan_kontrak_bisa_ditarik_sebelum_dijawab(dunia):
+    w, klien = dunia, TestClient(app)
+    u = f"/usaha/{w['usaha']}"
+    paket = _paket(w)
+    kid = klien.post(f"{u}/kontrak", headers=w["kepala_umkm"], json={"paket_id": paket}).json()["id"]
+    assert klien.post(f"{u}/kontrak/{kid}/tarik", headers=w["kepala_dist"]).status_code == 403
+    assert klien.post(f"{u}/kontrak/{kid}/tarik", headers=w["kepala_umkm"]).status_code == 204
+    assert kid not in [x["id"] for x in klien.get(f"{u}/kontrak", headers=w["kepala_umkm"]).json()]
+    dist = klien.get(f"/distributor/{w['distributor']}/kontrak", headers=w["kepala_dist"]).json()
+    assert kid not in [x["id"] for x in dist]
+    assert klien.post(f"{u}/kontrak/{kid}/tarik", headers=w["kepala_umkm"]).status_code == 404
+    # Sesudah disetujui, menarik tidak lagi berlaku.
+    kid = klien.post(f"{u}/kontrak", headers=w["kepala_umkm"], json={"paket_id": paket}).json()["id"]
+    assert klien.post(f"/distributor/{w['distributor']}/kontrak/{kid}/setujui", headers=w["kepala_dist"], json={}).status_code == 200
+    assert klien.post(f"{u}/kontrak/{kid}/tarik", headers=w["kepala_umkm"]).status_code == 409
+
+
+def test_profil_usaha_disimpan_dan_verifikasi_tidak_bisa_diisi(dunia):
+    w, klien = dunia, TestClient(app)
+    jalur = f"/usaha/{w['usaha']}/profil"
+    r = klien.get(jalur, headers=w["kepala_umkm"])
+    assert r.status_code == 200 and r.json()["nama"] == "Warung Uji Pesanan" and r.json()["jenis_usaha"] == "kedai-kopi"
+    assert klien.get(jalur, headers=w["kepala_dist"]).status_code == 403
+
+    ubahan = {"bio": "  Kopi susu gula aren.  ", "warna": "#4a148c", "tampilkan_alamat": False, "email": "",
+              "verifikasi": "terverifikasi"}
+    assert klien.patch(jalur, headers=w["kepala_umkm"], json=ubahan).status_code == 200
+    baru = klien.get(jalur, headers=w["kepala_umkm"]).json()
+    assert baru["bio"] == "Kopi susu gula aren." and baru["warna"] == "#4a148c" and baru["tampilkan_alamat"] is False
+    # Kolom "verifikasi" bukan isian: diabaikan, statusnya tetap.
+    assert baru["email"] is None and baru["verifikasi"] == "menunggu" and baru["nama"] == "Warung Uji Pesanan"
+    assert klien.patch(jalur, headers=w["kepala_umkm"], json={"nomor_hp": "12345"}).status_code == 422
+    assert klien.patch(jalur, headers=w["kepala_umkm"], json={"nama": "   "}).status_code == 422
+
+    with mesin().begin() as kon:
+        kon.execute(text("UPDATE usaha SET verifikasi = 'terverifikasi' WHERE id = :u"), {"u": w["usaha"]})
+    r = klien.patch(jalur, headers=w["kepala_umkm"], json={"nib": "1234567890123", "ajukan_verifikasi": True})
+    assert r.json()["verifikasi"] == "menunggu" and r.json()["nib"] == "1234567890123"
 
 
 def _paket(w: dict) -> int:

@@ -33,6 +33,7 @@ export default function KelolaKategori() {
   const barang = useAplikasi((s) => s.barang)
   const gantiKategori = useAplikasi((s) => s.gantiKategori)
   const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
+  const server = useAplikasi((s) => s.sumberData === 'server')
 
   /* Kategori tidak punya tabel sendiri: ia hidup di dalam barang. Kategori baru
      yang belum punya barang karena itu hanya bertahan selama halaman terbuka,
@@ -90,7 +91,13 @@ export default function KelolaKategori() {
     }
     const bersih = teks.trim()
     setKategoriKosong((lama) => [...lama, bersih])
-    tampilkanRacun(`Kategori ${bersih} dibuat. Pilih kategori ini saat menambah barang.`, 'aman')
+    // Di server kategori hanya ada sebagai isian barang, jadi kategori kosong belum bisa disimpan.
+    tampilkanRacun(
+      server
+        ? `Kategori ${bersih} dibuat. Pakai untuk satu barang dulu, karena kategori yang belum dipakai hilang saat halaman dimuat ulang.`
+        : `Kategori ${bersih} dibuat. Pilih kategori ini saat menambah barang.`,
+      server ? 'info' : 'aman',
+    )
     tutup()
   }
 

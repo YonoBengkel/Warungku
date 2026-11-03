@@ -69,6 +69,7 @@ export default function PeriksaKesepakatan() {
   const kasir = useAplikasi((s) => s.kasir)
   const profil = useAplikasi((s) => s.profil)
   const ajukanKontrak = useAplikasi((s) => s.ajukanKontrak)
+  const tarikKontrak = useAplikasi((s) => s.tarikKontrak)
   const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
 
   const barang = daftarBarangGudang.find((b) => b.id === penawaran?.barangIdTerkait)
@@ -103,6 +104,8 @@ export default function PeriksaKesepakatan() {
   const [centang3, setCentang3] = useState(false)
   const [centang4, setCentang4] = useState(false)
   const [diajukanPada, setDiajukanPada] = useState<Date | null>(null)
+  const [kontrakId, setKontrakId] = useState<string | null>(null)
+  const [menarik, setMenarik] = useState(false)
   const [mengajukan, setMengajukan] = useState(false)
   const [konfirmasiBatal, setKonfirmasiBatal] = useState(false)
 
@@ -163,6 +166,7 @@ export default function PeriksaKesepakatan() {
     const id = await ajukanKontrak(idPaket)
     setMengajukan(false)
     if (!id) return // Toast galatnya sudah tampil; isian dan centangnya tetap di layar.
+    setKontrakId(id)
     setDiajukanPada(new Date())
     window.scrollTo(0, 0)
   }
@@ -181,13 +185,20 @@ export default function PeriksaKesepakatan() {
     }
   }
 
-  function batalkanPengajuan() {
+  /* Dulu hanya mengosongkan layar, padahal pengajuannya tetap menunggu di
+     distributor (audit 3 Nov 2026). Kini pengajuan itu benar-benar ditarik. */
+  async function batalkanPengajuan() {
+    if (!kontrakId) return
+    setMenarik(true)
+    const ditarik = await tarikKontrak(kontrakId)
+    setMenarik(false)
+    if (!ditarik) return // Racun galatnya sudah tampil; pengajuan tetap menunggu.
+    setKontrakId(null)
     setDiajukanPada(null)
     setCentang1(false)
     setCentang2(false)
     setCentang3(false)
     setCentang4(false)
-    tampilkanRacun('Pengajuan kontrak dibatalkan. Tidak ada yang terkirim ke distributor.', 'menipis')
   }
 
   /* ---------------- Keadaan sesudah diajukan ---------------- */
@@ -249,7 +260,7 @@ export default function PeriksaKesepakatan() {
             <Tombol ragam="garis" penuh ikonKiri={<IkonSalin size={16} />} onClick={salinRingkasan}>
               Salin ringkasan
             </Tombol>
-            <Tombol ragam="garis" penuh onClick={() => setKonfirmasiBatal(true)}>
+            <Tombol ragam="garis" penuh memuat={menarik} onClick={() => setKonfirmasiBatal(true)}>
               Batalkan pengajuan
             </Tombol>
           </div>

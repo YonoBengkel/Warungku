@@ -8,6 +8,7 @@ import type {
   StatusBayar,
   StatusPesanan,
   StatusPesananMasuk,
+  UlasanPelanggan,
   UmkmPemesan,
 } from '@/lib/types'
 import { angka, minta } from '@/lib/api'
@@ -243,6 +244,30 @@ export async function terimaBarangServer(
     }),
   })
   return kePesanan(p)
+}
+
+/** Kirim draf (misalnya draf pesanan rutin) ke distributor. */
+export async function ajukanDrafServer(sesi: SesiServer, pesananId: string): Promise<Pesanan> {
+  const p = await minta<PesananApi>(`/usaha/${sesi.usahaId}/pesanan/${pesananId}/ajukan`, {
+    method: 'POST',
+    token: sesi.token,
+  })
+  return kePesanan(p)
+}
+
+/** Penilaian pesanan yang selesai. Rating-nya dihitung server dari rata-rata tiga aspek. */
+export async function kirimUlasanServer(sesi: SesiServer, pesananId: string, ulasan: UlasanPelanggan): Promise<Pesanan> {
+  const p = await minta<PesananApi>(`/usaha/${sesi.usahaId}/pesanan/${pesananId}/ulasan`, {
+    method: 'POST',
+    token: sesi.token,
+    body: JSON.stringify({
+      aspek_ketepatan_waktu: ulasan.aspek.ketepatanWaktu,
+      aspek_jumlah_sesuai: ulasan.aspek.jumlahSesuai,
+      aspek_kondisi_barang: ulasan.aspek.kondisiBarang,
+      isi: ulasan.isi || null,
+    }),
+  })
+  return { ...kePesanan(p), ulasan }
 }
 
 export async function batalkanPesananServer(sesi: SesiServer, pesananId: string, alasan: string): Promise<Pesanan> {

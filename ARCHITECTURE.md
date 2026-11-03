@@ -23,6 +23,12 @@ flowchart LR
   Pemakaian, Batas Aman (satu dan massal), dan Kelola Kategori memanggil `backend/api/stok.py` di mode data server. Dulu
   semuanya hanya mengubah store, jadi hilang saat halaman dimuat ulang. Stok awal dan koreksi dicatat sebagai pergerakan
   `koreksi`, pemakaian manual sebagai `terjual`, sehingga invarian stok sama dengan jumlah pergerakan tetap berlaku.
+- **Profil, penilaian, draf, dan pengajuan kontrak juga lewat endpoint (audit 3 Nov 2026).** Layar Akun (Profil
+  Usaha, Data Usaha, Cara Hitung Stok) memakai `GET` dan `PATCH /usaha/{id}/profil` (`backend/api/profil.py`). Beri
+  Penilaian menulis ke tabel `ulasan`, yang dibaca katalog dan fitur Mesin 2. Draf pesanan bisa dikirim (`/ajukan`)
+  dan dibatalkan, dan pengajuan kontrak yang belum dijawab bisa ditarik (`/tarik`). Kontrol yang belum punya jalur ke
+  server (bukti bayar, permintaan pembatalan, pengingat, undangan pengguna, jadwal pesanan rutin, penawaran
+  distributor) menampilkan `CatatanPurwarupa` di mode data server, bukan pesan "tersimpan".
 - **Nota adalah pintu masuk.** `POST /usaha/{id}/transaksi` (`backend/api/gudang.py`) menyimpan nota, menerjemahkan
   menu ke bahan lewat `pemetaan_menu`, menulis `pergerakan`, memotong `barang.stok`, dan menambah
   `permintaan_harian` dalam satu transaksi basis data. Nomor struk yang sama tidak diproses dua kali. Menu tanpa
