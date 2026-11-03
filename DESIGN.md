@@ -183,8 +183,7 @@ terpisah dari angkanya di 360px.
 | Jarak bawah | `<main>` `pb-[calc(var(--nav-h)+1rem)]`, ditambah `pb-4`/`pb-6`/`pb-8` akar halaman | `<main>` `lg:pb-5` (20px), akar halaman `lg:pb-0` (revisi V6, Q127) |
 
 - **Tab navigasi:**
-  - pemilik usaha: lima tab (Beranda · Stok · Prediksi · Distributor · Pesanan);
-  - UMKM produsen: tab keenam Produksi sesudah Stok;
+  - pemilik usaha: enam tab (Beranda · Stok · Produksi · Prediksi · Distributor · Pesanan), kedai maupun produsen. Sejak revisi V7 (Q164) kedai memakai Produksi untuk menu, harga, dan komposisi, dan sejak revisi V8 tabnya juga tampil di navigasi kedai (sebelumnya hanya produsen yang mendapat tab ini). Di 360px keenam label muat, karena produsen sudah memakai enam tab sejak 16 Okt 2026;
   - portal distributor: lima tab (Beranda · Pesanan · Kontrak · Promo · Pelanggan). Akun toko
     tidak lagi jadi tab (revisi V4, Q93): di desktop blok akun di kiri bawah menu samping (logo,
     nama, "Lihat akun") dengan tanda merek Turnify Flow di kiri atas, di HP logo toko di bilah
