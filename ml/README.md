@@ -123,6 +123,9 @@ kosong, penjualan tercatat nol padahal permintaannya tidak nol. Kalau nol itu
 dilatihkan, model menyimpulkan barang paling laris adalah barang yang paling
 sering kosong, lalu menyarankan stok lebih sedikit — kebalikan dari yang benar.
 `permintaan_harian.stok_habis` menandainya, dan `data.py` mengubahnya jadi NaN.
+Hari yang barisnya hilang (nota Portal POS hanya menulis hari bahannya terpakai)
+dilengkapi `data.py`: nol kalau usaha itu berjualan barang lain hari itu, dan NaN
+kalau tidak ada penjualan sama sekali.
 
 **3. Thompson sampling butuh posterior, bukan tempelan.** Versi sebelumnya
 (TabPFN) mencuplik Beta di sekitar peluang titik dengan "bukti" dikarang dari

@@ -115,9 +115,9 @@ def _ubah(kon, kueri: str, p: dict) -> int:
 def _permintaan(kon, p: dict, akhir_baru: date) -> int:
     """
     Pindahkan wilayah simulasi `permintaan_harian`. Bagian nota sungguhan dipisah dulu,
-    lalu dikembalikan ke tanggalnya. Hari bolong antara akhir data baru dan baris
-    sungguhan sesudahnya diisi nol berstatus stok habis, yang dibaca Mesin 1 sebagai data
-    hilang, supaya deretnya tetap tanpa tanggal bolong.
+    lalu dikembalikan ke tanggalnya. Hari bolong di antara akhir data baru dan baris
+    sungguhan sesudahnya dibiarkan bolong: Mesin 1 melengkapinya sendiri saat memuat
+    deret (`ml.data._isi_bolong`), jadi tabel ini hanya berisi yang benar-benar tercatat.
     """
     kon.execute(
         text(
@@ -149,7 +149,8 @@ def _permintaan(kon, p: dict, akhir_baru: date) -> int:
         p,
     )
     n = _ubah(kon, f"DELETE FROM permintaan_harian WHERE {wilayah}", p)
-    # Isian hari bolong dari geseran sebelumnya: tanggalnya kini ditutup data simulasi.
+    # Baris tanpa bagian nota sungguhan di tanggal yang kini ditutup data simulasi, mis.
+    # isian hari bolong (nol berstatus stok habis) yang ditulis backend 0.14.0 dan 0.14.1.
     _ubah(
         kon,
         """
@@ -163,14 +164,14 @@ def _permintaan(kon, p: dict, akhir_baru: date) -> int:
     sisipkan = """
         INSERT INTO permintaan_harian
             (usaha_id, barang_id, tanggal, jumlah, stok_habis, hari_libur, pekan_gajian, ramadan, promo_aktif)
-        VALUES (:u, :b, :t, :n, :habis, :l, :g, :r, false)
+        VALUES (:u, :b, :t, :n, false, :l, :g, :r, false)
         ON CONFLICT (usaha_id, barang_id, tanggal) DO NOTHING
     """
     nyata = kon.execute(
         text(f"SELECT usaha_id, barang_id, tanggal, jumlah FROM ph_nyata WHERE {wilayah}"), p
     ).all()
     for u, b, t, jml in nyata:
-        kon.execute(text(sisipkan), {"u": u, "b": b, "t": t, "n": jml, "habis": False, **_kalender(t)})
+        kon.execute(text(sisipkan), {"u": u, "b": b, "t": t, "n": jml, **_kalender(t)})
     kon.execute(
         text(
             """
@@ -186,23 +187,6 @@ def _permintaan(kon, p: dict, akhir_baru: date) -> int:
             """
         )
     )
-    celah = kon.execute(
-        text(
-            """
-            SELECT x.usaha_id, x.barang_id, d::date
-              FROM (SELECT usaha_id, barang_id, max(tanggal) AS m FROM permintaan_harian
-                     WHERE barang_id::int8 <@ CAST(:r_ph AS int8multirange)
-                     GROUP BY 1, 2 HAVING max(tanggal) > CAST(:akhir_baru AS date) + 1) x
-             CROSS JOIN LATERAL generate_series((CAST(:akhir_baru AS date) + 1)::timestamp,
-                                                (x.m - 1)::timestamp, interval '1 day') d
-             WHERE NOT EXISTS (SELECT 1 FROM permintaan_harian q
-                                WHERE q.usaha_id = x.usaha_id AND q.barang_id = x.barang_id AND q.tanggal = d::date)
-            """
-        ),
-        p | {"akhir_baru": akhir_baru},
-    ).all()
-    for u, b, t in celah:
-        kon.execute(text(sisipkan), {"u": u, "b": b, "t": t, "n": 0, "habis": True, **_kalender(t)})
     # Dibuang sekarang, bukan menunggu commit, supaya geseran berikutnya di transaksi yang sama bisa jalan.
     kon.execute(text("DROP TABLE ph_nyata, ph_sim"))
     return n

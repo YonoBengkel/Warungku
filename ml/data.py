@@ -9,7 +9,7 @@ dipisahkan dari perbedaan cara mengambil datanya.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 
 import numpy as np
 import pandas as pd
@@ -113,42 +113,74 @@ def muat_deret(min_riwayat: int = MIN_RIWAYAT) -> list[DeretBarang]:
         for r in harga.itertuples()
     }
 
+    df["tanggal"] = pd.to_datetime(df["tanggal"]).dt.date
+    aktif = set(zip(df.loc[df["jumlah"] > 0, "usaha_id"], df.loc[df["jumlah"] > 0, "tanggal"]))
+
     deret: list[DeretBarang] = []
     for barang_id, g in df.groupby("barang_id", sort=True):
         g = g.sort_values("tanggal")
-        tanggal = pd.to_datetime(g["tanggal"]).dt.date.to_numpy()
-        # Tanggal yang benar-benar hilang (bukan nol, tapi tidak ada barisnya)
-        # akan membuat indeks ke-t tidak lagi berarti "hari ke-t". Diperiksa
-        # di sini supaya kalau terjadi, kelihatan sebagai galat, bukan sebagai
-        # ramalan yang pelan-pelan melenceng.
-        rentang = (tanggal[-1] - tanggal[0]).days + 1
-        if rentang != len(tanggal):
-            raise ValueError(
-                "barang %s: %d baris untuk rentang %d hari — ada tanggal bolong"
-                % (barang_id, len(tanggal), rentang)
+        usaha_id = int(g["usaha_id"].iloc[0])
+        tanggal = g["tanggal"].to_numpy()
+        nilai = np.array(g["jumlah"].to_numpy(dtype=float), copy=True)
+        habis = g["stok_habis"].to_numpy(dtype=bool)
+        libur = g["hari_libur"].to_numpy(dtype=bool)
+        gajian = g["pekan_gajian"].to_numpy(dtype=bool)
+        ramadan = g["ramadan"].to_numpy(dtype=bool)
+        # Indeks ke-t harus berarti "hari ke-t". Data simulasi tidak pernah bolong,
+        # tetapi nota Portal POS hanya menulis baris pada hari barangnya terpakai.
+        if (tanggal[-1] - tanggal[0]).days + 1 != len(tanggal):
+            tanggal, nilai, habis, libur, gajian, ramadan = _isi_bolong(
+                usaha_id, tanggal, nilai, habis, libur, gajian, ramadan, aktif
             )
         if len(tanggal) < min_riwayat:
             continue
 
-        nilai = np.array(g["jumlah"].to_numpy(dtype=float), copy=True)
-        habis = g["stok_habis"].to_numpy(dtype=bool)
         nilai[habis] = np.nan  # sensor kehabisan stok
 
         deret.append(
             DeretBarang(
                 barang_id=int(barang_id),
-                usaha_id=int(g["usaha_id"].iloc[0]),
+                usaha_id=usaha_id,
                 nama=str(g["nama"].iloc[0]),
                 tanggal=tanggal,
                 nilai=nilai,
                 stok_habis=habis,
-                hari_libur=g["hari_libur"].to_numpy(dtype=bool),
-                pekan_gajian=g["pekan_gajian"].to_numpy(dtype=bool),
-                ramadan=g["ramadan"].to_numpy(dtype=bool),
+                hari_libur=libur,
+                pekan_gajian=gajian,
+                ramadan=ramadan,
                 harga_satuan=harga_per_barang.get(int(barang_id)),
             )
         )
     return deret
+
+
+def _isi_bolong(usaha_id, tanggal, nilai, habis, libur, gajian, ramadan, aktif: set):
+    """
+    Lengkapi deret yang bolong menjadi satu baris per hari.
+
+    Hari yang hilang pada hari usaha itu tercatat berjualan (ada barang lain yang
+    terpakai) berarti barang ini memang tidak laku: nol. Hari tanpa penjualan sama
+    sekali, misalnya aplikasi tidak dibuka, berarti permintaannya tidak diketahui:
+    diperlakukan seperti hari kehabisan stok, sehingga disensor dan tidak dibaca
+    sebagai nol. Kovariat kalendernya dihitung dengan aturan yang sama dengan
+    pembangkit data dan `api.gudang.terima_struk`.
+    """
+    from dataset.kalender import hari_libur, sedang_ramadan
+    from dataset.pola import pekan_gajian
+
+    ada = {t: i for i, t in enumerate(tanggal)}
+    hari = [tanggal[0] + timedelta(days=k) for k in range((tanggal[-1] - tanggal[0]).days + 1)]
+    n = len(hari)
+    v, h = np.zeros(n), np.zeros(n, dtype=bool)
+    lib, gaj, ram = np.zeros(n, dtype=bool), np.zeros(n, dtype=bool), np.zeros(n, dtype=bool)
+    for k, t in enumerate(hari):
+        i = ada.get(t)
+        if i is not None:
+            v[k], h[k], lib[k], gaj[k], ram[k] = nilai[i], habis[i], libur[i], gajian[i], ramadan[i]
+        else:
+            h[k] = (usaha_id, t) not in aktif
+            lib[k], gaj[k], ram[k] = hari_libur(t), pekan_gajian(t), sedang_ramadan(t)
+    return np.array(hari), v, h, lib, gaj, ram
 
 
 # --------------------------------------------------------------------------

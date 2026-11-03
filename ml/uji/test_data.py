@@ -23,7 +23,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from ml.data import FITUR, LABEL, DeretBarang, belah_waktu
+from ml.data import FITUR, LABEL, DeretBarang, _isi_bolong, belah_waktu
 
 
 def _deret(nilai, habis, mulai=date(2026, 1, 5)) -> DeretBarang:
@@ -75,6 +75,25 @@ def test_terisi_tidak_mengubah_hari_yang_tidak_bolong():
     assert terisi[0] == 10.0
     assert terisi[1] == 20.0
     assert terisi[3] == 40.0
+
+
+def test_hari_bolong_nol_kalau_usaha_berjualan_dan_disensor_kalau_tidak():
+    """
+    Nota Portal POS hanya menulis baris pada hari barangnya terpakai. Hari bolong
+    tidak boleh menghentikan Mesin 1. Kalau usaha itu berjualan barang lain hari
+    itu, barang ini memang tidak laku (nol). Kalau tidak ada penjualan sama sekali,
+    permintaannya tidak diketahui dan disensor seperti hari kehabisan stok.
+    """
+    tanggal = np.array([date(2025, 12, 31), date(2026, 1, 3)])
+    tidak = np.zeros(2, dtype=bool)
+    hari, nilai, habis, libur, _, _ = _isi_bolong(
+        7, tanggal, np.array([5.0, 8.0]), tidak, tidak, tidak, tidak, aktif={(7, date(2026, 1, 1))}
+    )
+    assert list(hari) == [date(2025, 12, 31) + timedelta(days=k) for k in range(4)]
+    assert (nilai[1], habis[1]) == (0.0, False)  # 1 Jan: usaha berjualan, barang ini tidak laku
+    assert habis[2]  # 2 Jan: tidak ada penjualan sama sekali
+    assert (nilai[0], nilai[3]) == (5.0, 8.0)
+    assert libur[1] and not libur[2]  # kovariat dari kalender: 1 Jan tanggal merah
 
 
 def test_belah_waktu_tidak_pernah_bocor_ke_masa_lalu():
