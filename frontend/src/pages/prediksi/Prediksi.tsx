@@ -26,6 +26,7 @@ import {
   nilaiPemakaian,
   penawaranById,
   rekomendasiDari,
+  HARI_PERSEDIAAN,
   trenBulanan,
   trenKategoriRupiah,
 } from '@/data/dummy'
@@ -561,6 +562,7 @@ function PerbandinganBarang({
 function kalimatSaran(r: RekomendasiPrediksi): string {
   const banyak = `${angka(r.jumlah)} ${r.satuanSaran}`
   if (r.arah === 'tetap') return `Stok dinilai ${LABEL_ARAH_PREDIKSI.tetap}, perlu sekitar ${banyak} bulan depan`
+  if (r.arah === 'tambah') return `Saran ${LABEL_ARAH_PREDIKSI.tambah} ${banyak} untuk ${HARI_PERSEDIAAN} hari ke depan`
   return `Saran ${LABEL_ARAH_PREDIKSI[r.arah]} ${banyak} bulan depan`
 }
 

@@ -163,7 +163,7 @@ export default function BatasAmanAwal() {
               </Tombol>
             )}
             <p className="mt-2 text-isi text-ink-2 leading-relaxed">
-              {BANTUAN.batasAman} Saran dihitung dari rata-rata pemakaian harian ditambah lama kirim distributor.
+              {BANTUAN.batasAman} Saran dihitung dari perkiraan pemakaian saat ramai selama kiriman distributor di jalan.
             </p>
           </div>
 

@@ -56,6 +56,13 @@ barang seperti itu tidak bisa menjadi bahan menu.
 Di layar memasangkan ada pilihan **Pakai resep saran**. Tombol itu hanya mengisi bahan dan takaran, dan pemilik masih bisa
 mengubahnya sebelum menyimpan. Pemasangan berlaku untuk penjualan berikutnya, tidak menarik ulang penjualan yang sudah lewat.
 
+## Aturan saran beli
+
+Sejak 4 November 2026 aplikasi memakai aturan yang diuji di simulasi laporan. Batas aman adalah perkiraan pemakaian p90
+selama lama kirim. Saran beli muncul kalau stok ditambah barang yang sudah dipesan turun di bawah batas aman, sebanyak
+perkiraan p50 selama 21 hari ditambah batas aman, dikurangi stok dan barang yang sudah dipesan. Hasil simulasi pada
+permintaan normal: barang yang pernah kehabisan stok 2,8% lawan 4,1% dengan aturan rata-rata tanpa model.
+
 ## Aturan kontrak
 
 Keputusan Ilham, 4 November 2026: kuota kontrak yang belum terpenuhi hanya menjadi peringatan, transaksi tidak diblokir. Akun

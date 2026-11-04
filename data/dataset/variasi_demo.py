@@ -54,6 +54,7 @@ from decimal import Decimal
 
 from sqlalchemy import text
 
+from warungku.batas_aman import segarkan_batas_aman
 from warungku.basis_data import mesin
 from warungku.enum import JenisPergerakan, StatusBayar, StatusKontrak, StatusPesanan
 from warungku.model import (
@@ -1081,6 +1082,8 @@ def pasang(jika_basi: bool = False) -> dict | None:
     hasil: dict[str, dict] = {}
     with mesin().begin() as kon:
         perbaikan = perbaiki_simulasi(kon)
+        # Sebelum variasi stok, yang menaruh stok "menipis" relatif terhadap batas aman.
+        segarkan_batas_aman(kon)
         if jika_basi and not basi(kon):
             return {"perbaikan": perbaikan} if any(perbaikan.values()) else None
         hasil["perbaikan"] = perbaikan
@@ -1091,6 +1094,8 @@ def pasang(jika_basi: bool = False) -> dict | None:
             if u is None:
                 continue
             hapus(kon, u)
+            # `hapus` mengembalikan barang berbatas bawaan ke "sistem".
+            segarkan_batas_aman(kon, u)
             awal = nomor
             hasil[email] = {
                 "usaha_id": u,

@@ -552,8 +552,8 @@ export default function Stok() {
         >
           Angka bawaan belum tentu cocok untuk tiap barang.
           <Penjelasan label="Cara saran dihitung">
-            Angka {BATAS_AMAN_BAWAAN} dipakai sampai kamu mengaturnya sendiri. Saran sistem dihitung dari pemakaian
-            harian dan berapa lama kiriman biasanya sampai.
+            Angka {BATAS_AMAN_BAWAAN} dipakai sampai kamu mengaturnya sendiri. Saran sistem dihitung dari perkiraan
+            pemakaian saat ramai selama kiriman di jalan.
           </Penjelasan>
         </Peringatan>
       )}

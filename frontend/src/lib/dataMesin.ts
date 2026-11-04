@@ -89,7 +89,6 @@ function kosong(barangId: string): Perkiraan {
     hariCukup: null,
     pakaiTigaHariMin: null,
     pakaiTigaHariMaks: null,
-    saranBeli: 0,
     satuanSaran: '',
     alasan: [],
   }
@@ -109,7 +108,6 @@ export function namaModel(kode: string): string {
  *
  * - Hari cukup: berapa hari sisa stok bertahan bila pemakaian mengikuti p50.
  * - Pakai 3 hari: jumlah p10 sampai jumlah p90 tiga hari pertama.
- * - Saran beli: kekurangan untuk 14 hari pemakaian p50, dalam kemasan terbesar.
  */
 function perkiraanDariServer(b: Barang, hari: HariPerkiraan[]): Perkiraan {
   if (hari.length === 0 || b.dicatatManual) return kosong(b.id)
@@ -123,10 +121,7 @@ function perkiraanDariServer(b: Barang, hari: HariPerkiraan[]): Perkiraan {
     }
   }
   const tiga = hari.slice(0, 3)
-  const butuh14 = hari.slice(0, 14).reduce((a, h) => a + h.p50, 0)
   const kemasan = b.kemasan[b.kemasan.length - 1]
-  const isi = kemasan?.isi ?? 1
-  const kurang = Math.max(0, butuh14 - b.stok)
   return {
     barangId: b.id,
     kematangan: hari[0].kematangan,
@@ -135,7 +130,6 @@ function perkiraanDariServer(b: Barang, hari: HariPerkiraan[]): Perkiraan {
     hariCukup: cukup,
     pakaiTigaHariMin: Math.round(tiga.reduce((a, h) => a + h.p10, 0)),
     pakaiTigaHariMaks: Math.round(tiga.reduce((a, h) => a + h.p90, 0)),
-    saranBeli: kurang > 0 ? Math.max(1, Math.ceil(kurang / isi)) : 0,
     satuanSaran: kemasan?.nama ?? b.satuan,
     alasan: [],
   }

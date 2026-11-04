@@ -81,10 +81,10 @@ export default function StokBatasAman() {
 
   const kalimatSaran =
     barang.pemakaianHarian > 0
-      ? `Disarankan ${jumlahTampil(barang, saran)}. Biasanya habis ${jumlahTampil(
-          barang,
-          barang.pemakaianHarian,
-        )} per hari, dan barang ini sampai ${barang.hariKirim} hari setelah dipesan.`
+      ? `Disarankan ${jumlahTampil(barang, saran)}, perkiraan pemakaian saat ramai selama ${Math.max(
+          1,
+          barang.hariKirim,
+        )} hari barang ini dikirim.`
       : `Disarankan ${jumlahTampil(barang, saran)}. Angka ini masih kasar sampai ada riwayat penjualan.`
 
   /* Ditulis sebagai const supaya penjagaan "barang tidak ditemukan" di atas

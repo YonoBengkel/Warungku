@@ -22,6 +22,7 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from sqlalchemy import text
 from sqlmodel import Session, col, select
 
+from warungku.batas_aman import HARI_PERSEDIAAN
 from warungku.basis_data import mesin
 from warungku.enum import JenisPergerakan
 from warungku.model import Barang, Kemasan, PemetaanMenu, PemetaanMenuBahan, Transaksi, TransaksiBaris, Usaha
@@ -125,6 +126,19 @@ def ringkas_barang(sesi: Session, usaha_id: int) -> list[BarangRingkas]:
             ).bindparams(u=usaha_id)
         ).all()
     }
+    dipesan = dict(
+        sesi.exec(
+            text(
+                """
+                SELECT pb.barang_id, sum(pb.jumlah * pb.isi_per_satuan)
+                  FROM pesanan_baris pb JOIN pesanan p ON p.id = pb.pesanan_id
+                 WHERE p.usaha_id = :u AND pb.barang_id IS NOT NULL
+                   AND p.status IN ('menunggu-konfirmasi', 'disiapkan', 'dikirim')
+                 GROUP BY pb.barang_id
+                """
+            ).bindparams(u=usaha_id)
+        ).all()
+    )
     acuan = sesi.exec(
         text("SELECT max(tanggal) FROM permintaan_harian WHERE usaha_id = :u").bindparams(u=usaha_id)
     ).scalar()
@@ -144,6 +158,7 @@ def ringkas_barang(sesi: Session, usaha_id: int) -> list[BarangRingkas]:
             batas_aman=b.batas_aman,
             batas_aman_saran=b.batas_aman_saran,
             sumber_batas_aman=str(getattr(b.sumber_batas_aman, "value", b.sumber_batas_aman)),
+            dalam_perjalanan=dipesan.get(b.id) or Decimal(0),
             hari_kirim=b.hari_kirim,
             harga_beli_terakhir=b.harga_beli_terakhir,
             harga_beli_per_satuan=_harga_per_satuan(b.harga_beli_terakhir, kemasan.get(b.id, [])),
@@ -233,13 +248,16 @@ def pemakaian_bulanan(
                      ORDER BY barang_id, dijalankan_pada DESC
                 )
                 SELECT p.barang_id, sum(p.p10) AS p10, sum(p.p50) AS p50, sum(p.p90) AS p90,
+                       sum(p.p50) FILTER (
+                           WHERE p.tanggal_target <= (SELECT max(tanggal) FROM permintaan_harian h WHERE h.barang_id = p.barang_id) + :persediaan
+                       ) AS p50_persediaan,
                        max(p.model_nama) AS model_nama, max(p.dijalankan_pada) AS dijalankan_pada
                   FROM prediksi p JOIN terbaru t USING (barang_id, jalan_id)
                  WHERE p.tanggal_target > (SELECT max(tanggal) FROM permintaan_harian h WHERE h.barang_id = p.barang_id)
                    AND p.tanggal_target <= (SELECT max(tanggal) FROM permintaan_harian h WHERE h.barang_id = p.barang_id) + 30
                  GROUP BY p.barang_id
                 """
-            ).bindparams(u=usaha_id)
+            ).bindparams(u=usaha_id, persediaan=HARI_PERSEDIAAN)
         ).all()
         # Uji balik bulanan dari jalan terbaru barang itu: satu baris per periode,
         # tanggal_target = hari pertama periode (lihat ml/layanan.py).
@@ -275,6 +293,7 @@ def pemakaian_bulanan(
             f = perkiraan.get(bid)
             if f is not None:
                 h.perkiraan_p10, h.perkiraan_p50, h.perkiraan_p90 = f.p10, f.p50, f.p90
+                h.perkiraan_persediaan = f.p50_persediaan
                 h.model_nama, h.dijalankan_pada = f.model_nama, f.dijalankan_pada
         return list(hasil.values())
 

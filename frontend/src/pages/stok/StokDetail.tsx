@@ -25,7 +25,9 @@ import { BANTUAN } from '@/lib/label'
 import {
   BATAS_AMAN_BAWAAN,
   dalamKemasan,
+  layakDiperkirakan,
   penawaranUntukBarang,
+  rekomendasiDari,
   statusStok,
   transaksiById,
 } from '@/data/dummy'
@@ -351,12 +353,13 @@ export default function StokDetail() {
     )
 
   /* Saran distributor dekat ringkasan stok (revisi 23 Okt 2026): di luar tab,
-     jadi tombol "Pesan" selalu menemukannya. */
+     jadi tombol "Pesan" selalu menemukannya. Jumlahnya sama dengan halaman Prediksi. */
+  const rekomendasi = layakDiperkirakan(barang) ? rekomendasiDari(barang) : null
   const kartuSaran =
     mesin.status === 'siap' ? (
       <KartuSaranMesin
         saran={mesin.saran}
-        jumlahAwal={Math.max(1, perkiraan.saranBeli)}
+        jumlahSaran={rekomendasi?.arah === 'tambah' ? rekomendasi.jumlah : null}
         satuan={barang.kemasan[barang.kemasan.length - 1]?.nama ?? barang.satuan}
       />
     ) : null
@@ -518,18 +521,20 @@ const SEGMEN_SARAN: Record<string, { label: string; nada: 'aman' | 'info' | 'men
  */
 function KartuSaranMesin({
   saran,
-  jumlahAwal,
+  jumlahSaran,
   satuan,
 }: {
   saran: SaranServer[]
   /** Saran jumlah beli dari Mesin 1, dalam kemasan. */
-  jumlahAwal: number
+  /** Kosong kalau stok belum perlu ditambah: jumlahnya mulai dari satu, tanpa angka saran. */
+  jumlahSaran: number | null
   satuan: string
 }) {
   const pesan = useAplikasi((s) => s.pesanDariServer)
   const navigate = useNavigate()
   const [param, setParam] = useSearchParams()
   const [dibuka, setDibuka] = useState<number | null>(null)
+  const jumlahAwal = jumlahSaran ?? 1
   const [jumlah, setJumlah] = useState(jumlahAwal)
   const [mengirim, setMengirim] = useState(false)
   const wadahRef = useRef<HTMLElement>(null)
@@ -599,7 +604,7 @@ function KartuSaranMesin({
                     ubah={setJumlah}
                     min={1}
                     satuan={satuan}
-                    saranModel={jumlahAwal}
+                    saranModel={jumlahSaran}
                   />
                   <div className="flex flex-wrap gap-2">
                     <Tombol ukuran="kecil" memuat={mengirim} onClick={() => kirim(s.penawaranId)}>

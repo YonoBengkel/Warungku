@@ -189,6 +189,11 @@ export interface Barang {
   stok: number
   batasAman: number
   batasAmanSaran: number
+  /**
+   * Sudah dipesan dan belum diterima, dalam satuan simpan. Stok ditambah angka ini
+   * yang dibandingkan dengan batas aman. Tidak ada = data contoh.
+   */
+  dalamPerjalanan?: number
   sumberBatasAman: SumberBatasAman
   /** Berapa hari biasanya barang sampai setelah dipesan. Dipakai menyusun saran. */
   hariKirim: number
@@ -254,7 +259,6 @@ export interface Perkiraan {
   hariCukup: number | null
   pakaiTigaHariMin: number | null
   pakaiTigaHariMaks: number | null
-  saranBeli: number
   satuanSaran: string
   /** Maksimal 3 alasan berbasis fakta. Kosong berarti chip alasan tidak ditampilkan. */
   alasan: string[]
@@ -674,6 +678,8 @@ export interface RekomendasiPrediksi {
   /** Pemakaian bulan ini vs perkiraan bulan depan, dalam satuan pakai. */
   pemakaianBulanIni: number
   perkiraanBulanDepan: number
+  /** Perkiraan pemakaian selama hari persediaan (21 hari), dasar jumlah saran beli. */
+  kebutuhanPersediaan: number
   /** Keyakinan model 0..1. Ditampilkan sebagai kata, bukan sebagai angka mentah. */
   keyakinan: number
   /** Maksimal 3 butir fakta yang menjelaskan kenapa saran ini muncul. */

@@ -410,6 +410,38 @@ def test_pesanan_lama_bisa_dimuat_lewat_mulai(dunia):
     assert r.status_code == 200 and r.json()["id"] == ids[0]
 
 
+def test_barang_mencatat_yang_sudah_dipesan_sampai_diterima_atau_batal(dunia):
+    """Stok ditambah angka ini yang dibandingkan dengan batas aman, supaya barang tidak disarankan dua kali."""
+    w, klien = dunia, TestClient(app)
+    u = f"/usaha/{w['usaha']}"
+
+    def dipesan() -> Decimal:
+        isi = klien.get(f"{u}/barang", headers=w["kepala_umkm"]).json()
+        return Decimal(next(b for b in isi if b["id"] == w["barang"])["dalam_perjalanan"])
+
+    assert dipesan() == 0
+    # Dalam satuan simpan: 3 kemasan berisi 1.000 gram. Draf belum dikirim, jadi belum dihitung.
+    _draf(w)
+    assert dipesan() == 0
+    p = _buat(klien, w, "3")
+    assert dipesan() == 3000
+    batal = _buat(klien, w, "2")
+    assert dipesan() == 5000
+    r = klien.post(f"{u}/pesanan/{batal['id']}/batal", headers=w["kepala_umkm"], json={"alasan": "Salah pesan"})
+    assert r.status_code == 200, r.text
+    assert dipesan() == 3000
+    # Masih dihitung selama di jalan, hilang begitu diterima.
+    _majukan_sampai_dikirim(klien, w, p["id"])
+    assert dipesan() == 3000
+    r = klien.post(
+        f"{u}/pesanan/{p['id']}/terima",
+        headers=w["kepala_umkm"],
+        json={"baris": [{"baris_id": p["baris"][0]["id"], "jumlah_diterima": "3"}]},
+    )
+    assert r.status_code == 200, r.text
+    assert dipesan() == 0
+
+
 def test_kuota_kurang_tidak_memblokir_dan_akun_tanpa_nib_boleh_berkontrak(dunia):
     """
     Keputusan Ilham 4 Nov 2026. Fixture ini memang tanpa NIB dan belum terverifikasi: pengajuan

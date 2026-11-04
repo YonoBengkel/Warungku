@@ -286,6 +286,9 @@ class BarangRingkas(BaseModel):
     batas_aman: Decimal
     batas_aman_saran: Decimal = Decimal(0)
     sumber_batas_aman: str = "sistem"
+    #: Sudah dipesan dan belum diterima, dalam satuan simpan. Stok ditambah angka ini
+    #: yang dibandingkan dengan batas aman, supaya barang tidak disarankan dua kali.
+    dalam_perjalanan: Decimal = Decimal(0)
     hari_kirim: int = 2
     #: Harga per KEMASAN (Rp 148.000 per kg), seperti tersimpan di tabel.
     harga_beli_terakhir: int = 0
@@ -467,6 +470,8 @@ class PemakaianBulanan(BaseModel):
     perkiraan_p10: Decimal | None = None
     perkiraan_p50: Decimal | None = None
     perkiraan_p90: Decimal | None = None
+    #: Jumlah p50 selama hari persediaan (21 hari), dasar jumlah saran beli.
+    perkiraan_persediaan: Decimal | None = None
     model_nama: str | None = None
     dijalankan_pada: datetime | None = None
 

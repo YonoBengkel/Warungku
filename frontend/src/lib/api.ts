@@ -194,6 +194,7 @@ interface BarangApi {
   stok: string
   batas_aman: string
   batas_aman_saran: string
+  dalam_perjalanan?: string
   sumber_batas_aman: string
   hari_kirim: number
   harga_beli_terakhir: number
@@ -224,6 +225,7 @@ function keBarang(b: BarangApi): Barang {
     stok: angka(b.stok),
     batasAman: angka(b.batas_aman),
     batasAmanSaran: angka(b.batas_aman_saran),
+    dalamPerjalanan: b.dalam_perjalanan == null ? 0 : angka(b.dalam_perjalanan),
     sumberBatasAman: (['sistem', 'sendiri', 'bawaan'].includes(b.sumber_batas_aman)
       ? b.sumber_batas_aman
       : 'sistem') as SumberBatasAman,
@@ -547,6 +549,7 @@ export async function ambilPemakaianBulanan(sesi: SesiServer): Promise<Map<strin
       perkiraan_p10: string | null
       perkiraan_p50: string | null
       perkiraan_p90: string | null
+      perkiraan_persediaan?: string | null
       model_nama: string | null
     }>
   >(`/usaha/${sesi.usahaId}/pemakaian-bulanan`, { token: sesi.token })
@@ -561,6 +564,7 @@ export async function ambilPemakaianBulanan(sesi: SesiServer): Promise<Map<strin
       p10: b.perkiraan_p10 == null ? null : angka(b.perkiraan_p10),
       p50: b.perkiraan_p50 == null ? null : angka(b.perkiraan_p50),
       p90: b.perkiraan_p90 == null ? null : angka(b.perkiraan_p90),
+      p50Persediaan: b.perkiraan_persediaan == null ? null : angka(b.perkiraan_persediaan),
       model: b.model_nama,
     })
   }

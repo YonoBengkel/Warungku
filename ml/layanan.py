@@ -87,6 +87,8 @@ class HasilJalan(BaseModel):
     barang: int
     baris: int
     detik: float
+    #: Barang yang batas amannya ikut diperbarui dari perkiraan jalan ini.
+    batas_aman: int = 0
 
 
 def _kematangan(panjang: int) -> KematanganPerkiraan:
@@ -267,7 +269,9 @@ def _jalankan_mesin1(usaha_id: int | None, metode: str, cakrawala: int, uji_bula
                     }
                 )
 
+    batas_diperbarui = 0
     if baris:
+        from warungku.batas_aman import segarkan_batas_aman
         from warungku.model import Prediksi
 
         with mesin().begin() as kon:
@@ -276,10 +280,11 @@ def _jalankan_mesin1(usaha_id: int | None, metode: str, cakrawala: int, uji_bula
             # ulang tiga minggu kemudian saat ada yang bertanya.
             for i in range(0, len(baris), 5000):
                 kon.execute(Prediksi.__table__.insert(), baris[i : i + 5000])
+            batas_diperbarui = segarkan_batas_aman(kon, usaha_id)
 
     hasil = HasilJalan(
         jalan_id=jalan_id, metode=metode, barang=len(deret),
-        baris=len(baris), detik=round(time.perf_counter() - mulai, 2),
+        baris=len(baris), detik=round(time.perf_counter() - mulai, 2), batas_aman=batas_diperbarui,
     )
     _terakhir["mesin1"] = hasil.model_dump()
     return hasil

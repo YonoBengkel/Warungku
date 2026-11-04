@@ -119,12 +119,12 @@ export default function PenawaranDetail() {
   const rincianBeliSekali = rincianHarga(penawaran.id, null)
   const promo = rincianBeliSekali.promo
 
-  /* Perkiraan bulan depan barang gudang yang terkait, untuk kartu hitungan di
+  /* Saran beli barang gudang yang terkait, untuk kartu hitungan di
      kolom kanan (revisi V3, Q79) dan jumlah awal lembar beli. Bukan hook:
      komponen ini sudah punya return lebih awal di atas. */
   const rekomendasiBarang = barang && layakDiperkirakan(barang) ? rekomendasiDari(barang) : null
 
-  /* Jumlah awal lembar beli: kekurangan barang terhadap perkiraan bulan depan,
+  /* Jumlah awal lembar beli: kekurangan barang menurut aturan saran beli,
      dalam kemasan penawaran ini. Tanpa perkiraan, 1. Dulu selalu 1, jadi
      pemilik yang datang dari stok habis harus menekan + belasan kali. Rumusnya
      sama dengan kartu hitungan di kanan, jadi kedua angka selalu sama; dulu
@@ -281,7 +281,7 @@ export default function PenawaranDetail() {
                   diperkirakan; angkanya sama dengan jumlah awal Beli Sekali. */}
               {rekomendasiBarang && (
                 <div className="mt-3 pt-3 border-t border-line">
-                  <h3 className="text-isi font-bold text-ink">Kebutuhan bulan depan</h3>
+                  <h3 className="text-isi font-bold text-ink">Hitungan saran</h3>
                   <div className="mt-1">
                     <HitunganSaran
                       barang={barang}

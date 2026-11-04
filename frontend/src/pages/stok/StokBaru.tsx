@@ -155,8 +155,8 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
   const angkaHariKirim = Math.max(0, Number(hariKirim) || 0)
 
   /* Saran batas aman untuk barang baru dihitung terbuka: pemakaian sehari
-     dikali lama kiriman ditambah dua hari cadangan. Untuk barang lama kami
-     memakai angka saran yang sudah dihitung dari riwayat aslinya. Semuanya
+     dikali lama kiriman ditambah dua hari cadangan, sampai riwayatnya cukup untuk
+     Mesin 1. Untuk barang lama kami memakai angka saran dari Mesin 1. Semuanya
      dalam satuan SIMPAN; yang ditampilkan dikonversi. */
   const saranBatas = barang
     ? barang.batasAmanSaran

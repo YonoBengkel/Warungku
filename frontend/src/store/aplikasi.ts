@@ -801,6 +801,8 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
       // pesanan per distributor dengan kode belanja yang sama.
       const dariSaran = dikirim.some((k) => k.baris.some((b) => b.saranSistem != null))
       const baru = await buatPesanan(sesi, baris, dariSaran)
+      // Barang yang baru dipesan tidak disarankan lagi: angka "sudah dipesan" datang dari server.
+      void get().segarkanGudangServer().catch(() => {})
       const hasil: HasilKirim = {
         kodeBelanja: baru[0]?.kodeBelanja ?? baru[0]?.nomor ?? '',
         pesanan: baru.map((p) => ({ id: p.id, nomor: p.nomor, distributorId: p.distributorId, berhasil: true })),
@@ -822,6 +824,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
     if (!sesi) return null
     try {
       const [baru] = await buatPesanan(sesi, [{ penawaranId, jumlah }], true)
+      void get().segarkanGudangServer().catch(() => {})
       set((s) => ({ pesanan: [baru, ...s.pesanan] }))
       get().tampilkanRacun(`Pesanan ${baru.nomor} terkirim ke distributor.`, 'aman', {
         label: 'Lihat pesanan',
@@ -1505,6 +1508,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
     if (sesi && pesanan.baris.every((b) => b.barisId)) {
       try {
         dariServer = await ajukanDrafServer(sesi, pesananId)
+        void get().segarkanGudangServer().catch(() => {})
       } catch (e) {
         get().tampilkanRacun(e instanceof Error ? e.message : 'Pesanan belum terkirim. Coba lagi sebentar lagi.', 'kritis')
         return false
@@ -1685,6 +1689,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
     if (s.sesiServer && pesanan.baris.every((b) => b.barisId)) {
       try {
         dariServer = await batalkanPesananServer(s.sesiServer, pesananId, alasan || 'Dibatalkan pemilik usaha')
+        void get().segarkanGudangServer().catch(() => {})
       } catch (e) {
         get().tampilkanRacun(e instanceof Error ? e.message : 'Pembatalan gagal.', 'kritis')
         return false

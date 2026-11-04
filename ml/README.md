@@ -6,12 +6,16 @@ perintah di bawah dijalankan dari **akar repo**; pemasangan lengkap ada di
 
 | Mesin | Model produksi | Berkas | Pembanding di laporan |
 | --- | --- | --- | --- |
-| 1 · ramalan kebutuhan | SARIMA(1,0,1)(0,1,1)₇ pada log1p unit, kalender sebagai peubah luar; cadangan ETS kalau gagal per barang | `mesin1/sarima.py` | ETS, Chronos-2, LightGBM, naif musiman, kuantil hari-pekan, MOIRAI |
+| 1 · ramalan kebutuhan | LightGBM kuantil (p10, p50, p90), satu model global untuk semua barang | `mesin1/lgbm.py` | SARIMA (model produksi 12 sampai 16 Okt 2026), ETS, Chronos-2, naif musiman, kuantil hari-pekan, MOIRAI |
 | 2 · saran distributor | Beta-Bernoulli + Thompson sampling, lalu fuzzy Sugeno atas keandalan dan harga | `mesin2/beta.py`, `mesin2/fuzzy.py`, `mesin2/saran.py` | TOPSIS, BART, regresi logistik Bayesian, LinUCB, epsilon-greedy |
 | 3 · profil pelanggan | K-Prototypes atas RFM (frequency dan monetary di-log1p), jenis usaha, kategori | `mesin3/segmentasi.py`, `mesin3/kprototypes.py` | Gower + aglomeratif, Gower + HDBSCAN |
 
-Metode Mesin 1 dipilih lewat variabel `WARUNGKU_METODE_MESIN1` (bawaan `sarima`;
-juga `holt_winters`, `chronos`, `moirai`, `naif_musiman`, `kuantil_hari_pekan`).
+Metode Mesin 1 dipilih lewat variabel `WARUNGKU_METODE_MESIN1` (bawaan `lightgbm`;
+juga `sarima`, `holt_winters`, `chronos`, `moirai`, `naif_musiman`, `kuantil_hari_pekan`).
+
+Sesudah menulis perkiraan, Mesin 1 memperbarui batas aman barang: jumlah p90 selama lama
+kirim, dibulatkan ke atas (`backend/warungku/batas_aman.py`). Angka yang diatur pemilik usaha
+tidak ditimpa, hanya sarannya yang berubah.
 
 ## Pasang
 
@@ -77,7 +81,8 @@ python -m ml.grafik
 | `sumber/` | Satu pintu data untuk model: simulasi dan French Bakery dalam bentuk yang sama. Kontraknya di `sumber/README.md` |
 | `metrik.py` | MAPE, WAPE, MASE, WQL, cakupan, AUC, Brier, NDCG@k, Precision@1, regret |
 | `grafik.py` | Gambar laporan, dibuat dari berkas hasil, bukan angka ketik ulang |
-| `mesin1/sarima.py` | **SARIMA, model produksi**: kuantil p10/p50/p90 dan kalender masa depan |
+| `mesin1/lgbm.py` | **LightGBM kuantil, model produksi** |
+| `mesin1/sarima.py` | SARIMA, pembanding: kuantil p10/p50/p90 dan kalender masa depan |
 | `mesin1/dasar.py` | Naif musiman, kuantil hari-pekan, Holt-Winters (ETS), Croston |
 | `mesin1/saringan.py`, `pencilan.py` | Saringan barang (ABC, Syntetos–Boylan, musiman) dan pencilan Mahalanobis |
 | `mesin1/pekanan.py`, `omset.py` | Evaluasi MAPE pekanan per barang dan ramalan omset (SARIMAX, VAR) |

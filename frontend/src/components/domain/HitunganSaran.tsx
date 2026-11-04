@@ -1,27 +1,29 @@
 import type { Barang, Kemasan, RekomendasiPrediksi } from '@/lib/types'
 import { BarisData } from '@/components/ui/dasar'
+import { HARI_PERSEDIAAN, kekuranganStok } from '@/data/dummy'
 import { angka } from '@/lib/format'
 import { jumlahTampil, satuanTampil } from '@/lib/satuan'
 
 /**
- * Banyak kemasan beli yang menutup kekurangan bulan depan: (perkiraan − stok) ÷
- * isi kemasan, dibulatkan ke atas, paling sedikit 1. Rumus `rekomendasiDari`,
- * dipakai juga untuk kemasan jual distributor supaya kartu hitungan dan jumlah
- * awal Beli Sekali tidak pernah berbeda angka.
+ * Banyak kemasan beli yang menutup kekurangan: `kekuranganStok` ÷ isi kemasan,
+ * dibulatkan ke atas, paling sedikit 1. Rumus `rekomendasiDari`, dipakai juga untuk
+ * kemasan jual distributor supaya kartu hitungan dan jumlah awal Beli Sekali tidak
+ * pernah berbeda angka.
  */
 export function jumlahBeliUntuk(barang: Barang, rekomendasi: RekomendasiPrediksi, isiKemasan: number): number {
-  return Math.max(1, Math.ceil((rekomendasi.perkiraanBulanDepan - barang.stok) / isiKemasan))
+  return Math.max(1, Math.ceil(kekuranganStok(barang, rekomendasi.kebutuhanPersediaan) / isiKemasan))
 }
 
 /**
- * Asal angka saran beli (revisi V3, Q70 dan Q79): perkiraan pemakaian bulan
- * depan dikurangi sisa stok, dibagi isi satu kemasan, lalu dibulatkan ke atas.
- * Hitungannya sama dengan `rekomendasiDari`, jadi angka di sini selalu sama
- * dengan angka di tombol keranjang, dan pemilik usaha bisa memeriksanya sendiri.
+ * Asal angka saran beli (revisi V3, Q70 dan Q79, aturannya sejak 4 Nov 2026 sama
+ * dengan simulasi laporan): perkiraan pemakaian 21 hari ditambah batas aman, dikurangi
+ * sisa stok dan yang sudah dipesan, dibagi isi satu kemasan, lalu dibulatkan ke atas.
+ * Hitungannya sama dengan `rekomendasiDari`, jadi angka di sini selalu sama dengan
+ * angka di tombol keranjang, dan pemilik usaha bisa memeriksanya sendiri.
  *
- * Untuk stok yang cukup atau berlebih, hitungan yang sama tetap ditampilkan,
- * tanpa angka beli. Kalimat alasan otomatis dari data contoh sengaja tidak
- * dipakai: sebagian bukan hasil hitungan ("akhir pekan selalu 40% lebih ramai").
+ * Untuk stok yang cukup atau berlebih, angka pembandingnya tetap ditampilkan, tanpa
+ * angka beli. Kalimat alasan otomatis dari data contoh sengaja tidak dipakai: sebagian
+ * bukan hasil hitungan ("akhir pekan selalu 40% lebih ramai").
  */
 export function HitunganSaran({
   barang,
@@ -46,7 +48,9 @@ export function HitunganSaran({
   const sisa = Math.max(0, barang.stok)
   const k = kemasan === undefined ? (barang.kemasan[barang.kemasan.length - 1] ?? null) : kemasan
   const isi = k?.isi ?? 1
-  const kurang = perkiraan - barang.stok
+  const dipesan = barang.dalamPerjalanan ?? 0
+  const kurang = kekuranganStok(barang, rekomendasi.kebutuhanPersediaan)
+  const tambah = rekomendasi.arah === 'tambah'
   const beliMentah = kurang / isi
   const jumlahBeli = jumlahBeliUntuk(barang, rekomendasi, isi)
   // Satu desimal cukup untuk menunjukkan pembulatannya: "4,5 dus".
@@ -57,12 +61,28 @@ export function HitunganSaran({
     <div>
       <div>
         {!ringkas && <BarisData label="Terpakai bulan ini" nilai={jumlahTampil(barang, rekomendasi.pemakaianBulanIni)} />}
-        <BarisData label="Perkiraan bulan depan" nilai={jumlahTampil(barang, perkiraan)} />
-        <BarisData label="Sisa tercatat" nilai={<>&minus; {jumlahTampil(barang, sisa)}</>} />
+        {tambah ? (
+          <BarisData
+            label={`Perkiraan ${HARI_PERSEDIAAN} hari ke depan`}
+            nilai={jumlahTampil(barang, rekomendasi.kebutuhanPersediaan)}
+          />
+        ) : (
+          <BarisData label="Perkiraan bulan depan" nilai={jumlahTampil(barang, perkiraan)} />
+        )}
+        {rekomendasi.arah !== 'kurang' && (
+          <BarisData label="Batas aman" nilai={<>{tambah && '+ '}{jumlahTampil(barang, barang.batasAman)}</>} />
+        )}
+        <BarisData
+          label="Sisa tercatat"
+          nilai={<>{rekomendasi.arah !== 'tetap' && <>&minus; </>}{jumlahTampil(barang, sisa)}</>}
+        />
+        {rekomendasi.arah !== 'kurang' && dipesan > 0 && (
+          <BarisData label="Sudah dipesan" nilai={<>{tambah && <>&minus; </>}{jumlahTampil(barang, dipesan)}</>} />
+        )}
       </div>
 
       <div className="mt-1.5 pt-1.5 border-t border-line">
-        {rekomendasi.arah === 'tambah' ? (
+        {tambah ? (
           <>
             <BarisData label="Kurang" nilai={jumlahTampil(barang, kurang)} tebal />
             {/* "Isi 1 kg: 1 kg" tidak menjelaskan apa-apa, jadi baris isi hanya
@@ -93,8 +113,10 @@ export function HitunganSaran({
           </>
         ) : (
           <p className="pt-1 text-isi text-ink-2 leading-snug">
-            Sisa menutup <strong className="text-ink tabular">{angka(Math.min(100, (sisa / Math.max(perkiraan, 1e-9)) * 100))}%</strong>{' '}
-            perkiraan bulan depan, jadi <strong className="text-ink">belum ada saran beli</strong>.
+            {sisa < barang.batasAman
+              ? 'Sisa sudah di bawah batas aman, tetapi pesanan yang belum diterima menutupinya, jadi '
+              : 'Sisa masih di atas batas aman, jadi '}
+            <strong className="text-ink">belum ada saran beli</strong>.
           </p>
         )}
       </div>

@@ -23,6 +23,11 @@ flowchart LR
   Pemakaian, Batas Aman (satu dan massal), dan Kelola Kategori memanggil `backend/api/stok.py` di mode data server. Dulu
   semuanya hanya mengubah store, jadi hilang saat halaman dimuat ulang. Stok awal dan koreksi dicatat sebagai pergerakan
   `koreksi`, pemakaian manual sebagai `terjual`, sehingga invarian stok sama dengan jumlah pergerakan tetap berlaku.
+- **Batas aman dan saran beli (keputusan 4 Nov 2026).** Mesin 1 menulis `barang.batas_aman_saran` (jumlah p90 selama
+  `hari_kirim`) dan `batas_aman` untuk barang bersumber `sistem`, di transaksi yang sama dengan `prediksi`
+  (`backend/warungku/batas_aman.py`). `dataset.variasi_demo` memanggil fungsi yang sama saat aplikasi disiapkan, jadi basis
+  data dari image tidak menunggu jadwal 02.00. `rekomendasiDari` di frontend memakai aturan pesan ulang yang disimulasikan di
+  laporan, dengan `dalam_perjalanan` dari `GET /barang` dan `perkiraan_persediaan` dari `GET /pemakaian-bulanan`.
 - **Profil, penilaian, draf, dan pengajuan kontrak juga lewat endpoint (audit 3 Nov 2026).** Layar Akun (Profil
   Usaha, Data Usaha, Cara Hitung Stok) memakai `GET` dan `PATCH /usaha/{id}/profil` (`backend/api/profil.py`). Beri
   Penilaian menulis ke tabel `ulasan`, yang dibaca katalog dan fitur Mesin 2. Draf pesanan bisa dikirim (`/ajukan`)

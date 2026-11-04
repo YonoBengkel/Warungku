@@ -41,6 +41,7 @@ import {
   penawaranUntukBarang,
   promoMasihBerlaku,
   rekomendasiDari,
+  HARI_PERSEDIAAN,
   saranBelanja,
   statusKuota,
   statusStok,
@@ -644,7 +645,9 @@ export default function Beranda() {
         ) : rekomendasi.length === 0 ? (
           <Kartu padat>
             <p className="text-isi text-ink-3">
-              Belum ada saran bulan depan. Data pemakaian masih dikumpulkan.
+              {barang.some(layakDiperkirakan)
+                ? 'Belum ada barang yang perlu ditambah. Stok dan pesanan yang berjalan masih menutup batas aman.'
+                : 'Belum ada saran beli. Data pemakaian masih dikumpulkan.'}
             </p>
           </Kartu>
         ) : (
@@ -705,7 +708,7 @@ export default function Beranda() {
                         {angka(r.jumlah)}
                       </span>
                       <span className="text-isi font-semibold text-ink-2">
-                        {r.satuanSaran} bulan depan
+                        {r.satuanSaran} {r.arah === 'tambah' ? `untuk ${HARI_PERSEDIAAN} hari` : 'bulan depan'}
                       </span>
                     </p>
 
@@ -825,7 +828,7 @@ export default function Beranda() {
         {pilihan && penawaranPilihan && (
           <div className="pb-4 space-y-3">
             <p className="text-isi text-ink-2 leading-relaxed">
-              Model menyarankan {angka(pilihan.jumlah)} {pilihan.satuanSaran} untuk bulan depan. Kamu boleh
+              Model menyarankan {angka(pilihan.jumlah)} {pilihan.satuanSaran} untuk {HARI_PERSEDIAAN} hari ke depan. Kamu boleh
               menguranginya kalau kondisi hari ini tidak memungkinkan.
             </p>
             <PengaturJumlah

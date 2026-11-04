@@ -909,7 +909,6 @@ export function perkiraanUntuk(b: Barang): Perkiraan {
       hariCukup: null,
       pakaiTigaHariMin: null,
       pakaiTigaHariMaks: null,
-      saranBeli: 0,
       satuanSaran: b.satuan,
       alasan: [],
     }
@@ -918,8 +917,6 @@ export function perkiraanUntuk(b: Barang): Perkiraan {
   const lebar = kematangan === 'kasar' ? 0.34 : 0.16
   const pakai3 = b.pemakaianHarian * 3
   const kemasan = b.kemasan[b.kemasan.length - 1]
-  const isi = kemasan?.isi ?? 1
-  const butuh = Math.max(0, b.pemakaianHarian * 14 - b.stok)
 
   const alasan: string[] = []
   if (kematangan !== 'belum-bisa') {
@@ -936,7 +933,6 @@ export function perkiraanUntuk(b: Barang): Perkiraan {
     hariCukup: kematangan === 'belum-bisa' ? null : cukup,
     pakaiTigaHariMin: kematangan === 'belum-bisa' ? null : Math.round(pakai3 * (1 - lebar)),
     pakaiTigaHariMaks: kematangan === 'belum-bisa' ? null : Math.round(pakai3 * (1 + lebar)),
-    saranBeli: Math.max(butuh > 0 ? 1 : 0, Math.ceil(butuh / isi)),
     satuanSaran: kemasan?.nama ?? b.satuan,
     alasan: alasan.slice(0, 3),
   }
@@ -1086,6 +1082,8 @@ export interface BulananBarang {
   p10: number | null
   p50: number | null
   p90: number | null
+  /** Jumlah p50 selama `HARI_PERSEDIAAN` hari, dasar jumlah saran beli. */
+  p50Persediaan: number | null
   /** Kode model Mesin 1 yang membuat perkiraan barang ini, mis. "lightgbm-kuantil". */
   model: string | null
 }
@@ -1122,8 +1120,10 @@ function trenDari(kumpulan: Barang[], nilai: (b: Barang, jumlah: number) => numb
   const tanggalKe = (mundur: number): string => {
     if (!acuan) return awalBulan(-mundur)
     const i = acuan.periode.length - 1 - mundur
-    const d = new Date(acuan.periode[Math.min(acuan.periode.length - 1, Math.max(0, i))].tanggal)
-    if (i < 0) d.setDate(d.getDate() + 30 * -i)
+    const tepi = Math.min(acuan.periode.length - 1, Math.max(0, i))
+    const d = new Date(acuan.periode[tepi].tanggal)
+    // Di luar periode tercatat, yaitu bulan perkiraan dan bulan sebelum riwayat ada: 30 hari per langkah.
+    d.setDate(d.getDate() + 30 * (i - tepi))
     return d.toISOString()
   }
   for (let i = BULAN_RIWAYAT - 1; i >= 0; i--) {
@@ -2232,6 +2232,24 @@ function keyakinanDari(hariData: number): number {
   return Math.round((0.62 + t * 0.31) * 100) / 100
 }
 
+/**
+ * Aturan saran beli, sama dengan Skenario 1 di simulasi laporan: pesan kalau stok
+ * ditambah yang sudah dipesan turun di bawah batas aman, sebanyak kebutuhan 21 hari
+ * ditambah batas aman, dikurangi stok dan yang sudah dipesan. Batas amannya dihitung
+ * Mesin 1 dari p90 selama lama kirim (`backend/warungku/batas_aman.py`).
+ */
+export const HARI_PERSEDIAAN = 21
+
+function kebutuhanSelamaPersediaan(b: Barang): number {
+  const server = bulananServer?.get(b.id)?.p50Persediaan
+  return Math.round(server ?? (perkiraanBulanDepan(b) * HARI_PERSEDIAAN) / 30)
+}
+
+/** Yang perlu dibeli, dalam satuan simpan. Satu rumus untuk kartu hitungan dan tombol keranjang. */
+export function kekuranganStok(b: Barang, kebutuhan: number): number {
+  return kebutuhan + b.batasAman - Math.max(0, b.stok) - (b.dalamPerjalanan ?? 0)
+}
+
 function arahUntuk(b: Barang, perkiraan: number): ArahPrediksi {
   // Kelebihan diukur dari batas aman, bukan dari nol: stok dua kali lipat
   // batas aman yang masih cukup sebulan lebih memang kebanyakan.
@@ -2248,7 +2266,9 @@ function arahUntuk(b: Barang, perkiraan: number): ArahPrediksi {
   ) {
     return 'kurang'
   }
-  if (b.stok < perkiraan * 0.8) return 'tambah'
+  const tersedia = Math.max(0, b.stok) + (b.dalamPerjalanan ?? 0)
+  // Stok kosong tetap perlu dipesan walau batas amannya belum diisi.
+  if (tersedia < b.batasAman || (tersedia <= 0 && perkiraan > 0)) return 'tambah'
   return 'tetap'
 }
 
@@ -2259,7 +2279,7 @@ function arahUntuk(b: Barang, perkiraan: number): ArahPrediksi {
  * angka pertumbuhan, supaya tidak terbaca seperti menyuruh menambah dan
  * mengurangi sekaligus.
  */
-function alasanUntuk(b: Barang, arah: ArahPrediksi, bulanIni: number, perkiraan: number): string[] {
+function alasanUntuk(b: Barang, arah: ArahPrediksi, bulanIni: number): string[] {
   const bulanLalu = pemakaianBulan(b, 1)
   const beda = bulanLalu > 0 ? Math.round(((bulanIni - bulanLalu) / bulanLalu) * 100) : 0
   const perubahan =
@@ -2271,20 +2291,20 @@ function alasanUntuk(b: Barang, arah: ArahPrediksi, bulanIni: number, perkiraan:
 
   if (arah === 'kurang') {
     const cukup = hariCukup(b)
-    const alasan = ['Sudah dua kali lipat batas aman yang kamu atur sendiri.']
+    const alasan = ['Sudah lebih dari dua kali lipat batas aman.']
     if (cukup !== null) alasan.unshift(`Stok sekarang cukup untuk ${cukup} hari ke depan.`)
     alasan.push(perubahan)
     return alasan.slice(0, 3)
   }
 
-  // Untuk saran "tambah", perbandingan stok vs kebutuhan adalah ALASAN
+  // Untuk saran "tambah", perbandingan stok vs batas aman adalah ALASAN
   // SEBENARNYA dan harus berdiri paling depan. Kalau ia ditaruh terakhir,
   // pemotongan tiga butir membuangnya — dan yang tersisa justru bisa berbunyi
   // "pemakaian turun" di bawah saran "tambah", yang terbaca bertentangan.
   const alasan: string[] = []
-  if (arah === 'tambah' && perkiraan > b.stok) {
+  if (arah === 'tambah') {
     alasan.push(
-      `Kebutuhan bulan depan ${jumlahTampil(b, perkiraan)}, stok sekarang cuma ${jumlahTampil(b, Math.max(0, b.stok))}.`,
+      `Stok ${jumlahTampil(b, Math.max(0, b.stok))} sudah di bawah batas aman ${jumlahTampil(b, b.batasAman)}.`,
     )
   }
   alasan.push(perubahan)
@@ -2307,15 +2327,16 @@ function alasanUntuk(b: Barang, arah: ArahPrediksi, bulanIni: number, perkiraan:
 export function rekomendasiDari(b: Barang): RekomendasiPrediksi {
   const bulanIni = pemakaianBulan(b, 0)
   const perkiraan = perkiraanBulanDepan(b)
+  const kebutuhan = kebutuhanSelamaPersediaan(b)
   const arah = arahUntuk(b, perkiraan)
   const kemasan = b.kemasan[b.kemasan.length - 1]
   const isi = kemasan?.isi ?? 1
 
-  // Tambah: kekurangan terhadap kebutuhan bulan depan.
+  // Tambah: aturan pesan ulang, lihat `kekuranganStok`.
   // Kurang: kelebihan di atas batas aman, bukan seluruh stok.
   // Tetap: kebutuhan bulan depan sebagai angka rujukan kalau memang mau pesan.
   const dasar =
-    arah === 'tambah' ? perkiraan - b.stok : arah === 'kurang' ? b.stok - b.batasAman : perkiraan
+    arah === 'tambah' ? kekuranganStok(b, kebutuhan) : arah === 'kurang' ? b.stok - b.batasAman : perkiraan
 
   return {
     barangId: b.id,
@@ -2324,8 +2345,9 @@ export function rekomendasiDari(b: Barang): RekomendasiPrediksi {
     satuanSaran: kemasan?.nama ?? b.satuan,
     pemakaianBulanIni: bulanIni,
     perkiraanBulanDepan: perkiraan,
+    kebutuhanPersediaan: kebutuhan,
     keyakinan: keyakinanDari(b.hariDataTerkumpul),
-    alasan: alasanUntuk(b, arah, bulanIni, perkiraan),
+    alasan: alasanUntuk(b, arah, bulanIni),
     penawaranId: penawaranUntukBarang(b.id)[0]?.id ?? null,
     kontrakId: kontrakUntukBarang(b.id)[0]?.id ?? null,
   }

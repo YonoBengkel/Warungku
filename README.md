@@ -442,6 +442,14 @@ flowchart TD
     g --> i["Mesin 3: profil pelanggan<br/>dari sisi distributor"]
 ```
 
+Saran beli memakai aturan yang diuji di simulasi laporan: kalau stok ditambah barang yang
+sudah dipesan turun di bawah batas aman, pesan sebanyak perkiraan p50 selama 21 hari
+ditambah batas aman, dikurangi stok dan barang yang sudah dipesan. Batas aman barang yang
+mengikuti saran sistem diperbarui setiap Mesin 1 jalan
+([`backend/warungku/batas_aman.py`](backend/warungku/batas_aman.py)). Angka yang diatur
+pemilik usaha tidak ditimpa, dan barang dengan riwayat kurang dari 60 hari tetap memakai
+angka awalnya.
+
 Bahan baku yang terpakai produksi dicatat sama seperti bahan yang laku di warung,
 jadi Mesin 1 meramal kebutuhan bahan baku UMKM produsen tanpa perlakuan khusus.
 
@@ -463,7 +471,11 @@ distributor; distributor yang belum dinilai menyusul dengan urutan ulasan dan ha
 
 Semua angka di atas berasal dari berkas di [`ml/hasil/`](ml/hasil/), misalnya
 [`hasil_eksperimen_mesin1_lgbm.json`](ml/hasil/hasil_eksperimen_mesin1_lgbm.json)
-untuk perbandingan LightGBM dan SARIMA. Setiap perubahan model dicatat di sheet
+untuk perbandingan LightGBM dan SARIMA. Keunggulan LightGBM tipis: kuantil hari-pekan
+yang jauh lebih sederhana mencapai 23,03% dan aturan sederhana 22,19%, walau dari rancangan
+uji yang berbeda (8 titik asal, [`hasil_mesin1_pekanan.json`](ml/hasil/hasil_mesin1_pekanan.json),
+lawan satu pekan uji untuk LightGBM). LightGBM tetap dipakai atas permintaan dosen pengampu,
+dan selisih ini disebut di laporan (keputusan 4 Nov 2026). Setiap perubahan model dicatat di sheet
 *Model Warungku → Catatan Perubahan*. Rincian dan batas penafsirannya ada di
 [`docs/laporan/`](docs/laporan/) dan [`ml/eksperimen/README.md`](ml/eksperimen/README.md).
 
@@ -523,7 +535,7 @@ turnify-flow/
 | GET | `/auth/saya` | Siapa pemegang token ini |
 | GET | `/usaha/{usaha_id}/profil` | Profil usaha yang sedang masuk |
 | PATCH | `/usaha/{usaha_id}/profil` | Ubah sebagian profil usaha. Status verifikasi tidak bisa diisi, hanya bisa dikembalikan ke menunggu pemeriksaan |
-| GET | `/usaha/{usaha_id}/barang` | Daftar barang di gudang, termasuk pemakaian rata-rata 28 hari, harga per satuan, dan hari sejak terakhir terpakai (`hari_tanpa_pemakaian`, dihitung dari hari terakhir data) |
+| GET | `/usaha/{usaha_id}/barang` | Daftar barang di gudang, termasuk pemakaian rata-rata 28 hari, harga per satuan, barang yang sudah dipesan dan belum diterima (`dalam_perjalanan`), dan hari sejak terakhir terpakai (`hari_tanpa_pemakaian`, dihitung dari hari terakhir data) |
 | GET | `/usaha/{usaha_id}/barang/{barang_id}/perkiraan` | Perkiraan terbaru Mesin 1 (p10, p50, p90 per hari), termasuk uji balik 14 hari (`uji_balik`) |
 | POST | `/usaha/{usaha_id}/barang` | Tambah barang. Stok awalnya dicatat sebagai pergerakan koreksi, dan kode kosong dibuatkan dari id |
 | PATCH | `/usaha/{usaha_id}/barang/{barang_id}` | Ubah barang, termasuk batas aman, lama kirim, kemasan, dan kedaluwarsa. Satuan barang yang sudah punya riwayat stok tidak bisa diganti |
@@ -534,7 +546,7 @@ turnify-flow/
 | GET | `/usaha/{usaha_id}/barang/{barang_id}/riwayat` | Pemakaian harian terakhir; hari stok habis ditandai |
 | GET | `/usaha/{usaha_id}/barang/{barang_id}/saran` | Saran distributor terbaru Mesin 2, dibaca dari tabel |
 | GET | `/usaha/{usaha_id}/saran-distributor` | Saran Mesin 2 dirangkum per distributor: rata-rata skor, peluang lancar, barang yang menempatkannya di urutan pertama |
-| GET | `/usaha/{usaha_id}/pemakaian-bulanan` | Pemakaian per 30 hari beserta uji balik Mesin 1 tiap periode (`uji_balik`), dan perkiraan 30 hari ke depan, semua barang |
+| GET | `/usaha/{usaha_id}/pemakaian-bulanan` | Pemakaian per 30 hari beserta uji balik Mesin 1 tiap periode (`uji_balik`), perkiraan 30 hari ke depan, dan kebutuhan 21 hari untuk saran beli (`perkiraan_persediaan`), semua barang |
 | POST | `/usaha/{usaha_id}/transaksi` | Terima satu nota kasir; aman dikirim ulang. Tiap menu memotong bahan sesuai resepnya; stok yang kurang dipotong sampai nol dan dilaporkan di `stok_kurang` |
 | GET | `/usaha/{usaha_id}/transaksi?batas=&mulai=` | Nota kasir terbaru beserta barisnya (tanpa nota `DEMO-`), dibatasi per halaman |
 | POST | `/usaha/{usaha_id}/transaksi/{nomor_struk}/ajukan-batal` | Kasir mengajukan pembatalan nota dengan alasan tertulis |
@@ -759,10 +771,8 @@ Daftar ini ada supaya tidak ada yang menyangka bagian ini sudah selesai.
   (dari Downpic, hanya 390 × 260) perlu diganti foto berlisensi beresolusi lebih tinggi
   sebelum proyek dipakai di luar kuliah. Foto hero sudah diganti gambar warung dari Ilham
   (27 Okt 2026, 1536 × 1024).
-- **UMKM produsen** sudah bisa menambah produk jadi dan komposisi resepnya langsung
-  dari layar (tab Menu di halaman Produksi, endpoint `POST /usaha/{id}/produk-jadi`),
-  tetapi belum bisa menambah pembeli baru dari antarmuka (pembeli masih dari
-  pembangkit data). Perkiraan pesanannya masih rata-rata hari yang sama dalam
+- **UMKM produsen** sudah bisa menambah produk jadi, komposisi resep, dan pembeli baru
+  langsung dari tab Produksi. Perkiraan pesanannya masih rata-rata hari yang sama dalam
   4 pekan terakhir, belum memakai Mesin 1.
 - **Gambar produk dan logo** masih ilustrasi buatan tim, belum foto sungguhan.
 - **Konektor POS.** Kontrak nota sudah ada dan teruji (idempoten); penyambung ke
