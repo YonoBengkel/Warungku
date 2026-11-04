@@ -24,7 +24,7 @@ from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import text
+from sqlalchemy import func, text
 from sqlmodel import Session, select
 
 from warungku.basis_data import mesin
@@ -36,6 +36,7 @@ from .skema import (
     BahanResep,
     BarisPenjualanRingkas,
     OmsetBulanan,
+    PembeliBaru,
     PembeliRingkas,
     PenjualanBaru,
     PenjualanRingkas,
@@ -45,6 +46,7 @@ from .skema import (
     ProdukJadiRingkas,
     RingkasanProduksi,
 )
+from .stok import WIB, tambah_permintaan
 
 rute = APIRouter(prefix="/usaha/{usaha_id}", tags=["produksi"])
 
@@ -376,12 +378,41 @@ def catat_produksi(badan: ProduksiBaru, usaha_id: int = Depends(usaha_saya)) -> 
                     k=f"Dipakai produksi {jumlah:g} {pj.satuan} {pj.nama}", p=prod.id, o=oleh,
                 )
             )
+            # Pemakaian bahan untuk memasak juga permintaan: tanpa baris ini Mesin 1 tidak
+            # melihat produksi baru, dan harinya terbaca tersensor (temuan 4 Nov 2026).
+            tambah_permintaan(sesi, usaha_id, b, waktu.astimezone(WIB).date(), pakai)
         pj.stok = Decimal(pj.stok) + jumlah
         sesi.add(pj)
         sesi.commit()
         return ProduksiRingkas(
             id=prod.id, waktu=waktu, produk_jadi_id=pj.id, nama_produk=pj.nama, jumlah=jumlah, oleh=oleh,
             catatan=badan.catatan,
+        )
+
+
+@rute.post("/pembeli", response_model=PembeliRingkas, status_code=201)
+def tambah_pembeli(badan: PembeliBaru, usaha_id: int = Depends(usaha_saya)) -> PembeliRingkas:
+    """Pembeli langganan baru. Tab Produksi berlaku untuk semua UMKM sejak 4 Nov 2026, dan usaha lain belum punya pembeli."""
+    nama = badan.nama.strip()
+    if not nama:
+        raise HTTPException(422, "Nama pembeli belum diisi. Contoh: Toko Oleh-oleh Bu Sri.")
+    with Session(mesin()) as sesi:
+        _usaha(sesi, usaha_id)
+        ada = sesi.exec(
+            select(Pembeli).where(Pembeli.usaha_id == usaha_id, func.lower(Pembeli.nama) == nama.lower())
+        ).first()
+        if ada is not None:
+            raise HTTPException(409, f"{ada.nama} sudah ada di daftar pembeli.")
+        x = Pembeli(
+            usaha_id=usaha_id, nama=nama, jenis=badan.jenis, kota=(badan.kota or "").strip() or None,
+            ketentuan=(badan.ketentuan or "").strip() or None, sejak=datetime.now(WIB).date(),
+        )
+        sesi.add(x)
+        sesi.commit()
+        sesi.refresh(x)
+        return PembeliRingkas(
+            id=x.id, nama=x.nama, jenis=x.jenis, kota=x.kota, ketentuan=x.ketentuan, sejak=x.sejak,
+            kiriman_28_hari=0, nilai_28_hari=0, terakhir=None,
         )
 
 

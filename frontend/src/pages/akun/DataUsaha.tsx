@@ -136,14 +136,17 @@ function FormDataUsaha() {
       npwp: npwp.replace(/\D/g, ''),
       namaPemilik: namaPemilik.trim(),
       alamat: alamat.trim(),
-      verifikasi: 'menunggu',
+      /* Petugas pemeriksa belum ada, jadi di mode server status yang tersimpan tidak
+         boleh turun: "menunggu" mengunci pesanan dan kontrak, dan tidak ada yang bisa
+         membukanya lagi (temuan 4 Nov 2026). */
+      ...(server ? {} : { verifikasi: 'menunggu' as const }),
       alasanPerbaikan: [],
     })
     setMenyimpan(false)
     if (!tersimpan) return // Racun galatnya sudah tampil; isiannya tetap di layar.
     tampilkanRacun(
       server
-        ? 'Data usaha tersimpan dan statusnya kini sedang diperiksa. Petugas pemeriksa belum ada di purwarupa ini, jadi statusnya tidak berubah sendiri.'
+        ? 'Data usaha tersimpan. Status verifikasimu tidak berubah, karena petugas pemeriksa belum ada di purwarupa ini.'
         : 'Data usaha terkirim. Kami kabari lewat WhatsApp begitu pemeriksaan selesai.',
       'info',
     )
@@ -298,7 +301,7 @@ function FormDataUsaha() {
             ) : (
               <p className="text-isi text-ink-3">
                 {server
-                  ? 'Statusnya jadi sedang diperiksa. Petugas pemeriksa belum ada di purwarupa ini.'
+                  ? 'Status verifikasimu tetap, karena petugas pemeriksa belum ada di purwarupa ini.'
                   : 'Pemeriksaan biasanya selesai dalam 1 hari kerja. Kabarnya lewat WhatsApp ke nomor di profilmu.'}
               </p>
             )}
@@ -307,7 +310,7 @@ function FormDataUsaha() {
       >
         <div className="max-w-2xl mx-auto">
           <Tombol penuh ukuran="besar" disabled={!bolehKirim} memuat={menyimpan} onClick={kirimUlang}>
-            {perluDiperbaiki ? 'Kirim Ulang untuk Diperiksa' : 'Simpan dan Minta Diperiksa Ulang'}
+            {server ? 'Simpan Data Usaha' : perluDiperbaiki ? 'Kirim Ulang untuk Diperiksa' : 'Simpan dan Minta Diperiksa Ulang'}
           </Tombol>
         </div>
       </BilahAksi>

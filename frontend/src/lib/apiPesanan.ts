@@ -25,6 +25,18 @@ export const keIdDistributor = (n: number) => `d-${String(n).padStart(2, '0')}`
 /** UMKM server diberi awalan supaya tidak tertukar dengan UMKM data contoh ('u-01'). */
 export const keIdUmkm = (n: number) => `srv-u-${n}`
 
+/** Ukuran satu halaman daftar pesanan. Halaman yang penuh berarti mungkin masih ada yang lebih lama. */
+export const UKURAN_HALAMAN_PESANAN = 100
+
+interface UlasanPesananApi {
+  rating: number
+  isi: string | null
+  waktu: string
+  aspek_ketepatan_waktu: number
+  aspek_jumlah_sesuai: number
+  aspek_kondisi_barang: number
+}
+
 interface PesananApi {
   id: number
   nomor: string
@@ -48,6 +60,8 @@ interface PesananApi {
   dari_rutin: boolean
   catatan_untuk_distributor: string | null
   sudah_diulas: boolean
+  /** Backend lama tidak mengirimnya. */
+  ulasan?: UlasanPesananApi | null
   kode_belanja: string | null
   alasan_tolak: string | null
   kirim_kurir: string | null
@@ -92,6 +106,21 @@ function buktiDari(p: PesananApi): BuktiPengiriman | null {
  * Jasa kirim, pengantar, dan resi sejak distributor menandai barang dikirim
  * (revisi 23 Okt): dulu hanya terbaca setelah barang sampai, lewat `buktiDari`.
  */
+function ulasanDari(p: PesananApi): UlasanPelanggan | null {
+  const u = p.ulasan
+  if (!u) return null
+  return {
+    rating: u.rating,
+    isi: u.isi ?? '',
+    waktu: u.waktu,
+    aspek: {
+      ketepatanWaktu: u.aspek_ketepatan_waktu,
+      jumlahSesuai: u.aspek_jumlah_sesuai,
+      kondisiBarang: u.aspek_kondisi_barang,
+    },
+  }
+}
+
 function kirimanDari(p: PesananApi): InfoKiriman | null {
   const ada = p.kirim_kurir || p.kirim_pengantar || p.kirim_nomor_resi
   if (!ada && p.status !== 'dikirim') return null
@@ -134,7 +163,7 @@ export function kePesanan(p: PesananApi): Pesanan {
     kodeBelanja: p.kode_belanja,
     alasanTolak: p.alasan_tolak,
     pengiriman: buktiDari(p),
-    ulasan: null,
+    ulasan: ulasanDari(p),
     kiriman: kirimanDari(p),
     tujuan: p.usaha_lat != null && p.usaha_lng != null ? { lat: p.usaha_lat, lng: p.usaha_lng } : null,
   }
@@ -180,7 +209,7 @@ export function kePesananMasuk(p: PesananApi): PesananMasuk {
     alasanTolak: p.status === 'batal' ? (p.alasan_tolak ?? 'Dibatalkan pemilik usaha.') : null,
     catatanDariUmkm: p.catatan_untuk_distributor ?? '',
     pengiriman: buktiDari(p),
-    ulasan: null,
+    ulasan: ulasanDari(p),
     kiriman: kirimanDari(p),
   }
 }
@@ -205,9 +234,17 @@ function keUmkm(p: PesananApi): UmkmPemesan {
 /* Sisi pemilik usaha                                                  */
 /* ------------------------------------------------------------------ */
 
-export async function ambilPesanan(sesi: SesiServer): Promise<Pesanan[]> {
-  const isi = await minta<PesananApi[]>(`/usaha/${sesi.usahaId}/pesanan?batas=100`, { token: sesi.token })
+export async function ambilPesanan(sesi: SesiServer, mulai = 0): Promise<Pesanan[]> {
+  const isi = await minta<PesananApi[]>(
+    `/usaha/${sesi.usahaId}/pesanan?batas=${UKURAN_HALAMAN_PESANAN}&mulai=${mulai}`,
+    { token: sesi.token },
+  )
   return isi.map(kePesanan)
+}
+
+/** Satu pesanan yang tidak ada di halaman yang sudah dimuat, misalnya pesanan lama yang dibuka dari tautan. */
+export async function ambilPesananSatu(sesi: SesiServer, pesananId: string): Promise<Pesanan> {
+  return kePesanan(await minta<PesananApi>(`/usaha/${sesi.usahaId}/pesanan/${pesananId}`, { token: sesi.token }))
 }
 
 export async function buatPesanan(
@@ -267,7 +304,7 @@ export async function kirimUlasanServer(sesi: SesiServer, pesananId: string, ula
       isi: ulasan.isi || null,
     }),
   })
-  return { ...kePesanan(p), ulasan }
+  return kePesanan(p)
 }
 
 export async function batalkanPesananServer(sesi: SesiServer, pesananId: string, alasan: string): Promise<Pesanan> {
@@ -285,13 +322,24 @@ export async function batalkanPesananServer(sesi: SesiServer, pesananId: string,
 
 export async function ambilPesananMasuk(
   sesi: SesiDistributor,
+  mulai = 0,
 ): Promise<{ pesanan: PesananMasuk[]; umkm: UmkmPemesan[] }> {
-  const isi = await minta<PesananApi[]>(`/distributor/${sesi.distributorId}/pesanan-masuk?batas=100`, {
-    token: sesi.token,
-  })
+  const isi = await minta<PesananApi[]>(
+    `/distributor/${sesi.distributorId}/pesanan-masuk?batas=${UKURAN_HALAMAN_PESANAN}&mulai=${mulai}`,
+    { token: sesi.token },
+  )
   const umkm = new Map<string, UmkmPemesan>()
   for (const p of isi) umkm.set(keIdUmkm(p.usaha_id), keUmkm(p))
   return { pesanan: isi.map(kePesananMasuk), umkm: [...umkm.values()] }
+}
+
+/** Satu pesanan masuk yang tidak ada di halaman yang sudah dimuat. */
+export async function ambilPesananMasukSatu(
+  sesi: SesiDistributor,
+  pesananId: string,
+): Promise<{ pesanan: PesananMasuk; umkm: UmkmPemesan }> {
+  const p = await minta<PesananApi>(`/distributor/${sesi.distributorId}/pesanan/${pesananId}`, { token: sesi.token })
+  return { pesanan: kePesananMasuk(p), umkm: keUmkm(p) }
 }
 
 export type AksiDistributor = 'konfirmasi' | 'tolak' | 'kirim' | 'sampai'

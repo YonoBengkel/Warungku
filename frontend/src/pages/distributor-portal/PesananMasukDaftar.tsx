@@ -195,6 +195,15 @@ export default function PesananMasukDaftar() {
      mengirim tanpa menanyakan kurir dan resi (audit 3 Nov 2026). */
   const [lembarSatu, setLembarSatu] = useState<PesananMasuk | null>(null)
   const majukanPesananMasuk = useAplikasi((s) => s.majukanPesananMasuk)
+  const lamaAda = useAplikasi((s) => s.pesananMasukLamaAda)
+  const muatPesananMasukLama = useAplikasi((s) => s.muatPesananMasukLama)
+  const [memuatLama, setMemuatLama] = useState(false)
+
+  async function muatLama() {
+    setMemuatLama(true)
+    await muatPesananMasukLama()
+    setMemuatLama(false)
+  }
 
   const [pesananDitolak, setPesananDitolak] = useState<PesananMasuk | null>(null)
 
@@ -301,6 +310,14 @@ export default function PesananMasukDaftar() {
               />
             ))}
           </div>
+        )}
+        {/* Daftar hanya memuat satu halaman sekali jalan, jadi pesanan lama tetap bisa dijangkau. */}
+        {lamaAda && (
+            <div className="mt-4 flex justify-center">
+              <Tombol ragam="garis" memuat={memuatLama} onClick={muatLama}>
+                Muat pesanan lebih lama
+              </Tombol>
+            </div>
         )}
       </section>
 

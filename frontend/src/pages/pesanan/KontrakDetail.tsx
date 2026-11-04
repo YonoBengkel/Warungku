@@ -316,6 +316,7 @@ export default function KontrakDetail() {
               </h2>
               <Peringatan nada={kontrak.ketentuanKuotaKurang ? 'netral' : 'menipis'}>
                 <strong className="font-bold">Kalau kuota tidak terpenuhi:</strong> {ketentuan}
+                <span className="block mt-1">{BANTUAN.kuotaHanyaPeringatan}</span>
               </Peringatan>
             </section>
 

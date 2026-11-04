@@ -1,4 +1,4 @@
-import { useRef, useState, type ChangeEvent } from 'react'
+import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { CatatanPurwarupa, ChipPesanan, KartuBuktiPengiriman, TombolTerkunci, useTerkunci } from '@/components/domain'
 import { KALIMAT_PROMO, LencanaPromo } from '@/components/domain/KartuPromo'
@@ -62,6 +62,23 @@ export default function PesananDetail() {
   const terkunci = useTerkunci()
 
   const pesanan = useAplikasi((s) => s.pesanan.find((p) => p.id === id))
+  /* Daftar hanya memuat pesanan terbaru, jadi pesanan lama yang dibuka dari tautan diambil
+     sendiri. Selama itu, dan selama sesi dipulihkan, layar tidak boleh menulis "tidak ada". */
+  const sesiServer = useAplikasi((s) => s.sesiServer)
+  const memulihkanSesi = useAplikasi((s) => s.memulihkanSesi)
+  const pastikanPesanan = useAplikasi((s) => s.pastikanPesanan)
+  const perluDicari = !pesanan && !!sesiServer && /^\d+$/.test(id)
+  const [selesaiDicari, setSelesaiDicari] = useState<string | null>(null)
+  useEffect(() => {
+    if (!perluDicari || selesaiDicari === id) return
+    let batal = false
+    void pastikanPesanan(id).then(() => {
+      if (!batal) setSelesaiDicari(id)
+    })
+    return () => {
+      batal = true
+    }
+  }, [perluDicari, selesaiDicari, id, pastikanPesanan])
   const profil = useAplikasi((s) => s.profil)
   const kirimDraf = useAplikasi((s) => s.kirimDraf)
   const batalkanPesanan = useAplikasi((s) => s.batalkanPesanan)
@@ -79,6 +96,17 @@ export default function PesananDetail() {
   const [alasan, setAlasan] = useState<string>(ALASAN_BATAL[0])
   const [pembatalanDiajukan, setPembatalanDiajukan] = useState(false)
   const [mengirimDraf, setMengirimDraf] = useState(false)
+
+  if (!pesanan && (memulihkanSesi || (perluDicari && selesaiDicari !== id))) {
+    return (
+      <div className="pb-6 lg:pb-0">
+        <KepalaHalaman judul="Pesanan" kembaliKe="/pesanan" />
+        <p className="mt-4 text-isi text-ink-3" role="status">
+          Memuat pesanan…
+        </p>
+      </div>
+    )
+  }
 
   if (!pesanan) {
     return (

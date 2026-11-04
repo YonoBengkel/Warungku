@@ -381,6 +381,55 @@ def test_penilaian_sekali_per_pesanan_dan_jadi_rating(dunia):
     [ul] = klien.get(f"{u}/distributor/{w['distributor']}/ulasan", headers=w["kepala_umkm"]).json()
     assert ul["isi"] == "Rapi." and ul["rating"] == 4 and ul["aspek_ketepatan_waktu"] == 5
 
+    # Terbaca di kedua portal: menempel di pesanan, dan di daftar ulasan masing-masing.
+    d = f"/distributor/{w['distributor']}"
+    r = klien.get(f"{u}/pesanan/{p['id']}", headers=w["kepala_umkm"])
+    assert r.json()["ulasan"]["rating"] == 4 and r.json()["ulasan"]["aspek_jumlah_sesuai"] == 4
+    [masuk] = [x for x in klien.get(f"{d}/pesanan-masuk", headers=w["kepala_dist"]).json() if x["id"] == p["id"]]
+    assert masuk["ulasan"]["isi"] == "Rapi."
+    [saya] = klien.get(f"{u}/ulasan", headers=w["kepala_umkm"]).json()
+    assert saya["nomor_pesanan"] == p["nomor"]
+    [diterima] = klien.get(f"{d}/ulasan", headers=w["kepala_dist"]).json()
+    assert diterima["nama_usaha"] == "Warung Uji Pesanan"
+    # Daftar ulasan milik pihak lain tertutup.
+    assert klien.get(f"{u}/ulasan", headers=w["kepala_dist"]).status_code == 403
+    assert klien.get(f"{d}/ulasan", headers=w["kepala_umkm"]).status_code == 403
+
+
+def test_pesanan_lama_bisa_dimuat_lewat_mulai(dunia):
+    """Daftar berhalaman: `mulai` melewati pesanan terbaru, tanpa baris kembar di dua halaman."""
+    w, klien = dunia, TestClient(app)
+    ids = [_buat(klien, w)["id"] for _ in range(3)]
+    u, d = f"/usaha/{w['usaha']}/pesanan", f"/distributor/{w['distributor']}/pesanan-masuk"
+    for jalur, kepala in ((u, w["kepala_umkm"]), (d, w["kepala_dist"])):
+        awal = klien.get(f"{jalur}?batas=2", headers=kepala).json()
+        lanjut = klien.get(f"{jalur}?batas=2&mulai=2", headers=kepala).json()
+        assert [x["id"] for x in awal] + [x["id"] for x in lanjut] == list(reversed(ids))
+    # Rincian satu pesanan terbuka walau di luar halaman pertama.
+    r = klien.get(f"/distributor/{w['distributor']}/pesanan/{ids[0]}", headers=w["kepala_dist"])
+    assert r.status_code == 200 and r.json()["id"] == ids[0]
+
+
+def test_kuota_kurang_tidak_memblokir_dan_akun_tanpa_nib_boleh_berkontrak(dunia):
+    """
+    Keputusan Ilham 4 Nov 2026. Fixture ini memang tanpa NIB dan belum terverifikasi: pengajuan
+    kontrak tetap diterima. Kuota yang belum terpenuhi hanya peringatan: pesanan berikutnya, baik
+    di dalam maupun di luar kontrak, tidak ditolak.
+    """
+    w, klien = dunia, TestClient(app)
+    u, d = f"/usaha/{w['usaha']}", f"/distributor/{w['distributor']}"
+    assert klien.get(f"{u}/profil", headers=w["kepala_umkm"]).json()["nib"] is None
+    r = klien.post(f"{u}/kontrak", headers=w["kepala_umkm"], json={"paket_id": _paket(w)})
+    assert r.status_code == 201, r.text
+    kid = r.json()["id"]
+    assert klien.post(f"{d}/kontrak/{kid}/setujui", headers=w["kepala_dist"], json={}).status_code == 200
+
+    # Kuota 10 per bulan, baru dipesan 1 di dalam kontrak dan 1 di luar kontrak.
+    for baris in ({"penawaran_id": w["penawaran"], "jumlah": "1", "kontrak_id": kid},
+                  {"penawaran_id": w["penawaran"], "jumlah": "1"}):
+        r = klien.post(f"{u}/pesanan", headers=w["kepala_umkm"], json={"baris": [baris]})
+        assert r.status_code == 201, r.text
+
 
 def test_pengajuan_kontrak_bisa_ditarik_sebelum_dijawab(dunia):
     w, klien = dunia, TestClient(app)

@@ -56,6 +56,11 @@ barang seperti itu tidak bisa menjadi bahan menu.
 Di layar memasangkan ada pilihan **Pakai resep saran**. Tombol itu hanya mengisi bahan dan takaran, dan pemilik masih bisa
 mengubahnya sebelum menyimpan. Pemasangan berlaku untuk penjualan berikutnya, tidak menarik ulang penjualan yang sudah lewat.
 
+## Aturan kontrak
+
+Keputusan Ilham, 4 November 2026: kuota kontrak yang belum terpenuhi hanya menjadi peringatan, transaksi tidak diblokir. Akun
+tanpa NIB boleh membuat kontrak.
+
 ## Bukan lingkup MVP
 
 - Pembayaran sungguhan atau payment gateway. Uang hanya dicatat.

@@ -43,6 +43,27 @@ def _distributor_atau_404(sesi: Session, distributor_id: int) -> Distributor:
     return d
 
 
+def _profil(sesi: Session, d: Distributor) -> ProfilDistributor:
+    """Profil beserta angka penilaiannya, supaya portal tidak memakai angka data contoh (temuan 4 Nov 2026)."""
+    angka = sesi.exec(
+        text(
+            """
+            SELECT round(avg(rating)::numeric, 2)::float               AS rating,
+                   count(*)                                            AS jumlah_ulasan,
+                   count(DISTINCT usaha_id)                            AS jumlah_umkm_pengulas,
+                   round(avg(aspek_ketepatan_waktu)::numeric, 2)::float AS aspek_ketepatan,
+                   round(avg(aspek_jumlah_sesuai)::numeric, 2)::float   AS aspek_jumlah,
+                   round(avg(aspek_kondisi_barang)::numeric, 2)::float  AS aspek_kondisi,
+                   (SELECT count(*) FROM pesanan p
+                     WHERE p.distributor_id = :d
+                       AND p.status IN ('selesai', 'selesai-catatan')) AS jumlah_pesanan_selesai
+              FROM ulasan WHERE distributor_id = :d
+            """
+        ).bindparams(d=d.id)
+    ).one()
+    return ProfilDistributor.model_validate(d).model_copy(update=dict(angka._mapping))
+
+
 #: Kotak kasar wilayah Indonesia. Titik di luarnya hampir pasti salah ketuk.
 BATAS_LINTANG = (-11.5, 6.5)
 BATAS_BUJUR = (94.5, 141.5)
@@ -64,7 +85,7 @@ WILAYAH_KIRIM = ("Sleman", "Kota Yogyakarta", "Bantul", "Kulon Progo", "Gunungki
 def profil(distributor_id: int = Depends(distributor_saya)) -> ProfilDistributor:
     """Profil distributor yang sedang masuk, termasuk titik gudangnya."""
     with Session(mesin()) as sesi:
-        return ProfilDistributor.model_validate(_distributor_atau_404(sesi, distributor_id))
+        return _profil(sesi, _distributor_atau_404(sesi, distributor_id))
 
 
 @rute.put("/profil", response_model=ProfilDistributor)
@@ -104,7 +125,7 @@ def ubah_profil(info: InfoUsahaDistributor, distributor_id: int = Depends(distri
         sesi.add(d)
         sesi.commit()
         sesi.refresh(d)
-        return ProfilDistributor.model_validate(d)
+        return _profil(sesi, d)
 
 
 @rute.put("/layanan", response_model=ProfilDistributor)
@@ -132,7 +153,7 @@ def ubah_layanan(layanan: LayananDistributor, distributor_id: int = Depends(dist
         sesi.add(d)
         sesi.commit()
         sesi.refresh(d)
-        return ProfilDistributor.model_validate(d)
+        return _profil(sesi, d)
 
 
 @rute.put("/lokasi", response_model=ProfilDistributor)
@@ -153,7 +174,7 @@ def ubah_lokasi(lokasi: LokasiGudang, distributor_id: int = Depends(distributor_
         sesi.add(d)
         sesi.commit()
         sesi.refresh(d)
-        return ProfilDistributor.model_validate(d)
+        return _profil(sesi, d)
 
 
 @rute.get("/pesanan", response_model=list[PesananMasuk])

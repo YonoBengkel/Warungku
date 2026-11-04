@@ -261,6 +261,18 @@ export async function simpanProdukJadi(
   return keProduk(isi)
 }
 
+/** Pembeli langganan baru. `jenis` salah satu dari ritel-modern, toko-oleh-oleh, katering, warung. */
+export async function tambahPembeli(
+  sesi: SesiServer,
+  pembeli: { nama: string; jenis: string; kota: string | null; ketentuan: string | null },
+): Promise<{ id: number; nama: string }> {
+  return minta<{ id: number; nama: string }>(`/usaha/${sesi.usahaId}/pembeli`, {
+    method: 'POST',
+    token: sesi.token,
+    body: JSON.stringify(pembeli),
+  })
+}
+
 export async function ambilKiriman(sesi: SesiServer, hari = 21): Promise<KirimanPembeli[]> {
   const isi = await minta<KirimanApi[]>(`/usaha/${sesi.usahaId}/penjualan?hari=${hari}`, { token: sesi.token })
   return isi.map(keKiriman)

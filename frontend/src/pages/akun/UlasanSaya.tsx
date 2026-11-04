@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { KepalaHalaman } from '@/components/ui/navigasi'
 import { Avatar, JudulBagian, Kartu, Lencana, Pemisah, TombolTautan } from '@/components/ui/dasar'
@@ -6,6 +6,8 @@ import { KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
 import { IkonBintang, IkonBintangIsi, IkonKunci, IkonPena } from '@/icons'
 import { angka, tanggalPendek, waktuLalu } from '@/lib/format'
 import { daftarUlasan, distributorById } from '@/data/dummy'
+import { ambilUlasanSaya } from '@/lib/apiKatalog'
+import type { Ulasan } from '@/lib/types'
 import { useAplikasi } from '@/store/aplikasi'
 
 /**
@@ -40,13 +42,35 @@ export default function UlasanSaya() {
     [pesanan],
   )
 
+  /* Mode server: ulasan sungguhan. Dulu halaman ini selalu membaca data contoh, jadi
+     Kopi Kita melihat ulasan karangan, dan ulasan yang baru ditulis tidak muncul. */
+  const sesi = useAplikasi((s) => s.sesiServer)
+  const [dariServer, setDariServer] = useState<Ulasan[] | null>(null)
+  const [galatMuat, setGalatMuat] = useState(false)
+  useEffect(() => {
+    if (!sesi) return
+    let batal = false
+    ambilUlasanSaya(sesi)
+      .then((isi) => {
+        if (!batal) setDariServer(isi)
+      })
+      .catch(() => {
+        if (!batal) setGalatMuat(true)
+      })
+    return () => {
+      batal = true
+    }
+  }, [sesi])
+
   const sudahDinilai = useMemo(
     () =>
-      daftarUlasan
-        .filter((u) => u.namaUsaha === namaUsaha)
-        .slice()
-        .sort((a, b) => +new Date(b.waktu) - +new Date(a.waktu)),
-    [namaUsaha],
+      sesi
+        ? (dariServer ?? [])
+        : daftarUlasan
+            .filter((u) => u.namaUsaha === namaUsaha)
+            .slice()
+            .sort((a, b) => +new Date(b.waktu) - +new Date(a.waktu)),
+    [sesi, dariServer, namaUsaha],
   )
 
   return (
@@ -134,7 +158,15 @@ export default function UlasanSaya() {
               className="mb-3"
             />
 
-            {sudahDinilai.length === 0 ? (
+            {sesi && galatMuat ? (
+              <Peringatan nada="menipis" judul="Ulasanmu belum bisa dimuat">
+                Coba buka halaman ini lagi sebentar lagi.
+              </Peringatan>
+            ) : sesi && !dariServer ? (
+              <p className="text-isi text-ink-3" role="status">
+                Memuat ulasanmu…
+              </p>
+            ) : sudahDinilai.length === 0 ? (
               <Kartu>
                 <KeadaanKosong
                   padat

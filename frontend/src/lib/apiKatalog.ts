@@ -1,6 +1,6 @@
 import type { Distributor, JenisUsaha, Penawaran, Ulasan } from '@/lib/types'
 import { angka, minta } from '@/lib/api'
-import type { SesiServer } from '@/lib/api'
+import type { SesiDistributor, SesiServer } from '@/lib/api'
 import { keIdDistributor } from '@/lib/apiPesanan'
 import { kePaket } from '@/lib/apiKontrak'
 import type { PaketApi } from '@/lib/apiKontrak'
@@ -154,26 +154,44 @@ export async function ambilKatalog(
   }
 }
 
+interface UlasanApi {
+  id: number
+  distributor_id: number
+  nama_usaha: string
+  kota_usaha: string
+  rating: number
+  isi: string | null
+  waktu: string
+  nomor_pesanan: string
+  aspek_ketepatan_waktu: number
+  aspek_jumlah_sesuai: number
+  aspek_kondisi_barang: number
+  jumlah_pesanan_penulis: number
+  pelanggan_sejak: string | null
+}
+
 export async function ambilUlasan(sesi: SesiServer, distributorId: string, batas = 60): Promise<Ulasan[]> {
   const id = Number(distributorId.replace(/^d-0*/, ''))
-  const isi = await minta<
-    Array<{
-      id: number
-      distributor_id: number
-      nama_usaha: string
-      kota_usaha: string
-      rating: number
-      isi: string | null
-      waktu: string
-      nomor_pesanan: string
-      aspek_ketepatan_waktu: number
-      aspek_jumlah_sesuai: number
-      aspek_kondisi_barang: number
-      jumlah_pesanan_penulis: number
-      pelanggan_sejak: string | null
-    }>
-  >(`/usaha/${sesi.usahaId}/distributor/${id}/ulasan?batas=${batas}`, { token: sesi.token })
-  return isi.map((u) => ({
+  const isi = await minta<UlasanApi[]>(`/usaha/${sesi.usahaId}/distributor/${id}/ulasan?batas=${batas}`, {
+    token: sesi.token,
+  })
+  return isi.map(keUlasan)
+}
+
+/** Ulasan yang ditulis usaha ini, untuk halaman Ulasan Saya. */
+export async function ambilUlasanSaya(sesi: SesiServer, batas = 100): Promise<Ulasan[]> {
+  return (await minta<UlasanApi[]>(`/usaha/${sesi.usahaId}/ulasan?batas=${batas}`, { token: sesi.token })).map(keUlasan)
+}
+
+/** Ulasan untuk distributor yang sedang masuk, untuk halaman Penilaian dan Ulasan di portalnya. */
+export async function ambilUlasanMasuk(sesi: SesiDistributor, batas = 100): Promise<Ulasan[]> {
+  return (await minta<UlasanApi[]>(`/distributor/${sesi.distributorId}/ulasan?batas=${batas}`, { token: sesi.token })).map(
+    keUlasan,
+  )
+}
+
+function keUlasan(u: UlasanApi): Ulasan {
+  return {
     id: `srv-ul-${u.id}`,
     distributorId: keIdDistributor(u.distributor_id),
     namaUsaha: u.nama_usaha,
@@ -190,7 +208,7 @@ export async function ambilUlasan(sesi: SesiServer, distributorId: string, batas
       jumlahSesuai: u.aspek_jumlah_sesuai,
       kondisiBarang: u.aspek_kondisi_barang,
     },
-  }))
+  }
 }
 
 /** Saran Mesin 2 dirangkum per distributor, atas semua barang yang perlu dibeli. */

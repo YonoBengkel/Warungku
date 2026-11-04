@@ -19,7 +19,7 @@ from sqlmodel import Session, select
 from warungku.basis_data import mesin
 from warungku.model import Usaha
 
-from .otentikasi import usaha_saya
+from .otentikasi import distributor_saya, usaha_saya
 from .skema import DistributorKatalog, Katalog, PaketKontrakRingkas, PenawaranKatalog, UlasanPublik, UsahaRingkas
 
 rute = APIRouter(prefix="/usaha/{usaha_id}", tags=["katalog"])
@@ -105,10 +105,21 @@ def ulasan_distributor(
     berlangganan) dihitung dari tabel pesanan, supaya pembaca bisa menimbang
     ulasan dari pelanggan lama berbeda dengan ulasan dari pembeli sekali.
     """
+    return _ulasan("ul.distributor_id = :x", distributor_id, batas)
+
+
+@rute.get("/ulasan", response_model=list[UlasanPublik])
+def ulasan_saya(usaha_id: int = Depends(usaha_saya), batas: int = Query(60, ge=1, le=300)) -> list[UlasanPublik]:
+    """Ulasan yang ditulis usaha ini, untuk halaman Ulasan Saya."""
+    return _ulasan("ul.usaha_id = :x", usaha_id, batas)
+
+
+def _ulasan(syarat: str, nilai: int, batas: int) -> list[UlasanPublik]:
+    """`syarat` selalu teks tetap dari fungsi di berkas ini, bukan isian pengguna."""
     with Session(mesin()) as sesi:
         baris = sesi.exec(
             text(
-                """
+                f"""
                 SELECT ul.id, ul.distributor_id, u.nama AS nama_usaha, u.kota AS kota_usaha,
                        ul.rating, ul.isi, ul.waktu, p.nomor AS nomor_pesanan,
                        ul.aspek_ketepatan_waktu, ul.aspek_jumlah_sesuai, ul.aspek_kondisi_barang,
@@ -121,11 +132,11 @@ def ulasan_distributor(
                         FROM pesanan q
                        WHERE q.usaha_id = ul.usaha_id AND q.distributor_id = ul.distributor_id
                   ) h ON TRUE
-                 WHERE ul.distributor_id = :d
+                 WHERE {syarat}
                  ORDER BY ul.waktu DESC
                  LIMIT :n
                 """
-            ).bindparams(d=distributor_id, n=batas)
+            ).bindparams(x=nilai, n=batas)
         ).all()
         return [UlasanPublik(**dict(r._mapping)) for r in baris]
 
@@ -148,6 +159,14 @@ def _paket_ringkas(p: PaketKontrak) -> PaketKontrakRingkas:
         hemat_persen=p.hemat_persen, ketentuan_kuota_kurang=p.ketentuan_kuota_kurang,
         ketentuan_berhenti=p.ketentuan_berhenti,
     )
+
+
+@rute_distributor.get("/ulasan", response_model=list[UlasanPublik])
+def ulasan_masuk(
+    distributor_id: int = Depends(distributor_saya), batas: int = Query(100, ge=1, le=300)
+) -> list[UlasanPublik]:
+    """Ulasan untuk distributor ini, untuk halaman Penilaian dan Ulasan di portalnya."""
+    return _ulasan("ul.distributor_id = :x", distributor_id, batas)
 
 
 @rute_distributor.get("/katalog", response_model=KatalogDistributor)

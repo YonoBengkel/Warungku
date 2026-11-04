@@ -85,6 +85,7 @@ def dapur():
         u = ids["usaha"]
         for sql in (
             "DELETE FROM pergerakan WHERE usaha_id = :u",
+            "DELETE FROM permintaan_harian WHERE usaha_id = :u",
             "DELETE FROM penjualan_baris WHERE penjualan_id IN (SELECT id FROM penjualan WHERE usaha_id = :u)",
             "DELETE FROM penjualan WHERE usaha_id = :u",
             "DELETE FROM pembeli WHERE usaha_id = :u",
@@ -123,6 +124,42 @@ def test_produksi_memotong_bahan_sesuai_resep(dapur):
     # Sisa cabai 600 g / 100 g = 6 toples, sisa toples 6: keduanya membatasi di 6.
     assert produk["bisa_dibuat"] == 6
     assert [b["cukup_untuk"] for b in produk["resep"]] == [6, 6]
+
+
+def test_sesi_masak_menambah_permintaan_untuk_mesin1(dapur):
+    """Bahan yang dipakai memasak adalah permintaan, sama seperti nota kasir dan pemakaian manual."""
+    k, u, kepala = dapur["klien"], dapur["usaha"], dapur["kepala"]
+    for _ in range(2):  # Dua sesi sehari menjumlah di baris hari yang sama.
+        r = k.post(f"/usaha/{u}/produksi", json={"produk_jadi_id": dapur["produk"], "jumlah": "2"}, headers=kepala)
+        assert r.status_code == 201, r.text
+    with mesin().connect() as kon:
+        baris = kon.execute(
+            text("SELECT barang_id, jumlah FROM permintaan_harian WHERE usaha_id = :u"), {"u": u}
+        ).all()
+    jumlah = {b: Decimal(n) for b, n in baris}
+    assert jumlah == {dapur["cabai"]: Decimal("400"), dapur["toples"]: Decimal("4")}
+
+
+def test_usaha_selain_produsen_memakai_alur_yang_sama(dapur):
+    """Tab Produksi berlaku untuk semua UMKM: warung makan pun bisa menambah pembeli, memasak, dan mengirim."""
+    k, u, kepala = dapur["klien"], dapur["usaha"], dapur["kepala"]
+    assert k.patch(f"/usaha/{u}/profil", json={"jenis_usaha": "warung-makan"}, headers=kepala).status_code == 200
+    r = k.post(f"/usaha/{u}/pembeli", json={"nama": "  Katering Bu Sri ", "jenis": "katering", "kota": "Sleman"}, headers=kepala)
+    assert r.status_code == 201 and r.json()["nama"] == "Katering Bu Sri", r.text
+    pid = r.json()["id"]
+    # Nama yang sama, apa pun besar-kecil hurufnya, tidak membuat pembeli kembar.
+    r = k.post(f"/usaha/{u}/pembeli", json={"nama": "katering bu sri", "jenis": "warung"}, headers=kepala)
+    assert r.status_code == 409
+    assert k.post(f"/usaha/{u}/pembeli", json={"nama": "Toko", "jenis": "pasar"}, headers=kepala).status_code == 422
+    assert k.post(f"/usaha/{u + 100_000}/pembeli", json={"nama": "Toko", "jenis": "warung"}, headers=kepala).status_code == 403
+
+    r = k.post(f"/usaha/{u}/produksi", json={"produk_jadi_id": dapur["produk"], "jumlah": "1"}, headers=kepala)
+    assert r.status_code == 201, r.text
+    r = k.post(f"/usaha/{u}/penjualan", headers=kepala,
+               json={"pembeli_id": pid, "baris": [{"produk_jadi_id": dapur["produk"], "jumlah": "1"}]})
+    assert r.status_code == 201, r.text
+    hasil = k.get(f"/usaha/{u}/produksi/ringkasan", headers=kepala).json()
+    assert {x["nama"] for x in hasil["pembeli"]} >= {"Katering Bu Sri"}
 
 
 def test_bahan_kurang_menolak_seluruh_produksi(dapur):

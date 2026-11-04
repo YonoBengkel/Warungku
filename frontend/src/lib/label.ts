@@ -67,6 +67,9 @@ export const BANTUAN = {
   bayarLuar: 'Pembayaran dilakukan di luar aplikasi, langsung ke distributor.',
   bayarLuarPanjang:
     'Aplikasi hanya menyimpan catatan dan bukti. Pembayaran dilakukan langsung ke distributor.',
+  /** Keputusan Ilham 4 Nov 2026: kuota yang kurang hanya peringatan, transaksi tidak diblokir. */
+  kuotaHanyaPeringatan:
+    'Aplikasi hanya mengingatkan kekurangannya. Pesananmu tetap bisa dikirim walau kuota bulan ini belum terpenuhi.',
   ketentuanKosong: 'Distributor belum mencantumkan ketentuan ini.',
   satuKontrakSatuBarang: 'Setiap barang punya kontrak sendiri.',
 } as const

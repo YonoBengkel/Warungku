@@ -203,10 +203,12 @@ export function PitaDataContoh({ portal }: { portal: 'umkm' | 'distributor' }) {
   const contohUmkm = useAplikasi((s) => s.sumberData === 'contoh')
   const tidakTerjangkau = useAplikasi((s) => s.alasanContoh === 'tak-terjangkau')
   const contohDistributor = useAplikasi((s) => s.pesananMasukServer === null)
+  const memulihkanSesi = useAplikasi((s) => s.memulihkanSesi)
   const aturMasuk = useAplikasi((s) => s.aturMasuk)
   const navigate = useNavigate()
 
-  if (portal === 'umkm' ? !contohUmkm : !contohDistributor) return null
+  // Selama sesi dipulihkan sesudah muat ulang, belum ketahuan datanya contoh atau bukan.
+  if (portal === 'umkm' ? !contohUmkm || memulihkanSesi : !contohDistributor) return null
   const kalimat =
     portal === 'distributor'
       ? 'Portal ini memakai data contoh. Perubahan di mode ini tidak tersimpan.'

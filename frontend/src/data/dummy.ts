@@ -3153,6 +3153,11 @@ export function pasangUmkmServer(daftar: UmkmPemesan[]) {
   for (const u of daftar) umkmServer.set(u.id, u)
 }
 
+/** Seperti `pasangUmkmServer`, tetapi pemesan dari pesanan lama yang sudah dimuat tetap dikenali. */
+export function tambahUmkmServer(daftar: UmkmPemesan[]) {
+  for (const u of daftar) umkmServer.set(u.id, u)
+}
+
 /* ================================================================== */
 /* Portal Distributor — pesanan masuk                                 */
 /* ================================================================== */

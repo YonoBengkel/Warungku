@@ -517,6 +517,19 @@ class JejakPesananLengkap(BaseModel):
     keterangan: str | None
 
 
+class UlasanPesanan(BaseModel):
+    """Penilaian yang menempel di satu pesanan."""
+
+    model_config = {"from_attributes": True}
+
+    rating: int
+    isi: str | None
+    waktu: datetime
+    aspek_ketepatan_waktu: int
+    aspek_jumlah_sesuai: int
+    aspek_kondisi_barang: int
+
+
 class PesananLengkap(BaseModel):
     """Satu pesanan lengkap dengan baris dan jejaknya. Bentuk yang sama dibaca kedua portal."""
 
@@ -554,6 +567,7 @@ class PesananLengkap(BaseModel):
     kirim_catatan: str | None
     baris: list[BarisPesananLengkap]
     jejak: list[JejakPesananLengkap]
+    ulasan: UlasanPesanan | None = None
 
 
 class BarisPenerimaan(BaseModel):
@@ -703,6 +717,14 @@ class ProfilDistributor(BaseModel):
     minimum_pesanan: int
     lat: float | None
     lng: float | None
+    #: Dihitung dari tabel `ulasan` dan `pesanan`, sama dengan yang dibaca pembeli di katalog.
+    rating: float | None = None
+    jumlah_ulasan: int = 0
+    jumlah_umkm_pengulas: int = 0
+    jumlah_pesanan_selesai: int = 0
+    aspek_ketepatan: float | None = None
+    aspek_jumlah: float | None = None
+    aspek_kondisi: float | None = None
 
 
 class LokasiGudang(BaseModel):
@@ -948,6 +970,13 @@ class ProdukJadiRingkas(BaseModel):
     perkiraan_7_hari: Decimal
     #: Kelipatan 6 yang menutup perkiraan pekan depan plus batas aman, dikurangi stok.
     saran_produksi: int
+
+
+class PembeliBaru(BaseModel):
+    nama: str = Field(min_length=1, max_length=120)
+    jenis: Literal["ritel-modern", "toko-oleh-oleh", "katering", "warung"]
+    kota: str | None = Field(default=None, max_length=60)
+    ketentuan: str | None = Field(default=None, max_length=200)
 
 
 class PembeliRingkas(BaseModel):

@@ -1,10 +1,13 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { JudulBagian, Kartu, Metrik, Pemisah } from '@/components/ui/dasar'
 import { KepalaHalaman } from '@/components/ui/navigasi'
+import { Peringatan } from '@/components/ui/umpanBalik'
 import { IkonBintang, IkonBintangIsi } from '@/icons'
+import { ambilUlasanMasuk } from '@/lib/apiKatalog'
+import type { Ulasan } from '@/lib/types'
 import { angka, bintang, tanggalPendek } from '@/lib/format'
 import { umkmById } from '@/data/dummy'
-import { useDistributorAktif, usePesananMasuk } from '@/store/aplikasi'
+import { useAplikasi, useDistributorAktif, usePesananMasuk } from '@/store/aplikasi'
 import { SUB_RATING } from './formProfil'
 
 /**
@@ -16,12 +19,48 @@ export default function PenilaianUlasan() {
   const distributor = useDistributorAktif()
   const pesananMasuk = usePesananMasuk()
 
+  // Portal tersambung: ulasan sungguhan dari server. Data contoh: ulasan yang menempel di pesanan.
+  const sesi = useAplikasi((s) => s.sesiDistributor)
+  const [dariServer, setDariServer] = useState<Ulasan[] | null>(null)
+  const [galatMuat, setGalatMuat] = useState(false)
+  useEffect(() => {
+    if (!sesi) return
+    let batal = false
+    ambilUlasanMasuk(sesi)
+      .then((isi) => {
+        if (!batal) setDariServer(isi)
+      })
+      .catch(() => {
+        if (!batal) setGalatMuat(true)
+      })
+    return () => {
+      batal = true
+    }
+  }, [sesi])
+
   const ulasan = useMemo(
     () =>
-      pesananMasuk
-        .filter((p) => p.ulasan)
-        .sort((a, b) => +new Date(b.ulasan!.waktu) - +new Date(a.ulasan!.waktu)),
-    [pesananMasuk],
+      sesi
+        ? (dariServer ?? []).map((u) => ({
+            id: u.id,
+            nama: u.namaUsaha,
+            nomor: u.pesananId,
+            rating: u.rating,
+            isi: u.isi,
+            waktu: u.waktu,
+          }))
+        : pesananMasuk
+            .filter((p) => p.ulasan)
+            .sort((a, b) => +new Date(b.ulasan!.waktu) - +new Date(a.ulasan!.waktu))
+            .map((p) => ({
+              id: p.id,
+              nama: umkmById(p.umkmId)?.nama ?? 'Pemilik usaha',
+              nomor: p.nomor,
+              rating: p.ulasan!.rating,
+              isi: p.ulasan!.isi,
+              waktu: p.ulasan!.waktu,
+            })),
+    [sesi, dariServer, pesananMasuk],
   )
 
   return (
@@ -88,23 +127,30 @@ export default function PenilaianUlasan() {
             keterangan={ulasan.length > 0 ? `${angka(ulasan.length)} ulasan, yang terbaru paling atas.` : undefined}
           />
           <Kartu>
-            {ulasan.length === 0 ? (
+            {sesi && galatMuat ? (
+              <Peringatan nada="menipis" judul="Ulasan belum bisa dimuat">
+                Coba buka halaman ini lagi sebentar lagi.
+              </Peringatan>
+            ) : sesi && !dariServer ? (
+              <p className="text-isi text-ink-3" role="status">
+                Memuat ulasan…
+              </p>
+            ) : ulasan.length === 0 ? (
               <p className="text-isi text-ink-2 leading-relaxed">
                 Belum ada pemilik usaha yang menulis penilaian. Ulasan bisa ditulis setelah pesanannya ditandai sudah
                 sampai.
               </p>
             ) : (
               <div className="divide-y divide-line">
-                {ulasan.map((p) => {
-                  const u = p.ulasan!
+                {ulasan.map((u) => {
                   return (
-                    <div key={p.id} className="py-3 first:pt-0 last:pb-0">
+                    <div key={u.id} className="py-3 first:pt-0 last:pb-0">
                       {/* Dibiarkan membungkus: nama usaha bisa panjang, dan bintang
                           + angkanya tidak boleh ikut menyempit sampai melebarkan
                           kartu di layar 360px. */}
                       <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
                         <p className="text-isi font-bold text-ink leading-snug min-w-0">
-                          {umkmById(p.umkmId)?.nama ?? 'Pemilik usaha'}
+                          {u.nama}
                         </p>
                         <span className="flex items-center gap-1 shrink-0">
                           <span className="flex items-center gap-0.5 text-menipis" aria-hidden="true">
@@ -119,7 +165,7 @@ export default function PenilaianUlasan() {
                         <p className="mt-1 text-isi text-ink-2 leading-relaxed max-w-[60ch]">&ldquo;{u.isi}&rdquo;</p>
                       )}
                       <p className="mt-1 text-kecil text-ink-3">
-                        {p.nomor} &middot; {tanggalPendek(u.waktu)}
+                        {u.nomor} &middot; {tanggalPendek(u.waktu)}
                       </p>
                     </div>
                   )

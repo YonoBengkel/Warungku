@@ -190,6 +190,7 @@ export default function RincianPaket() {
                 </p>
               </>
             )}
+            <p className="mt-2">{BANTUAN.kuotaHanyaPeringatan}</p>
           </Akordeon>
 
           <Akordeon judul="Kalau ingin berhenti di tengah jalan">

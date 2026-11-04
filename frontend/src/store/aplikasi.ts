@@ -60,6 +60,7 @@ import {
   rincianHarga,
   sinkronKatalog,
   statusStok,
+  tambahUmkmServer,
   umkmById,
   warnaTitikUntuk,
 } from '@/data/dummy'
@@ -93,6 +94,9 @@ import {
   ajukanDrafServer,
   ambilPesanan,
   ambilPesananMasuk,
+  ambilPesananMasukSatu,
+  ambilPesananSatu,
+  UKURAN_HALAMAN_PESANAN,
   batalkanPesananServer,
   buatPesanan,
   kirimUlasanServer,
@@ -213,6 +217,9 @@ interface KeadaanAplikasi {
   profilDistributorServer: ProfilServer | null
   racun: Racun[]
   hasilKirimTerakhir: HasilKirim | null
+  /** Halaman terakhir yang dimuat penuh, jadi mungkin masih ada pesanan yang lebih lama. */
+  pesananLamaAda: boolean
+  pesananMasukLamaAda: boolean
   /** Pesanan masuk yang aksinya sedang dikirim ke server. Tombolnya memuat dan tidak bisa ditekan dua kali. */
   pesananDiproses: string[]
 
@@ -230,6 +237,12 @@ interface KeadaanAplikasi {
   sambungDistributor: (email: string, kataSandi: string) => Promise<void>
   putusDistributor: () => void
   muatPesananMasuk: () => Promise<void>
+  /** Halaman berikutnya dari daftar pesanan. Galatnya tampil sebagai racun. */
+  muatPesananLama: () => Promise<void>
+  muatPesananMasukLama: () => Promise<void>
+  /** Muat satu pesanan yang belum ada di daftar, misalnya pesanan lama dari tautan. Hasilnya: ketemu atau tidak. */
+  pastikanPesanan: (id: string) => Promise<boolean>
+  pastikanPesananMasuk: (id: string) => Promise<boolean>
   /**
    * Simpan titik gudang dari Profil (revisi 23 Okt). `null` mengosongkannya:
    * peta lalu memakai titik tengah kota. Mengembalikan true bila tersimpan.
@@ -383,6 +396,13 @@ function galatSimpan(e: unknown, apa: string): string {
   return e instanceof Error && e.message ? e.message : `${apa} belum tersimpan. Coba lagi sebentar lagi.`
 }
 
+/** Halaman pertama yang baru menimpa, sedangkan pesanan lebih lama yang sudah dimuat tetap ada. */
+function gabungHalaman<T extends { id: string }>(lama: T[] | null, baru: T[]): T[] {
+  if (!lama) return baru
+  const ada = new Set(baru.map((x) => x.id))
+  return [...baru, ...lama.filter((x) => !ada.has(x.id))]
+}
+
 /**
  * Mengubah satu kontrak di tempat ia disimpan: kontrak milik pemilik aplikasi
  * ada di `kontrak`, kontrak UMKM lain di `kontrakUmkmLain`.
@@ -460,7 +480,7 @@ function aksiServer(
       const umkm = get().sesiServer
       if (umkm) {
         const pesanan = await ambilPesanan(umkm).catch(() => null)
-        if (pesanan) useAplikasi.setState({ pesanan })
+        if (pesanan) useAplikasi.setState((s) => ({ pesanan: gabungHalaman(s.pesanan, pesanan) }))
       }
       get().tampilkanRacun(pesan, aksi === 'tolak' ? 'menipis' : 'aman')
     })
@@ -605,6 +625,7 @@ function keadaanServer(s: KeadaanAplikasi, sesi: SesiServer, isi: IsiServer): Pa
     sesiServer: sesi,
     barang: isi.barang,
     pesanan: isi.pesanan,
+    pesananLamaAda: isi.pesanan.length >= UKURAN_HALAMAN_PESANAN,
     kasir: kasirServer(isi.menu),
     resepMenu: isi.menu?.resep ?? [],
     notaTerbaru: null,
@@ -667,6 +688,8 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
   profilDistributorServer: null,
   racun: [],
   hasilKirimTerakhir: null,
+  pesananLamaAda: false,
+  pesananMasukLamaAda: false,
   pesananDiproses: [],
 
   aturTema: (t) => {
@@ -691,6 +714,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
       sesiServer: null,
       barang: daftarBarang,
       pesanan: daftarPesanan,
+      pesananLamaAda: false,
       kasir: dataKasirAwal,
       resepMenu: [],
       notaTerbaru: null,
@@ -823,6 +847,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
     set({
       sesiDistributor: null,
       pesananMasukServer: null,
+      pesananMasukLamaAda: false,
       kontrakMasukServer: null,
       katalogDistributorServer: null,
       profilDistributorServer: null,
@@ -849,14 +874,19 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
       ])
       // Pemesan dari pesanan dipasang terakhir supaya menang: hanya pesanan yang
       // membawa koordinat tempat usaha, kontrak memakai titik pengganti.
-      pasangUmkmServer([...kontrak.umkm, ...masuk.umkm])
-      set({
+      tambahUmkmServer([...kontrak.umkm, ...masuk.umkm])
+      set((s) => ({
         sesiDistributor: sesi,
-        pesananMasukServer: masuk.pesanan,
+        pesananMasukServer: gabungHalaman(s.pesananMasukServer, masuk.pesanan),
+        // Selama halaman berikutnya belum pernah diminta, penanda ini mengikuti halaman pertama.
+        pesananMasukLamaAda:
+          (s.pesananMasukServer?.length ?? 0) > UKURAN_HALAMAN_PESANAN
+            ? s.pesananMasukLamaAda
+            : masuk.pesanan.length >= UKURAN_HALAMAN_PESANAN,
         kontrakMasukServer: kontrak.kontrak,
         katalogDistributorServer: katalog,
         profilDistributorServer: profil,
-      })
+      }))
     } catch {
       // Token hangus atau server mati: portal kembali ke data contoh.
       get().putusDistributor()
@@ -888,6 +918,60 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
     }
   },
 
+  muatPesananLama: async () => {
+    const sesi = get().sesiServer
+    if (!sesi) return
+    try {
+      const isi = await ambilPesanan(sesi, get().pesanan.length)
+      set((s) => ({
+        pesanan: gabungHalaman(isi, s.pesanan),
+        pesananLamaAda: isi.length >= UKURAN_HALAMAN_PESANAN,
+      }))
+    } catch (e) {
+      get().tampilkanRacun(e instanceof Error ? e.message : 'Pesanan lama belum bisa dimuat. Coba lagi sebentar lagi.', 'kritis')
+    }
+  },
+
+  muatPesananMasukLama: async () => {
+    const sesi = get().sesiDistributor
+    if (!sesi) return
+    try {
+      const isi = await ambilPesananMasuk(sesi, get().pesananMasukServer?.length ?? 0)
+      tambahUmkmServer(isi.umkm)
+      set((s) => ({
+        pesananMasukServer: gabungHalaman(isi.pesanan, s.pesananMasukServer ?? []),
+        pesananMasukLamaAda: isi.pesanan.length >= UKURAN_HALAMAN_PESANAN,
+      }))
+    } catch (e) {
+      get().tampilkanRacun(e instanceof Error ? e.message : 'Pesanan lama belum bisa dimuat. Coba lagi sebentar lagi.', 'kritis')
+    }
+  },
+
+  pastikanPesanan: async (id) => {
+    const sesi = get().sesiServer
+    if (!sesi) return false
+    try {
+      const p = await ambilPesananSatu(sesi, id)
+      set((s) => ({ pesanan: gabungHalaman([p], s.pesanan) }))
+      return true
+    } catch {
+      return false // Tidak ada, atau bukan milik usaha ini: layarnya menulis "sudah tidak ada".
+    }
+  },
+
+  pastikanPesananMasuk: async (id) => {
+    const sesi = get().sesiDistributor
+    if (!sesi) return false
+    try {
+      const { pesanan, umkm } = await ambilPesananMasukSatu(sesi, id)
+      tambahUmkmServer([umkm])
+      set((s) => ({ pesananMasukServer: gabungHalaman([pesanan], s.pesananMasukServer ?? []) }))
+      return true
+    } catch {
+      return false
+    }
+  },
+
   periksaKabarPesanan: async (id) => {
     const sesi = get().sesiServer
     // Data contoh tidak punya distributor sungguhan yang bisa mengabari.
@@ -901,7 +985,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
       get().tampilkanRacun('Kabar terbaru belum bisa diambil. Coba lagi sebentar lagi.', 'kritis')
       return
     }
-    set({ pesanan })
+    set((s) => ({ pesanan: gabungHalaman(s.pesanan, pesanan) }))
     const sidik = (p: Pesanan | undefined) =>
       p ? `${p.status}|${p.jejak.length}|${p.kiriman?.nomorResi ?? ''}|${p.pengiriman?.waktuSampai ?? ''}` : ''
     const berubah = pesanan.filter((p) => (!id || p.id === id) && sidik(p) !== sidik(lama.find((x) => x.id === p.id)))
@@ -1733,7 +1817,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
         const umkm = get().sesiServer
         if (umkm) {
           const pesanan = await ambilPesanan(umkm).catch(() => null)
-          if (pesanan) useAplikasi.setState({ pesanan })
+          if (pesanan) useAplikasi.setState((s) => ({ pesanan: gabungHalaman(s.pesanan, pesanan) }))
         }
         const diterima = baru.length - gagal
         get().tampilkanRacun(
@@ -1950,7 +2034,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
         const umkm = get().sesiServer
         if (umkm) {
           const pesanan = await ambilPesanan(umkm).catch(() => null)
-          if (pesanan) useAplikasi.setState({ pesanan })
+          if (pesanan) useAplikasi.setState((s) => ({ pesanan: gabungHalaman(s.pesanan, pesanan) }))
         }
         get().tampilkanRacun(
           gagal === 0

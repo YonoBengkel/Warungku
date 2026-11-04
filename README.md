@@ -550,11 +550,12 @@ turnify-flow/
 | GET, POST | `/bayar/{token}`, `/bayar/{token}/lunas` | Halaman yang dibuka HP dari QR simulasi, tanpa masuk, untuk menandai tagihan lunas |
 | GET | `/usaha/{usaha_id}/shift?batas=&mulai=` | Riwayat shift kasir beserta rekap tunai/QRIS/transfer dan selisih laci kas |
 | GET | `/usaha/{usaha_id}/produksi/ringkasan` | UMKM produsen: barang jadi, resep, jumlah yang bisa dibuat, perkiraan pesanan 7 hari, saran masak, pembeli, omset bulanan |
-| POST | `/usaha/{usaha_id}/produk-jadi` | Tambah produk jadi baru atau perbarui resep/komposisi bahannya sekaligus (UMKM produsen) |
+| POST | `/usaha/{usaha_id}/produk-jadi` | Tambah produk jadi baru atau perbarui resep/komposisi bahannya sekaligus (tab Menu di Produksi) |
+| POST | `/usaha/{usaha_id}/pembeli` | Pembeli langganan baru untuk tab Kiriman ke pembeli |
 | GET, POST | `/usaha/{usaha_id}/produksi` | Riwayat sesi masak; catat sesi masak (bahan dipotong sesuai resep, ditolak kalau bahan kurang) |
 | GET, POST | `/usaha/{usaha_id}/penjualan` | Riwayat kiriman ke pembeli usaha; catat kiriman (ditolak kalau stok barang jadi kurang) |
 | GET | `/usaha/{usaha_id}/ringkasan-penjualan?dari=&sampai=` | Ringkasan penjualan: dari nota kasir, atau dari kiriman ke pembeli untuk UMKM produsen. Total, jumlah, per hari, terlaris, pembanding periode sebelumnya; tanpa nota demo. Rentang bawaan 30 hari sampai data terakhir |
-| GET | `/usaha/{usaha_id}/pesanan` | Pesanan usaha ini beserta baris dan jejaknya |
+| GET | `/usaha/{usaha_id}/pesanan` | Pesanan usaha ini beserta baris, jejak, dan penilaiannya, berhalaman lewat `batas` dan `mulai` |
 | POST | `/usaha/{usaha_id}/pesanan` | Kirim keranjang; satu pesanan per distributor, harga disalin saat itu |
 | GET | `/usaha/{usaha_id}/pesanan/{pesanan_id}` | Rincian satu pesanan |
 | POST | `/usaha/{usaha_id}/pesanan/{pesanan_id}/ajukan` | Kirim draf, misalnya draf pesanan rutin, ke distributor |
@@ -563,20 +564,22 @@ turnify-flow/
 | POST | `/usaha/{usaha_id}/pesanan/{pesanan_id}/ulasan` | Penilaian pesanan yang selesai, sekali per pesanan. Rating dihitung dari rata-rata tiga aspek |
 | GET | `/usaha/{usaha_id}/katalog` | Distributor (rating dari ulasan), penawaran, paket kontrak, dan promo |
 | GET | `/usaha/{usaha_id}/distributor/{distributor_id}/ulasan` | Ulasan terbaru satu distributor |
+| GET | `/usaha/{usaha_id}/ulasan` | Ulasan yang ditulis usaha ini, untuk halaman Ulasan Saya |
 | GET | `/usaha/{usaha_id}/kontrak` | Kontrak usaha ini beserta kuota per bulan |
 | POST | `/usaha/{usaha_id}/kontrak` | Ajukan kontrak dari satu paket; harga dan kuota disalin saat itu |
 | POST | `/usaha/{usaha_id}/kontrak/{kontrak_id}/tarik` | Tarik pengajuan yang belum dijawab distributor |
 | POST | `/usaha/{usaha_id}/kontrak/{kontrak_id}/berhenti` | Ajukan berhenti; kontrak tetap jalan sampai dijawab |
 | POST | `/usaha/{usaha_id}/kontrak/{kontrak_id}/rutin` | Pesanan rutin hidup atau mati |
 | GET | `/distributor/{distributor_id}/pesanan` | Ringkasan pesanan yang masuk, terbaru dulu |
-| GET | `/distributor/{distributor_id}/pesanan-masuk` | Pesanan masuk lengkap dengan baris, jejak, dan profil pemesan |
+| GET | `/distributor/{distributor_id}/pesanan-masuk` | Pesanan masuk lengkap dengan baris, jejak, penilaian, dan profil pemesan, berhalaman lewat `batas` dan `mulai` |
 | GET | `/distributor/{distributor_id}/pesanan/{pesanan_id}` | Rincian satu pesanan masuk |
 | POST | `/distributor/{distributor_id}/pesanan/{pesanan_id}/konfirmasi` | Terima pesanan; status menjadi disiapkan |
 | POST | `/distributor/{distributor_id}/pesanan/{pesanan_id}/tolak` | Tolak dengan alasan; status menjadi batal |
 | POST | `/distributor/{distributor_id}/pesanan/{pesanan_id}/kirim` | Barang berangkat; status menjadi dikirim |
 | POST | `/distributor/{distributor_id}/pesanan/{pesanan_id}/sampai` | Bukti antar; stok baru naik setelah pemilik usaha menerima |
 | GET | `/distributor/{distributor_id}/katalog` | Penawaran, paket kontrak, dan promo milik sendiri |
-| GET | `/distributor/{distributor_id}/profil` | Profil distributor sendiri: tentang toko, info usaha, kategori, area kirim, dan titik gudang |
+| GET | `/distributor/{distributor_id}/ulasan` | Ulasan untuk distributor ini, untuk halaman Penilaian dan Ulasan |
+| GET | `/distributor/{distributor_id}/profil` | Profil distributor sendiri: tentang toko, info usaha, kategori, area kirim, titik gudang, dan angka penilaian |
 | PUT | `/distributor/{distributor_id}/profil` | Simpan tentang toko dan info usaha (alamat gudang, nomor HP, jam operasional, minimum pesanan); titik gudang tidak ikut berubah |
 | PUT | `/distributor/{distributor_id}/layanan` | Simpan kategori barang dan area kirim; hanya pilihan dari daftar di formulir yang diterima |
 | PUT | `/distributor/{distributor_id}/lokasi` | Simpan titik gudang untuk peta di rincian pesanan (kosongkan keduanya untuk kembali ke titik tengah kota) |

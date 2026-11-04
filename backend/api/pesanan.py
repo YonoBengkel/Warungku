@@ -64,6 +64,7 @@ from .skema import (
     SampaiPesanan,
     TolakPesanan,
     UlasanBaru,
+    UlasanPesanan,
 )
 
 rute_umkm = APIRouter(prefix="/usaha/{usaha_id}", tags=["pesanan"])
@@ -94,6 +95,8 @@ def _lengkap(sesi: Session, p: Pesanan) -> PesananLengkap:
     dist = sesi.get(Distributor, p.distributor_id)
     baris = sesi.exec(select(PesananBaris).where(PesananBaris.pesanan_id == p.id).order_by(PesananBaris.id)).all()
     jejak = sesi.exec(select(PesananJejak).where(PesananJejak.pesanan_id == p.id).order_by(PesananJejak.waktu)).all()
+    # Hanya pesanan yang sudah dinilai yang punya baris ulasan, jadi daftar panjang tidak menanggung kueri tambahan.
+    ulasan = sesi.exec(select(Ulasan).where(Ulasan.pesanan_id == p.id)).first() if p.sudah_diulas else None
     return PesananLengkap(
         id=p.id,
         nomor=p.nomor,
@@ -145,6 +148,7 @@ def _lengkap(sesi: Session, p: Pesanan) -> PesananLengkap:
             for b in baris
         ],
         jejak=[JejakPesananLengkap(waktu=j.waktu, status=_nilai(j.status), keterangan=j.keterangan) for j in jejak],
+        ulasan=UlasanPesanan.model_validate(ulasan) if ulasan else None,
     )
 
 
@@ -194,11 +198,16 @@ def _wajib_status(p: Pesanan, *diizinkan: StatusPesanan) -> None:
 # Sisi pemilik usaha
 # --------------------------------------------------------------------------
 @rute_umkm.get("/pesanan", response_model=list[PesananLengkap])
-def daftar_pesanan(usaha_id: int = Depends(usaha_saya), batas: int = Query(50, ge=1, le=200)):
+def daftar_pesanan(
+    usaha_id: int = Depends(usaha_saya),
+    batas: int = Query(50, ge=1, le=200),
+    mulai: int = Query(0, ge=0, description="Lewati sekian pesanan terbaru, untuk halaman berikutnya."),
+):
     """Pesanan usaha ini, terbaru dulu."""
     with Session(mesin()) as sesi:
         semua = sesi.exec(
-            select(Pesanan).where(Pesanan.usaha_id == usaha_id).order_by(Pesanan.dibuat_pada.desc(), Pesanan.id.desc()).limit(batas)
+            select(Pesanan).where(Pesanan.usaha_id == usaha_id)
+            .order_by(Pesanan.dibuat_pada.desc(), Pesanan.id.desc()).offset(mulai).limit(batas)
         ).all()
         return [_lengkap(sesi, p) for p in semua]
 
@@ -583,7 +592,11 @@ def beri_ulasan(badan: UlasanBaru, pesanan_id: int = Path(ge=1), usaha_id: int =
 # Sisi distributor
 # --------------------------------------------------------------------------
 @rute_distributor.get("/pesanan-masuk", response_model=list[PesananLengkap])
-def daftar_pesanan_masuk(distributor_id: int = Depends(distributor_saya), batas: int = Query(60, ge=1, le=200)):
+def daftar_pesanan_masuk(
+    distributor_id: int = Depends(distributor_saya),
+    batas: int = Query(60, ge=1, le=200),
+    mulai: int = Query(0, ge=0, description="Lewati sekian pesanan terbaru, untuk halaman berikutnya."),
+):
     """
     Pesanan masuk lengkap dengan baris dan jejak, terbaru dulu. Draf tidak ikut.
 
@@ -596,6 +609,7 @@ def daftar_pesanan_masuk(distributor_id: int = Depends(distributor_saya), batas:
             select(Pesanan)
             .where(Pesanan.distributor_id == distributor_id, Pesanan.status != StatusPesanan.DRAF)
             .order_by(Pesanan.dibuat_pada.desc(), Pesanan.id.desc())
+            .offset(mulai)
             .limit(batas)
         ).all()
         return [_lengkap(sesi, p) for p in semua]

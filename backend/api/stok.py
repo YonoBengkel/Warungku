@@ -14,7 +14,8 @@ dicatat sebagai `terjual`, seperti nota kasir.
 from __future__ import annotations
 
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
+from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Path
 from sqlalchemy import text
@@ -41,6 +42,31 @@ from .skema import (
 
 rute = APIRouter(prefix="/usaha/{usaha_id}", tags=["stok"])
 WIB = timezone(timedelta(hours=7))
+
+
+def tambah_permintaan(sesi: Session, usaha_id: int, b: Barang, tanggal: date, jumlah: Decimal) -> None:
+    """
+    Tambah permintaan satu barang pada satu hari, bahan yang dibaca Mesin 1. Dipanggil
+    sesudah `b.stok` dipotong. Dipakai pemakaian manual dan sesi masak di Produksi.
+    """
+    from dataset.kalender import hari_libur, sedang_ramadan
+    from dataset.pola import pekan_gajian
+
+    sesi.exec(
+        text(
+            """
+            INSERT INTO permintaan_harian
+                (usaha_id, barang_id, tanggal, jumlah, stok_habis, hari_libur, pekan_gajian, ramadan, promo_aktif)
+            VALUES (:u, :b, :t, :n, :h, :l, :g, :r, false)
+            ON CONFLICT (usaha_id, barang_id, tanggal) DO UPDATE
+               SET jumlah = permintaan_harian.jumlah + EXCLUDED.jumlah,
+                   stok_habis = permintaan_harian.stok_habis OR EXCLUDED.stok_habis
+            """
+        ).bindparams(
+            u=usaha_id, b=b.id, t=tanggal, n=jumlah, h=b.stok <= 0,
+            l=hari_libur(tanggal), g=pekan_gajian(tanggal), r=sedang_ramadan(tanggal),
+        )
+    )
 
 
 def _nama(sesi: Session, saya: Identitas) -> str:
@@ -208,9 +234,6 @@ def catat_pemakaian(
     paling banyak sisa stoknya, dan barang yang terhubung kasir ikut menambah
     permintaan harian hari itu. Barang `dicatat_manual` tidak masuk ke sana.
     """
-    from dataset.kalender import hari_libur, sedang_ramadan
-    from dataset.pola import pekan_gajian
-
     sekarang = datetime.now(timezone.utc)
     tanggal = sekarang.astimezone(WIB).date()
     kurang: list[str] = []
@@ -233,21 +256,7 @@ def catat_pemakaian(
                 )
             )
             if not b.dicatat_manual:
-                sesi.exec(
-                    text(
-                        """
-                        INSERT INTO permintaan_harian
-                            (usaha_id, barang_id, tanggal, jumlah, stok_habis, hari_libur, pekan_gajian, ramadan, promo_aktif)
-                        VALUES (:u, :b, :t, :n, :h, :l, :g, :r, false)
-                        ON CONFLICT (usaha_id, barang_id, tanggal) DO UPDATE
-                           SET jumlah = permintaan_harian.jumlah + EXCLUDED.jumlah,
-                               stok_habis = permintaan_harian.stok_habis OR EXCLUDED.stok_habis
-                        """
-                    ).bindparams(
-                        u=usaha_id, b=b.id, t=tanggal, n=potong, h=b.stok <= 0,
-                        l=hari_libur(tanggal), g=pekan_gajian(tanggal), r=sedang_ramadan(tanggal),
-                    )
-                )
+                tambah_permintaan(sesi, usaha_id, b, tanggal, potong)
             tercatat += 1
         sesi.commit()
     return HasilPemakaian(tercatat=tercatat, stok_kurang=kurang)

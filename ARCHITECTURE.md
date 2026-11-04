@@ -29,6 +29,13 @@ flowchart LR
   dan dibatalkan, dan pengajuan kontrak yang belum dijawab bisa ditarik (`/tarik`). Kontrol yang belum punya jalur ke
   server (bukti bayar, permintaan pembatalan, pengingat, undangan pengguna, jadwal pesanan rutin, penawaran
   distributor) menampilkan `CatatanPurwarupa` di mode data server, bukan pesan "tersimpan".
+- **Tab Produksi memakai satu struktur (keputusan 4 Nov 2026).** Struktur Bu Ratmi (Menu, Sesi Masak, Kiriman ke pembeli)
+  berlaku untuk semua jenis usaha. Kafe (`JENIS_KONTER` di `frontend/src/pages/produksi/Produksi.tsx`) hanya mendapat tab
+  Menu karena tidak melayani pesanan partai besar, dan usaha selain produsen tetap mengatur menu Portal POS di tab Menu.
+  Kartu dan formulir komposisi bersama ada di `frontend/src/pages/produksi/komposisi.tsx`. Sesi masak ikut menulis
+  `permintaan_harian`, jadi Mesin 1 melihat pemakaian bahan untuk produksi.
+- **Daftar pesanan berhalaman.** Kedua portal memuat 100 pesanan terbaru, sisanya lewat Muat pesanan lebih lama (`mulai`).
+  Pesanan lama yang dibuka dari tautan diambil sendiri lewat `GET /pesanan/{id}`.
 - **Nota adalah pintu masuk.** `POST /usaha/{id}/transaksi` (`backend/api/gudang.py`) menyimpan nota, menerjemahkan
   menu ke bahan lewat `pemetaan_menu`, menulis `pergerakan`, memotong `barang.stok`, dan menambah
   `permintaan_harian` dalam satu transaksi basis data. Nomor struk yang sama tidak diproses dua kali. Menu tanpa

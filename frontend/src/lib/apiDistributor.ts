@@ -21,6 +21,12 @@ export interface ProfilServer extends LokasiGudang {
   info: InfoUsahaDistributor | undefined
   kategori: string[]
   areaKirim: string[]
+  /** Angka penilaian dari server, supaya portal tidak memakai angka data contoh. Backend lama tidak mengirimnya. */
+  rating?: number | null
+  jumlahUlasan?: number
+  jumlahUmkmPengulas?: number
+  jumlahPesananSelesai?: number
+  subRating?: { ketepatanWaktu: number; jumlahSesuai: number; kondisiBarang: number }
 }
 
 interface ProfilDistributorApi {
@@ -34,6 +40,13 @@ interface ProfilDistributorApi {
   minimum_pesanan: number
   lat: number | null
   lng: number | null
+  rating?: number | null
+  jumlah_ulasan?: number
+  jumlah_umkm_pengulas?: number
+  jumlah_pesanan_selesai?: number
+  aspek_ketepatan?: number | null
+  aspek_jumlah?: number | null
+  aspek_kondisi?: number | null
 }
 
 function keProfil(p: ProfilDistributorApi): ProfilServer {
@@ -52,6 +65,20 @@ function keProfil(p: ProfilDistributorApi): ProfilServer {
     areaKirim: p.area_kirim,
     lat: p.lat,
     lng: p.lng,
+    ...(p.jumlah_ulasan === undefined
+      ? {}
+      : {
+          // Tanpa ulasan tidak ada rating: layar menulis "belum ada", bukan "0,0 bintang".
+          rating: p.jumlah_ulasan > 0 ? (p.rating ?? null) : null,
+          jumlahUlasan: p.jumlah_ulasan,
+          jumlahUmkmPengulas: p.jumlah_umkm_pengulas ?? 0,
+          jumlahPesananSelesai: p.jumlah_pesanan_selesai ?? 0,
+          subRating: {
+            ketepatanWaktu: p.aspek_ketepatan ?? 0,
+            jumlahSesuai: p.aspek_jumlah ?? 0,
+            kondisiBarang: p.aspek_kondisi ?? 0,
+          },
+        }),
   }
 }
 

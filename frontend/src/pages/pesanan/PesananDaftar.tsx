@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { KartuPesanan, KuotaBulanIni, TombolTerkunci, useTerkunci } from '@/components/domain'
 import {
@@ -180,6 +180,15 @@ export default function PesananDaftar() {
   const kontrak = useAplikasi((s) => s.kontrak)
   const tambahKeKeranjang = useAplikasi((s) => s.tambahKeKeranjang)
   const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
+  const lamaAda = useAplikasi((s) => s.pesananLamaAda)
+  const muatPesananLama = useAplikasi((s) => s.muatPesananLama)
+  const [memuatLama, setMemuatLama] = useState(false)
+
+  async function muatLama() {
+    setMemuatLama(true)
+    await muatPesananLama()
+    setMemuatLama(false)
+  }
 
   const { tab, saringPesanan, saringKontrak, kelompok } = bacaAlamat(params)
 
@@ -405,6 +414,14 @@ export default function PesananDaftar() {
                   )}
                 </div>
               ))}
+            </div>
+          )}
+          {/* Daftar hanya memuat satu halaman sekali jalan, jadi pesanan lama tetap bisa dijangkau. */}
+          {lamaAda && (
+            <div className="mt-4 flex justify-center">
+              <Tombol ragam="garis" memuat={memuatLama} onClick={muatLama}>
+                Muat pesanan lebih lama
+              </Tombol>
             </div>
           )}
         </section>

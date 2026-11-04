@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { BarisBukti, KartuBuktiPengiriman } from '@/components/domain'
 import { LencanaPromo } from '@/components/domain/KartuPromo'
@@ -60,6 +60,23 @@ export default function PesananMasukDetail() {
   const { id = '' } = useParams()
   const semuaMasuk = usePesananMasuk()
   const pesanan = semuaMasuk.find((p) => p.id === id)
+  /* Daftar hanya memuat pesanan terbaru, jadi pesanan lama yang dibuka dari tautan diambil
+     sendiri. Selama itu layar tidak boleh menulis "tidak ada". */
+  const sesiDistributor = useAplikasi((s) => s.sesiDistributor)
+  const daftarServer = useAplikasi((s) => s.pesananMasukServer)
+  const pastikanPesananMasuk = useAplikasi((s) => s.pastikanPesananMasuk)
+  const perluDicari = !pesanan && !!sesiDistributor && !!daftarServer && /^\d+$/.test(id)
+  const [selesaiDicari, setSelesaiDicari] = useState<string | null>(null)
+  useEffect(() => {
+    if (!perluDicari || selesaiDicari === id) return
+    let batal = false
+    void pastikanPesananMasuk(id).then(() => {
+      if (!batal) setSelesaiDicari(id)
+    })
+    return () => {
+      batal = true
+    }
+  }, [perluDicari, selesaiDicari, id, pastikanPesananMasuk])
   /* Pesanan menunggu berikutnya (terlama dulu, sama dengan urutan tab
      Menunggu), supaya sesudah menjawab satu pesanan distributor tidak perlu
      kembali ke daftar dulu. */
@@ -75,6 +92,17 @@ export default function PesananMasukDetail() {
   const [lembarBukti, setLembarBukti] = useState(false)
   const distributor = useDistributorAktif()
   const sekarang = useSekarang()
+
+  if (!pesanan && ((sesiDistributor && !daftarServer) || (perluDicari && selesaiDicari !== id))) {
+    return (
+      <div className="pb-6 lg:pb-0">
+        <KepalaHalaman judul="Pesanan" kembaliKe="/distributor-portal/pesanan" />
+        <p className="mt-4 text-isi text-ink-3" role="status">
+          Memuat pesanan…
+        </p>
+      </div>
+    )
+  }
 
   if (!pesanan) {
     return (

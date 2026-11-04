@@ -2,11 +2,11 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ChipStok } from '@/components/domain'
 import { Avatar, Kartu, Lencana, Tombol, TombolTautan } from '@/components/ui/dasar'
-import { PengaturJumlah } from '@/components/ui/formulir'
+import { Kolom, PengaturJumlah, Pilihan } from '@/components/ui/formulir'
 import { RUANG_LONCENG, TabSegmen } from '@/components/ui/navigasi'
 import { KeadaanKosong, Penjelasan, Peringatan } from '@/components/ui/umpanBalik'
 import { GrafikBatang } from '@/components/grafik/GrafikBatang'
-import { IkonPanci, IkonPeringatan, IkonKirim } from '@/icons'
+import { IkonPanci, IkonPeringatan, IkonKirim, IkonTambah } from '@/icons'
 import { GalatApi } from '@/lib/api'
 import {
   ambilKiriman,
@@ -14,26 +14,38 @@ import {
   ambilRiwayatProduksi,
   catatKiriman,
   catatProduksi,
+  tambahPembeli,
 } from '@/lib/apiProduksi'
 import type { KirimanPembeli, ProdukJadi, RingkasanProduksi, SesiProduksi } from '@/lib/apiProduksi'
 import { angka, bulanRingkas, rupiah, rupiahSumbu, tanggalLengkapHari, tanggalPanjang } from '@/lib/format'
 import { NAV } from '@/lib/label'
+import type { JenisUsaha } from '@/lib/types'
 import { useAplikasi } from '@/store/aplikasi'
 import { TabMenu } from './TabMenu'
 import { TabMenuProduksi } from './TabMenuProduksi'
 
 /**
- * Produksi untuk UMKM produsen (permintaan dosen pengampu, 16 Okt 2026).
+ * Produksi (permintaan dosen pengampu, 16 Okt 2026).
  *
  * Alurnya mengikuti dapur sungguhan: bahan baku dari tab Stok dimasak menjadi
- * barang jadi (tab "Produksi"), lalu barang jadi dikirim ke toko dan ritel yang
+ * barang jadi (tab "Sesi Masak"), lalu barang jadi dikirim ke toko dan ritel yang
  * memesan (tab "Kiriman"). Setiap sesi masak memotong bahan sesuai resep, jadi
  * pemakaian bahan baku tercatat dan Mesin 1 bisa meramal kapan harus belanja.
  *
- * Halaman ini hanya punya data server. Data contoh tidak punya usaha produsen.
+ * Struktur Bu Ratmi ini berlaku untuk semua UMKM (keputusan Ilham, 4 Nov 2026),
+ * kecuali kafe: kafe melayani pembeli di konter, bukan pesanan partai besar, jadi
+ * cukup tab Menu dengan pola yang sama.
+ *
+ * Halaman ini hanya punya data server. Data contoh tidak punya isinya.
  */
 
+/** Melayani pembeli di konter, bukan pesanan partai besar. Tambah di sini kalau ada jenis lain yang begitu. */
+const JENIS_KONTER: readonly JenisUsaha[] = ['kedai-kopi', 'kedai-minuman']
+
 type Tab = 'menu' | 'produksi' | 'kiriman'
+
+/** Bu Ratmi memasak dan mengirim per kardus isi enam. Usaha lain per satuan. */
+const LANGKAH_PRODUSEN = 6
 
 const LABEL_PEMBELI: Record<string, string> = {
   'ritel-modern': 'Ritel modern',
@@ -59,7 +71,7 @@ export default function Produksi() {
   const sesi = useAplikasi((s) => s.sesiServer)
   const jenis = useAplikasi((s) => s.profil.jenisUsaha)
   const memulihkan = useAplikasi((s) => s.memulihkanSesi)
-  const produsen = jenis === 'produksi-makanan'
+  const tabLengkap = !JENIS_KONTER.includes(jenis)
   const [tab, setTab] = useState<Tab>('menu')
   const [data, setData] = useState<{
     ringkasan: RingkasanProduksi
@@ -70,7 +82,7 @@ export default function Produksi() {
   const [versi, setVersi] = useState(0)
 
   useEffect(() => {
-    if (!sesi || !produsen) return
+    if (!sesi || !tabLengkap) return
     let batal = false
     Promise.all([ambilRingkasanProduksi(sesi), ambilRiwayatProduksi(sesi), ambilKiriman(sesi)])
       .then(([ringkasan, riwayat, kiriman]) => {
@@ -85,7 +97,7 @@ export default function Produksi() {
     return () => {
       batal = true
     }
-  }, [sesi, produsen, versi])
+  }, [sesi, tabLengkap, versi])
 
   // Sesudah muat ulang halaman, sesi dipulihkan sebentar kemudian. Jangan
   // sempat menampilkan "halaman ini bukan untukmu" selama itu.
@@ -117,19 +129,19 @@ export default function Produksi() {
     <div className="pb-8 lg:pb-0">
       <div data-sejajar-lonceng className={`flex items-baseline justify-between gap-3 flex-wrap ${RUANG_LONCENG}`}>
         <h1 className="text-judul font-extrabold text-ink tracking-tight">{NAV.produksi}</h1>
-        {produsen && data && (
+        {tabLengkap && data && (
           <p className="text-isi text-ink-3">Data sampai {tanggalPanjang(data.ringkasan.tanggalAcuan)}</p>
         )}
       </div>
       <p className="mt-1 text-isi text-ink-2 leading-relaxed max-w-[62ch]">
-        {produsen
+        {tabLengkap
           ? 'Setiap sesi masak memotong bahan baku sesuai komposisinya, lalu hasilnya dikirim ke pemesan.'
           : 'Setiap porsi yang terjual di kasir memotong bahan baku sesuai komposisinya.'}
       </p>
 
-      {/* Kedai hanya punya satu tab, jadi jalurnya tidak digambar: satu tab yang
+      {/* Kafe hanya punya satu tab, jadi jalurnya tidak digambar: satu tab yang
           tidak bisa ditinggalkan hanya menambah baris tanpa menambah pilihan. */}
-      {produsen && (
+      {tabLengkap && (
         <TabSegmen<Tab>
           className="mt-4"
           tab={[
@@ -142,13 +154,15 @@ export default function Produksi() {
         />
       )}
 
-      {!produsen ? (
+      {!tabLengkap ? (
         <div className="mt-4">
           <TabMenu />
         </div>
       ) : tab === 'menu' ? (
-        <div className="mt-4">
+        <div className="mt-4 space-y-6">
           <TabMenuProduksi ringkasan={data?.ringkasan} gagal={gagal} sesudahSimpan={muatUlang} />
+          {/* Usaha selain produsen tetap berjualan lewat Portal POS, dan menunya hanya diatur di sini. */}
+          {jenis !== 'produksi-makanan' && <TabMenu judul="Menu kasir" />}
         </div>
       ) : gagal ? (
         <Peringatan nada="menipis" className="mt-4" judul="Data produksi belum bisa dibuka">
@@ -164,7 +178,7 @@ export default function Produksi() {
           Memuat data produksi…
         </p>
       ) : tab === 'produksi' ? (
-        <TabProduksi ringkasan={data.ringkasan} riwayat={data.riwayat} sesudahSimpan={muatUlang} />
+        <TabProduksi ringkasan={data.ringkasan} riwayat={data.riwayat} sesudahSimpan={muatUlang} keMenu={() => setTab('menu')} />
       ) : (
         <TabKiriman ringkasan={data.ringkasan} kiriman={data.kiriman} sesudahSimpan={muatUlang} />
       )}
@@ -180,11 +194,26 @@ function TabProduksi({
   ringkasan,
   riwayat,
   sesudahSimpan,
+  keMenu,
 }: {
   ringkasan: RingkasanProduksi
   riwayat: SesiProduksi[]
   sesudahSimpan: () => void
+  keMenu: () => void
 }) {
+  if (ringkasan.produk.length === 0) {
+    return (
+      <div role="tabpanel" aria-label="Produksi" className="mt-4">
+        <KeadaanKosong
+          ikon={<IkonPanci size={26} />}
+          judul="Belum ada produk untuk dimasak"
+          pesan="Tambahkan produk beserta komposisinya di tab Menu, lalu catat sesi masaknya di sini."
+          aksi={<Tombol onClick={keMenu}>Buka Tab Menu</Tombol>}
+        />
+      </div>
+    )
+  }
+
   return (
     <div role="tabpanel" aria-label="Produksi" className="mt-4 space-y-4">
       <div className="grid gap-4 lg:grid-cols-2 [&>*]:min-w-0">
@@ -224,7 +253,9 @@ function TabProduksi({
                             {r.oleh ? ` · ${r.oleh}` : ''}
                           </span>
                         </span>
-                        <span className="shrink-0 text-isi font-bold text-ink tabular">{angka(r.jumlah)} toples</span>
+                        <span className="shrink-0 text-isi font-bold text-ink tabular">
+                          {angka(r.jumlah)} {ringkasan.produk.find((p) => p.id === r.produkJadiId)?.satuan ?? ''}
+                        </span>
                       </li>
                     ))}
                   </ul>
@@ -241,8 +272,9 @@ function KartuProduk({ produk: p, sesudahSimpan }: { produk: ProdukJadi; sesudah
   const sesi = useAplikasi((s) => s.sesiServer)
   const segarkanGudang = useAplikasi((s) => s.segarkanGudangServer)
   const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
+  const langkah = useAplikasi((s) => s.profil.jenisUsaha === 'produksi-makanan') ? LANGKAH_PRODUSEN : 1
   const [buka, setBuka] = useState(false)
-  const [jumlah, setJumlah] = useState(() => Math.max(6, Math.min(p.saranProduksi || p.ukuranSesi, p.bisaDibuat)))
+  const [jumlah, setJumlah] = useState(() => Math.max(1, Math.min(p.saranProduksi || p.ukuranSesi, p.bisaDibuat)))
   const [menyimpan, setMenyimpan] = useState(false)
   const [galat, setGalat] = useState<string | null>(null)
 
@@ -361,7 +393,7 @@ function KartuProduk({ produk: p, sesudahSimpan }: { produk: ProdukJadi; sesudah
             <PengaturJumlah
               nilai={jumlah}
               ubah={setJumlah}
-              langkah={6}
+              langkah={langkah}
               min={1}
               maks={Math.max(1, p.bisaDibuat)}
               satuan={p.satuan}
@@ -405,7 +437,11 @@ function KartuProduk({ produk: p, sesudahSimpan }: { produk: ProdukJadi; sesudah
             Catat produksi
           </Tombol>
           {p.bisaDibuat < 1 && (
-            <p className="mt-1.5 text-isi text-ink-3">Bahan belum cukup untuk satu {p.satuan} pun.</p>
+            <p className="mt-1.5 text-isi text-ink-3">
+              {p.resep.length === 0
+                ? 'Komposisinya belum diisi. Isi dulu di tab Menu.'
+                : `Bahan belum cukup untuk satu ${p.satuan} pun.`}
+            </p>
           )}
         </div>
       )}
@@ -434,28 +470,47 @@ function TabKiriman({
   const bulanPenuh = ringkasan.omsetBulanan.slice(0, -1)
   const terakhir = bulanPenuh[bulanPenuh.length - 1]
   const awal = bulanPenuh[0]
+  const [tambah, setTambah] = useState(false)
 
   return (
     <div role="tabpanel" aria-label="Kiriman ke pembeli" className="mt-4 space-y-4">
-      <Kartu>
-        <h2 className="text-kartu font-bold text-ink">Nilai kiriman per bulan</h2>
-        {awal && terakhir && (
-          <p className="mt-0.5 text-isi text-ink-3 leading-snug">
-            Dari {rupiah(awal.total)} ({bulanRingkas(`${awal.bulan}-01`)}) menjadi {rupiah(terakhir.total)} (
-            {bulanRingkas(`${terakhir.bulan}-01`)}). Bulan terakhir baru berjalan sebagian.
-          </p>
-        )}
-        <div className="mt-3 min-w-0">
-          <GrafikBatang data={batang} satuan="Rupiah" format={rupiah} formatSumbu={rupiahSumbu} lebarSumbu={52} />
-        </div>
-      </Kartu>
+      {batang.length > 0 && (
+        <Kartu>
+          <h2 className="text-kartu font-bold text-ink">Nilai kiriman per bulan</h2>
+          {awal && terakhir && (
+            <p className="mt-0.5 text-isi text-ink-3 leading-snug">
+              Dari {rupiah(awal.total)} ({bulanRingkas(`${awal.bulan}-01`)}) menjadi {rupiah(terakhir.total)} (
+              {bulanRingkas(`${terakhir.bulan}-01`)}). Bulan terakhir baru berjalan sebagian.
+            </p>
+          )}
+          <div className="mt-3 min-w-0">
+            <GrafikBatang data={batang} satuan="Rupiah" format={rupiah} formatSumbu={rupiahSumbu} lebarSumbu={52} />
+          </div>
+        </Kartu>
+      )}
 
-      <FormKiriman ringkasan={ringkasan} sesudahSimpan={sesudahSimpan} />
+      {ringkasan.pembeli.length > 0 && ringkasan.produk.length > 0 ? (
+        <FormKiriman ringkasan={ringkasan} sesudahSimpan={sesudahSimpan} />
+      ) : (
+        <Peringatan nada="info" judul="Catat kiriman butuh pembeli dan produk">
+          {ringkasan.produk.length === 0
+            ? 'Tambahkan produk di tab Menu dulu, lalu pembelinya di bawah ini.'
+            : 'Tambahkan pembeli pertamamu di bawah ini.'}
+        </Peringatan>
+      )}
 
       <section aria-labelledby="judul-pembeli">
-        <h2 id="judul-pembeli" className="text-kartu font-bold text-ink">
-          Pembeli langganan
-        </h2>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 id="judul-pembeli" className="text-kartu font-bold text-ink">
+            Pembeli langganan
+          </h2>
+          {!tambah && (
+            <Tombol ragam="garis" ukuran="kecil" ikonKiri={<IkonTambah size={14} />} onClick={() => setTambah(true)}>
+              Tambah Pembeli
+            </Tombol>
+          )}
+        </div>
+        {tambah && <FormPembeli tutup={() => setTambah(false)} sesudahSimpan={sesudahSimpan} />}
         <ul className="mt-2 grid gap-3 sm:grid-cols-2 [&>*]:min-w-0">
           {ringkasan.pembeli.map((b) => (
             <li key={b.id}>
@@ -510,10 +565,90 @@ function TabKiriman({
   )
 }
 
+/** Pembeli langganan baru, supaya usaha selain Bu Ratmi juga bisa mencatat kiriman. */
+function FormPembeli({ tutup, sesudahSimpan }: { tutup: () => void; sesudahSimpan: () => void }) {
+  const sesi = useAplikasi((s) => s.sesiServer)
+  const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
+  const [nama, setNama] = useState('')
+  const [jenis, setJenis] = useState('warung')
+  const [kota, setKota] = useState('')
+  const [ketentuan, setKetentuan] = useState('')
+  const [galat, setGalat] = useState<{ nama?: string; umum?: string }>({})
+  const [menyimpan, setMenyimpan] = useState(false)
+
+  async function simpan() {
+    if (!sesi) return
+    if (!nama.trim()) {
+      setGalat({ nama: 'Nama pembeli belum diisi. Contoh: Toko Oleh-oleh Bu Sri.' })
+      return
+    }
+    setGalat({})
+    setMenyimpan(true)
+    try {
+      const baru = await tambahPembeli(sesi, { nama: nama.trim(), jenis, kota: kota.trim() || null, ketentuan: ketentuan.trim() || null })
+      tampilkanRacun(`${baru.nama} masuk daftar pembeli.`, 'aman')
+      tutup()
+      sesudahSimpan()
+    } catch (e) {
+      setGalat({ umum: e instanceof GalatApi ? e.message : 'Pembeli belum tersimpan. Periksa sambungan, lalu coba lagi.' })
+    } finally {
+      setMenyimpan(false)
+    }
+  }
+
+  return (
+    <Kartu className="mt-2">
+      <form
+        noValidate
+        className="space-y-3"
+        onSubmit={(e) => {
+          e.preventDefault()
+          void simpan()
+        }}
+      >
+        <h3 className="text-kartu font-bold text-ink">Tambah pembeli</h3>
+        <Kolom label="Nama pembeli" wajib value={nama} galat={galat.nama} onChange={(e) => setNama(e.target.value)} />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Pilihan label="Jenis" wajib value={jenis} onChange={(e) => setJenis(e.target.value)}>
+            {Object.entries(LABEL_PEMBELI).map(([nilai, label]) => (
+              <option key={nilai} value={nilai}>
+                {label}
+              </option>
+            ))}
+          </Pilihan>
+          <Kolom label="Kota" value={kota} onChange={(e) => setKota(e.target.value)} />
+        </div>
+        <Kolom
+          label="Kesepakatan"
+          bantuan="Misalnya pesan tiap Senin, bayar 14 hari."
+          value={ketentuan}
+          onChange={(e) => setKetentuan(e.target.value)}
+        />
+        {galat.umum && (
+          <p role="alert" className="text-isi font-semibold text-kritis-ink">
+            {galat.umum}
+          </p>
+        )}
+        <div className="flex flex-wrap gap-2.5">
+          <Tombol type="submit" memuat={menyimpan}>
+            Simpan
+          </Tombol>
+          <Tombol ragam="garis" onClick={tutup}>
+            Batal
+          </Tombol>
+        </div>
+      </form>
+    </Kartu>
+  )
+}
+
 function FormKiriman({ ringkasan, sesudahSimpan }: { ringkasan: RingkasanProduksi; sesudahSimpan: () => void }) {
   const sesi = useAplikasi((s) => s.sesiServer)
   const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
-  const [pembeliId, setPembeliId] = useState<number>(ringkasan.pembeli[0]?.id ?? 0)
+  const langkah = useAplikasi((s) => s.profil.jenisUsaha === 'produksi-makanan') ? LANGKAH_PRODUSEN : 1
+  // Pembeli pertama dipakai sampai ada yang dipilih, termasuk sesudah pembeli pertama baru ditambahkan.
+  const [pembeliPilihan, setPembeliId] = useState<number | null>(null)
+  const pembeliId = pembeliPilihan ?? ringkasan.pembeli[0]?.id ?? 0
   const [jumlah, setJumlah] = useState<Record<number, number>>({})
   const [menyimpan, setMenyimpan] = useState(false)
   const [galat, setGalat] = useState<string | null>(null)
@@ -570,7 +705,7 @@ function FormKiriman({ ringkasan, sesudahSimpan }: { ringkasan: RingkasanProduks
             <PengaturJumlah
               nilai={jumlah[p.id] ?? 0}
               ubah={(n) => setJumlah((j) => ({ ...j, [p.id]: n }))}
-              langkah={6}
+              langkah={langkah}
               min={0}
               maks={p.stok}
               satuan={p.satuan}
