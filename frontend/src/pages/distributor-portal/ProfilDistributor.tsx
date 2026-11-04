@@ -24,12 +24,16 @@ export default function ProfilDistributor() {
   const tema = useAplikasi((s) => s.tema)
   const aturTema = useAplikasi((s) => s.aturTema)
   const aturPeran = useAplikasi((s) => s.aturPeran)
+  const katalogServer = useAplikasi((s) => s.katalogDistributorServer?.penawaran)
   const katalog = useAplikasi((s) => s.katalog)
   const sesi = useAplikasi((s) => s.sesiDistributor)
   const putus = useAplikasi((s) => s.putusDistributor)
   const distributor = useDistributorAktif()
 
-  const jumlahDijual = katalog.filter((p) => p.distributorId === distributor.id && p.aktif !== false).length
+  // Katalog dari server hanya berisi barang distributor yang masuk.
+  const jumlahDijual = (katalogServer ?? katalog.filter((p) => p.distributorId === distributor.id)).filter(
+    (p) => p.aktif !== false,
+  ).length
 
   function kembaliKePortalUmkm() {
     // Peran diubah lebih dulu, baru layarnya dibuka, supaya kerangka yang

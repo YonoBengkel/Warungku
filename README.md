@@ -572,7 +572,7 @@ turnify-flow/
 | GET | `/usaha/{usaha_id}/pesanan/{pesanan_id}` | Rincian satu pesanan |
 | POST | `/usaha/{usaha_id}/pesanan/{pesanan_id}/ajukan` | Kirim draf, misalnya draf pesanan rutin, ke distributor |
 | POST | `/usaha/{usaha_id}/pesanan/{pesanan_id}/batal` | Batalkan draf atau pesanan yang belum dijawab distributor |
-| POST | `/usaha/{usaha_id}/pesanan/{pesanan_id}/terima` | Hitung barang yang datang: stok naik, data latih Mesin 2 tertulis |
+| POST | `/usaha/{usaha_id}/pesanan/{pesanan_id}/terima` | Hitung barang yang datang: stok naik, data latih Mesin 2 tertulis. Barang yang belum ada di gudang pembeli dibuatkan saat itu |
 | POST | `/usaha/{usaha_id}/pesanan/{pesanan_id}/ulasan` | Penilaian pesanan yang selesai, sekali per pesanan. Rating dihitung dari rata-rata tiga aspek |
 | GET | `/usaha/{usaha_id}/katalog` | Distributor (rating dari ulasan), penawaran, paket kontrak, dan promo |
 | GET | `/usaha/{usaha_id}/distributor/{distributor_id}/ulasan` | Ulasan terbaru satu distributor |
@@ -596,6 +596,8 @@ turnify-flow/
 | PUT | `/distributor/{distributor_id}/layanan` | Simpan kategori barang dan area kirim; hanya pilihan dari daftar di formulir yang diterima |
 | PUT | `/distributor/{distributor_id}/lokasi` | Simpan titik gudang untuk peta di rincian pesanan (kosongkan keduanya untuk kembali ke titik tengah kota) |
 | GET | `/distributor/{distributor_id}/ringkasan-penjualan?dari=&sampai=` | Ringkasan penjualan dari pesanan selesai: pendapatan (nilai barang + ongkos kirim), pesanan, pelanggan, terlaris; tanpa pesanan variasi demo |
+| POST, PUT | `/distributor/{distributor_id}/penawaran[/{penawaran_id}]` | Tambah atau ubah barang yang dijual. Barang baru tertaut ke produk master menurut namanya, dan satuan isi barang lama tidak bisa diganti |
+| PATCH | `/distributor/{distributor_id}/penawaran/{penawaran_id}` | Sembunyikan atau jual lagi. Kontrak yang berjalan tetap bisa memesan, dan saran Mesin 2 tidak lagi menawarkannya |
 | POST, PUT, DELETE | `/distributor/{distributor_id}/paket[/{paket_id}]` | Kelola paket kontrak; kontrak berjalan tidak ikut berubah |
 | GET | `/distributor/{distributor_id}/kontrak` | Kontrak pelanggan |
 | POST | `/distributor/{distributor_id}/kontrak/{kontrak_id}/setujui` | Masa kontrak dihitung sejak disetujui |

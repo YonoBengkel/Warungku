@@ -32,8 +32,12 @@ flowchart LR
   Usaha, Data Usaha, Cara Hitung Stok) memakai `GET` dan `PATCH /usaha/{id}/profil` (`backend/api/profil.py`). Beri
   Penilaian menulis ke tabel `ulasan`, yang dibaca katalog dan fitur Mesin 2. Draf pesanan bisa dikirim (`/ajukan`)
   dan dibatalkan, dan pengajuan kontrak yang belum dijawab bisa ditarik (`/tarik`). Kontrol yang belum punya jalur ke
-  server (bukti bayar, permintaan pembatalan, pengingat, undangan pengguna, jadwal pesanan rutin, penawaran
-  distributor) menampilkan `CatatanPurwarupa` di mode data server, bukan pesan "tersimpan".
+  server (bukti bayar, permintaan pembatalan, pengingat, undangan pengguna, jadwal pesanan rutin) menampilkan
+  `CatatanPurwarupa` di mode data server, bukan pesan "tersimpan".
+- **Barang yang dijual distributor tersimpan di server (keputusan 4 Nov 2026).** `backend/api/katalog.py` menulis `penawaran`.
+  Barang baru tertaut ke `produk_master` menurut namanya, supaya masuk ke gudang pembeli: pembeli yang belum punya barangnya
+  mendapat baris `barang` baru saat barang diterima (`backend/api/pesanan.py`). Menyembunyikan barang tidak menghentikan
+  kontrak yang berjalan, tetapi saran Mesin 2 tidak lagi menawarkannya.
 - **Tab Produksi memakai satu struktur (keputusan 4 Nov 2026).** Struktur Bu Ratmi (Menu, Sesi Masak, Kiriman ke pembeli)
   berlaku untuk semua jenis usaha. Kafe (`JENIS_KONTER` di `frontend/src/pages/produksi/Produksi.tsx`) hanya mendapat tab
   Menu karena tidak melayani pesanan partai besar, dan usaha selain produsen tetap mengatur menu Portal POS di tab Menu.

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Kartu, Lencana, Tombol } from '@/components/ui/dasar'
 import { KepalaHalaman } from '@/components/ui/navigasi'
-import { CatatanPurwarupa } from '@/components/domain'
+import { KeadaanKosong } from '@/components/ui/umpanBalik'
 import { IkonKotak, IkonMata, IkonMataTutup, IkonPena, IkonTambah } from '@/icons'
 import { angka, cx, rupiah, tanggalPendek } from '@/lib/format'
 import type { Penawaran } from '@/lib/types'
@@ -14,14 +14,16 @@ import { FormBarang, kalimatKelipatan } from './formProfil'
  * membuka halaman profil; kini halamannya sendiri, satu kotak per barang.
  */
 export default function BarangDijual() {
+  const katalogServer = useAplikasi((s) => s.katalogDistributorServer?.penawaran)
   const katalog = useAplikasi((s) => s.katalog)
   const aturAktifPenawaran = useAplikasi((s) => s.aturAktifPenawaran)
   const distributor = useDistributorAktif()
   const [formBarang, setFormBarang] = useState<{ penawaran: Penawaran | null } | null>(null)
 
+  // Katalog dari server hanya berisi barang distributor yang masuk.
   const penawaranSaya = useMemo(
-    () => katalog.filter((p) => p.distributorId === distributor.id),
-    [katalog, distributor.id],
+    () => katalogServer ?? katalog.filter((p) => p.distributorId === distributor.id),
+    [katalogServer, katalog, distributor.id],
   )
   const jumlahDijual = penawaranSaya.filter((p) => p.aktif !== false).length
 
@@ -38,10 +40,14 @@ export default function BarangDijual() {
         }
       />
 
-      <CatatanPurwarupa portal="distributor" className="mt-3">
-        Barang yang kamu tambah, ubah, atau sembunyikan di sini belum tersimpan, jadi pemilik usaha belum
-        melihat perubahannya.
-      </CatatanPurwarupa>
+      {penawaranSaya.length === 0 && (
+        <KeadaanKosong
+          ikon={<IkonKotak size={26} />}
+          judul="Belum ada barang yang dijual"
+          pesan="Tambahkan barang pertamamu, lalu pemilik usaha bisa memesannya dari katalog."
+          aksi={<Tombol onClick={() => setFormBarang({ penawaran: null })}>Tambah Barang</Tombol>}
+        />
+      )}
 
       <ul className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3 [&>*]:min-w-0">
         {penawaranSaya.map((pw) => {
@@ -88,7 +94,7 @@ export default function BarangDijual() {
                     ragam="sunyi"
                     ukuran="kecil"
                     ikonKiri={nonaktif ? <IkonMata size={14} /> : <IkonMataTutup size={14} />}
-                    onClick={() => aturAktifPenawaran(pw.id, nonaktif)}
+                    onClick={() => void aturAktifPenawaran(pw.id, nonaktif)}
                     aria-label={`${nonaktif ? 'Jual lagi' : 'Sembunyikan'} ${pw.nama}`}
                   >
                     {nonaktif ? 'Jual Lagi' : 'Sembunyikan'}

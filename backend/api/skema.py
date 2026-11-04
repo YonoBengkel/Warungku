@@ -14,7 +14,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class BarisStruk(BaseModel):
@@ -895,6 +895,25 @@ class KatalogDistributor(BaseModel):
     penawaran: list[PenawaranKatalog]
     paket: list[PaketKontrakRingkas]
     promo: list["PromoLengkap"] = []
+
+
+class SimpanPenawaran(BaseModel):
+    """Barang yang dijual distributor. `kemasan_isi` dalam satuan dasar `satuan_isi`: 1 dus = 24 pcs."""
+
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    nama: str = Field(min_length=3, max_length=120)
+    kategori: str = Field(min_length=1, max_length=60)
+    satuan: str = Field(min_length=1, max_length=20)
+    harga_satuan: int = Field(gt=0)
+    kemasan_isi: Decimal = Field(gt=0, max_digits=14, decimal_places=3)
+    satuan_isi: Literal["gram", "ml", "pcs"]
+    stok_tersedia: Decimal = Field(ge=0, max_digits=14, decimal_places=3)
+    keterangan: str | None = Field(default=None, max_length=200)
+
+
+class AturAktifPenawaran(BaseModel):
+    aktif: bool
 
 
 class SimpanPaket(BaseModel):

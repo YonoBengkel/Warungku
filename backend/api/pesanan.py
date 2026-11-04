@@ -36,11 +36,12 @@ from sqlalchemy import text
 from sqlmodel import Session, select
 
 from warungku.basis_data import mesin
-from warungku.enum import AlasanSelisih, JenisPergerakan, StatusBayar, StatusKontrak, StatusPesanan
+from warungku.enum import AlasanSelisih, JenisPergerakan, StatusBayar, StatusKontrak, StatusPesanan, SumberBatasAman
 from warungku.model import (
     Barang,
     Distributor,
     FiturPesanan,
+    Kemasan,
     Kontrak,
     Penawaran,
     Pergerakan,
@@ -251,6 +252,23 @@ def _barang_tujuan(sesi: Session, usaha_id: int, penawaran: Penawaran) -> Barang
     ).first()
 
 
+def _barang_baru_dari_penawaran(sesi: Session, usaha_id: int, pn: Penawaran) -> Barang:
+    """
+    Barang yang baru pertama kali dibeli belum ada di gudang pembeli, jadi dibuatkan saat
+    diterima. Tanpa ini stoknya tidak tercatat. Batas amannya menunggu riwayat pemakaian.
+    """
+    b = Barang(
+        usaha_id=usaha_id, produk_master_id=pn.produk_master_id, nama=pn.nama, kategori=pn.kategori,
+        kode_barang=f"B-{secrets.token_hex(4)}", satuan=pn.satuan_isi, stok=Decimal(0), batas_aman=Decimal(0),
+        batas_aman_saran=Decimal(0), sumber_batas_aman=SumberBatasAman.SISTEM, harga_beli_terakhir=0,
+    )
+    sesi.add(b)
+    sesi.flush()
+    b.kode_barang = f"B{b.id:05d}"
+    sesi.add(Kemasan(barang_id=b.id, nama=pn.kemasan_nama, isi=pn.kemasan_isi))
+    return b
+
+
 @rute_umkm.post("/pesanan", response_model=list[PesananLengkap], status_code=201)
 def buat_pesanan(badan: PesananBaru, usaha_id: int = Depends(usaha_saya)):
     """
@@ -269,7 +287,8 @@ def buat_pesanan(badan: PesananBaru, usaha_id: int = Depends(usaha_saya)):
         kontrak_dipakai: dict[int, Kontrak] = {}
         for b in badan.baris:
             pn = sesi.get(Penawaran, b.penawaran_id)
-            if pn is None or not pn.aktif:
+            # Kontrak yang berjalan tetap bisa dipakai walau barangnya disembunyikan dari katalog.
+            if pn is None or (not pn.aktif and b.kontrak_id is None):
                 raise HTTPException(422, f"Penawaran {b.penawaran_id} tidak ada atau sudah tidak aktif.")
             if b.kontrak_id is not None:
                 k = kontrak_dipakai.get(b.kontrak_id) or sesi.exec(
@@ -404,8 +423,15 @@ def terima_barang(badan: Penerimaan, pesanan_id: int = Path(ge=1), usaha_id: int
             ada_catatan = ada_catatan or alasan is not None
             sesi.add(b)
 
-            if b.barang_id is None or r.jumlah_diterima <= 0:
+            if r.jumlah_diterima <= 0:
                 continue
+            if b.barang_id is None:
+                pn = sesi.get(Penawaran, b.penawaran_id)
+                if pn is None or pn.produk_master_id is None:
+                    continue
+                tujuan = _barang_tujuan(sesi, usaha_id, pn) or _barang_baru_dari_penawaran(sesi, usaha_id, pn)
+                b.barang_id = tujuan.id
+                sesi.add(b)
             barang = sesi.exec(select(Barang).where(Barang.id == b.barang_id).with_for_update()).first()
             if barang is None or barang.usaha_id != usaha_id:
                 continue

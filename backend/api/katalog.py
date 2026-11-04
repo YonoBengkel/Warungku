@@ -12,8 +12,10 @@ Dua hal dihitung di sini, bukan disimpan:
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
-from sqlalchemy import text
+from sqlalchemy import func, text
 from sqlmodel import Session, select
 
 from warungku.basis_data import mesin
@@ -144,10 +146,10 @@ def _ulasan(syarat: str, nilai: int, batas: int) -> list[UlasanPublik]:
 # --------------------------------------------------------------------------
 # Portal distributor: katalog dan paket kontrak miliknya sendiri
 # --------------------------------------------------------------------------
-from warungku.model import Kontrak, PaketKontrak, Penawaran  # noqa: E402
+from warungku.model import Kontrak, PaketKontrak, Penawaran, ProdukMaster  # noqa: E402
 
 from .otentikasi import distributor_saya  # noqa: E402
-from .skema import KatalogDistributor, SimpanPaket  # noqa: E402
+from .skema import AturAktifPenawaran, KatalogDistributor, SimpanPaket, SimpanPenawaran  # noqa: E402
 
 rute_distributor = APIRouter(prefix="/distributor/{distributor_id}", tags=["katalog"])
 
@@ -193,6 +195,110 @@ def katalog_distributor(distributor_id: int = Depends(distributor_saya)) -> Kata
             penawaran=[PenawaranKatalog(**dict(r._mapping)) for r in penawaran],
             paket=[_paket_ringkas(p) for p in paket],
         )
+
+
+def _penawaran_milik(sesi: Session, penawaran_id: int, distributor_id: int) -> Penawaran:
+    pn = sesi.get(Penawaran, penawaran_id)
+    if pn is None or pn.distributor_id != distributor_id:
+        raise HTTPException(404, "Barang ini tidak ada di katalogmu.")
+    return pn
+
+
+def _penawaran_keluar(pn: Penawaran) -> PenawaranKatalog:
+    return PenawaranKatalog(
+        id=pn.id, distributor_id=pn.distributor_id, nama=pn.nama, kategori=pn.kategori, satuan=pn.satuan,
+        harga_satuan=pn.harga_satuan, kemasan_nama=pn.kemasan_nama, kemasan_isi=pn.kemasan_isi,
+        satuan_isi=pn.satuan_isi, stok_tersedia=pn.stok_tersedia, stok_diperbarui_pada=pn.stok_diperbarui_pada,
+        keterangan=pn.keterangan, aktif=pn.aktif, barang_id_terkait=None,
+    )
+
+
+def _isi_penawaran(sesi: Session, pn: Penawaran, badan: SimpanPenawaran, distributor_id: int) -> None:
+    kembar = sesi.exec(
+        select(Penawaran.id).where(
+            Penawaran.distributor_id == distributor_id,
+            func.lower(Penawaran.nama) == badan.nama.lower(),
+            Penawaran.id != pn.id,
+        )
+    ).first()
+    if kembar is not None:
+        raise HTTPException(409, f"{badan.nama} sudah ada di katalogmu. Ubah yang sudah ada, atau tulis nama lain.")
+    pn.nama = badan.nama
+    pn.kategori = badan.kategori
+    pn.satuan = badan.satuan
+    pn.harga_satuan = badan.harga_satuan
+    # Satuan jual sekaligus nama kemasan yang tercetak di baris pesanan.
+    pn.kemasan_nama = badan.satuan
+    pn.kemasan_isi = badan.kemasan_isi
+    pn.satuan_isi = badan.satuan_isi
+    pn.stok_tersedia = badan.stok_tersedia
+    # Formulirnya selalu memuat stok, jadi menyimpan berarti angkanya sudah dilihat lagi.
+    pn.stok_diperbarui_pada = datetime.now(timezone.utc)
+    pn.keterangan = badan.keterangan or None
+
+
+def _produk_master_untuk(sesi: Session, badan: SimpanPenawaran) -> int:
+    """
+    Produk master barang baru, yang menautkan penawaran ke gudang pembeli. Nama yang sudah
+    terdaftar memakai produk yang sama, tetapi hanya dengan satuan yang sama: stok pembeli
+    bertambah sebanyak isi kemasan, dan angka gram tidak boleh masuk ke barang yang dicatat per pcs.
+    """
+    pm = sesi.exec(select(ProdukMaster).where(func.lower(ProdukMaster.nama_kanonik) == badan.nama.lower())).first()
+    if pm is None:
+        pm = ProdukMaster(nama_kanonik=badan.nama, kategori=badan.kategori, satuan_dasar=badan.satuan_isi)
+        sesi.add(pm)
+        sesi.flush()
+    elif pm.satuan_dasar != badan.satuan_isi:
+        raise HTTPException(
+            422,
+            f"{pm.nama_kanonik} sudah terdaftar dengan isi dalam {pm.satuan_dasar}, dan stok pembeli mengikuti satuan itu. "
+            "Pakai satuan yang sama, atau tulis nama lain.",
+        )
+    return pm.id
+
+
+@rute_distributor.post("/penawaran", response_model=PenawaranKatalog, status_code=201)
+def tambah_penawaran(badan: SimpanPenawaran, distributor_id: int = Depends(distributor_saya)):
+    """Barang baru langsung tampil di katalog pemilik usaha."""
+    with Session(mesin()) as sesi:
+        pn = Penawaran(distributor_id=distributor_id, produk_master_id=_produk_master_untuk(sesi, badan))
+        _isi_penawaran(sesi, pn, badan, distributor_id)
+        sesi.add(pn)
+        sesi.commit()
+        return _penawaran_keluar(pn)
+
+
+@rute_distributor.put("/penawaran/{penawaran_id}", response_model=PenawaranKatalog)
+def ubah_penawaran(badan: SimpanPenawaran, penawaran_id: int = Path(ge=1), distributor_id: int = Depends(distributor_saya)):
+    """
+    Pesanan dan kontrak yang sudah ada tidak ikut berubah: harga dan isi kemasannya disalin
+    saat dibuat. Satuan isi tidak bisa diganti, karena stok pembeli mengikuti satuan itu.
+    """
+    with Session(mesin()) as sesi:
+        pn = _penawaran_milik(sesi, penawaran_id, distributor_id)
+        if badan.satuan_isi != pn.satuan_isi:
+            raise HTTPException(
+                422,
+                f"Satuan isi {pn.nama} tidak bisa diganti ke {badan.satuan_isi}, karena stok pembeli dicatat dalam "
+                f"{pn.satuan_isi}. Untuk satuan lain, tambah sebagai barang baru.",
+            )
+        _isi_penawaran(sesi, pn, badan, distributor_id)
+        sesi.add(pn)
+        sesi.commit()
+        return _penawaran_keluar(pn)
+
+
+@rute_distributor.patch("/penawaran/{penawaran_id}", response_model=PenawaranKatalog)
+def atur_aktif_penawaran(
+    badan: AturAktifPenawaran, penawaran_id: int = Path(ge=1), distributor_id: int = Depends(distributor_saya)
+):
+    """Sembunyikan atau jual lagi. Tidak dihapus: pesanan, kontrak, dan promo lama masih merujuknya."""
+    with Session(mesin()) as sesi:
+        pn = _penawaran_milik(sesi, penawaran_id, distributor_id)
+        pn.aktif = badan.aktif
+        sesi.add(pn)
+        sesi.commit()
+        return _penawaran_keluar(pn)
 
 
 def _paket_milik(sesi: Session, paket_id: int, distributor_id: int) -> PaketKontrak:

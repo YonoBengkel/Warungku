@@ -354,6 +354,7 @@ def saran_distributor(barang_id: int = Path(ge=1), usaha_id: int = Depends(usaha
                        (r.kedaluwarsa_pada < now()) AS kedaluwarsa
                   FROM rekomendasi_skor r
                   JOIN distributor d ON d.id = r.distributor_id
+                  JOIN penawaran pn ON pn.id = r.penawaran_id AND pn.aktif
                  WHERE r.usaha_id = :u AND r.barang_id = :b
                  ORDER BY r.skor DESC
                 """
@@ -387,6 +388,7 @@ def ringkasan_saran_distributor(usaha_id: int = Depends(usaha_saya)):
                     SELECT r.*, rank() OVER (PARTITION BY r.barang_id ORDER BY r.skor DESC) AS urut
                       FROM rekomendasi_skor r
                       JOIN barang bb ON bb.id = r.barang_id
+                      JOIN penawaran pn ON pn.id = r.penawaran_id AND pn.aktif
                      WHERE r.usaha_id = :u AND r.barang_id IS NOT NULL
                        AND bb.stok < bb.batas_aman * 2
                 )

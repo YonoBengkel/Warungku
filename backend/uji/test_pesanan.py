@@ -162,8 +162,11 @@ def dunia():
         kon.execute(text("DELETE FROM paket_kontrak WHERE distributor_id = :d"), {"d": d})
         kon.execute(text("DELETE FROM promo_penawaran WHERE promo_id IN (SELECT id FROM promo WHERE distributor_id = :d)"), {"d": d})
         kon.execute(text("DELETE FROM tingkat_keanggotaan WHERE promo_id IN (SELECT id FROM promo WHERE distributor_id = :d)"), {"d": d})
+        kon.execute(text("DELETE FROM rekomendasi_skor WHERE usaha_id = :u"), {"u": u})
         kon.execute(text("DELETE FROM penawaran WHERE distributor_id = :d"), {"d": d})
+        kon.execute(text("DELETE FROM kemasan WHERE barang_id IN (SELECT id FROM barang WHERE usaha_id = :u)"), {"u": u})
         kon.execute(text("DELETE FROM barang WHERE usaha_id = :u"), {"u": u})
+        kon.execute(text("DELETE FROM produk_master WHERE nama_kanonik = 'Teh Melati Uji'"))
         kon.execute(text("DELETE FROM keanggotaan WHERE usaha_id = :u"), {"u": u})
         kon.execute(text("DELETE FROM promo WHERE distributor_id = :d"), {"d": d})
         kon.execute(text("DELETE FROM distributor WHERE id = :d"), {"d": d})
@@ -589,6 +592,148 @@ def test_distributor_mengelola_paket_dari_katalognya(dunia):
     assert r.status_code == 422
     assert klien.delete(f"{d}/paket/{pid}", headers=w["kepala_dist"]).status_code == 204
     assert klien.get(f"{d}/katalog", headers=w["kepala_dist"]).json()["paket"] == []
+
+
+def _penawaran_baru(**ubahan) -> dict:
+    return {
+        "nama": "Teh Melati Uji", "kategori": "Kopi & Teh", "satuan": "dus", "harga_satuan": 96000,
+        "kemasan_isi": "2000", "satuan_isi": "gram", "stok_tersedia": "40", "keterangan": "Kemasan 2 kg",
+        **ubahan,
+    }
+
+
+def _katalog_umkm(klien: TestClient, w: dict, penawaran_id: int) -> dict:
+    isi = klien.get(f"/usaha/{w['usaha']}/katalog", headers=w["kepala_umkm"]).json()["penawaran"]
+    return next(p for p in isi if p["id"] == penawaran_id)
+
+
+def test_distributor_mengelola_penawaran_dan_pembeli_melihatnya(dunia):
+    w, klien = dunia, TestClient(app)
+    d, kepala = f"/distributor/{w['distributor']}", w["kepala_dist"]
+
+    # Barang baru tersimpan dan terbaca di kedua portal.
+    r = klien.post(f"{d}/penawaran", headers=kepala, json=_penawaran_baru())
+    assert r.status_code == 201, r.text
+    baru = r.json()
+    assert baru["kemasan_nama"] == "dus" and baru["aktif"] is True
+    assert any(p["id"] == baru["id"] for p in klien.get(f"{d}/katalog", headers=kepala).json()["penawaran"])
+    assert Decimal(_katalog_umkm(klien, w, baru["id"])["stok_tersedia"]) == 40
+
+    # Nama yang sama di katalog sendiri ditolak, termasuk beda huruf besar.
+    assert klien.post(f"{d}/penawaran", headers=kepala, json=_penawaran_baru(nama="teh melati UJI")).status_code == 409
+    # Nama produk yang sudah terdaftar tertaut ke gudang pembeli, dan satuannya harus sama.
+    with mesin().connect() as kon:
+        kanonik = kon.execute(text("SELECT nama_kanonik FROM produk_master WHERE id = :p"), {"p": w["produk"]}).scalar_one()
+    r = klien.post(f"{d}/penawaran", headers=kepala, json=_penawaran_baru(nama=kanonik, satuan_isi="ml"))
+    assert r.status_code == 422 and "gram" in r.json()["detail"]
+    r = klien.post(f"{d}/penawaran", headers=kepala, json=_penawaran_baru(nama=kanonik))
+    assert r.status_code == 201, r.text
+    assert _katalog_umkm(klien, w, r.json()["id"])["barang_id_terkait"] == w["barang"]
+
+    # Ubah: harga dan stok baru terbaca pembeli, stempel stoknya maju, satuan isi tidak bisa diganti.
+    r = klien.put(f"{d}/penawaran/{baru['id']}", headers=kepala, json=_penawaran_baru(harga_satuan=90000, stok_tersedia="5"))
+    assert r.status_code == 200, r.text
+    assert r.json()["stok_diperbarui_pada"] >= baru["stok_diperbarui_pada"]
+    dilihat = _katalog_umkm(klien, w, baru["id"])
+    assert dilihat["harga_satuan"] == 90000 and Decimal(dilihat["stok_tersedia"]) == 5
+    assert klien.put(f"{d}/penawaran/{baru['id']}", headers=kepala, json=_penawaran_baru(satuan_isi="pcs")).status_code == 422
+    # Isian tidak sah ditolak.
+    assert klien.post(f"{d}/penawaran", headers=kepala, json=_penawaran_baru(nama="Teh Lain", harga_satuan=0)).status_code == 422
+
+    # Sembunyikan: masih terbaca dengan penandanya, tetapi tidak bisa dibeli lagi.
+    r = klien.patch(f"{d}/penawaran/{baru['id']}", headers=kepala, json={"aktif": False})
+    assert r.status_code == 200 and r.json()["aktif"] is False
+    assert _katalog_umkm(klien, w, baru["id"])["aktif"] is False
+    badan = {"baris": [{"penawaran_id": baru["id"], "jumlah": "1"}]}
+    assert klien.post(f"/usaha/{w['usaha']}/pesanan", headers=w["kepala_umkm"], json=badan).status_code == 422
+    assert klien.patch(f"{d}/penawaran/{baru['id']}", headers=kepala, json={"aktif": True}).status_code == 200
+    assert klien.post(f"/usaha/{w['usaha']}/pesanan", headers=w["kepala_umkm"], json=badan).status_code == 201
+
+
+def test_penawaran_distributor_lain_tidak_bisa_diubah(dunia):
+    w, klien = dunia, TestClient(app)
+    d = f"/distributor/{w['distributor']}"
+    # Token distributor ini tidak berlaku untuk jalur distributor lain.
+    r = klien.put(f"/distributor/{w['distributor'] + 1}/penawaran/{w['penawaran']}", headers=w["kepala_dist"], json=_penawaran_baru())
+    assert r.status_code in (403, 404)
+    # Penawaran milik distributor lain, lewat jalur sendiri.
+    with mesin().begin() as kon:
+        lain = kon.execute(
+            text("SELECT id FROM penawaran WHERE distributor_id <> :d ORDER BY id LIMIT 1"), {"d": w["distributor"]}
+        ).scalar()
+    if lain is not None:
+        assert klien.patch(f"{d}/penawaran/{lain}", headers=w["kepala_dist"], json={"aktif": False}).status_code == 404
+    # Pemilik usaha bukan distributor.
+    assert klien.post(f"{d}/penawaran", headers=w["kepala_umkm"], json=_penawaran_baru()).status_code in (401, 403)
+
+
+def test_barang_baru_masuk_gudang_pembeli_saat_diterima(dunia):
+    """Barang yang belum pernah ada di gudang pembeli dibuatkan saat diterima, lalu dipakai pesanan berikutnya."""
+    w, klien = dunia, TestClient(app)
+    d, u = f"/distributor/{w['distributor']}", f"/usaha/{w['usaha']}"
+    pn = klien.post(f"{d}/penawaran", headers=w["kepala_dist"], json=_penawaran_baru()).json()
+    assert _katalog_umkm(klien, w, pn["id"])["barang_id_terkait"] is None
+
+    badan = {"baris": [{"penawaran_id": pn["id"], "jumlah": "3"}]}
+
+    def terima(p: dict) -> None:
+        _majukan_sampai_dikirim(klien, w, p["id"])
+        r = klien.post(
+            f"{u}/pesanan/{p['id']}/terima", headers=w["kepala_umkm"],
+            json={"baris": [{"baris_id": p["baris"][0]["id"], "jumlah_diterima": "3"}]},
+        )
+        assert r.status_code == 200, r.text
+
+    [p] = klien.post(f"{u}/pesanan", headers=w["kepala_umkm"], json=badan).json()
+    # Pesanan yang masih bisa batal belum menambah baris stok.
+    assert not any(b["nama"] == pn["nama"] for b in klien.get(f"{u}/barang", headers=w["kepala_umkm"]).json())
+    terima(p)
+
+    barang = [b for b in klien.get(f"{u}/barang", headers=w["kepala_umkm"]).json() if b["nama"] == pn["nama"]]
+    assert len(barang) == 1
+    baru = barang[0]
+    assert Decimal(baru["stok"]) == 6000 and baru["satuan"] == "gram" and baru["kemasan"][0]["nama"] == "dus"
+    with mesin().connect() as kon:
+        assert kon.execute(
+            text("SELECT sum(jumlah) FROM pergerakan WHERE barang_id = :b"), {"b": baru["id"]}
+        ).scalar_one() == 6000
+    assert _katalog_umkm(klien, w, pn["id"])["barang_id_terkait"] == baru["id"]
+
+    # Pesanan berikutnya masuk ke barang yang sama, tidak membuat baris kembar.
+    [p2] = klien.post(f"{u}/pesanan", headers=w["kepala_umkm"], json=badan).json()
+    terima(p2)
+    barang = [b for b in klien.get(f"{u}/barang", headers=w["kepala_umkm"]).json() if b["nama"] == pn["nama"]]
+    assert len(barang) == 1 and Decimal(barang[0]["stok"]) == 12000
+
+
+def test_kontrak_berjalan_tetap_dipakai_saat_barang_disembunyikan(dunia):
+    """Layar menjanjikan kontrak yang sudah ada tidak terpengaruh, dan saran Mesin 2 tidak menawarkannya lagi."""
+    w, klien = dunia, TestClient(app)
+    u, d = f"/usaha/{w['usaha']}", f"/distributor/{w['distributor']}"
+    r = klien.post(f"{u}/kontrak", headers=w["kepala_umkm"], json={"paket_id": _paket(w)})
+    assert r.status_code == 201, r.text
+    kid = r.json()["id"]
+    assert klien.post(f"{d}/kontrak/{kid}/setujui", headers=w["kepala_dist"], json={}).status_code == 200
+
+    sekarang = datetime.now(timezone.utc)
+    with Session(mesin()) as sesi:
+        sesi.add(RekomendasiSkor(
+            usaha_id=w["usaha"], barang_id=w["barang"], distributor_id=w["distributor"], penawaran_id=w["penawaran"],
+            p_sukses=0.9, skor=0.9, segmen="sangat-layak", alasan="Uji", model_nama="uji", model_versi="uji",
+            dijalankan_pada=sekarang, kedaluwarsa_pada=sekarang,
+        ))
+        sesi.commit()
+    jalur_saran = f"{u}/barang/{w['barang']}/saran"
+    assert len(klien.get(jalur_saran, headers=w["kepala_umkm"]).json()) == 1
+
+    assert klien.patch(f"{d}/penawaran/{w['penawaran']}", headers=w["kepala_dist"], json={"aktif": False}).status_code == 200
+
+    assert klien.get(jalur_saran, headers=w["kepala_umkm"]).json() == []
+    assert klien.get(f"{u}/saran-distributor", headers=w["kepala_umkm"]).json() == []
+    barang = {"penawaran_id": w["penawaran"], "jumlah": "1"}
+    assert klien.post(f"{u}/pesanan", headers=w["kepala_umkm"], json={"baris": [barang]}).status_code == 422
+    r = klien.post(f"{u}/pesanan", headers=w["kepala_umkm"], json={"baris": [{**barang, "kontrak_id": kid}]})
+    assert r.status_code == 201, r.text
 
 
 def test_promo_memotong_harga_beli_sekali_sampai_diakhiri(dunia):

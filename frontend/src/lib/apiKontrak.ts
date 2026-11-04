@@ -202,47 +202,85 @@ export async function aksiKontrakServer(
 }
 
 /** Penawaran dan paket milik distributor sendiri, untuk portalnya. */
+interface PenawaranApi {
+  id: number
+  distributor_id: number
+  nama: string
+  kategori: string
+  satuan: string
+  harga_satuan: number
+  kemasan_nama: string
+  kemasan_isi: string
+  satuan_isi: string
+  stok_tersedia: string
+  stok_diperbarui_pada: string
+  keterangan: string | null
+  aktif: boolean
+}
+
+function kePenawaran(p: PenawaranApi): Penawaran {
+  return {
+    id: String(p.id),
+    distributorId: keIdDistributor(p.distributor_id),
+    nama: p.nama,
+    kategori: p.kategori,
+    satuan: p.satuan,
+    hargaSatuan: p.harga_satuan,
+    kemasanJual: { nama: p.kemasan_nama, isi: angka(p.kemasan_isi) },
+    stokTersedia: angka(p.stok_tersedia),
+    stokDiperbaruiPada: p.stok_diperbarui_pada,
+    barangIdTerkait: null,
+    keterangan: p.keterangan ?? '',
+    aktif: p.aktif,
+    satuanIsi: p.satuan_isi,
+  }
+}
+
 export async function ambilKatalogDistributor(
   sesi: SesiDistributor,
 ): Promise<{ penawaran: Penawaran[]; paket: PaketKontrak[]; promo: Promo[] }> {
   const k = await minta<{
-    penawaran: Array<{
-      id: number
-      distributor_id: number
-      nama: string
-      kategori: string
-      satuan: string
-      harga_satuan: number
-      kemasan_nama: string
-      kemasan_isi: string
-      satuan_isi: string
-      stok_tersedia: string
-      stok_diperbarui_pada: string
-      keterangan: string | null
-      aktif: boolean
-    }>
+    penawaran: PenawaranApi[]
     paket: PaketApi[]
     promo: PromoApi[]
   }>(`/distributor/${sesi.distributorId}/katalog`, { token: sesi.token })
   return {
-    penawaran: k.penawaran.map((p) => ({
-      id: String(p.id),
-      distributorId: keIdDistributor(p.distributor_id),
-      nama: p.nama,
-      kategori: p.kategori,
-      satuan: p.satuan,
-      hargaSatuan: p.harga_satuan,
-      kemasanJual: { nama: p.kemasan_nama, isi: angka(p.kemasan_isi) },
-      stokTersedia: angka(p.stok_tersedia),
-      stokDiperbaruiPada: p.stok_diperbarui_pada,
-      barangIdTerkait: null,
-      keterangan: p.keterangan ?? '',
-      aktif: p.aktif,
-      satuanIsi: p.satuan_isi,
-    })),
+    penawaran: k.penawaran.map(kePenawaran),
     paket: k.paket.map(kePaket),
     promo: (k.promo ?? []).map(kePromo),
   }
+}
+
+/** Tambah (id bukan angka) atau ubah (id angka) satu barang yang dijual. */
+export async function simpanPenawaranServer(sesi: SesiDistributor, p: Penawaran): Promise<Penawaran> {
+  const baru = !/^\d+$/.test(p.id)
+  const isi = await minta<PenawaranApi>(
+    baru ? `/distributor/${sesi.distributorId}/penawaran` : `/distributor/${sesi.distributorId}/penawaran/${p.id}`,
+    {
+      method: baru ? 'POST' : 'PUT',
+      token: sesi.token,
+      body: JSON.stringify({
+        nama: p.nama,
+        kategori: p.kategori,
+        satuan: p.satuan,
+        harga_satuan: p.hargaSatuan,
+        kemasan_isi: p.kemasanJual?.isi ?? 1,
+        satuan_isi: p.satuanIsi,
+        stok_tersedia: p.stokTersedia,
+        keterangan: p.keterangan || null,
+      }),
+    },
+  )
+  return kePenawaran(isi)
+}
+
+export async function aturAktifPenawaranServer(sesi: SesiDistributor, id: string, aktif: boolean): Promise<Penawaran> {
+  const isi = await minta<PenawaranApi>(`/distributor/${sesi.distributorId}/penawaran/${id}`, {
+    method: 'PATCH',
+    token: sesi.token,
+    body: JSON.stringify({ aktif }),
+  })
+  return kePenawaran(isi)
 }
 
 /** Tambah (id bukan angka) atau ubah (id angka) satu paket kontrak. */

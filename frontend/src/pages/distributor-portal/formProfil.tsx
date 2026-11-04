@@ -43,13 +43,13 @@ const SATUAN_ISI_BEBAS: PilihanIsi[] = [
 ]
 
 /**
- * Barang yang sudah terkait daftar stok pemilik usaha hanya boleh memakai
- * satuan dasar yang sama (gram boleh ditulis kg, ml boleh ditulis liter).
- * Mengganti satuan dasarnya membuat stok gudang pembeli bertambah dengan
- * angka yang salah setiap barang diterima.
+ * Barang yang sudah ada di katalog hanya boleh memakai satuan dasar yang sama
+ * (gram boleh ditulis kg, ml boleh ditulis liter). Mengganti satuan dasarnya
+ * membuat stok gudang pembeli bertambah dengan angka yang salah setiap barang
+ * diterima, dan server menolaknya.
  */
 function pilihanIsiUntuk(penawaran: Penawaran | null): PilihanIsi[] {
-  const dasar = penawaran?.barangIdTerkait ? penawaran.satuanIsi : undefined
+  const dasar = penawaran?.satuanIsi
   if (!dasar) return SATUAN_ISI_BEBAS
   const sekeluarga = SATUAN_ISI_BEBAS.filter((s) => s.dasar === dasar)
   return sekeluarga.length > 0 ? sekeluarga : [{ nilai: dasar, dasar, kali: 1 }]
@@ -98,8 +98,9 @@ export function FormBarang({
   const [isi, setIsi] = useState(isiAwal.isi)
   const [satuanIsi, setSatuanIsi] = useState(isiAwal.satuan)
   const [harga, setHarga] = useState(penawaran ? angka(penawaran.hargaSatuan) : '')
-  const [stok, setStok] = useState(penawaran ? angka(penawaran.stokTersedia) : '')
+  const [stok, setStok] = useState(penawaran ? angka(penawaran.stokTersedia, 3) : '')
   const [dicoba, setDicoba] = useState(false)
+  const [menyimpan, setMenyimpan] = useState(false)
 
   const angkaIsi = bacaAngkaIndonesia(isi)
   const angkaHarga = bacaAngkaIndonesia(harga)
@@ -123,12 +124,13 @@ export function FormBarang({
         : undefined,
   }
 
-  function simpan() {
+  async function simpan() {
     setDicoba(true)
     if (Object.values(galat).some(Boolean)) return
     const satuanBersih = satuan.trim()
     const isiDasar = Math.round(angkaIsi * isiTerpilih.kali * 100) / 100
-    simpanPenawaran({
+    setMenyimpan(true)
+    const tersimpan = await simpanPenawaran({
       id: penawaran?.id ?? `pw-${Date.now()}`,
       distributorId: distributor.id,
       nama: nama.trim(),
@@ -143,7 +145,9 @@ export function FormBarang({
       aktif: penawaran?.aktif ?? true,
       satuanIsi: isiTerpilih.dasar,
     })
-    tutup()
+    setMenyimpan(false)
+    // Ditolak atau gagal: lembar tetap terbuka supaya isiannya tidak hilang.
+    if (tersimpan) tutup()
   }
 
   return (
@@ -158,7 +162,7 @@ export function FormBarang({
           <Tombol ragam="garis" penuh onClick={tutup}>
             Batal
           </Tombol>
-          <Tombol penuh onClick={simpan}>
+          <Tombol penuh memuat={menyimpan} onClick={() => void simpan()}>
             Simpan Barang
           </Tombol>
         </div>
@@ -229,7 +233,7 @@ export function FormBarang({
               ))}
             </Pilihan>
           </div>
-          {penawaran?.barangIdTerkait && (
+          {penawaran?.satuanIsi && (
             <p className="mt-1.5 text-isi text-ink-3 leading-snug">
               Satuan isinya mengikuti catatan stok pembeli yang sudah ada, jadi tidak bisa diganti ke satuan lain.
             </p>

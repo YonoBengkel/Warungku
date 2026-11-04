@@ -113,9 +113,11 @@ import {
   ambilKontrak,
   ambilKontrakMasuk,
   berhentiKontrakServer,
+  aturAktifPenawaranServer,
   hapusPaketServer,
   rutinKontrakServer,
   simpanPaketServer,
+  simpanPenawaranServer,
   tarikKontrakServer,
 } from '@/lib/apiKontrak'
 import type { AksiKontrak } from '@/lib/apiKontrak'
@@ -351,8 +353,9 @@ interface KeadaanAplikasi {
   akhiriPromo: (id: string) => void
 
   // Portal distributor — profil dan katalog
-  simpanPenawaran: (penawaran: Penawaran) => void
-  aturAktifPenawaran: (id: string, aktif: boolean) => void
+  /** `false` berarti ditolak atau gagal: formulirnya tetap terbuka. */
+  simpanPenawaran: (penawaran: Penawaran) => Promise<boolean>
+  aturAktifPenawaran: (id: string, aktif: boolean) => Promise<void>
   /**
    * Ubah profil toko. Bila portal tersambung, info usaha disimpan lewat PUT
    * /profil, kategori dan area kirim lewat PUT /layanan. Mengembalikan true bila tersimpan.
@@ -425,6 +428,23 @@ function cariPesananMasuk(s: KeadaanAplikasi, id: string): PesananMasuk | undefi
 }
 
 /** Sesudah promo berubah: portal distributor dimuat ulang, dan katalog pemilik usaha kalau sedang masuk. */
+/** Hasil simpan masuk ke katalog portal; pemilik usaha yang juga masuk di tab ini ikut melihatnya. */
+function terapkanPenawaran(get: () => KeadaanAplikasi, baru: Penawaran): void {
+  useAplikasi.setState((s) => {
+    const k = s.katalogDistributorServer
+    if (!k) return {}
+    const ada = k.penawaran.some((p) => p.id === baru.id)
+    return {
+      katalogDistributorServer: {
+        ...k,
+        penawaran: ada ? k.penawaran.map((p) => (p.id === baru.id ? baru : p)) : [...k.penawaran, baru],
+      },
+    }
+  })
+  const umkm = get().sesiServer
+  if (umkm) void ambilKatalog(umkm).then((k) => useAplikasi.setState({ katalog: k.penawaran }), () => {})
+}
+
 async function segarkanPromo(get: () => KeadaanAplikasi): Promise<void> {
   await get().muatPesananMasuk()
   const umkm = get().sesiServer
@@ -2312,33 +2332,50 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
     get().tampilkanRacun(`Promo "${promo.judul}" diakhiri. Harga kembali normal mulai sekarang.`, 'info')
   },
 
-  simpanPenawaran: (penawaran) => {
-    const ada = get().katalog.some((p) => p.id === penawaran.id)
-    set((s) => ({
-      katalog: ada ? s.katalog.map((p) => (p.id === penawaran.id ? penawaran : p)) : [...s.katalog, penawaran],
-    }))
-    // Penawaran belum punya jalur tulis di server, jadi portal yang tersambung tidak dijanjikan apa-apa.
-    const tersambung = get().pesananMasukServer !== null
+  simpanPenawaran: async (penawaran) => {
+    const sesiD = get().sesiDistributor
+    const katalogServer = get().katalogDistributorServer
+    const ada = (katalogServer?.penawaran ?? get().katalog).some((p) => p.id === penawaran.id)
+    if (sesiD && katalogServer) {
+      try {
+        terapkanPenawaran(get, await simpanPenawaranServer(sesiD, penawaran))
+      } catch (e) {
+        get().tampilkanRacun(e instanceof Error ? e.message : 'Barang gagal disimpan. Coba lagi sebentar lagi.', 'kritis')
+        return false
+      }
+    } else {
+      set((s) => ({
+        katalog: ada ? s.katalog.map((p) => (p.id === penawaran.id ? penawaran : p)) : [...s.katalog, penawaran],
+      }))
+    }
     get().tampilkanRacun(
-      tersambung
-        ? `${penawaran.nama} ${ada ? 'diperbarui' : 'ditambahkan'} di layar ini saja. Purwarupa ini belum menyimpannya.`
-        : ada
-          ? `${penawaran.nama} diperbarui. Pemilik usaha melihat harga dan stok yang baru.`
-          : `${penawaran.nama} ditambahkan ke katalogmu.`,
-      tersambung ? 'info' : 'aman',
+      ada
+        ? `${penawaran.nama} diperbarui. Pemilik usaha melihat harga dan stok yang baru.`
+        : `${penawaran.nama} ditambahkan ke katalogmu dan tampil untuk pemilik usaha.`,
+      'aman',
     )
+    return true
   },
 
-  aturAktifPenawaran: (id, aktif) => {
-    const pw = get().katalog.find((p) => p.id === id)
+  aturAktifPenawaran: async (id, aktif) => {
+    const sesiD = get().sesiDistributor
+    const katalogServer = get().katalogDistributorServer
+    const pw = (katalogServer?.penawaran ?? get().katalog).find((p) => p.id === id)
     if (!pw) return
-    set((s) => ({ katalog: s.katalog.map((p) => (p.id === id ? { ...p, aktif } : p)) }))
+    if (sesiD && katalogServer) {
+      try {
+        terapkanPenawaran(get, await aturAktifPenawaranServer(sesiD, id, aktif))
+      } catch (e) {
+        get().tampilkanRacun(e instanceof Error ? e.message : 'Perubahan gagal disimpan. Coba lagi sebentar lagi.', 'kritis')
+        return
+      }
+    } else {
+      set((s) => ({ katalog: s.katalog.map((p) => (p.id === id ? { ...p, aktif } : p)) }))
+    }
     get().tampilkanRacun(
-      get().pesananMasukServer !== null
-        ? `${pw.nama} ${aktif ? 'dijual lagi' : 'disembunyikan'} di layar ini saja. Purwarupa ini belum menyimpannya.`
-        : aktif
-          ? `${pw.nama} dijual lagi dan kembali tampil di katalog pemilik usaha.`
-          : `${pw.nama} disembunyikan dari katalog. Pesanan dan kontrak yang sudah ada tidak terpengaruh.`,
+      aktif
+        ? `${pw.nama} dijual lagi dan kembali tampil di katalog pemilik usaha.`
+        : `${pw.nama} disembunyikan dari katalog. Pesanan dan kontrak yang sudah ada tidak terpengaruh.`,
       'info',
     )
   },
