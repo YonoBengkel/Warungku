@@ -63,6 +63,9 @@ export function MenuSamping({
   // Tujuan lama dibuang begitu menu aktif berganti, supaya tidak hidup lagi
   // saat pengguna kembali ke halaman asal lewat tautan lain.
   useEffect(() => setTujuan(null), [keAktif])
+  /* Daftar menu bisa berubah tanpa mengubah menu aktif: profil warung kelontong yang
+     pulih sesudah muat ulang membuang menu Produksi, jadi menu di bawahnya naik. */
+  const susunan = [...utama, ...tambahan].map((b) => b.ke).join('|')
 
   useLayoutEffect(() => {
     const wadah = wadahRef.current
@@ -82,7 +85,7 @@ export function MenuSamping({
     const pengamat = new ResizeObserver(ukur)
     pengamat.observe(wadah)
     return () => pengamat.disconnect()
-  }, [keTampil, sembunyi])
+  }, [keTampil, sembunyi, susunan])
 
   // Posisi pertama dipasang tanpa gerak; sesudahnya penanda bergeser halus.
   useEffect(() => {

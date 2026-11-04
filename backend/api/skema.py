@@ -307,6 +307,9 @@ class BarangRingkas(BaseModel):
     #: dihitung dari hari terakhir data usaha, bukan dari hari ini. Kosong kalau
     #: belum pernah terpakai. Dasar penyaring "Tidak bergerak".
     hari_tanpa_pemakaian: int | None = None
+    #: Penawaran teratas Mesin 2 untuk barang ini, supaya saran di semua layar menunjuk
+    #: distributor yang sama. Kosong kalau Mesin 2 belum menilainya.
+    penawaran_saran_id: int | None = None
     catatan: str | None = None
 
 
@@ -712,6 +715,7 @@ class ProfilDistributor(BaseModel):
     id: int
     nama: str
     kota: str
+    sejak: date
     deskripsi: str | None
     warna: str
     kategori: list[str]

@@ -1,5 +1,7 @@
 import { minta } from '@/lib/api'
 import type { SesiDistributor } from '@/lib/api'
+import { keIdDistributor } from '@/lib/apiPesanan'
+import { bulanTahun } from '@/lib/format'
 import type { InfoUsahaDistributor } from '@/lib/types'
 
 /**
@@ -16,6 +18,12 @@ export interface LokasiGudang {
 
 /** Bagian profil yang disimpan di server. Di portal, ia menimpa data contoh. */
 export interface ProfilServer extends LokasiGudang {
+  /** Identitas akun yang masuk. Tanpanya portal menampilkan toko contoh, apa pun akunnya. */
+  id: string
+  nama: string
+  kota: string
+  warna: string
+  sejak: string
   deskripsi: string
   /** Kosong kalau distributor belum pernah mengisinya; layar lalu menulis "Belum diisi". */
   info: InfoUsahaDistributor | undefined
@@ -31,6 +39,10 @@ export interface ProfilServer extends LokasiGudang {
 
 interface ProfilDistributorApi {
   id: number
+  nama: string
+  kota: string
+  warna: string
+  sejak: string
   deskripsi: string | null
   kategori: string[]
   area_kirim: string[]
@@ -52,6 +64,11 @@ interface ProfilDistributorApi {
 function keProfil(p: ProfilDistributorApi): ProfilServer {
   const diisi = p.alamat_gudang != null || p.nomor_hp != null || p.jam_operasional != null || p.minimum_pesanan > 0
   return {
+    id: keIdDistributor(p.id),
+    nama: p.nama,
+    kota: p.kota,
+    warna: p.warna,
+    sejak: bulanTahun(p.sejak),
     deskripsi: p.deskripsi ?? '',
     info: diisi
       ? {

@@ -18,8 +18,8 @@ import {
 import { angka, cx, jumlahSatuan, nomorHp, rupiah, waktuLalu } from '@/lib/format'
 import { LABEL_JENIS_USAHA, LABEL_PESANAN_MASUK, NADA_PESANAN_MASUK } from '@/lib/label'
 import type { PesananMasuk, StatusPesananMasuk } from '@/lib/types'
-import { distributorAktif, umkmById } from '@/data/dummy'
-import { useAplikasi, usePesananMasuk, useTitikPeta } from '@/store/aplikasi'
+import { umkmById } from '@/data/dummy'
+import { useAplikasi, useDistributorAktif, usePesananMasuk, useTitikPeta } from '@/store/aplikasi'
 
 /**
  * Sebaran pemesan (catatan B3, B5, B6).
@@ -66,7 +66,8 @@ export default function PetaSebaranBarang() {
   // contoh memakai id lain, jadi titik barang dari pesanan server tidak pernah
   // cocok dan peta per barang selalu kosong.
   const katalog = useAplikasi((s) => s.katalogDistributorServer?.penawaran ?? s.katalog)
-  const barangSaya = katalog.filter((p) => p.distributorId === distributorAktif.id)
+  const idSaya = useDistributorAktif().id
+  const barangSaya = katalog.filter((p) => p.distributorId === idSaya)
 
   // Pemiliknya ikut diperiksa: tanpa itu tautan ke barang distributor lain
   // membuka nama, harga satuan, dan stok pesaing di halaman ini. Barang orang

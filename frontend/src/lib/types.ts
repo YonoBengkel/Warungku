@@ -208,6 +208,8 @@ export interface Barang {
    * null = belum pernah terpakai; tidak ada = data contoh, dihitung dari riwayat.
    */
   hariTanpaPemakaian?: number | null
+  /** Penawaran teratas Mesin 2 untuk barang ini (hanya data server). */
+  penawaranSaranId?: string | null
   /** Terpasang ke menu di kasir? Kalau tidak, stok tidak berkurang otomatis. */
   terhubungKasir: boolean
   /** Barang yang memang dicatat manual (gas, tisu): tidak diperingatkan, tidak masuk data ML. */

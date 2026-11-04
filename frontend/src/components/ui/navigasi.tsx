@@ -77,7 +77,8 @@ export function TabSegmen<T extends string>({
 
 export function BarisChip({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className={cx('flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0', className)}>
+    // Di desktop tidak ada usapan jari, dan bilah gulirnya disembunyikan: chip yang tidak muat turun ke baris berikutnya.
+    <div className={cx('flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 lg:flex-wrap', className)}>
       {children}
     </div>
   )

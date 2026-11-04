@@ -730,6 +730,8 @@ def test_kontrak_berjalan_tetap_dipakai_saat_barang_disembunyikan(dunia):
 
     assert klien.get(jalur_saran, headers=w["kepala_umkm"]).json() == []
     assert klien.get(f"{u}/saran-distributor", headers=w["kepala_umkm"]).json() == []
+    daftar = klien.get(f"{u}/barang", headers=w["kepala_umkm"]).json()
+    assert next(b for b in daftar if b["id"] == w["barang"])["penawaran_saran_id"] is None
     barang = {"penawaran_id": w["penawaran"], "jumlah": "1"}
     assert klien.post(f"{u}/pesanan", headers=w["kepala_umkm"], json={"baris": [barang]}).status_code == 422
     r = klien.post(f"{u}/pesanan", headers=w["kepala_umkm"], json={"baris": [{**barang, "kontrak_id": kid}]})
@@ -800,6 +802,10 @@ def test_ringkasan_saran_mesin2_per_distributor(dunia):
         assert dua["jumlah_barang"] == 2 and dua["jumlah_teratas"] == 1 and dua["barang_teratas"] == ["Biji Kopi Uji Dua"]
         assert satu["barang_teratas"] == ["Biji Kopi Uji"] and satu["jumlah_sangat_layak"] == 1
         assert dua["kedaluwarsa"] is False
+        # Daftar barang menunjuk penawaran teratas tiap barang, supaya semua layar sepakat.
+        daftar = klien.get(f"/usaha/{w['usaha']}/barang", headers=w["kepala_umkm"]).json()
+        saran = {b["id"]: b["penawaran_saran_id"] for b in daftar}
+        assert saran[w["barang"]] == w["penawaran"] and saran[b2] == p2
         # Hanya pemilik usaha ini yang boleh membacanya.
         r = klien.get(f"/usaha/{w['usaha']}/saran-distributor", headers=w["kepala_dist"])
         assert r.status_code in (401, 403)

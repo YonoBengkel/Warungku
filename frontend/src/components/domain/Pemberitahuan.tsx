@@ -21,12 +21,12 @@ import {
   IkonPanahKanan,
   IkonPasokan,
 } from '@/icons'
-import { distributorAktif, promoMasihBerlaku, umkmById } from '@/data/dummy'
+import { promoMasihBerlaku, umkmById } from '@/data/dummy'
 import { angka, cx, hariLagi, tanggalRingkas, waktuLalu, waktuNanti } from '@/lib/format'
 import { PESANAN_BERJALAN } from '@/lib/label'
 import { bacaPetaDibaca, kunciDibacaDistributor, simpanPetaDibaca, type PetaDibaca } from '@/lib/dibaca'
 import type { KategoriNotifikasi, Notifikasi, Pesanan } from '@/lib/types'
-import { useAplikasi, useKontrakMasuk, usePesananMasuk } from '@/store/aplikasi'
+import { useAplikasi, useDistributorAktif, useKontrakMasuk, usePesananMasuk } from '@/store/aplikasi'
 
 /**
  * Pemberitahuan untuk kedua portal (revisi 23 Okt 2026, diubah di revisi V2 dan V5).
@@ -182,6 +182,7 @@ export function usePemberitahuanDistributor(): ButirPemberitahuan[] {
   const pesanan = usePesananMasuk()
   const kontrak = useKontrakMasuk()
   const promo = useAplikasi((s) => s.katalogDistributorServer?.promo ?? s.promo)
+  const idSaya = useDistributorAktif().id
 
   return useMemo(() => {
     const sekarang = Date.now()
@@ -277,7 +278,7 @@ export function usePemberitahuanDistributor(): ButirPemberitahuan[] {
     }
 
     for (const p of promo) {
-      if (p.distributorId !== distributorAktif.id || !p.berakhir || !promoMasihBerlaku(p, sekarang)) continue
+      if (p.distributorId !== idSaya || !p.berakhir || !promoMasihBerlaku(p, sekarang)) continue
       const sisa = Math.ceil((+new Date(p.berakhir) - sekarang) / HARI)
       if (sisa > AMBANG_PROMO_HARI) continue
       butir.push({
@@ -304,7 +305,7 @@ export function usePemberitahuanDistributor(): ButirPemberitahuan[] {
           ? b.urut - a.urut
           : a.urut - b.urut,
     )
-  }, [pesanan, kontrak, promo])
+  }, [pesanan, kontrak, promo, idSaya])
 }
 
 /* Status dibaca distributor (revisi V5, Q120): satu salinan per tab untuk semua

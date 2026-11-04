@@ -204,6 +204,7 @@ interface BarangApi {
   ingatkan_kedaluwarsa: boolean
   kedaluwarsa: string | null
   hari_tanpa_pemakaian?: number | null
+  penawaran_saran_id?: number | null
   terhubung_kasir: boolean
   dicatat_manual: boolean
   catatan: string | null
@@ -238,6 +239,7 @@ function keBarang(b: BarangApi): Barang {
     kedaluwarsa: b.kedaluwarsa,
     // null = belum pernah terpakai. Dibedakan dari undefined (data contoh).
     hariTanpaPemakaian: b.hari_tanpa_pemakaian ?? null,
+    penawaranSaranId: b.penawaran_saran_id != null ? String(b.penawaran_saran_id) : null,
     terhubungKasir: b.terhubung_kasir,
     dicatatManual: b.dicatat_manual,
     catatan: b.catatan,

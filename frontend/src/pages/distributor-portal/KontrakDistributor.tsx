@@ -14,9 +14,9 @@ import {
   LABEL_KUOTA,
   NADA_KUOTA,
 } from '@/lib/label'
-import { distributorAktif, statusKuota, umkmById } from '@/data/dummy'
+import { statusKuota, umkmById } from '@/data/dummy'
 import type { KontrakPelanggan, PaketKontrak, Penawaran } from '@/lib/types'
-import { useAplikasi, useKontrakMasuk, usePesananMasuk } from '@/store/aplikasi'
+import { useAplikasi, useDistributorAktif, useKontrakMasuk, usePesananMasuk } from '@/store/aplikasi'
 
 /**
  * Kontrak di portal distributor (catatan B1, ON-Dist 1 dan 3).
@@ -363,10 +363,11 @@ export default function KontrakDistributor() {
     tabDariAlamat ?? (pengajuan.length > 0 ? 'pengajuan' : mintaBerhenti.length > 0 ? 'berhenti' : 'berjalan')
   // Tersambung ke server: penawaran dan paket milik distributor itu sendiri, dari API.
   const katalogServer = useAplikasi((s) => s.katalogDistributorServer)
+  const idSaya = useDistributorAktif().id
   const penawaranSaya = (katalogServer?.penawaran ?? katalog).filter(
-    (p) => p.distributorId === distributorAktif.id && p.aktif !== false,
+    (p) => p.distributorId === idSaya && p.aktif !== false,
   )
-  const paketSaya = (katalogServer?.paket ?? paketKontrak).filter((p) => p.distributorId === distributorAktif.id)
+  const paketSaya = (katalogServer?.paket ?? paketKontrak).filter((p) => p.distributorId === idSaya)
 
   /* Riwayat singkat toko yang mengajukan: bahan pertimbangan utama sebelum
      mengikat diri menyediakan barang berbulan-bulan. */

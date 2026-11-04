@@ -15,7 +15,8 @@ kalau ada yang menjaganya. Di sinilah penjaganya, dan
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+import re
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
@@ -53,6 +54,16 @@ from .skema import (
 )
 
 rute = APIRouter(prefix="/usaha/{usaha_id}", tags=["gudang"])
+
+
+#: Nomor nota simulasi. Jamnya jam setempat yang ditulis apa adanya di kolom UTC, jadi kalau dibaca
+#: sebagai WIB tampak 7 jam lebih maju. Nota dari kasir sungguhan menyimpan waktu sebenarnya.
+POLA_NOTA_SIMULASI = r"^[0-9]{8}-[0-9]{3}-[0-9]+$"
+
+
+def waktu_nota(nomor_struk: str, waktu: datetime) -> datetime:
+    """Waktu nota untuk ditampilkan, supaya nota simulasi terbaca pada jam yang dimaksud."""
+    return waktu - timedelta(hours=7) if re.match(POLA_NOTA_SIMULASI, nomor_struk) else waktu
 
 
 def _usaha_atau_404(sesi: Session, usaha_id: int) -> Usaha:
@@ -143,6 +154,19 @@ def ringkas_barang(sesi: Session, usaha_id: int) -> list[BarangRingkas]:
         text("SELECT max(tanggal) FROM permintaan_harian WHERE usaha_id = :u").bindparams(u=usaha_id)
     ).scalar()
     acuan = max([t for t in [acuan, *terakhir.values()] if t is not None], default=None)
+    saran = dict(
+        sesi.exec(
+            text(
+                """
+                SELECT DISTINCT ON (r.barang_id) r.barang_id, r.penawaran_id
+                  FROM rekomendasi_skor r
+                  JOIN penawaran pn ON pn.id = r.penawaran_id AND pn.aktif
+                 WHERE r.usaha_id = :u AND r.barang_id IS NOT NULL
+                 ORDER BY r.barang_id, r.skor DESC
+                """
+            ).bindparams(u=usaha_id)
+        ).all()
+    )
     return [
         BarangRingkas(
             id=b.id,
@@ -171,6 +195,7 @@ def ringkas_barang(sesi: Session, usaha_id: int) -> list[BarangRingkas]:
             dicatat_manual=b.dicatat_manual,
             catatan=b.catatan,
             hari_tanpa_pemakaian=(acuan - terakhir[b.id]).days if b.id in terakhir else None,
+            penawaran_saran_id=saran.get(b.id),
         )
         for b in barang
     ]
@@ -643,7 +668,7 @@ def ringkasan_menu_kasir(usaha_id: int = Depends(usaha_saya)) -> RingkasanMenuKa
         nota = sesi.exec(
             text(
                 """
-                SELECT max(waktu) AS terakhir,
+                SELECT max(CASE WHEN nomor_struk ~ :pola THEN waktu - interval '7 hours' ELSE waktu END) AS terakhir,
                        count(*) FILTER (
                            WHERE (waktu AT TIME ZONE 'Asia/Jakarta')::date
                                = (now() AT TIME ZONE 'Asia/Jakarta')::date
@@ -651,7 +676,7 @@ def ringkasan_menu_kasir(usaha_id: int = Depends(usaha_saya)) -> RingkasanMenuKa
                   FROM transaksi
                  WHERE usaha_id = :u AND NOT dibatalkan
                 """
-            ).bindparams(u=usaha_id)
+            ).bindparams(u=usaha_id, pola=POLA_NOTA_SIMULASI)
         ).one()
         return RingkasanMenuKasir(
             belum_dipasangkan=[MenuBelumDipasangkan(**dict(r._mapping)) for r in belum],
@@ -908,6 +933,6 @@ def nota_terbaru(
                 )
             )
         return [
-            NotaRingkas(id=n.id, nomor_struk=n.nomor_struk, waktu=n.waktu, kasir=n.kasir, cara_bayar=n.cara_bayar, diskon=n.diskon, uang_diterima=n.uang_diterima, pengajuan_batal=n.pengajuan_batal, baris=baris.get(n.id, []))
+            NotaRingkas(id=n.id, nomor_struk=n.nomor_struk, waktu=waktu_nota(n.nomor_struk, n.waktu), kasir=n.kasir, cara_bayar=n.cara_bayar, diskon=n.diskon, uang_diterima=n.uang_diterima, pengajuan_batal=n.pengajuan_batal, baris=baris.get(n.id, []))
             for n in nota
         ]
