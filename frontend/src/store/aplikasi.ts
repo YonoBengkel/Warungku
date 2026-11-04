@@ -1173,8 +1173,10 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
     if (s.sumberData !== 'server' || !sesi) return
     // Satu porsi tiap menu beresep ditambah menu yang belum dipasangkan: satu
     // nota memperlihatkan keduanya, bahan yang berkurang dan menu yang dilewati.
+    // Warung kelontong menjual barang apa adanya, jadi semua menunya menu langsung.
+    const beresep = s.resepMenu.filter((r) => !r.langsung)
     const baris = [
-      ...s.resepMenu.filter((r) => !r.langsung).map((r) => r.namaMenu),
+      ...(beresep.length > 0 ? beresep : s.resepMenu).map((r) => r.namaMenu),
       ...s.kasir.menuBelumDipasangkan.map((m) => m.namaMenu),
     ]
       .slice(0, 12)

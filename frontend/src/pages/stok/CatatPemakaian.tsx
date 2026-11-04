@@ -8,7 +8,6 @@ import { IkonCentangLingkaran, IkonKotak } from '@/icons'
 import { angka, bacaAngkaIndonesia, cx, tanggalLengkapHari } from '@/lib/format'
 import { angkaTampil, dariTampil, desimalTampil, jumlahTampil, satuanTampil } from '@/lib/satuan'
 import type { Barang } from '@/lib/types'
-import { kategoriBarang } from '@/data/dummy'
 import { useAplikasi } from '@/store/aplikasi'
 
 /**
@@ -100,6 +99,9 @@ export default function CatatPemakaian() {
 
   const terisi = barang.filter((b) => (isian[b.id]?.nilai ?? 0) > 0)
   const adaGalat = barang.some((b) => isian[b.id]?.galat)
+
+  // Dari barang usaha ini, bukan dari data contoh: warung kelontong punya kelompok sendiri.
+  const kategoriBarang = useMemo(() => Array.from(new Set(barang.map((b) => b.kategori))).sort(), [barang])
 
   const jumlahPerKategori = useMemo(() => {
     const peta: Record<string, number> = {}

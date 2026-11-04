@@ -316,6 +316,18 @@ if ($LASTEXITCODE -eq 0) {
     Awas 'Tanggal data simulasi belum digeser; aplikasi tetap bisa dipakai.'
 }
 
+# Warung Madura Barokah 24 Jam dan empat distributor kelontong belum ada di image basis
+# data 0.3.0. Skripnya menambahkan sekali, lalu mengisi perkiraan dan saran untuk warung
+# itu. Sesudah geseran, supaya tanggalnya sejajar dengan akhir data yang baru.
+Info 'Menyiapkan Warung Madura (pertama kali sekitar 3 menit)...'
+$keluaranMadura = cmd /c "docker exec turnify-api python -m dataset.warung_madura 2>&1"
+if ($LASTEXITCODE -eq 0) {
+    Oke ($keluaranMadura | Select-Object -Last 1)
+} else {
+    $keluaranMadura | Select-Object -Last 5 | ForEach-Object { Write-Host "    $_" }
+    Awas 'Warung Madura belum terpasang; aplikasi tetap bisa dipakai.'
+}
+
 # Deskripsi barang di basis data 0.2.0 ke bawah masih ditulis pembangkit lama
 # ("20000 gram per karung"). Skripnya ada di image backend dan menulis ulang
 # hanya pola lama menjadi "1 karung = 20 kg", jadi aman dijalankan berulang.

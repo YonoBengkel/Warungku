@@ -596,7 +596,7 @@ def bangkitkan(kon) -> dict[str, int]:
     return jumlah
 
 
-def _pesan(t_, usaha_id, dist_id, daftar, t, nomor, karakter, luar_kota, acak) -> dict:
+def _pesan(t_, usaha_id, dist_id, daftar, t, nomor, karakter, luar_kota, acak, awalan: str = "P") -> dict:
     """Satu pesanan bahan baku ke satu distributor; hasilnya ditarik dari karakter distributor."""
     p_tepat = karakter.peluang_tepat_waktu(besar_relatif=1.0, hujan=musim_hujan(t), luar_kota=luar_kota)
     tepat = bool(acak.random() < p_tepat)
@@ -611,7 +611,7 @@ def _pesan(t_, usaha_id, dist_id, daftar, t, nomor, karakter, luar_kota, acak) -
     pesanan_id = t_.tambah(
         "pesanan",
         {
-            "nomor": f"PS-{t.strftime('%y%m%d')}-P{nomor:04d}", "usaha_id": usaha_id, "distributor_id": dist_id,
+            "nomor": f"PS-{t.strftime('%y%m%d')}-{awalan}{nomor:04d}", "usaha_id": usaha_id, "distributor_id": dist_id,
             "kontrak_id": None, "dibuat_pada": _wkt(t, 8, 15), "status": StatusPesanan.DIKIRIM,
             "ongkos_kirim": int(acak.choice([0, 20_000, 25_000])), "perkiraan_tiba": _wkt(janji, 15, 0),
             "status_bayar": StatusBayar.BUKTI_TERKIRIM, "jumlah_bukti": 1, "dari_saran": bool(acak.random() < 0.55),
@@ -635,10 +635,13 @@ def _pesan(t_, usaha_id, dist_id, daftar, t, nomor, karakter, luar_kota, acak) -
             },
         )
         baris.append((bid, b, p, q))
-    return {"pesanan_id": pesanan_id, "distributor_id": dist_id, "baris": baris, "hasil": hasil, "tiba": tiba}
+    return {
+        "pesanan_id": pesanan_id, "distributor_id": dist_id, "baris": baris, "hasil": hasil, "tiba": tiba,
+        "janji": janji, "tanggal": t,
+    }
 
 
-def _terima(t_, k: dict, t: date, usaha_id: int, acak) -> None:
+def _terima(t_, k: dict, t: date, usaha_id: int, acak, pemilik: str = PEMILIK) -> None:
     hasil = k["hasil"]
     pesanan = next(r for r in t_.baris["pesanan"] if r["id"] == k["pesanan_id"])
     semua_baris = {r["id"]: r for r in t_.baris["pesanan_baris"] if r["pesanan_id"] == k["pesanan_id"]}
@@ -664,13 +667,13 @@ def _terima(t_, k: dict, t: date, usaha_id: int, acak) -> None:
                 {
                     "usaha_id": usaha_id, "barang_id": b.id, "waktu": _wkt(t, 11, 0), "jenis": JenisPergerakan.MASUK,
                     "jumlah": round(masuk, 3), "stok_sesudah": round(b.stok, 3),
-                    "keterangan": "Masuk dari pesanan " + pesanan["nomor"], "pesanan_id": k["pesanan_id"], "oleh": PEMILIK,
+                    "keterangan": "Masuk dari pesanan " + pesanan["nomor"], "pesanan_id": k["pesanan_id"], "oleh": pemilik,
                 },
             )
     pesanan.update(
         status=StatusPesanan.SELESAI_CATATAN if selisih else StatusPesanan.SELESAI,
         status_bayar=StatusBayar.DIKONFIRMASI, kirim_kurir="Armada sendiri", kirim_pengantar="Kurir distributor",
-        kirim_nomor_resi="RSI-P%05d" % k["pesanan_id"], kirim_diterima_oleh=PEMILIK, kirim_waktu_sampai=_wkt(t, 11, 0),
+        kirim_nomor_resi="RSI-P%05d" % k["pesanan_id"], kirim_diterima_oleh=pemilik, kirim_waktu_sampai=_wkt(t, 11, 0),
         kirim_catatan="Dihitung bersama penerima saat barang diturunkan.",
     )
     t_.tambah(
@@ -692,9 +695,9 @@ def _terima(t_, k: dict, t: date, usaha_id: int, acak) -> None:
         )
 
 
-def _tulis(kon, t_: Penampung) -> dict[str, int]:
+def _tulis(kon, t_: Penampung, urutan=URUTAN, dibuat_pada=None) -> dict[str, int]:
     jumlah: dict[str, int] = {}
-    for nama, model in URUTAN:
+    for nama, model in urutan:
         data = t_.baris.get(nama, [])
         jumlah[nama] = len(data)
         if not data:
@@ -705,7 +708,7 @@ def _tulis(kon, t_: Penampung) -> dict[str, int]:
         bersih = [{k: d.get(k) for k in kunci} for d in data]
         if "dibuat_pada" in kolom and "dibuat_pada" not in kunci:
             for b in bersih:
-                b["dibuat_pada"] = _wkt(MULAI)
+                b["dibuat_pada"] = dibuat_pada or _wkt(MULAI)
         for i in range(0, len(bersih), 5000):
             kon.execute(tabel.insert(), bersih[i : i + 5000])
         kon.execute(

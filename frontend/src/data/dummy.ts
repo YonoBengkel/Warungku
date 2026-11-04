@@ -1378,7 +1378,25 @@ export const KATEGORI_BARANG = [
   'Protein',
   'Kemasan',
   'Pendukung',
+  'Beras & Sembako',
+  'Minyak & Bumbu',
+  'Mi Instan',
+  'Minuman Kemasan',
+  'Kopi & Teh Saset',
+  'Rokok',
+  'Makanan Ringan',
+  'Sabun & Deterjen',
+  'Perlengkapan Mandi',
+  'Obat Warung',
+  'Gas & Galon',
+  'Perlengkapan Rumah',
 ] as const
+
+/**
+ * Kelompok barang warung kelontong (`data/dataset/warung_madura.py`). Kedai dan produsen
+ * tidak membelinya, jadi di halaman Belanja barangnya hanya muncul kalau dicari.
+ */
+export const KATEGORI_KELONTONG: readonly string[] = KATEGORI_BARANG.slice(7)
 
 /** Wilayah kirim yang dikenal platform di purwarupa ini (DI Yogyakarta). */
 export const WILAYAH_KIRIM = ['Sleman', 'Kota Yogyakarta', 'Bantul', 'Kulon Progo', 'Gunungkidul'] as const
@@ -1670,6 +1688,12 @@ export function penawaranById(id: string): Penawaran | undefined {
 /** Penawaran yang masih dijual untuk satu barang gudang; yang dinonaktifkan distributor tidak ikut. */
 export function penawaranUntukBarang(barangId: string): Penawaran[] {
   return penawaranBerlaku.filter((p) => p.barangIdTerkait === barangId && p.aktif !== false)
+}
+
+/** Penawaran yang disarankan untuk satu barang: pilihan Mesin 2 kalau ada, selain itu yang pertama di katalog. */
+export function penawaranSaranUntuk(b: Pick<Barang, 'id' | 'penawaranSaranId'>): Penawaran | undefined {
+  const tersedia = penawaranUntukBarang(b.id)
+  return tersedia.find((p) => p.id === b.penawaranSaranId) ?? tersedia[0]
 }
 
 /** Seluruh katalog, termasuk yang dinonaktifkan. Saring dengan `aktif !== false` untuk katalog pembeli. */
@@ -2348,7 +2372,7 @@ export function rekomendasiDari(b: Barang): RekomendasiPrediksi {
     kebutuhanPersediaan: kebutuhan,
     keyakinan: keyakinanDari(b.hariDataTerkumpul),
     alasan: alasanUntuk(b, arah, bulanIni),
-    penawaranId: penawaranUntukBarang(b.id)[0]?.id ?? null,
+    penawaranId: penawaranSaranUntuk(b)?.id ?? null,
     kontrakId: kontrakUntukBarang(b.id)[0]?.id ?? null,
   }
 }

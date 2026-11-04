@@ -7,6 +7,7 @@ import { KeadaanKosong } from '@/components/ui/umpanBalik'
 import { IkonBintang } from '@/icons'
 import { LABEL_PROMO } from '@/lib/label'
 import { promoMasihBerlaku } from '@/data/dummy'
+import { promoUntukUsaha } from '@/data/rekomendasi'
 import type { JenisPromo } from '@/lib/types'
 import { useAplikasi } from '@/store/aplikasi'
 
@@ -22,21 +23,22 @@ const JENIS: JenisPromo[] = ['cuci-gudang', 'produk-baru', 'membership']
 
 export default function SemuaPromo() {
   const promoStore = useAplikasi((s) => s.promo)
+  const jenisUsaha = useAplikasi((s) => s.profil.jenisUsaha)
+  const katalog = useAplikasi((s) => s.katalog)
+  const barang = useAplikasi((s) => s.barang)
   const [params, setParams] = useSearchParams()
   const dariUrl = params.get('jenis')
   const aktif = JENIS.find((j) => j === dariUrl) ?? null
 
   const berlaku = useMemo(
     () =>
-      promoStore
-        .filter((p) => promoMasihBerlaku(p))
-        .slice()
+      promoUntukUsaha(promoStore.filter((p) => promoMasihBerlaku(p)), jenisUsaha, katalog, barang)
         .sort((a, b) => {
           if (a.berakhir == null) return b.berakhir == null ? 0 : 1
           if (b.berakhir == null) return -1
           return +new Date(a.berakhir) - +new Date(b.berakhir)
         }),
-    [promoStore],
+    [promoStore, jenisUsaha, katalog, barang],
   )
   const tampil = aktif ? berlaku.filter((p) => p.jenis === aktif) : berlaku
 

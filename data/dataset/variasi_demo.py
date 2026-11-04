@@ -77,6 +77,9 @@ OLEH = "Variasi demo"
 UMUR_BASI = timedelta(days=3)
 WIB = timezone(timedelta(hours=7))
 
+#: Warung kelontong yang dipasang `dataset.warung_madura`, sesudah data utama.
+EMAIL_MADURA = "madura1@warungku.test"
+
 #: Barang yang dibuat habis dan menipis. Menipis = 45% batas aman.
 STOK: dict[str, dict[str, tuple[str, ...]]] = {
     "umkm1@warungku.test": {
@@ -88,18 +91,28 @@ STOK: dict[str, dict[str, tuple[str, ...]]] = {
         # Cabai Merah tidak punya pesanan berjalan, jadi masuk penyaring "Perlu dibeli".
         "menipis": ("Minyak Goreng", "Bawang Putih", "Bawang Merah", "Cabai Merah"),
     },
+    # Minyak, susu, dan mi pedas tidak punya pesanan berjalan, jadi masuk saran beli.
+    EMAIL_MADURA: {
+        "habis": ("Rokok Kretek Filter 16 Batang", "Mi Instan Goreng Pedas 85 g", "Telur Ayam Butir"),
+        "menipis": (
+            "Air Mineral Botol 600 ml", "Minyak Goreng Pouch 1 L", "Susu UHT Kotak 125 ml", "Kopi Susu Saset 20 g",
+            "Sabun Mandi Batang 75 g", "Beras Kemasan 5 kg",
+        ),
+    },
 }
 
 #: Pengingat kedaluwarsa: (barang, berapa hari lagi). Di bawah 14 hari = "Segera kedaluwarsa".
 KEDALUWARSA: dict[str, tuple[tuple[str, int], ...]] = {
     "umkm1@warungku.test": (("Susu Kental Manis", 6), ("Teh Hitam", 11), ("Matcha Bubuk", 75)),
     "produksi1@warungku.test": (("Cabai Merah", 3), ("Bawang Merah", 9), ("Garam Dapur", 300)),
+    EMAIL_MADURA: (("Roti Kemasan Cokelat 55 g", 4), ("Susu UHT Kotak 125 ml", 12), ("Obat Batuk Sirup Saset 15 ml", 120)),
 }
 
 #: Batas aman yang dikembalikan ke bawaan (belum diatur sistem maupun pemilik).
 BAWAAN: dict[str, tuple[str, ...]] = {
     "umkm1@warungku.test": ("Cup Sealer Film", "Sirup Vanila"),
     "produksi1@warungku.test": ("Gula Pasir", "Garam Dapur"),
+    EMAIL_MADURA: ("Tali Rafia 1 Roll", "Lilin Putih Isi 5"),
 }
 
 #: Barang baru yang dibeli tapi belum pernah terpakai: (produk katalog, jumlah
@@ -115,6 +128,7 @@ BARANG_BARU: dict[str, tuple[tuple[str, int, int, str], ...]] = {
         ("Kantong Plastik", 2, 50, "Untuk kemasan eceran yang belum dijalankan; kiriman ke toko memakai dus."),
         ("Gula Aren Cair", 1, 40, "Untuk uji coba sambal manis yang belum diproduksi."),
     ),
+    EMAIL_MADURA: (),
 }
 
 #: (status, distributor, [(barang, jumlah kemasan)], hari yang lalu, alasan tolak)
@@ -134,6 +148,14 @@ PESANAN: dict[str, list[tuple]] = {
         ("dikirim", "Pangan Harian Sejati", [("Bawang Putih", 4), ("Bawang Merah", 6)], 1, None),
         ("sampai", "Kemasan Andalan", [("Toples Kaca 200 ml", 3)], 2, None),
         ("batal", "Manis Sejahtera", [("Garam Dapur", 5)], 4, "Armada kirim ke Kalasan penuh pekan ini."),
+    ],
+    EMAIL_MADURA: [
+        ("menunggu", "Grosir Sembako Makmur", [("Telur Ayam Butir", 1)], 0, None),
+        ("menunggu", "Agen Rokok dan Gas Merapi", [("Gas LPG 3 kg", 20)], 0, None),
+        ("disiapkan", "Agen Kelontong Sentosa", [("Air Mineral Botol 600 ml", 5), ("Kopi Susu Saset 20 g", 1)], 1, None),
+        ("dikirim", "Agen Rokok dan Gas Merapi", [("Rokok Kretek Filter 16 Batang", 3)], 1, None),
+        ("sampai", "Mitra Niaga Rumah Tangga", [("Sabun Mandi Batang 75 g", 1)], 2, None),
+        ("batal", "Agen Kelontong Sentosa", [("Mi Instan Goreng Pedas 85 g", 3)], 3, "Mi pedas sedang kosong sampai pekan depan."),
     ],
 }
 
@@ -156,6 +178,13 @@ KONTRAK: dict[str, list[tuple]] = {
         ("menunggu-persetujuan", "Pangan Harian Sejati", "Teri Nasi", "Kontrak A", 1),
         ("selesai", "Sumber Tani Nusantara", "Gula Pasir", "Kontrak A", 75),
         ("ditolak", "Manis Sejahtera", "Bawang Merah", "Kontrak C", 6),
+    ],
+    EMAIL_MADURA: [
+        ("aktif", "Agen Rokok dan Gas Merapi", "Rokok Kretek Filter 16 Batang", "Kontrak C", 20),
+        ("aktif-rutin", "Agen Rokok dan Gas Merapi", "Gas LPG 3 kg", "Kontrak E", 60),
+        ("akan-berakhir", "Agen Kelontong Sentosa", "Air Mineral Botol 600 ml", "Kontrak C", 70),
+        ("menunggu-persetujuan", "Grosir Sembako Makmur", "Mi Instan Goreng 85 g", "Kontrak B", 1),
+        ("selesai", "Mitra Niaga Rumah Tangga", "Sabun Mandi Batang 75 g", "Kontrak A", 75),
     ],
 }
 
@@ -285,6 +314,22 @@ PROMO: list[tuple] = [
      ["Es Batu Kristal"], 5, None, 20,
      [("Perunggu", "Langganan kirim harian 1 bulan", "Potongan 5% untuk es batu"),
       ("Perak", "Langganan 3 bulan", "Semua di Perunggu, plus kirim dua kali sehari saat ramai")]),
+    # Empat pemasok Warung Madura. Dilewati kalau warung itu belum terpasang.
+    ("Grosir Sembako Makmur", "cuci-gudang", "Beras dan Gula Lebih Murah",
+     "Karung kiriman bulan lalu dilepas lebih murah sebelum stok baru datang.",
+     ["Beras Kemasan 5 kg", "Beras Kemasan 1 kg", "Gula Pasir Kemasan 1 kg"], 6, 8, 2, None),
+    ("Agen Kelontong Sentosa", "cuci-gudang", "Cuci Gudang Mi Instan dan Camilan",
+     "Mi instan dan camilan menumpuk di gudang. Harga turun sampai raknya lega.",
+     ["Mi Instan Goreng 85 g", "Mi Instan Kuah Ayam Bawang 70 g", "Biskuit Krim Saset 38 g", "Kacang Kulit 70 g"],
+     10, 4, 1, None),
+    ("Mitra Niaga Rumah Tangga", "produk-baru", "Sabun Cuci Isi Ulang Baru Masuk",
+     "Deterjen cair dan pewangi isi ulang lebih hemat tempat di rak. Stok perdana baru datang.",
+     ["Deterjen Cair Isi Ulang 700 ml", "Pewangi Pakaian Isi Ulang 800 ml"], None, None, 0, None),
+    ("Agen Rokok dan Gas Merapi", "membership", "Langganan Gas dan Galon Mingguan",
+     "Gas dan galon diantar tiap pekan tanpa perlu pesan ulang. Bisa dihentikan kapan saja.",
+     ["Gas LPG 3 kg", "Air Galon Isi Ulang 19 L"], 4, None, 12,
+     [("Perunggu", "Langganan kirim sekali seminggu", "Potongan 4% untuk gas dan galon"),
+      ("Perak", "Langganan 3 bulan", "Semua di Perunggu, plus kirim dua kali seminggu saat ramai")]),
 ]
 
 #: Kiriman simulasi dianggap terlambat kalau perkiraan tibanya sudah lewat sebanyak ini.
@@ -408,7 +453,8 @@ def hapus(kon, usaha_id: int) -> None:
 
 def _variasi_stok(kon, usaha_id: int, email: str) -> int:
     barang = _barang(kon, usaha_id)
-    waktu = _wkt(akhir_data(kon), 21, 45)
+    # Sesudah baris penjualan terakhir hari itu: warung 24 jam menulisnya pukul 23.50.
+    waktu = _wkt(akhir_data(kon), 23, 58) if email == EMAIL_MADURA else _wkt(akhir_data(kon), 21, 45)
     n = 0
     for kelompok, daftar in STOK[email].items():
         for nama in daftar:
@@ -1037,6 +1083,12 @@ def basi(kon) -> bool:
     ).scalar()
     if koreksi is not None and koreksi < _wkt(akhir_data(kon), 21, 45):
         return True
+    # Warung Madura dipasang sesudah variasi terakhir: belum punya pesanan variasi.
+    madura = _usaha(kon, EMAIL_MADURA)
+    if madura is not None and not kon.execute(
+        text("SELECT EXISTS (SELECT 1 FROM pesanan WHERE usaha_id = :u AND nomor LIKE 'PS-%-V%')"), {"u": madura}
+    ).scalar():
+        return True
     # Basis data yang variasinya dipasang sebelum menu demo atau variasi
     # portal distributor ada.
     if any(MENU_BARU.values()) and not kon.execute(
@@ -1155,7 +1207,7 @@ def main() -> None:
         for h in hasil.values():
             if "usaha_id" in h:
                 jalankan(h["usaha_id"], thompson=True, nama_model="beta")
-        print("  Mesin 2 dijalankan ulang untuk kedua akun.")
+        print("  Mesin 2 dijalankan ulang untuk akun demo.")
     print("Selesai: variasi demo terpasang.")
 
 

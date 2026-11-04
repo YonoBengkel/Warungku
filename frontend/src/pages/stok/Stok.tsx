@@ -11,7 +11,7 @@ import { PilihanKartu } from '@/components/ui/formulir'
 import { IkonCari, IkonKotak, IkonPanahBawah, IkonPanahAtas, IkonSaring, IkonSilang, IkonTambah } from '@/icons'
 import { angka, cx } from '@/lib/format'
 import { angkaTampil, jumlahTampil, satuanTampil } from '@/lib/satuan'
-import { BATAS_AMAN_BAWAAN, hariCukup, kategoriBarang, statusStok } from '@/data/dummy'
+import { BATAS_AMAN_BAWAAN, hariCukup, statusStok } from '@/data/dummy'
 import { PESANAN_BERJALAN } from '@/lib/label'
 import { useAplikasi } from '@/store/aplikasi'
 
@@ -129,6 +129,8 @@ export default function Stok() {
   const [param, setParam] = useSearchParams()
   const [bukaSortir, setBukaSortir] = useState(false)
   const [bukaKategori, setBukaKategori] = useState(false)
+  // Dari barang usaha ini, bukan dari data contoh: warung kelontong punya kelompok sendiri.
+  const kategoriBarang = useMemo(() => Array.from(new Set(barang.map((b) => b.kategori))).sort(), [barang])
 
   const cari = param.get('cari') ?? ''
   const kategori = param.get('kategori') ?? ''

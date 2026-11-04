@@ -38,7 +38,7 @@ import { jumlahTampil } from '@/lib/satuan'
 import {
   layakDiperkirakan,
   penawaranById,
-  penawaranUntukBarang,
+  penawaranSaranUntuk,
   promoMasihBerlaku,
   rekomendasiDari,
   HARI_PERSEDIAAN,
@@ -48,6 +48,7 @@ import {
   sisaHariPeriode,
   distributorById,
 } from '@/data/dummy'
+import { promoUntukUsaha } from '@/data/rekomendasi'
 import { LABEL_PESANAN, NADA_ARAH_PREDIKSI, PESANAN_BERJALAN } from '@/lib/label'
 import type { ArahPrediksi, Pesanan, RekomendasiPrediksi } from '@/lib/types'
 import { useAplikasi } from '@/store/aplikasi'
@@ -123,9 +124,13 @@ export default function Beranda() {
   const tambahKeKeranjang = useAplikasi((s) => s.tambahKeKeranjang)
   const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
   const promoStore = useAplikasi((s) => s.promo)
+  const katalog = useAplikasi((s) => s.katalog)
   /* Promo dibaca dari store: yang baru dipasang distributor langsung muncul,
      yang sudah diakhiri langsung hilang dari Beranda. */
-  const promoTampil = useMemo(() => promoStore.filter((p) => promoMasihBerlaku(p)), [promoStore])
+  const promoTampil = useMemo(
+    () => promoUntukUsaha(promoStore.filter((p) => promoMasihBerlaku(p)), profil.jenisUsaha, katalog, barang),
+    [promoStore, profil.jenisUsaha, katalog, barang],
+  )
 
   /* Blok prediksi sengaja dimuat belakangan: ia paling mahal dan paling tidak
      mendesak, jadi tidak boleh menahan daftar yang perlu diurus. */
@@ -172,7 +177,7 @@ export default function Beranda() {
       /* Tujuan "Pilih Distributor" mengikuti barang yang habis: daftar saran
          kalau barangnya memang di sana, lalu penawaran langsung, lalu pencarian
          di Distributor. */
-      const penawaranPertama = penawaranUntukBarang(b.id)[0]
+      const penawaranPertama = penawaranSaranUntuk(b)
       const barisSaran = saran?.baris.find((r) => r.barangId === b.id)
       const kePesan = barisSaran && saran
         ? `/pesan-cepat/${saran.id}`

@@ -11,6 +11,9 @@ sendiri. Keluaran:
 * `frontend/public/gambar/produk/<slug>.svg` — satu ilustrasi per produk di
   `KATALOG` (30), di katalog tambahan UMKM produsen (4), dan per barang jadinya
   (2 toples sambal), digambar tangan di bawah.
+* `frontend/public/gambar/produk/kelompok-<slug>.svg` — satu ilustrasi per
+  kelompok barang warung madura (12). 153 barangnya memakai gambar kelompoknya,
+  supaya daftar stok tetap bergambar tanpa menggambar 153 kemasan.
 * `frontend/public/gambar/logo/<slug>.svg` — logo 8 distributor (digambar
   tangan, warnanya sama dengan warna distributor di basis data) dan logo semua
   UMKM di `UMKM`. Logo UMKM dirakit dari piktogram jenis usahanya; bentuk,
@@ -35,6 +38,8 @@ sys.path[:0] = [str(AKAR / "data"), str(AKAR / "backend")]
 from dataset.katalog import DISTRIBUTOR, KATALOG, UMKM  # noqa: E402
 from dataset.umkm_produksi import JENIS as JENIS_PRODUSEN  # noqa: E402
 from dataset.umkm_produksi import KATALOG_TAMBAHAN, NAMA_USAHA as NAMA_PRODUSEN, PRODUK_JADI  # noqa: E402
+from dataset.warung_madura import BARANG as BARANG_MADURA  # noqa: E402
+from dataset.warung_madura import DISTRIBUTOR_BARU, JENIS as JENIS_MADURA, NAMA_USAHA as NAMA_MADURA, WARNA_DISTRIBUTOR  # noqa: E402
 from warungku.enum import JenisUsaha  # noqa: E402
 
 KELUAR_PRODUK = AKAR / "frontend" / "public" / "gambar" / "produk"
@@ -75,6 +80,18 @@ UBIN = {
     "Kemasan": "#ECEFF4",
     "Pendukung": "#E2F5F7",
     "Produk Jadi": "#FFE7E0",
+    "Beras & Sembako": "#F7F1DC",
+    "Minyak & Bumbu": "#FFF1CF",
+    "Mi Instan": "#FDE8DF",
+    "Minuman Kemasan": "#E3F1FB",
+    "Kopi & Teh Saset": "#F3E8DC",
+    "Rokok": "#ECEFF4",
+    "Makanan Ringan": "#FFF4C9",
+    "Sabun & Deterjen": "#E2F0FF",
+    "Perlengkapan Mandi": "#F6E9F7",
+    "Obat Warung": "#FBE7E9",
+    "Gas & Galon": "#E5F5E8",
+    "Perlengkapan Rumah": "#F2EDE3",
 }
 BAYANGAN = '<ellipse cx="32" cy="55" rx="17" ry="2.6" fill="#000" opacity=".09"/>'
 
@@ -394,6 +411,83 @@ def gambar_produk(nama: str, kategori: str) -> str:
     return svg(f'<rect width="64" height="64" rx="14" fill="{UBIN[kategori]}"/>{BAYANGAN}{PRODUK[nama]}')
 
 
+#: Satu ilustrasi per kelompok barang warung madura, tanpa merek.
+KELOMPOK_MADURA: dict[str, str] = {
+    "Beras & Sembako": _karung(
+        "#F4EEDF", "#CDB98F", "#3F8F5F",
+        '<path d="M25 38h14M25 41h9" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>',
+    ),
+    "Minyak & Bumbu": (
+        '<path d="M26 15h12v6l5 6v24a3 3 0 0 1-3 3H24a3 3 0 0 1-3-3V27l5-6z" fill="#F2B632"/>'
+        '<rect x="26" y="10" width="12" height="6" rx="1.6" fill="#C2410C"/>'
+        '<rect x="21" y="32" width="22" height="13" fill="#FFF7E0"/>'
+        '<path d="M32 34.5c-3 3.4-4 4.9-4 6a4 4 0 0 0 8 0c0-1.1-1-2.6-4-6z" fill="#F2B632"/>'
+    ),
+    "Mi Instan": (
+        '<path d="M15 15l3.5 3 3.5-3 3.5 3 3.5-3 3.5 3 3.5-3 3.5 3 3.5-3 3.5 3 3.5-3v37l-3.5-3-3.5 3-3.5-3-3.5 3-3.5-3-3.5 3-3.5-3-3.5 3-3.5-3-3.5 3z" fill="#D92D20"/>'
+        '<path d="M20 26c3-5 5 5 8 0s5 5 8 0 5 5 8 0M20 33c3-5 5 5 8 0s5 5 8 0 5 5 8 0M20 40c3-5 5 5 8 0s5 5 8 0 5 5 8 0" stroke="#FDE68A" stroke-width="2.4" fill="none" stroke-linecap="round"/>'
+    ),
+    "Minuman Kemasan": (
+        '<path d="M27 15h10v5c0 3 4 5 4 9v22a3 3 0 0 1-3 3H26a3 3 0 0 1-3-3V29c0-4 4-6 4-9z" fill="#BFE3F7" stroke="#7FB8DA" stroke-width="1.2"/>'
+        '<rect x="27" y="9" width="10" height="6" rx="1.5" fill="#2563EB"/>'
+        '<rect x="23" y="33" width="18" height="11" fill="#2563EB"/>'
+        '<path d="M27 38.5h10" stroke="#fff" stroke-width="2" stroke-linecap="round"/>'
+    ),
+    "Kopi & Teh Saset": (
+        '<path d="M18 16l3.5-3 3.5 3 3.5-3 3.5 3 3.5-3 3.5 3 3.5-3 3.5 3v36l-3.5 3-3.5-3-3.5 3-3.5-3-3.5 3-3.5-3-3.5 3-3.5-3z" fill="#7A4A2A"/>'
+        '<path d="M24 29h15v8a6 6 0 0 1-6 6h-3a6 6 0 0 1-6-6z" fill="#FFF6EA"/>'
+        '<path d="M39 31h2.5a3 3 0 0 1 0 6H39" stroke="#FFF6EA" stroke-width="2" fill="none"/>'
+        '<path d="M28 25c0-2 2-2 2-4M34 25c0-2 2-2 2-4" stroke="#E7C9A5" stroke-width="1.8" fill="none" stroke-linecap="round"/>'
+    ),
+    "Rokok": (
+        '<rect x="22" y="9" width="4.6" height="14" rx="1" fill="#fff"/><rect x="22" y="9" width="4.6" height="4.5" rx="1" fill="#D98B3A"/>'
+        '<rect x="28" y="12" width="4.6" height="11" rx="1" fill="#fff"/><rect x="28" y="12" width="4.6" height="4.5" rx="1" fill="#D98B3A"/>'
+        '<rect x="34" y="9.5" width="4.6" height="14" rx="1" fill="#fff"/><rect x="34" y="9.5" width="4.6" height="4.5" rx="1" fill="#D98B3A"/>'
+        '<path d="M18 21h28v30a3 3 0 0 1-3 3H21a3 3 0 0 1-3-3z" fill="#991B1B"/>'
+        '<path d="M18 21h28v8H18z" fill="#7F1D1D"/>'
+        '<rect x="23" y="35" width="18" height="11" rx="2" fill="#FEF3C7"/>'
+    ),
+    "Makanan Ringan": (
+        '<path d="M19 12h26l2 5-2 4 2 26-2 5H19l-2-5 2-26-2-4z" fill="#F59E0B"/>'
+        '<path d="M19 21h26M19 47h26" stroke="#B45309" stroke-width="1.4"/>'
+        '<path d="M24 37c0-6 4-9 8-9s8 3 8 9c0 3-3.6 5-8 5s-8-2-8-5z" fill="#FDE68A"/>'
+        '<circle cx="29" cy="34" r="1.3" fill="#B45309"/><circle cx="35" cy="36" r="1.3" fill="#B45309"/><circle cx="31" cy="39" r="1.3" fill="#B45309"/>'
+    ),
+    "Sabun & Deterjen": (
+        '<path d="M17 21h30v30a3 3 0 0 1-3 3H20a3 3 0 0 1-3-3z" fill="#1D4ED8"/>'
+        '<path d="M17 21l3-5h24l3 5z" fill="#1E40AF"/>'
+        '<circle cx="32" cy="37" r="9" fill="#fff"/><circle cx="28.5" cy="35" r="3" fill="#BFDBFE"/><circle cx="35" cy="39" r="3.6" fill="#93C5FD"/>'
+        '<circle cx="47" cy="13" r="3" fill="#BFDBFE"/><circle cx="53" cy="18" r="2" fill="#BFDBFE"/>'
+    ),
+    "Perlengkapan Mandi": (
+        '<path d="M27 19h10l3 5v26a3 3 0 0 1-3 3H27a3 3 0 0 1-3-3V24z" fill="#DB2777"/>'
+        '<rect x="28" y="13" width="8" height="6" fill="#9D174D"/><path d="M28 13h11v-3H28z" fill="#9D174D"/>'
+        '<rect x="24" y="30" width="16" height="12" fill="#FCE7F3"/>'
+        '<circle cx="18" cy="24" r="4" fill="#F9A8D4" opacity=".8"/><circle cx="14" cy="33" r="2.6" fill="#F9A8D4" opacity=".8"/><circle cx="48" cy="28" r="3.2" fill="#F9A8D4" opacity=".8"/>'
+    ),
+    "Obat Warung": (
+        '<rect x="15" y="20" width="34" height="26" rx="4" fill="#fff" stroke="#E5A3AA" stroke-width="1.6"/>'
+        '<path d="M28 27h8v5h5v8h-5v5h-8v-5h-5v-8h5z" transform="translate(0 -3.5)" fill="#DC2626"/>'
+        '<path d="M15 26h34" stroke="#E5A3AA" stroke-width="1.2" opacity="0"/>'
+        '<path d="M26 20v-3a3 3 0 0 1 3-3h6a3 3 0 0 1 3 3v3" stroke="#B91C1C" stroke-width="2.4" fill="none"/>'
+    ),
+    "Gas & Galon": (
+        '<path d="M24 13h16v5H24z" fill="#166534"/><rect x="28" y="9" width="8" height="5" rx="1" fill="#14532D"/>'
+        '<path d="M22 18h20c5 3 7 9 7 15s-2 12-7 16l1 4H21l1-4c-5-4-7-10-7-16s2-12 7-15z" fill="#22C55E"/>'
+        '<path d="M15.6 28c10 3 22.8 3 32.8 0M15.6 39c10 3 22.8 3 32.8 0" stroke="#15803D" stroke-width="2"/>'
+    ),
+    "Perlengkapan Rumah": (
+        '<path d="M32 10a15 15 0 0 0-8.5 27.3c1.5 1.1 2.5 2.9 2.5 4.7v2h12v-2c0-1.8 1-3.6 2.5-4.7A15 15 0 0 0 32 10z" fill="#FBBF24"/>'
+        '<rect x="26" y="45" width="12" height="4" rx="1" fill="#78716C"/><rect x="27.5" y="50" width="9" height="4" rx="1.5" fill="#57534E"/>'
+        '<path d="M28 33l4-9 4 9" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'
+    ),
+}
+
+
+def gambar_kelompok(kategori: str) -> str:
+    return svg(f'<rect width="64" height="64" rx="14" fill="{UBIN[kategori]}"/>{BAYANGAN}{KELOMPOK_MADURA[kategori]}')
+
+
 # --------------------------------------------------------------------------
 # Logo distributor: digambar tangan, warna sama dengan warna di basis data
 # --------------------------------------------------------------------------
@@ -589,6 +683,29 @@ _BENTUK = (
 )
 
 
+#: Logo distributor kelontong: piktogram bersama di atas warna distributornya.
+PIKTOGRAM_DISTRIBUTOR = {
+    "Grosir Sembako Makmur": "keranjang",
+    "Agen Kelontong Sentosa": "toko",
+    "Mitra Niaga Rumah Tangga": "tas",
+}
+
+
+def logo_distributor_baru(nama: str) -> str:
+    warna = WARNA_DISTRIBUTOR[nama]
+    if nama in PIKTOGRAM_DISTRIBUTOR:
+        isi = PIKTOGRAM[PIKTOGRAM_DISTRIBUTOR[nama]].replace("{a}", "#FDE9C8").replace("{d}", warna)
+        return svg(_DASAR.format(w=warna) + f'<g transform="translate(18 18)">{isi}</g>')
+    # Agen rokok dan gas: tabung gas di depan gunung.
+    return svg(
+        _DASAR.format(w=warna)
+        + '<path d="M8 50l14-24 8 13 6-9 20 20z" fill="#BEF264" opacity=".55"/>'
+        '<path d="M27 19h10v4H27z" fill="#fff"/>'
+        '<path d="M25 23h14c3 2 5 6 5 11s-2 9-5 12l1 3H24l1-3c-3-3-5-7-5-12s2-9 5-11z" fill="#fff"/>'
+        '<path d="M20.5 31c7 2 16 2 23 0" stroke="#4d7c0f" stroke-width="1.8" fill="none"/>'
+    )
+
+
 def logo_umkm(nama: str, kelompok: str) -> str:
     h = fnv1a(nama)
     bentuk, r = _BENTUK[h % len(_BENTUK)]
@@ -621,13 +738,21 @@ def main() -> None:
         berkas = f"{slug(nama)}.svg"
         (KELUAR_PRODUK / berkas).write_text(gambar_produk(nama, kategori), encoding="utf-8")
         produk[nama] = berkas
+    for kategori in KELOMPOK_MADURA:
+        (KELUAR_PRODUK / f"kelompok-{slug(kategori)}.svg").write_text(gambar_kelompok(kategori), encoding="utf-8")
+    for b in BARANG_MADURA:
+        produk[b.nama] = f"kelompok-{slug(b.kategori)}.svg"
 
     logo: dict[str, str] = {}
     for d in DISTRIBUTOR:
         berkas = f"{slug(d.nama)}.svg"
         (KELUAR_LOGO / berkas).write_text(svg(LOGO_DISTRIBUTOR[d.nama]), encoding="utf-8")
         logo[d.nama] = berkas
-    for nama, jenis in [(u.nama, u.jenis) for u in UMKM] + [(NAMA_PRODUSEN, JENIS_PRODUSEN)]:
+    for d in DISTRIBUTOR_BARU:
+        berkas = f"{slug(d.nama)}.svg"
+        (KELUAR_LOGO / berkas).write_text(logo_distributor_baru(d.nama), encoding="utf-8")
+        logo[d.nama] = berkas
+    for nama, jenis in [(u.nama, u.jenis) for u in UMKM] + [(NAMA_PRODUSEN, JENIS_PRODUSEN), (NAMA_MADURA, JENIS_MADURA)]:
         berkas = f"{slug(nama)}.svg"
         kelompok = JENIS_KE_KELOMPOK.get(jenis, "produksi")
         (KELUAR_LOGO / berkas).write_text(logo_umkm(nama, kelompok), encoding="utf-8")

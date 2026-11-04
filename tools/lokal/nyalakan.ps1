@@ -196,7 +196,18 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host '    Tanggal data simulasi belum digeser; aplikasi tetap bisa dipakai.' -ForegroundColor Yellow
 }
 
-# Variasi pesanan, kontrak, dan stok untuk dua akun demo dan portal
+# Warung Madura Barokah 24 Jam dan empat distributor kelontong: ditambahkan sekali, lalu
+# perkiraan dan saran untuk warung itu diisi. Sesudah geseran, supaya tanggalnya sejajar.
+Info 'Menyiapkan Warung Madura (pertama kali sekitar 3 menit)...'
+$keluaranMadura = cmd /c "`"$Python`" -m dataset.warung_madura 2>&1"
+if ($LASTEXITCODE -eq 0) {
+    Oke ($keluaranMadura | Select-Object -Last 1)
+} else {
+    $keluaranMadura | Select-Object -Last 5 | ForEach-Object { Write-Host "    $_" }
+    Write-Host '    Warung Madura belum terpasang; aplikasi tetap bisa dipakai.' -ForegroundColor Yellow
+}
+
+# Variasi pesanan, kontrak, dan stok untuk akun demo dan portal
 # distributor1 (termasuk dua kontrak yang minta berhenti). Tanggalnya relatif
 # terhadap hari ini, jadi disegarkan kalau umurnya lebih dari tiga hari, atau
 # kalau skrip variasinya lebih baru dari yang terpasang di basis data.

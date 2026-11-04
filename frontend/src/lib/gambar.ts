@@ -16,6 +16,9 @@ export function gambarUntuk(nama: string): string | null {
   const dasar = import.meta.env.BASE_URL
   const logo = LOGO_TOKO[nama]
   if (logo) return `${dasar}gambar/logo/${logo}`
+  // Warung madura punya 150-an barang dan halamannya memanggil ini per baris.
+  const tepat = GAMBAR_PRODUK[nama]
+  if (tepat) return `${dasar}gambar/produk/${tepat}`
   const kecil = nama.toLowerCase()
   let terbaik: string | null = null
   let panjang = 0

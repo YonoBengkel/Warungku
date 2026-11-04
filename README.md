@@ -70,8 +70,10 @@ Yang dikerjakan skrip itu:
   dengan data terbaru, yaitu salinan basis data tim (selalu ditanya dulu, karena data
   lama hilang);
 - menyiapkan `deployment/.env` dengan rahasia login acak;
+- menambahkan Warung Madura Barokah 24 Jam dan empat distributor kelontong sekali saja,
+  lalu mengisi perkiraan dan saran untuk warung itu (pertama kali sekitar 3 menit);
 - merapikan deskripsi kemasan barang dan memasang variasi demo untuk akun Kopi
-  Kita dan Bu Ratmi (pesanan di setiap tahap, kontrak, stok habis dan menipis, resep
+  Kita, Bu Ratmi, dan Warung Madura (pesanan di setiap tahap, kontrak, stok habis dan menipis, resep
   dan menu kasir yang belum dipasangkan) serta portal distributor (pesanan masuk,
   kontrak termasuk yang minta berhenti, promo), bertanggal hari ini dan disegarkan
   kalau umurnya lebih dari tiga hari atau image backend membawa variasi yang lebih baru;
@@ -230,6 +232,14 @@ Perintah ini hanya **menambah** Dapur Sambal Bu Ratmi beserta riwayat 400 hariny
 70 UMKM lain tidak berubah. Kalau usahanya sudah ada, perintah ini berhenti
 tanpa mengubah apa pun.
 
+Warung Madura belum ada di image basis data mana pun. Perintah ini menambahkannya sekali,
+tanpa mengubah UMKM dan distributor lain, lalu mengisi perkiraan dan sarannya. Jalankan
+sesudah `python -m dataset.geser_tanggal` kalau datamu perlu digeser:
+
+```powershell
+python -m dataset.warung_madura
+```
+
 **B4. Jalankan.** Masing-masing di terminal sendiri:
 
 ```powershell
@@ -293,6 +303,9 @@ Untuk membangkitkan ulang UMKM produsen saja:
 python -m dataset.umkm_produksi --ulang
 ```
 
+Warung Madura tidak ikut dibangkitkan `buat_dataset`, jadi tambahkan lagi sesudahnya, atau
+bangkitkan ulang warungnya saja dengan `python -m dataset.warung_madura --ulang`.
+
 Periksa datanya konsisten (ketujuh angkanya harus 0):
 
 ```powershell
@@ -336,18 +349,21 @@ ketiga mesin, masuk dengan salah satu akun berikut. API (port 8000) harus menyal
 | `kasir1@warungku.test` | Kasir (peran pegawai) | Kopi Kita Jogja | Hanya Portal POS: masuk di `/masuk/pos`, tombol Isikan akun kasir. Ditolak di Portal UMKM |
 | `umkm1@warungku.test` | Pemilik usaha | Kopi Kita Jogja (kedai kopi) | Stok, grafik pemakaian aktual vs perkiraan, Prediksi, saran distributor, belanja, pesanan, kontrak, promo, Lacak Pesanan, Ringkasan Penjualan (dengan Riwayat Kasir: Nota & Shift), serta tab **Produksi** (Menu: kelola harga jual dan komposisi bahan) |
 | `produksi1@warungku.test` | Pemilik usaha produsen | Dapur Sambal Bu Ratmi | Semua yang di atas, ditambah tab **Produksi** penuh: Menu (tambah/ubah produk jadi dan resep langsung dari layar), Sesi Masak, dan Kiriman ke Pembeli (ritel/katering) |
+| `madura1@warungku.test` | Pemilik warung kelontong | Warung Madura Barokah 24 Jam | 153 barang dalam 12 kelompok termasuk rokok dan LPG, nota 24 jam dengan puncak malam, perkiraan dan saran beli per barang, empat distributor kelontong. Tanpa tab Produksi dan tanpa Portal POS |
 | `distributor1@warungku.test` | Distributor | Sumber Tani Nusantara | Pesanan masuk, kontrak dan paket (termasuk pengajuan berhenti), promo dan halaman ubah promo, peta Sebaran pemesan, segmen pelanggan (Mesin 3), Lacak Pesanan, Ringkasan Penjualan, halaman akun (profil toko, barang yang dijual, penilaian, titik gudang) |
 
 **Cara masuk tanpa mengetik:**
 
 - **Pemilik usaha:** halaman *Masuk* → tab *Pakai Email* → tekan *Isikan akun
-  simulasi: Kopi Kita Jogja* atau *Isikan akun simulasi produsen: Dapur Sambal Bu
-  Ratmi* → *Masuk*.
+  simulasi: Kopi Kita Jogja*, *Isikan akun simulasi produsen: Dapur Sambal Bu Ratmi*,
+  atau *Isikan akun simulasi warung kelontong: Warung Madura Barokah 24 Jam* → *Masuk*.
 - **Distributor:** halaman *Masuk* → *Masuk ke portal distributor* → *Isikan akun
-  simulasi* → *Masuk*.
+  simulasi*, atau *Isikan akun simulasi kelontong* untuk Agen Rokok dan Gas Merapi yang
+  memasok Warung Madura → *Masuk*.
 
 **Akun lain:** ada juga `umkm2` sampai `umkm70` dan `distributor2` sampai
-`distributor8` (semua `@warungku.test`). Kata sandi semua akun simulasi adalah
+`distributor12` (semua `@warungku.test`). `distributor9` sampai `distributor12` adalah
+pemasok Warung Madura. Kata sandi semua akun simulasi adalah
 `KATA_SANDI_CONTOH` di [`data/dataset/buat_dataset.py`](data/dataset/buat_dataset.py).
 Ini akun uji untuk data buatan tim, bukan akun sungguhan.
 
@@ -480,8 +496,9 @@ dan selisih ini disebut di laporan (keputusan 4 Nov 2026). Setiap perubahan mode
 [`docs/laporan/`](docs/laporan/) dan [`ml/eksperimen/README.md`](ml/eksperimen/README.md).
 
 > **Batas penting saat membaca angka.** Data warung berasal dari simulasi 400 hari
-> dengan 70 UMKM dan satu UMKM produsen yang kami rancang sendiri, termasuk
-> keputusan membuat distributor termurah menjadi yang terburuk. Metode Mesin 1 juga
+> dengan 70 UMKM, satu UMKM produsen, dan satu warung madura yang kami rancang sendiri,
+> termasuk keputusan membuat distributor termurah menjadi yang terburuk. Warung madura
+> ditambahkan sesudah evaluasi model, jadi angka di `ml/hasil/` tidak memuatnya. Metode Mesin 1 juga
 > diuji pada data toko roti sungguhan (French Bakery), tetapi belum pada warung
 > Indonesia sungguhan.
 
@@ -515,7 +532,7 @@ turnify-flow/
 | `ml/sumber/` | Satu pintu data untuk model: simulasi dan data nyata dengan bentuk yang sama |
 | `ml/eksperimen/` | Percobaan penyetelan yang tidak mengubah kode produksi |
 | `ml/hasil/` | Ringkasan hasil percobaan (`hasil_*.json`, dilacak git) |
-| `data/dataset/` | Pembangkit dataset simulasi (`buat_dataset.py`) dan UMKM produsen (`umkm_produksi.py`) |
+| `data/dataset/` | Pembangkit dataset simulasi (`buat_dataset.py`), UMKM produsen (`umkm_produksi.py`), dan Warung Madura (`warung_madura.py`) |
 | `data/data_nyata/` | Data nyata pihak luar; berkas CSV tidak dilacak karena lisensinya |
 | `docs/laporan/` | Laporan Word/PDF dan pembangkitnya; angkanya dibaca dari `ml/hasil/` dan basis data |
 | `deployment/` | `docker-compose.yml`, `Dockerfile` image backend, dan `db/` untuk image basis data |
@@ -664,6 +681,7 @@ tidak lagi berhenti karena hari bolong dari nota Portal POS. Backend `0.15.0` (k
 audit 3 November 2026: stok, profil usaha, penilaian, kirim dan batal draf pesanan, serta tarik pengajuan kontrak.
 Backend `0.16.0` (komit `16e93a9`) membawa batas aman dari p90 Mesin 1, angka untuk saran beli yang sama dengan simulasi,
 barang yang dijual distributor tersimpan di server, dan ulasan yang terbaca di kedua portal.
+Backend `0.17.0` membawa `dataset.warung_madura`, yang dijalankan `siapkan.cmd` untuk menambahkan Warung Madura.
 Kontainer API menjalankan migrasi sendiri saat menyala, jadi
 basis data `0.3.0` cukup, dan akun kasir simulasi dipasang oleh variasi demo yang dijalankan
 `siapkan.cmd`.

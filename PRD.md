@@ -56,6 +56,13 @@ barang seperti itu tidak bisa menjadi bahan menu.
 Di layar memasangkan ada pilihan **Pakai resep saran**. Tombol itu hanya mengisi bahan dan takaran, dan pemilik masih bisa
 mengubahnya sebelum menyimpan. Pemasangan berlaku untuk penjualan berikutnya, tidak menarik ulang penjualan yang sudah lewat.
 
+## Warung Madura
+
+Konsep awal proyek ini adalah warung madura, yang barangnya sangat banyak dan bukanya tidak pernah berhenti. Akun
+`madura1@warungku.test` memperlihatkannya: sekitar 150 barang generik dalam 12 kelompok termasuk rokok dan LPG, tanpa bensin
+eceran, nota 24 jam dengan puncak malam, dan empat distributor kelontong. Penjualannya dari kasir simulasi, bukan Portal
+POS. Warung kelontong tidak memakai tab Produksi, karena barangnya dijual apa adanya.
+
 ## Aturan saran beli
 
 Sejak 4 November 2026 aplikasi memakai aturan yang diuji di simulasi laporan. Batas aman adalah perkiraan pemakaian p90

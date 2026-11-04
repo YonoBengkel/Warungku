@@ -20,7 +20,7 @@ import {
   IkonSinkron,
   IkonToko,
 } from '@/icons'
-import { AKUN_DISTRIBUTOR, AKUN_KASIR, AKUN_KOPI_KITA, AKUN_SIMULASI_UMKM, type AkunSimulasi } from '@/lib/akunSimulasi'
+import { AKUN_DISTRIBUTOR, AKUN_DISTRIBUTOR_KELONTONG, AKUN_KASIR, AKUN_KOPI_KITA, AKUN_SIMULASI_UMKM, type AkunSimulasi } from '@/lib/akunSimulasi'
 import { tanggalPanjang } from '@/lib/format'
 import { JUDUL, LABEL_JENIS_USAHA } from '@/lib/label'
 import { useAplikasi } from '@/store/aplikasi'
@@ -55,12 +55,12 @@ export default function Akun() {
   const [galatPortal, setGalatPortal] = useState<string | null>(null)
   const alamatKasir = useHref('/masuk/pos?kasir=1&langsung=1')
 
-  // Pindah akun hanya untuk dua akun simulasi UMKM. Sesi yang tersimpan sebelum
+  // Pindah akun hanya untuk akun simulasi UMKM. Sesi yang tersimpan sebelum
   // email ikut disimpan dikenali dari nama usahanya.
   const akunIni = sesiServer
     ? AKUN_SIMULASI_UMKM.find((a) => a.email === sesiServer.email || a.namaUsaha === sesiServer.namaUsaha)
     : undefined
-  const akunLain = akunIni ? AKUN_SIMULASI_UMKM.find((a) => a !== akunIni) : undefined
+  const akunLain = akunIni ? AKUN_SIMULASI_UMKM.filter((a) => a !== akunIni) : []
 
   function pindahAkun(akun: AkunSimulasi) {
     setBerpindah(true)
@@ -86,7 +86,9 @@ export default function Akun() {
     if (sumberData === 'server' && !sesiDistributor) {
       setMembukaPortal(true)
       try {
-        await sambungDistributor(AKUN_DISTRIBUTOR.email, AKUN_DISTRIBUTOR.kataSandi)
+        // Warung kelontong membuka pemasoknya sendiri, supaya pesanannya terlihat di portal itu.
+        const akun = profil.jenisUsaha === 'warung-kelontong' ? AKUN_DISTRIBUTOR_KELONTONG : AKUN_DISTRIBUTOR
+        await sambungDistributor(akun.email, akun.kataSandi)
       } catch {
         setGalatPortal('Portal distributor belum bisa dibuka. Pastikan data simulasinya sudah dibuat, lalu coba lagi.')
         return
@@ -108,7 +110,7 @@ export default function Akun() {
 
   const kasirSendiri = akunIni?.email === AKUN_KOPI_KITA.email
   const tampilKasir = sumberData === 'server'
-  const jumlahKolom = 2 + (akunIni && akunLain ? 1 : 0) + (tampilKasir ? 1 : 0)
+  const jumlahKolom = 2 + (akunIni && akunLain.length > 0 ? 1 : 0) + (tampilKasir ? 1 : 0)
   // Empat kolom baru muat mulai sekitar 1400 px (tiap kolom sekitar 245 px, tombol
   // terlebar 221 px). Di bawah itu dua kolom, supaya tombolnya tidak bertumpuk.
   // Rentangnya sengaja tidak tumpang tindih: Tailwind menaruh varian min-[...]
@@ -242,24 +244,29 @@ export default function Akun() {
               </p>
             </div>
 
-            {/* Pindah di antara dua akun simulasi tanpa keluar dan mengetik
-                ulang: kedai kopi (penjual eceran) dan dapur sambal (produsen). */}
-            {akunIni && akunLain && (
+            {/* Pindah di antara akun simulasi tanpa keluar dan mengetik ulang: kedai
+                kopi (penjual eceran), dapur sambal (produsen), dan warung madura. */}
+            {akunIni && akunLain.length > 0 && (
               <div className="flex flex-col">
                 <h3 className="text-isi font-bold text-ink">Akun simulasi</h3>
                 <p className="mt-1 text-isi text-ink-3 leading-relaxed">
-                  Kamu sedang memakai {akunIni.namaUsaha}. Tombol ini membuka {akunLain.namaUsaha} tanpa keluar dan
-                  masuk lagi.
+                  Kamu sedang memakai {akunIni.namaUsaha}. Tombol di bawah membuka akun lain tanpa keluar dan masuk
+                  lagi.
                 </p>
                 <div className="mt-auto pt-3">
-                  <Tombol
-                    ragam="garis"
-                    ikonKiri={<IkonToko size={17} />}
-                    memuat={berpindah}
-                    onClick={() => pindahAkun(akunLain)}
-                  >
-                    Pindah ke {akunLain.namaPendek ?? akunLain.namaUsaha}
-                  </Tombol>
+                  <div className="flex flex-col items-start gap-2">
+                    {akunLain.map((a) => (
+                      <Tombol
+                        key={a.email}
+                        ragam="garis"
+                        ikonKiri={<IkonToko size={17} />}
+                        memuat={berpindah}
+                        onClick={() => pindahAkun(a)}
+                      >
+                        Pindah ke {a.namaPendek ?? a.namaUsaha}
+                      </Tombol>
+                    ))}
+                  </div>
                   {galatPindah && (
                     <p role="alert" className="mt-2 text-isi text-kritis leading-relaxed">
                       {galatPindah}

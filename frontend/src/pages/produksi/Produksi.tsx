@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { ChipStok } from '@/components/domain'
 import { Avatar, Kartu, Lencana, Tombol, TombolTautan } from '@/components/ui/dasar'
 import { Kolom, PengaturJumlah, Pilihan } from '@/components/ui/formulir'
@@ -71,7 +71,9 @@ export default function Produksi() {
   const sesi = useAplikasi((s) => s.sesiServer)
   const jenis = useAplikasi((s) => s.profil.jenisUsaha)
   const memulihkan = useAplikasi((s) => s.memulihkanSesi)
-  const tabLengkap = !JENIS_KONTER.includes(jenis)
+  // Warung kelontong tidak punya halaman ini: alamatnya bisa saja masih tersimpan atau dibagikan.
+  const tanpaProduksi = jenis === 'warung-kelontong'
+  const tabLengkap = !JENIS_KONTER.includes(jenis) && !tanpaProduksi
   const [tab, setTab] = useState<Tab>('menu')
   const [data, setData] = useState<{
     ringkasan: RingkasanProduksi
@@ -101,6 +103,8 @@ export default function Produksi() {
 
   // Sesudah muat ulang halaman, sesi dipulihkan sebentar kemudian. Jangan
   // sempat menampilkan "halaman ini bukan untukmu" selama itu.
+  if (tanpaProduksi) return <Navigate to="/stok" replace />
+
   if (!sesi && memulihkan) {
     return (
       <p className="pt-6 text-isi text-ink-3" role="status">

@@ -3,7 +3,7 @@ import { JudulBagian, Kartu, Tombol } from '@/components/ui/dasar'
 import { Kolom } from '@/components/ui/formulir'
 import { GalatApi, ServerTakTerjangkau } from '@/lib/api'
 import { useAplikasi } from '@/store/aplikasi'
-import { AKUN_DISTRIBUTOR } from '@/lib/akunSimulasi'
+import { AKUN_DISTRIBUTOR, AKUN_DISTRIBUTOR_KELONTONG } from '@/lib/akunSimulasi'
 
 
 /**
@@ -78,10 +78,21 @@ export function KartuSambungDistributor({ keterangan, className }: { keterangan:
           >
             Isikan akun simulasi
           </Tombol>
+          <Tombol
+            ragam="garis"
+            onClick={() => {
+              setEmail(AKUN_DISTRIBUTOR_KELONTONG.email)
+              setSandi(AKUN_DISTRIBUTOR_KELONTONG.kataSandi)
+              setGalat(null)
+            }}
+          >
+            Isikan akun simulasi kelontong
+          </Tombol>
         </div>
       </form>
       <p className="mt-3 text-kecil text-ink-3">
-        Akun simulasi {AKUN_DISTRIBUTOR.email} adalah Sumber Tani Nusantara di data simulasi.
+        Akun simulasi {AKUN_DISTRIBUTOR.email} adalah Sumber Tani Nusantara, dan{' '}
+        {AKUN_DISTRIBUTOR_KELONTONG.email} adalah Agen Rokok dan Gas Merapi, pemasok Warung Madura.
       </p>
     </Kartu>
   )

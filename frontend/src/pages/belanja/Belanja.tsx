@@ -29,7 +29,7 @@ import { isiKemasan, kalimatIsiKemasan } from '@/lib/satuan'
 import { JUDUL, LABEL_JENIS_USAHA } from '@/lib/label'
 import type { Barang, Distributor, PaketKontrak, Penawaran } from '@/lib/types'
 import { ambilRingkasanSaran, type RingkasanSaranServer } from '@/lib/apiKatalog'
-import { distributorById, paketUntukPenawaran } from '@/data/dummy'
+import { KATEGORI_KELONTONG, distributorById, paketUntukPenawaran } from '@/data/dummy'
 import { rekomendasiDistributor, type AspekUlasan, type DistributorDirekomendasikan } from '@/data/rekomendasi'
 import { useAplikasi, usePenentuHarga } from '@/store/aplikasi'
 
@@ -383,8 +383,13 @@ export default function Belanja() {
     [semuaDistributor],
   )
 
+  /* Rokok, LPG, dan barang warung kelontong lain tidak berguna untuk kedai dan produsen,
+     dan jumlahnya menenggelamkan bahan yang mereka cari. Tetap bisa ditemukan lewat kata kunci. */
+  const tampilKelontong = cari.trim() !== '' || profil.jenisUsaha === 'warung-kelontong'
+
   const hasil = useMemo(() => {
     const semua = katalogAktif
+      .filter((p) => tampilKelontong || !KATEGORI_KELONTONG.includes(p.kategori))
       .map((p) => ({
         penawaran: p,
         distributor: distributorById(p.distributorId),
@@ -411,11 +416,12 @@ export default function Belanja() {
     // punya rating, dan memaksakan nol akan menenggelamkannya selamanya.
     const baru = semua.filter((x) => x.distributor.baru)
     return { lama, baru, jumlah: semua.length }
-  }, [barangGudang, cari, kotaSaring, hanyaAdaStok, hanyaAdaKontrak, idMitra, paketKontrak, katalogAktif])
+  }, [barangGudang, cari, kotaSaring, hanyaAdaStok, hanyaAdaKontrak, idMitra, paketKontrak, katalogAktif, tampilKelontong])
 
   const hasilDistributor = useMemo(() => {
     const k = cari.trim().toLowerCase()
     const semua = semuaDistributor
+      .filter((d) => tampilKelontong || !d.kategori.every((x) => KATEGORI_KELONTONG.includes(x)))
       .filter((d) => (kotaSaring ? d.kota === kotaSaring : true))
       .filter(
         (d) =>
@@ -428,7 +434,7 @@ export default function Belanja() {
       lama: semua.filter((d) => !d.baru).sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0)),
       baru: semua.filter((d) => d.baru),
     }
-  }, [cari, kotaSaring, semuaDistributor])
+  }, [cari, kotaSaring, semuaDistributor, tampilKelontong])
 
   /* Rekomendasi dihitung dari profil, bukan dari saringan di layar: ia
      menjawab "distributor mana yang cocok untuk usahaku", jadi hanya tampil

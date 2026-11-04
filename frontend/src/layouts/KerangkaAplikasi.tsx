@@ -47,11 +47,12 @@ const TAB = [
 ]
 
 /**
- * Semua usaha mendapat tab keenam, Produksi, tepat sesudah Stok: bahan baku di
- * Stok menjadi menu atau barang jadi di sini. Sejak revisi V7 (Q164) kedai juga
- * memakainya untuk menu, harga, dan komposisi, dan revisi V8 menegaskan tabnya
- * harus tampil di Kopi Kita. Di 360px tiap tab dapat 60px; label terpanjang
- * "Distributor" sekitar 56px, jadi masih muat.
+ * Tab keenam, Produksi, tepat sesudah Stok: bahan baku di Stok menjadi menu atau
+ * barang jadi di sini. Sejak revisi V7 (Q164) kedai juga memakainya untuk menu,
+ * harga, dan komposisi, dan revisi V8 menegaskan tabnya harus tampil di Kopi Kita.
+ * Warung kelontong tidak mendapatkannya (keputusan Ilham): barangnya dijual apa
+ * adanya, tanpa komposisi, sesi masak, atau pesanan partai besar. Di 360px tiap
+ * tab dapat 60px; label terpanjang "Distributor" sekitar 56px, jadi masih muat.
  */
 const TAB_PRODUKSI = [TAB[0], TAB[1], { ke: '/produksi', label: NAV.produksi, Ikon: IkonPanci }, ...TAB.slice(2)]
 
@@ -83,7 +84,7 @@ export default function KerangkaAplikasi() {
   const perluTindakan = pemberitahuan.filter((b) => b.perluTindakan).length
   const isiKeranjang = useJumlahKeranjang()
   const aktif = tabInduk(pathname)
-  const tab = TAB_PRODUKSI
+  const tab = profil.jenisUsaha === 'warung-kelontong' ? TAB : TAB_PRODUKSI
 
   // Nota dari Portal POS yang terbuka di tab lain: tanya server tiap 3 detik selama tab ini terlihat.
   const server = useAplikasi((s) => s.sumberData === 'server')

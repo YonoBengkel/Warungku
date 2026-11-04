@@ -1,5 +1,5 @@
 import type { Barang, Distributor, JenisUsaha, Penawaran, Promo } from '@/lib/types'
-import { daftarDistributor, daftarPenawaran, daftarPromo, rincianHarga } from '@/data/dummy'
+import { KATEGORI_KELONTONG, daftarDistributor, daftarPenawaran, daftarPromo, rincianHarga } from '@/data/dummy'
 
 /**
  * Rekomendasi distributor (Skenario A), dua lapis.
@@ -31,9 +31,35 @@ export const KATEGORI_JENIS_USAHA: Record<JenisUsaha, string[] | null> = {
   'kedai-minuman': ['Kopi & Teh', 'Susu & Olahan', 'Pemanis', 'Kemasan', 'Pendukung'],
   'warung-makan': ['Bahan Makanan', 'Protein', 'Pemanis', 'Kopi & Teh', 'Pendukung', 'Kemasan'],
   'roti-kue': ['Bahan Makanan', 'Protein', 'Susu & Olahan', 'Pemanis', 'Kemasan'],
-  'warung-kelontong': ['Bahan Makanan', 'Pemanis', 'Susu & Olahan', 'Kopi & Teh', 'Pendukung'],
+  'warung-kelontong': [...KATEGORI_KELONTONG, 'Bahan Makanan', 'Pemanis', 'Susu & Olahan', 'Kopi & Teh', 'Pendukung'],
   'produksi-makanan': ['Bahan Makanan', 'Protein', 'Pemanis', 'Kemasan'],
   lainnya: null,
+}
+
+/**
+ * Promo yang pantas ditawarkan ke satu usaha, sejalan dengan penyaring di Belanja.
+ *
+ * Warung kelontong hanya melihat promo barang kelompok kelontong atau kategori yang
+ * memang ada di gudangnya: promo biji kopi tidak berguna untuknya. Usaha lain melihat
+ * semua promo kecuali yang seluruh barangnya kelompok kelontong. Promo yang barangnya
+ * tidak ditemukan di katalog dibiarkan, karena isinya tidak bisa dinilai.
+ */
+export function promoUntukUsaha(
+  promo: Promo[],
+  jenisUsaha: JenisUsaha,
+  katalog: Penawaran[],
+  barang: Pick<Barang, 'kategori'>[],
+): Promo[] {
+  const kategoriPenawaran = new Map(katalog.map((p) => [p.id, p.kategori]))
+  const kelontong = new Set(KATEGORI_KELONTONG)
+  const relevan = new Set([...KATEGORI_KELONTONG, ...barang.map((b) => b.kategori)])
+  return promo.filter((p) => {
+    const kategori = p.penawaranIds.flatMap((id) => kategoriPenawaran.get(id) ?? [])
+    if (kategori.length === 0) return true
+    return jenisUsaha === 'warung-kelontong'
+      ? kategori.some((k) => relevan.has(k))
+      : !kategori.every((k) => kelontong.has(k))
+  })
 }
 
 export type AspekUlasan = keyof Distributor['subRating']

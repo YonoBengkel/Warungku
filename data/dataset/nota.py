@@ -69,6 +69,8 @@ BELANJA_PER_NOTA: dict[str, int] = {
     "warung-makan": 28_000,
     "roti-kue": 45_000,
     "warung-kelontong": 35_000,
+    # Warung madura: belanja kecil tapi sering, sebungkus rokok atau mi instan.
+    "warung-madura": 24_000,
 }
 
 #: Rata-rata baris tambahan per nota, di atas satu baris yang pasti ada.
@@ -78,6 +80,7 @@ TAMBAHAN_BARIS: dict[str, float] = {
     "warung-makan": 0.6,
     "roti-kue": 0.7,
     "warung-kelontong": 1.0,
+    "warung-madura": 1.1,
 }
 
 #: Jam ramai sebagai campuran normal: (jam puncak, simpangan dalam jam, bobot).
@@ -87,6 +90,8 @@ JAM_RAMAI: dict[str, tuple[tuple[float, float, float], ...]] = {
     "warung-makan": ((12.0, 1.0, 0.55), (18.5, 1.0, 0.45)),
     "roti-kue": ((7.8, 1.0, 0.50), (16.0, 1.8, 0.50)),
     "warung-kelontong": ((9.0, 2.5, 0.50), (17.0, 2.0, 0.50)),
+    # Buka 24 jam: pagi, siang, sore, puncak di malam hari, dan sisa dini hari.
+    "warung-madura": ((7.0, 1.6, 0.18), (12.5, 2.2, 0.17), (17.5, 1.6, 0.19), (21.0, 1.9, 0.34), (1.5, 1.8, 0.12)),
 }
 
 #: Jam buka, dalam menit sejak tengah malam. Nota terakhir sebelum 20.30,
@@ -94,6 +99,9 @@ JAM_RAMAI: dict[str, tuple[tuple[float, float, float], ...]] = {
 #: mengikuti urutan penerapannya.
 BUKA = 7 * 60
 TUTUP = 20 * 60 + 29
+#: Warung yang buka 24 jam: jamnya dilipat melewati tengah malam, bukan dipotong.
+#: Nota terakhir sebelum baris buku besar hariannya, yang ditulis 23.50.
+TUTUP_24_JAM: dict[str, int] = {"warung-madura": 23 * 60 + 49}
 
 #: Simpangan log belanja per nota dari hari ke hari.
 DERAU_BELANJA = 0.10
@@ -215,6 +223,10 @@ def _menit(jenis: str, n: int, acak: np.random.Generator) -> np.ndarray:
     jam = np.array([p[0] for p in puncak])[pilih]
     simpang = np.array([p[1] for p in puncak])[pilih]
     menit = np.rint((jam + acak.normal(0.0, 1.0, n) * simpang) * 60)
+    tutup = TUTUP_24_JAM.get(jenis)
+    if tutup is not None:
+        # Dilipat, bukan dipotong: kalau dipotong, nota lewat batas menumpuk di satu menit.
+        return np.sort(np.mod(menit, tutup + 1).astype(np.int16))
     return np.sort(np.clip(menit, BUKA, TUTUP).astype(np.int16))
 
 
@@ -341,7 +353,7 @@ def _copy(kursor, perintah: str, baris) -> None:
         kirim()
 
 
-def salin_transaksi(kursor, nota: Nota) -> int:
+def salin_transaksi(kursor, nota: Nota, id_awal: int = 0, jam_proses: str = "20:30") -> int:
     tgl_iso: dict[int, str] = {}
     tgl_rapat: dict[int, str] = {}
     for t in np.unique(nota.tanggal).tolist():
@@ -355,14 +367,14 @@ def salin_transaksi(kursor, nota: Nota) -> int:
         ):
             hari = tgl_iso[t]
             yield (
-                i + 1,
+                id_awal + i + 1,
                 u,
                 f"{tgl_rapat[t]}-{u:03d}-{n:03d}",
                 f"{hari} {m // 60:02d}:{m % 60:02d}:00+00",
                 KASIR,
                 SUMBER,
                 "f",
-                f"{hari} 20:30:00+00",
+                f"{hari} {jam_proses}:00+00",
             )
 
     _copy(
@@ -374,7 +386,9 @@ def salin_transaksi(kursor, nota: Nota) -> int:
     return nota.n_nota
 
 
-def salin_transaksi_baris(kursor, nota: Nota, nama: dict[int, str], satuan: dict[int, str]) -> int:
+def salin_transaksi_baris(
+    kursor, nota: Nota, nama: dict[int, str], satuan: dict[int, str], id_awal: int = 0, id_nota_awal: int = 0
+) -> int:
     def baris():
         for i, (r, b, q, h) in enumerate(
             zip(
@@ -384,7 +398,7 @@ def salin_transaksi_baris(kursor, nota: Nota, nama: dict[int, str], satuan: dict
                 nota.baris_harga.tolist(),
             )
         ):
-            yield (i + 1, r + 1, nama[b], f"{q // 1000}.{q % 1000:03d}", satuan[b], h)
+            yield (id_awal + i + 1, id_nota_awal + r + 1, nama[b], f"{q // 1000}.{q % 1000:03d}", satuan[b], h)
 
     _copy(
         kursor,

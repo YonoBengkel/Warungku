@@ -8,7 +8,7 @@ import { IkonMata, IkonMataTutup, IkonTelepon } from '@/icons'
 import { cx, nomorHp } from '@/lib/format'
 import { profilAwal } from '@/data/dummy'
 import { GalatApi, ServerTakTerjangkau } from '@/lib/api'
-import { AKUN_BU_RATMI, AKUN_KASIR, AKUN_KOPI_KITA } from '@/lib/akunSimulasi'
+import { AKUN_BU_RATMI, AKUN_KASIR, AKUN_KOPI_KITA, AKUN_WARUNG_MADURA } from '@/lib/akunSimulasi'
 import { useAplikasi } from '@/store/aplikasi'
 import { LayarAuth } from '@/components/ui/LayarAuth'
 
@@ -255,6 +255,13 @@ export default function Masuk() {
             className="flex items-center gap-1.5 min-h-11 text-isi font-bold underline underline-offset-2"
           >
             Isikan akun simulasi produsen: Dapur Sambal Bu Ratmi
+          </button>
+          <button
+            type="button"
+            onClick={() => isiAkunServer(AKUN_WARUNG_MADURA)}
+            className="flex items-center gap-1.5 min-h-11 text-isi font-bold underline underline-offset-2"
+          >
+            Isikan akun simulasi warung kelontong: Warung Madura Barokah 24 Jam
           </button>
           <button
             type="button"

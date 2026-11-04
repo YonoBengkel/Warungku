@@ -77,7 +77,11 @@ BATAS_MINIMUM_PESANAN = 1_000_000_000
 #: di `frontend/src/data/dummy.ts`). Daftar tetap, bukan teks bebas: Mesin 2
 #: mencocokkan area kirim dengan kota usaha huruf demi huruf, jadi salah ketik
 #: diam-diam menghapus distributor dari saran untuk kota itu.
-KATEGORI_BARANG = ("Kopi & Teh", "Susu & Olahan", "Pemanis", "Bahan Makanan", "Protein", "Kemasan", "Pendukung")
+KATEGORI_BARANG = (
+    "Kopi & Teh", "Susu & Olahan", "Pemanis", "Bahan Makanan", "Protein", "Kemasan", "Pendukung",
+    "Beras & Sembako", "Minyak & Bumbu", "Mi Instan", "Minuman Kemasan", "Kopi & Teh Saset", "Rokok",
+    "Makanan Ringan", "Sabun & Deterjen", "Perlengkapan Mandi", "Obat Warung", "Gas & Galon", "Perlengkapan Rumah",
+)
 WILAYAH_KIRIM = ("Sleman", "Kota Yogyakarta", "Bantul", "Kulon Progo", "Gunungkidul")
 
 

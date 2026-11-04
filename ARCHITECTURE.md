@@ -43,6 +43,22 @@ flowchart LR
   Menu karena tidak melayani pesanan partai besar, dan usaha selain produsen tetap mengatur menu Portal POS di tab Menu.
   Kartu dan formulir komposisi bersama ada di `frontend/src/pages/produksi/komposisi.tsx`. Sesi masak ikut menulis
   `permintaan_harian`, jadi Mesin 1 melihat pemakaian bahan untuk produksi.
+- **Warung Madura ditambahkan skrip, bukan lewat image basis data (revisi V8, Q175 sampai Q177).** `data/dataset/warung_madura.py`
+  menambah satu warung, 153 produk baru, dan empat distributor kelontong dengan generator acaknya sendiri, jadi data dan
+  statistik Mesin 2 yang lama tidak berubah. Simulasinya memakai kalender asli, lalu tanggalnya digeser sebanyak geseran yang
+  berlaku dan barisnya didaftarkan ke `geseran_tanggal`. `siapkan.cmd` dan `nyalakan.cmd` menjalankannya sesudah geseran dan
+  sebelum variasi demo. Warung kelontong tidak punya tab Produksi. Kedai dan produsen tidak melihat barang kelompok kelontong
+  di Belanja kecuali mencarinya (`KATEGORI_KELONTONG`). Promo disaring serupa oleh `promoUntukUsaha`: kedai dan produsen tidak
+  melihat promo kelontong, dan warung kelontong hanya melihat promo kelompok kelontong atau kategori yang ada di gudangnya.
+- **Identitas portal distributor.** `useDistributorAktif` menimpa profil contoh dengan id, nama, kota, warna, dan tanggal
+  bergabung dari `/distributor/{id}/profil`, jadi halaman portal menyaring dan menyapa sesuai akun yang masuk, bukan
+  distributor nomor 1. Tanpa server, portal tetap memakai toko contoh.
+- **Pemasok yang disarankan.** `GET /usaha/{id}/barang` membawa `penawaran_saran_id`, penawaran teratas Mesin 2 untuk tiap
+  barang, dan `penawaranSaranUntuk` memakainya untuk semua saran beli. Barang dengan dua pemasok jadi menunjuk distributor yang
+  sama di Stok, Prediksi, dan Beranda. Kalau Mesin 2 belum menilainya, yang dipakai penawaran pertama di katalog.
+- **Jam nota simulasi.** Jam nota simulasi adalah jam setempat yang ditulis apa adanya di kolom UTC, dan semua tanggal usaha di
+  backend dihitung dengan `AT TIME ZONE 'UTC'`. Saat ditampilkan, `waktu_nota` di `backend/api/gudang.py` memundurkannya 7 jam untuk
+  nota bernomor simulasi supaya terbaca sebagai WIB. Nota dari kasir sungguhan menyimpan waktu sebenarnya dan tidak diubah.
 - **Daftar pesanan berhalaman.** Kedua portal memuat 100 pesanan terbaru, sisanya lewat Muat pesanan lebih lama (`mulai`).
   Pesanan lama yang dibuka dari tautan diambil sendiri lewat `GET /pesanan/{id}`.
 - **Nota adalah pintu masuk.** `POST /usaha/{id}/transaksi` (`backend/api/gudang.py`) menyimpan nota, menerjemahkan
