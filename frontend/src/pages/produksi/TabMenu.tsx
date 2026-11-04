@@ -284,7 +284,8 @@ export function TabMenu({ judul }: { judul?: string }) {
               nama={m.namaMenu}
               keterangan={
                 <>
-                  {m.kategori ?? 'Tanpa kategori'} &middot; {rupiah(m.hargaJual)}/porsi
+                  {m.kategori ?? 'Tanpa kategori'} &middot;{' '}
+                  <span className="whitespace-nowrap">{rupiah(m.hargaJual)}/porsi</span>
                 </>
               }
               kanan={<Sakelar aktif={m.aktif} ubah={(v) => void ubahAktif(m, v)} label="Dijual" />}

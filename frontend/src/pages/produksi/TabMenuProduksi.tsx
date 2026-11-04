@@ -201,7 +201,9 @@ export function TabMenuProduksi({
               keterangan={
                 <>
                   {p.isiBersih ? `${p.isiBersih} · ` : ''}
-                  {rupiah(p.hargaJual)}/{p.satuan}
+                  <span className="whitespace-nowrap">
+                    {rupiah(p.hargaJual)}/{p.satuan}
+                  </span>
                 </>
               }
               kanan={<ChipStok status={p.stok <= 0 ? 'habis' : p.stok < p.batasAman ? 'menipis' : 'aman'} />}
