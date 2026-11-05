@@ -19,6 +19,7 @@ atau di basis data berisi data simulasi penuh, karena geseran menyentuh seluruh 
 
 from __future__ import annotations
 
+import sys
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 
@@ -26,6 +27,7 @@ import numpy as np
 import pytest
 from sqlalchemy import text
 
+import dataset.warung_madura as modul_madura
 from api.gudang import waktu_nota
 from dataset.buat_dataset import AKHIR, HARI_SIMULASI
 from dataset.geser_tanggal import POLA_NOTA, geser
@@ -93,6 +95,25 @@ def test_nota_tidak_menumpuk_di_menit_terakhir():
     assert menit.max() <= 23 * 60 + 49
     _, jumlah = np.unique(menit, return_counts=True)
     assert jumlah.max() < 100
+
+
+def test_statistik_disegarkan_sebelum_dan_sesudah_mesin(monkeypatch):
+    """Tidak butuh warung terpasang. Sudah terpasang dan sudah diramal: tidak ada yang berubah, tidak ada analisis."""
+    urutan = []
+    monkeypatch.setattr(modul_madura, "segarkan_statistik", lambda: urutan.append("statistik"))
+    monkeypatch.setattr(modul_madura, "tambahkan", lambda ulang=False: urutan.append("pasang") or {"usaha_id": 1})
+    monkeypatch.setattr(modul_madura, "_perlu_mesin", lambda kon: 1)
+    monkeypatch.setattr(modul_madura, "jalankan_mesin", lambda u: urutan.append("mesin") or "selesai")
+    monkeypatch.setattr(sys, "argv", ["warung_madura"])
+
+    modul_madura.main()
+    assert urutan == ["pasang", "statistik", "mesin", "statistik"]
+
+    urutan.clear()
+    monkeypatch.setattr(modul_madura, "tambahkan", lambda ulang=False: None)
+    monkeypatch.setattr(modul_madura, "_perlu_mesin", lambda kon: None)
+    modul_madura.main()
+    assert urutan == []
 
 
 @pytest.fixture(scope="module")

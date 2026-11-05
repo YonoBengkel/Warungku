@@ -43,7 +43,7 @@ from datetime import date, datetime, time, timedelta, timezone
 
 from sqlalchemy import text
 
-from warungku.basis_data import mesin
+from warungku.basis_data import mesin, segarkan_statistik
 
 from .buat_dataset import AKHIR
 from .kalender import hari_libur, sedang_ramadan
@@ -330,6 +330,8 @@ def main() -> None:
     if not hasil["hari"]:
         print(f"Data simulasi masih segar: berakhir {hasil['akhir']}, paling lambat {sampai}.")
         return
+    if not arg.coba:
+        segarkan_statistik()
     awal = "Coba geser (dibatalkan)" if arg.coba else "Data simulasi digeser"
     print(f"{awal} {hasil['hari']} hari: berakhir {hasil['akhir_lama']} -> {hasil['akhir']}.")
     print("  " + ", ".join(f"{k} {v}" for k, v in hasil.items() if k not in ("hari", "akhir_lama", "akhir")))

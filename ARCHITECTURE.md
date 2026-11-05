@@ -70,6 +70,11 @@ flowchart LR
   `backend/api/gudang.py`, termasuk untuk urutan, supaya terbaca sebagai WIB dan urut dengan baris sungguhan. Kolomnya sendiri tetap,
   karena tanggal usaha dan Mesin 2 membacanya apa adanya. Jejak berangkat simulasi yang lama pukul 07.00 mendahului pesanan yang
   masuk pukul 08.00, jadi `perbaiki_simulasi` memindahkannya ke 13.00, sama dengan pembangkit sekarang.
+- **Statistik sesudah pasang data.** `dataset.geser_tanggal` dan `dataset.warung_madura` menjalankan `ANALYZE`
+  (`segarkan_statistik` di `backend/warungku/basis_data.py`) sesudah mengubah data, dan yang kedua sekali lagi sesudah Mesin 1 dan
+  Mesin 2. Autovacuum bisa belum sempat, dan analisis yang berbarengan dengan commit besar kehilangan hitungan perubahannya.
+  `pemakaian_bulanan` membaca hari terakhir sebagai kueri sendiri, supaya statistik basi tidak membuat perencana menghitung ulang
+  `max(tanggal)` untuk tiap baris, karena kueri ini ikut menahan layar saat masuk akun.
 - **Daftar pesanan berhalaman.** Kedua portal memuat 100 pesanan terbaru, sisanya lewat Muat pesanan lebih lama (`mulai`).
   Pesanan lama yang dibuka dari tautan diambil sendiri lewat `GET /pesanan/{id}`.
 - **Nota adalah pintu masuk.** `POST /usaha/{id}/transaksi` (`backend/api/gudang.py`) menyimpan nota, menerjemahkan

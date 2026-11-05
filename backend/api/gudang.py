@@ -314,21 +314,27 @@ def pemakaian_bulanan(
     """
     with Session(mesin()) as sesi:
         _usaha_atau_404(sesi, usaha_id)
+        # Dibaca sebagai kueri sendiri. Kalau digabung ke kueri berikutnya dan statistik belum mengenal
+        # baris usaha ini, perencana menghitung ulang max() untuk tiap baris dan masuk akun tertahan.
+        akhir = sesi.exec(
+            text("SELECT max(tanggal) FROM permintaan_harian WHERE usaha_id = :u").bindparams(u=usaha_id)
+        ).scalar()
+        if akhir is None:
+            return []
         riwayat = sesi.exec(
             text(
                 """
-                WITH akhir AS (SELECT max(tanggal) AS t FROM permintaan_harian WHERE usaha_id = :u)
                 SELECT barang_id,
-                       floor((akhir.t - tanggal) / 30)::int AS k,
+                       floor((:akhir - tanggal) / 30)::int AS k,
                        min(tanggal) AS awal, max(tanggal) AS ujung,
                        avg(jumlah) FILTER (WHERE NOT stok_habis) AS rata,
                        count(*) FILTER (WHERE NOT stok_habis) AS n
-                  FROM permintaan_harian, akhir
-                 WHERE usaha_id = :u AND tanggal > akhir.t - 30 * :p
+                  FROM permintaan_harian
+                 WHERE usaha_id = :u AND tanggal > :akhir - 30 * :p
                  GROUP BY barang_id, k
                  ORDER BY barang_id, k DESC
                 """
-            ).bindparams(u=usaha_id, p=periode)
+            ).bindparams(u=usaha_id, p=periode, akhir=akhir)
         ).all()
         depan = sesi.exec(
             text(

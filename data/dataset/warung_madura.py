@@ -48,7 +48,7 @@ from datetime import date, datetime, timedelta
 import numpy as np
 from sqlalchemy import text
 
-from warungku.basis_data import mesin
+from warungku.basis_data import mesin, segarkan_statistik
 from warungku.enum import (
     CaraHitungStok,
     JenisPergerakan,
@@ -960,6 +960,8 @@ def main() -> None:
     mulai = datetime.now()
     hasil = tambahkan(ulang=arg.ulang)
     if hasil is not None:
+        # Sebelum mesin membaca baris baru, dan sebelum ada yang masuk ke akun warung ini.
+        segarkan_statistik()
         for nama, n in hasil.items():
             if n and nama != "usaha_id":
                 print(f"  {nama:<20} {n:>7}")
@@ -972,6 +974,7 @@ def main() -> None:
             usaha_id = _perlu_mesin(kon)
         if usaha_id is not None:
             print("  " + jalankan_mesin(usaha_id))
+            segarkan_statistik()
     if hasil is not None:
         print(f"Selesai: {NAMA_USAHA} ({EMAIL}).")
 

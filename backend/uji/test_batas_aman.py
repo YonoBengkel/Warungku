@@ -171,6 +171,45 @@ def test_pemakaian_bulanan_memberi_kebutuhan_21_hari(toko):
     assert Decimal(baris["perkiraan_persediaan"]) == 42
 
 
+def test_pemakaian_bulanan_per_30_hari_mundur_dari_hari_terakhir(toko):
+    klien = TestClient(app)
+    r = klien.post("/auth/umkm/masuk", json={"email": toko["email"], "kata_sandi": SANDI})
+    assert r.status_code == 200, r.text
+    kepala = {"Authorization": "Bearer " + r.json()["token"]}
+    jalur = f"/usaha/{toko['usaha']}/pemakaian-bulanan"
+
+    # Fixture sudah menulis 1 di hari terakhir. Hari ke-5 tersensor stok habis, jadi tidak dihitung.
+    with mesin().begin() as kon:
+        kon.execute(
+            text(
+                """
+                INSERT INTO permintaan_harian (usaha_id, barang_id, tanggal, jumlah, stok_habis)
+                SELECT :u, :b, :akhir - h, 3, h = 5 FROM generate_series(1, 44) AS h
+                """
+            ),
+            {"u": toko["usaha"], "b": toko["tanpa"], "akhir": AKHIR},
+        )
+
+    def periode(alamat):
+        isi = klien.get(alamat, headers=kepala).json()
+        return [
+            (p["tanggal"], Decimal(p["jumlah"]), p["hari_tercatat"])
+            for p in next(b for b in isi if b["barang_id"] == toko["tanpa"])["periode"]
+        ]
+
+    lama = (str(AKHIR - timedelta(days=37)), Decimal(90), 15)
+    baru = (str(AKHIR - timedelta(days=15)), Decimal("87.931"), 29)
+    assert periode(jalur) == [lama, baru]
+    # Satu periode: hanya 30 hari terakhir.
+    assert periode(f"{jalur}?periode=1") == [baru]
+
+    # Usaha tanpa catatan sama sekali: kosong, bukan galat, walau perkiraannya masih ada.
+    with mesin().begin() as kon:
+        kon.execute(text("DELETE FROM permintaan_harian WHERE usaha_id = :u"), {"u": toko["usaha"]})
+    r = klien.get(jalur, headers=kepala)
+    assert r.status_code == 200 and r.json() == []
+
+
 def test_mesin1_menuliskan_batas_aman_dalam_satu_jalan(toko):
     """Jalur sungguhan: perkiraan tersimpan, lalu batas aman barang berubah di transaksi yang sama."""
     from ml.layanan import _jalankan_mesin1

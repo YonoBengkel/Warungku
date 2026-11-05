@@ -14,13 +14,15 @@ menyentuh seluruh data simulasi, dan uji tidak boleh mengunci atau bergantung pa
 
 from __future__ import annotations
 
+import sys
 from datetime import date, datetime, timedelta, timezone
 
 import pytest
 from sqlalchemy import text
 
+import dataset.geser_tanggal as modul_geser
 from dataset.geser_tanggal import POLA_NOTA, geser
-from warungku.basis_data import mesin
+from warungku.basis_data import mesin, segarkan_statistik
 from warungku.enum import CaraHitungStok, JenisUsaha, StatusVerifikasi, SumberBatasAman
 
 AWAL = date(2026, 9, 22)  # 14 hari data simulasi, sampai 5 Okt 2026
@@ -100,6 +102,35 @@ def _permintaan(kon, b: int) -> dict[date, float]:
 
 def _nota(kon, u: int) -> list[tuple[str, datetime]]:
     return list(kon.execute(text("SELECT nomor_struk, waktu FROM transaksi WHERE usaha_id = :u ORDER BY waktu"), {"u": u}))
+
+
+def test_statistik_disegarkan_hanya_kalau_data_benar_berubah(monkeypatch):
+    panggilan = []
+    hasil = {"hari": 0, "akhir": date(2026, 11, 2)}
+    monkeypatch.setattr(modul_geser, "segarkan_statistik", lambda: panggilan.append(1))
+    monkeypatch.setattr(modul_geser, "geser", lambda kon, sampai: hasil)
+    monkeypatch.setattr(sys, "argv", ["geser_tanggal"])
+
+    modul_geser.main()
+    assert panggilan == []
+    hasil.update(hari=7, akhir_lama=date(2026, 10, 26))
+    monkeypatch.setattr(sys, "argv", ["geser_tanggal", "--coba"])
+    modul_geser.main()
+    assert panggilan == []
+    monkeypatch.setattr(sys, "argv", ["geser_tanggal"])
+    modul_geser.main()
+    assert panggilan == [1]
+
+
+def test_segarkan_statistik_benar_menganalisis():
+    def terakhir():
+        with mesin().connect() as k:
+            return k.execute(text("SELECT last_analyze FROM pg_stat_user_tables WHERE relname = 'usaha'")).scalar()
+
+    sebelum = terakhir()
+    segarkan_statistik()
+    sesudah = terakhir()
+    assert sesudah is not None and (sebelum is None or sesudah > sebelum)
 
 
 def test_geser_kelipatan_tujuh_dan_nota_sungguhan_tetap(kon):

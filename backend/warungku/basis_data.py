@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterator
 from contextlib import contextmanager
 
-from sqlalchemy import Engine
+from sqlalchemy import Engine, text
 from sqlmodel import Session, create_engine
 
 from .konfigurasi import alamat_basis_data
@@ -26,6 +26,18 @@ def mesin() -> Engine:
 
 def sesi() -> Session:
     return Session(mesin())
+
+
+def segarkan_statistik() -> None:
+    """
+    Perbarui statistik perencana kueri sesudah data besar dipasang.
+
+    Autovacuum bisa belum sempat, dan analisis yang berbarengan dengan commit besar kehilangan
+    hitungan perubahannya, jadi autovacuum tidak mengulanginya. Sampai itu terjadi, perencana mengira
+    usaha baru hanya punya satu baris, dan kueri yang biasanya 100 milidetik bisa berjalan bermenit-menit.
+    """
+    with mesin().connect().execution_options(isolation_level="AUTOCOMMIT") as kon:
+        kon.execute(text("ANALYZE"))
 
 
 @contextmanager
