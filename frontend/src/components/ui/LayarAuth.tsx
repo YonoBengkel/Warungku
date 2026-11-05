@@ -10,7 +10,7 @@ export const CATATAN_DAFTAR =
 
 /** Server tidak terjangkau saat akun dibuat: alurnya tetap bisa dilihat, tetapi akunnya belum ada. */
 export const CATATAN_DAFTAR_TANPA_SERVER =
-  'Kamu belum punya akun di server, jadi isian di sini hanya tercatat di peramban ini, dan yang tampil sesudah ini data contoh.'
+  'Belum ada akun yang dibuat, jadi isian di sini hanya tercatat di peramban ini, dan yang tampil sesudah ini data contoh.'
 
 /** Lupa Sandi belum mengirim kode dan belum mengubah kata sandi akun mana pun. */
 export const CATATAN_LUPA_SANDI =
