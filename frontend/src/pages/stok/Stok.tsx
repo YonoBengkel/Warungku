@@ -205,6 +205,12 @@ export default function Stok() {
     return (Date.now() - terakhir) / 86_400_000 > HARI_TIDAK_BERGERAK
   }
 
+  function waktuBerubah(b: Barang): number {
+    // Data server: API yang menyebut waktunya, karena buku besarnya tidak dimuat ke peramban.
+    if (b.terakhirBerubah !== undefined) return b.terakhirBerubah ? +new Date(b.terakhirBerubah) : 0
+    return terakhirBerubah.get(b.id) ?? 0
+  }
+
   const jumlahStatus = useMemo(() => {
     let habis = 0
     let menipis = 0
@@ -263,7 +269,7 @@ export default function Stok() {
         case 'nama':
           return a.nama.localeCompare(b.nama, 'id')
         case 'terakhir':
-          return (terakhirBerubah.get(b.id) ?? 0) - (terakhirBerubah.get(a.id) ?? 0)
+          return waktuBerubah(b) - waktuBerubah(a) || a.nama.localeCompare(b.nama, 'id')
         case 'sisa':
           return b.stok - a.stok
         case 'kategori':

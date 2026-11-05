@@ -63,6 +63,14 @@ rute = APIRouter(prefix="/usaha/{usaha_id}", tags=["gudang"])
 POLA_NOTA_SIMULASI = r"^[0-9]{8}-[0-9]{3}-[0-9]+$"
 
 
+#: Waktu tampil satu baris `pergerakan` (alias `g`). Baris buatan pembangkit tidak punya nota dan
+#: jamnya tepat di menit, sedangkan semua jalur tulis aplikasi membawa detik dan mikrodetik. Jamnya
+#: jam setempat yang ditulis apa adanya di kolom UTC, jadi dimundurkan 7 jam supaya terbaca sebagai
+#: WIB dan urut dengan baris sungguhan.
+WAKTU_PERGERAKAN = """CASE WHEN g.transaksi_id IS NULL AND date_trunc('minute', g.waktu) = g.waktu
+                           THEN g.waktu - interval '7 hours' ELSE g.waktu END"""
+
+
 def waktu_nota(nomor_struk: str, waktu: datetime) -> datetime:
     """Waktu nota untuk ditampilkan, supaya nota simulasi terbaca pada jam yang dimaksud."""
     return waktu - timedelta(hours=7) if re.match(POLA_NOTA_SIMULASI, nomor_struk) else waktu
@@ -126,19 +134,23 @@ def ringkas_barang(sesi: Session, usaha_id: int) -> list[BarangRingkas]:
     # Terakhir terpakai per barang, dan hari acuan usaha: data simulasi berhenti
     # sebelum hari ini, jadi "sudah lama tidak terpakai" diukur dari hari
     # terakhir yang tercatat. Kalau diukur dari hari ini, semua barang lambat
-    # laun terbaca tidak bergerak.
-    terakhir = {
-        r[0]: r[1]
-        for r in sesi.exec(
-            text(
-                """
-                SELECT barang_id, max((waktu AT TIME ZONE 'UTC')::date)
-                  FROM pergerakan WHERE usaha_id = :u AND jenis = 'terjual'
-                 GROUP BY barang_id
-                """
-            ).bindparams(u=usaha_id)
-        ).all()
-    }
+    # laun terbaca tidak bergerak. Pergerakan terakhir apa pun ikut dibaca di sini, untuk
+    # urutan "Terakhir berubah" dan peringatan isi kemasan: buku besarnya tidak dimuat ke peramban.
+    terakhir, berubah = {}, {}
+    for barang_id, terpakai, waktu in sesi.exec(
+        text(
+            f"""
+            SELECT g.barang_id,
+                   max((g.waktu AT TIME ZONE 'UTC')::date) FILTER (WHERE g.jenis = 'terjual'),
+                   max({WAKTU_PERGERAKAN})
+              FROM pergerakan g WHERE g.usaha_id = :u
+             GROUP BY g.barang_id
+            """
+        ).bindparams(u=usaha_id)
+    ).all():
+        berubah[barang_id] = waktu
+        if terpakai is not None:
+            terakhir[barang_id] = terpakai
     dipesan = dict(
         sesi.exec(
             text(
@@ -197,6 +209,7 @@ def ringkas_barang(sesi: Session, usaha_id: int) -> list[BarangRingkas]:
             dicatat_manual=b.dicatat_manual,
             catatan=b.catatan,
             hari_tanpa_pemakaian=(acuan - terakhir[b.id]).days if b.id in terakhir else None,
+            terakhir_berubah=berubah.get(b.id),
             penawaran_saran_id=saran.get(b.id),
         )
         for b in barang
@@ -213,10 +226,7 @@ def pergerakan_barang(
     """
     Buku besar satu barang, terbaru di atas, berhalaman karena satu barang bisa punya ratusan baris.
 
-    Baris buatan pembangkit tidak punya nota dan jamnya tepat di menit, sedangkan semua jalur tulis
-    aplikasi membawa detik dan mikrodetik. Jamnya jam setempat yang ditulis apa adanya di kolom UTC
-    (lihat `waktu_nota`), jadi dimundurkan 7 jam supaya terbaca sebagai WIB dan urut dengan baris
-    sungguhan. Urutannya mengikuti waktu tampil itu, bukan kolom aslinya.
+    Urutannya mengikuti waktu tampil (`WAKTU_PERGERAKAN`), bukan kolom aslinya.
     """
     with Session(mesin()) as sesi:
         _usaha_atau_404(sesi, usaha_id)
@@ -230,11 +240,10 @@ def pergerakan_barang(
         ).scalar_one()
         baris = sesi.exec(
             text(
-                """
+                f"""
                 SELECT g.id, g.jenis, g.jumlah, g.stok_sesudah, g.keterangan, g.pesanan_id, g.transaksi_id, g.oleh,
                        p.nomor AS nomor_pesanan,
-                       CASE WHEN g.transaksi_id IS NULL AND date_trunc('minute', g.waktu) = g.waktu
-                            THEN g.waktu - interval '7 hours' ELSE g.waktu END AS waktu
+                       {WAKTU_PERGERAKAN} AS waktu
                   FROM pergerakan g
                   LEFT JOIN pesanan p ON p.id = g.pesanan_id
                  WHERE g.usaha_id = :u AND g.barang_id = :b

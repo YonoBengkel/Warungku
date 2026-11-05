@@ -63,6 +63,8 @@ flowchart LR
   (`useRiwayatPergerakan`), karena satu barang bisa punya ratusan baris dan buku besar usaha tidak pernah dimuat ke peramban.
   Tanpa server, panelnya tetap membaca data contoh di store. Baris pembangkit tidak punya nota dan jamnya tepat di menit,
   sedangkan semua jalur tulis aplikasi membawa detik dan mikrodetik, jadi aturan 7 jam yang sama berlaku untuk baris itu saja.
+  `GET /usaha/{id}/barang` membawa `terakhir_berubah`, waktu pergerakan terakhir tiap barang dengan aturan yang sama, untuk
+  urutan Terakhir berubah di daftar Stok dan peringatan saat isi kemasan diubah.
 - **Daftar pesanan berhalaman.** Kedua portal memuat 100 pesanan terbaru, sisanya lewat Muat pesanan lebih lama (`mulai`).
   Pesanan lama yang dibuka dari tautan diambil sendiri lewat `GET /pesanan/{id}`.
 - **Nota adalah pintu masuk.** `POST /usaha/{id}/transaksi` (`backend/api/gudang.py`) menyimpan nota, menerjemahkan

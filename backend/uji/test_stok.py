@@ -198,6 +198,43 @@ def test_riwayat_pergerakan_berhalaman_dengan_jam_setempat(gudang):
     assert klien.get(jalur, headers=kepala, params={"batas": 101}).status_code == 422
 
 
+def test_daftar_barang_menyebut_pergerakan_terakhir(gudang):
+    ids, kepala, klien = gudang
+    jalur = f"/usaha/{ids['u1']}/barang"
+
+    def tambah(nama, stok_awal="0"):
+        r = klien.post(jalur, headers=kepala, json={
+            "nama": nama, "kategori": "Bahan", "satuan": "pcs", "stok_awal": stok_awal, "batas_aman": "1"})
+        assert r.status_code == 201, r.text
+        return r.json()
+
+    kosong, sungguhan, simulasi = tambah("Uji Tanpa Gerak"), tambah("Uji Gerak Nyata", "5"), tambah("Uji Gerak Simulasi")
+    assert kosong["terakhir_berubah"] is None and sungguhan["terakhir_berubah"] is not None
+
+    def baris_pembangkit(barang_id, waktu):
+        kon.execute(
+            text(
+                "INSERT INTO pergerakan (usaha_id, barang_id, waktu, jenis, jumlah, stok_sesudah, keterangan, oleh) "
+                "VALUES (:u, :b, :w, 'terjual', -1, 4, 'Penjualan harian dari kasir', 'Kasir Open POS')"
+            ),
+            {"u": ids["u1"], "b": barang_id, "w": waktu},
+        )
+
+    # Baris pembangkit tiga jam ke depan tampil empat jam lalu, jadi baris sungguhan tetap yang terakhir.
+    sekarang = datetime.now(timezone.utc)
+    with mesin().begin() as kon:
+        baris_pembangkit(sungguhan["id"], sekarang.replace(second=0, microsecond=0) + timedelta(hours=3))
+        baris_pembangkit(simulasi["id"], datetime(2020, 1, 4, 21, 45, tzinfo=timezone.utc))
+    daftar = {b["id"]: b for b in klien.get(jalur, headers=kepala).json()}
+    assert daftar[kosong["id"]]["terakhir_berubah"] is None
+    assert abs(datetime.fromisoformat(daftar[sungguhan["id"]]["terakhir_berubah"]) - sekarang) < timedelta(minutes=5)
+    assert datetime.fromisoformat(daftar[simulasi["id"]]["terakhir_berubah"]) == datetime(2020, 1, 4, 14, 45, tzinfo=timezone.utc)
+    # Barang yang belum pernah terjual tetap tidak punya hari tanpa pemakaian, walau sudah bergerak.
+    r = klien.post(f"{jalur}/{kosong['id']}/koreksi", headers=kepala, json={"stok": "3"})
+    assert r.status_code == 200, r.text
+    assert r.json()["terakhir_berubah"] is not None and r.json()["hari_tanpa_pemakaian"] is None
+
+
 def test_barang_usaha_lain_tidak_bisa_diubah(gudang):
     ids, kepala, klien = gudang
     assert klien.patch(f"/usaha/{ids['u1']}/barang/{ids['lain']}", headers=kepala, json={"nama": "Bukan milikku"}).status_code == 404

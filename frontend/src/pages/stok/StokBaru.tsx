@@ -224,7 +224,12 @@ export function FormulirBarang({ barang }: { barang?: Barang }) {
     barang != null &&
     (kemasanBersih.length !== barang.kemasan.length ||
       kemasanBersih.some((k, i) => barang.kemasan[i] != null && barang.kemasan[i].isi !== k.isi))
-  const adaRiwayat = barang != null && pergerakan.some((g) => g.barangId === barang.id)
+  // Data server: API yang menyebut pergerakan terakhirnya, karena buku besarnya tidak dimuat ke peramban.
+  const adaRiwayat =
+    barang != null &&
+    (barang.terakhirBerubah !== undefined
+      ? barang.terakhirBerubah !== null
+      : pergerakan.some((g) => g.barangId === barang.id))
 
   function tambahSebutan() {
     const bersih = sebutanBaru.trim()

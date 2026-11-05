@@ -307,6 +307,9 @@ class BarangRingkas(BaseModel):
     #: dihitung dari hari terakhir data usaha, bukan dari hari ini. Kosong kalau
     #: belum pernah terpakai. Dasar penyaring "Tidak bergerak".
     hari_tanpa_pemakaian: int | None = None
+    #: Pergerakan terakhir apa pun, termasuk masuk dan koreksi. Kosong kalau belum pernah ada.
+    #: Dasar urutan "Terakhir berubah" dan peringatan isi kemasan di layar.
+    terakhir_berubah: datetime | None = None
     #: Penawaran teratas Mesin 2 untuk barang ini, supaya saran di semua layar menunjuk
     #: distributor yang sama. Kosong kalau Mesin 2 belum menilainya.
     penawaran_saran_id: int | None = None

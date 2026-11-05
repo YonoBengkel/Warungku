@@ -208,6 +208,11 @@ export interface Barang {
    * null = belum pernah terpakai; tidak ada = data contoh, dihitung dari riwayat.
    */
   hariTanpaPemakaian?: number | null
+  /**
+   * Waktu pergerakan terakhir apa pun (hanya data server), karena buku besarnya tidak dimuat ke peramban.
+   * null = belum pernah ada pergerakan; tidak ada = data contoh, dihitung dari riwayat.
+   */
+  terakhirBerubah?: string | null
   /** Penawaran teratas Mesin 2 untuk barang ini (hanya data server). */
   penawaranSaranId?: string | null
   /** Terpasang ke menu di kasir? Kalau tidak, stok tidak berkurang otomatis. */

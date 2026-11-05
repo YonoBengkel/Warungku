@@ -552,7 +552,7 @@ turnify-flow/
 | GET | `/auth/saya` | Siapa pemegang token ini |
 | GET | `/usaha/{usaha_id}/profil` | Profil usaha yang sedang masuk |
 | PATCH | `/usaha/{usaha_id}/profil` | Ubah sebagian profil usaha. Status verifikasi tidak bisa diisi, hanya bisa dikembalikan ke menunggu pemeriksaan |
-| GET | `/usaha/{usaha_id}/barang` | Daftar barang di gudang, termasuk pemakaian rata-rata 28 hari, harga per satuan, barang yang sudah dipesan dan belum diterima (`dalam_perjalanan`), dan hari sejak terakhir terpakai (`hari_tanpa_pemakaian`, dihitung dari hari terakhir data) |
+| GET | `/usaha/{usaha_id}/barang` | Daftar barang di gudang, termasuk pemakaian rata-rata 28 hari, waktu pergerakan terakhir, harga per satuan, barang yang sudah dipesan dan belum diterima (`dalam_perjalanan`), dan hari sejak terakhir terpakai (`hari_tanpa_pemakaian`, dihitung dari hari terakhir data) |
 | GET | `/usaha/{usaha_id}/barang/{barang_id}/perkiraan` | Perkiraan terbaru Mesin 1 (p10, p50, p90 per hari), termasuk uji balik 14 hari (`uji_balik`) |
 | POST | `/usaha/{usaha_id}/barang` | Tambah barang. Stok awalnya dicatat sebagai pergerakan koreksi, dan kode kosong dibuatkan dari id |
 | PATCH | `/usaha/{usaha_id}/barang/{barang_id}` | Ubah barang, termasuk batas aman, lama kirim, kemasan, dan kedaluwarsa. Satuan barang yang sudah punya riwayat stok tidak bisa diganti |
