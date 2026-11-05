@@ -29,7 +29,7 @@ import type {
   WarnaTitik,
 } from '@/lib/types'
 import { PESANAN_BERJALAN } from '@/lib/label'
-import { angka, rupiah, waktuNanti } from '@/lib/format'
+import { angka, rupiah, tanggalKolom, waktuNanti } from '@/lib/format'
 import {
   POS_TUNGGAL,
   daftarBarang,
@@ -263,7 +263,6 @@ interface KeadaanAplikasi {
   /** Mode data server: disimpan lewat PATCH /profil. Hasilnya tersimpan atau tidak; galatnya sudah tampil. */
   ubahProfil: (p: Partial<ProfilUsaha>) => Promise<boolean>
   ubahKasir: (p: Partial<DataKasir>) => void
-  hubungkanKasir: () => void
   /** Simpan resep satu menu, baru atau ubahan. Hasilnya: tersimpan atau tidak. */
   pasangkanMenu: (menuId: string, bahan: BahanMenu[]) => Promise<boolean>
   /** Mode data server: muat ulang menu kasir, resep, dan nota terbaru. Hasilnya: keduanya terbaca atau tidak. */
@@ -607,12 +606,19 @@ interface IsiServer {
 function kasirServer(menu: RingkasanMenuKasir | null): DataKasir {
   return {
     sumber: 'kasir-digital',
-    status: 'terhubung',
+    status: menu && !menu.notaTerakhir ? 'belum-terhubung' : 'terhubung',
     merek: POS_TUNGGAL.nama,
     terakhirMasuk: menu?.notaTerakhir ?? null,
     jumlahTransaksiHariIni: menu?.notaHariIni ?? 0,
     menuBelumDipasangkan: menu?.belum ?? [],
   }
+}
+
+/** Kuota kontrak bergerak di server saat pesanan dibuat, dikirim, batal, atau diterima. */
+function segarkanKontrakServer(sesi: SesiServer): void {
+  void ambilKontrak(sesi)
+    .then((kontrak) => useAplikasi.setState({ kontrak }))
+    .catch(() => {})
 }
 
 /** Semua yang dibaca dari server saat masuk: gudang, pesanan, dan katalog. */
@@ -823,6 +829,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
       const baru = await buatPesanan(sesi, baris, dariSaran)
       // Barang yang baru dipesan tidak disarankan lagi: angka "sudah dipesan" datang dari server.
       void get().segarkanGudangServer().catch(() => {})
+      segarkanKontrakServer(sesi)
       const hasil: HasilKirim = {
         kodeBelanja: baru[0]?.kodeBelanja ?? baru[0]?.nomor ?? '',
         pesanan: baru.map((p) => ({ id: p.id, nomor: p.nomor, distributorId: p.distributorId, berhasil: true })),
@@ -845,6 +852,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
     try {
       const [baru] = await buatPesanan(sesi, [{ penawaranId, jumlah }], true)
       void get().segarkanGudangServer().catch(() => {})
+      segarkanKontrakServer(sesi)
       set((s) => ({ pesanan: [baru, ...s.pesanan] }))
       get().tampilkanRacun(`Pesanan ${baru.nomor} terkirim ke distributor.`, 'aman', {
         label: 'Lihat pesanan',
@@ -1044,26 +1052,6 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
     }
   },
   ubahKasir: (p) => set((s) => ({ kasir: { ...s.kasir, ...p } })),
-
-  /**
-   * Hanya satu aplikasi kasir yang didukung, jadi tidak ada merek yang perlu
-   * dipilih maupun dikirim: namanya diambil langsung dari POS_TUNGGAL.
-   */
-  hubungkanKasir: () => {
-    set((s) => ({ kasir: { ...s.kasir, status: 'menyinkron' } }))
-    window.setTimeout(() => {
-      set((s) => ({
-        kasir: {
-          ...s.kasir,
-          sumber: 'kasir-digital',
-          status: 'terhubung',
-          merek: POS_TUNGGAL.nama,
-          terakhirMasuk: stempel(),
-        },
-      }))
-      get().tampilkanRacun(`Tersambung ke ${POS_TUNGGAL.nama}. Data penjualan mulai masuk.`, 'aman')
-    }, 1500)
-  },
 
   pasangkanMenu: async (menuId, bahan) => {
     const s = get()
@@ -1314,6 +1302,8 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
       try {
         const baru = await tambahBarangServer(sesi, b)
         set((s) => ({ barang: [baru, ...s.barang] }))
+        // Barangnya bisa tertaut ke produk katalog, jadi penawaran yang terkait ikut berubah.
+        void ambilKatalog(sesi).then((k) => set({ katalog: k.penawaran }), () => {})
         get().tampilkanRacun(`${baru.nama} ditambahkan ke daftar stok.`, 'aman')
         return baru.id
       } catch (e) {
@@ -1530,6 +1520,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
     if (sesi && pesanan.baris.every((b) => b.barisId)) {
       try {
         dariServer = await ajukanDrafServer(sesi, pesananId)
+        segarkanKontrakServer(sesi)
         void get().segarkanGudangServer().catch(() => {})
       } catch (e) {
         get().tampilkanRacun(e instanceof Error ? e.message : 'Pesanan belum terkirim. Coba lagi sebentar lagi.', 'kritis')
@@ -1584,7 +1575,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
         const info = diterima[b.penawaranId] ?? { jumlah: b.jumlah, alasan: null, catatan: '' }
         return { barisId: b.barisId!, jumlah: info.jumlah, alasan: info.alasan, catatan: info.catatan }
       })
-      terimaBarangServer(sesi, pesananId, baris)
+      terimaBarangServer(sesi, pesananId, baris, tanggalKolom(new Date(tanggal)))
         .then((baru) => {
           set((st) => ({ pesanan: st.pesanan.map((p) => (p.id === baru.id ? baru : p)) }))
           const catatan = baru.status === 'selesai-catatan'
@@ -1594,6 +1585,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
               : 'Barang diterima. Stok gudang bertambah.',
             catatan ? 'menipis' : 'aman',
           )
+          segarkanKontrakServer(sesi)
           // Penerimaannya sudah tersimpan. Gudang yang gagal dimuat ulang tidak boleh
           // dilaporkan sebagai penerimaan gagal: percobaan ulang akan ditolak (409).
           muatGudangServer(sesi)
@@ -1711,6 +1703,7 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
     if (s.sesiServer && pesanan.baris.every((b) => b.barisId)) {
       try {
         dariServer = await batalkanPesananServer(s.sesiServer, pesananId, alasan || 'Dibatalkan pemilik usaha')
+        segarkanKontrakServer(s.sesiServer)
         void get().segarkanGudangServer().catch(() => {})
       } catch (e) {
         get().tampilkanRacun(e instanceof Error ? e.message : 'Pembatalan gagal.', 'kritis')

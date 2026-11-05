@@ -354,7 +354,7 @@ ketiga mesin, masuk dengan salah satu akun berikut. API (port 8000) harus menyal
 
 **Cara masuk tanpa mengetik:**
 
-- **Pemilik usaha:** halaman *Masuk* → tab *Pakai Email* → tekan *Isikan akun
+- **Pemilik usaha:** halaman *Masuk* → tekan *Isikan akun
   simulasi: Kopi Kita Jogja*, *Isikan akun simulasi produsen: Dapur Sambal Bu Ratmi*,
   atau *Isikan akun simulasi warung kelontong: Warung Madura Barokah 24 Jam* → *Masuk*.
 - **Distributor:** halaman *Masuk* → *Masuk ke portal distributor* → *Isikan akun
@@ -545,16 +545,16 @@ turnify-flow/
 
 | Method | Endpoint | Keterangan |
 | --- | --- | --- |
-| POST | `/auth/umkm/daftar` | Buat akun pemilik usaha beserta usahanya (satu akun, satu usaha) |
+| POST | `/auth/umkm/daftar` | Buat akun pemilik usaha beserta usahanya (satu akun, satu usaha), dipanggil langkah 2 layar Daftar. Akun langsung aktif. Email atau nomor HP kembar dijawab 409 |
 | POST | `/auth/umkm/masuk` | Masuk sebagai pemilik usaha |
-| POST | `/auth/pos/masuk` | Masuk ke Portal POS: kasir mendapat token kasir, pemilik mendapat token pemilik |
+| POST | `/auth/pos/masuk` | Masuk ke Portal POS: kasir mendapat token kasir, pemilik mendapat token pemilik. Warung kelontong ditolak 403 karena belum punya daftar menu |
 | POST | `/auth/distributor/masuk` | Masuk sebagai distributor |
 | GET | `/auth/saya` | Siapa pemegang token ini |
 | GET | `/usaha/{usaha_id}/profil` | Profil usaha yang sedang masuk |
 | PATCH | `/usaha/{usaha_id}/profil` | Ubah sebagian profil usaha. Status verifikasi tidak bisa diisi, hanya bisa dikembalikan ke menunggu pemeriksaan |
 | GET | `/usaha/{usaha_id}/barang` | Daftar barang di gudang, termasuk pemakaian rata-rata 28 hari, waktu pergerakan terakhir, harga per satuan, barang yang sudah dipesan dan belum diterima (`dalam_perjalanan`), dan hari sejak terakhir terpakai (`hari_tanpa_pemakaian`, dihitung dari hari terakhir data) |
 | GET | `/usaha/{usaha_id}/barang/{barang_id}/perkiraan` | Perkiraan terbaru Mesin 1 (p10, p50, p90 per hari), termasuk uji balik 14 hari (`uji_balik`) |
-| POST | `/usaha/{usaha_id}/barang` | Tambah barang. Stok awalnya dicatat sebagai pergerakan koreksi, dan kode kosong dibuatkan dari id |
+| POST | `/usaha/{usaha_id}/barang` | Tambah barang. Stok awalnya dicatat sebagai pergerakan koreksi, dan kode kosong dibuatkan dari id. Nama dan satuan yang sama dengan produk katalog ditautkan ke produk itu |
 | PATCH | `/usaha/{usaha_id}/barang/{barang_id}` | Ubah barang, termasuk batas aman, lama kirim, kemasan, dan kedaluwarsa. Satuan barang yang sudah punya riwayat stok tidak bisa diganti |
 | POST | `/usaha/{usaha_id}/barang/{barang_id}/koreksi` | Stok hasil hitung rak. Selisihnya dicatat sebagai pergerakan koreksi |
 | POST | `/usaha/{usaha_id}/pemakaian` | Pemakaian hari ini yang dicatat dengan tangan. Yang dipotong paling banyak sisa stok |
@@ -564,7 +564,7 @@ turnify-flow/
 | GET | `/usaha/{usaha_id}/barang/{barang_id}/pergerakan` | Buku besar satu barang, terbaru di atas, berhalaman (`batas`, `mulai`), dengan jumlah seluruh barisnya |
 | GET | `/usaha/{usaha_id}/barang/{barang_id}/saran` | Saran distributor terbaru Mesin 2, dibaca dari tabel |
 | GET | `/usaha/{usaha_id}/saran-distributor` | Saran Mesin 2 dirangkum per distributor: rata-rata skor, peluang lancar, barang yang menempatkannya di urutan pertama |
-| GET | `/usaha/{usaha_id}/pemakaian-bulanan` | Pemakaian per 30 hari beserta uji balik Mesin 1 tiap periode (`uji_balik`), perkiraan 30 hari ke depan, dan kebutuhan 21 hari untuk saran beli (`perkiraan_persediaan`), semua barang |
+| GET | `/usaha/{usaha_id}/pemakaian-bulanan` | Pemakaian per 30 hari mundur dari hari asal jalan Mesin 1 terbaru, beserta uji balik tiap periode (`uji_balik`), perkiraan 30 hari ke depan, dan kebutuhan 21 hari untuk saran beli (`perkiraan_persediaan`), semua barang. Nota baru tidak menggeser periodenya |
 | POST | `/usaha/{usaha_id}/transaksi` | Terima satu nota kasir; aman dikirim ulang. Tiap menu memotong bahan sesuai resepnya; stok yang kurang dipotong sampai nol dan dilaporkan di `stok_kurang` |
 | GET | `/usaha/{usaha_id}/transaksi?batas=&mulai=` | Nota kasir terbaru beserta barisnya (tanpa nota `DEMO-`), dibatasi per halaman |
 | POST | `/usaha/{usaha_id}/transaksi/{nomor_struk}/ajukan-batal` | Kasir mengajukan pembatalan nota dengan alasan tertulis |
@@ -590,7 +590,7 @@ turnify-flow/
 | GET | `/usaha/{usaha_id}/pesanan/{pesanan_id}` | Rincian satu pesanan |
 | POST | `/usaha/{usaha_id}/pesanan/{pesanan_id}/ajukan` | Kirim draf, misalnya draf pesanan rutin, ke distributor |
 | POST | `/usaha/{usaha_id}/pesanan/{pesanan_id}/batal` | Batalkan draf atau pesanan yang belum dijawab distributor |
-| POST | `/usaha/{usaha_id}/pesanan/{pesanan_id}/terima` | Hitung barang yang datang: stok naik, data latih Mesin 2 tertulis. Barang yang belum ada di gudang pembeli dibuatkan saat itu |
+| POST | `/usaha/{usaha_id}/pesanan/{pesanan_id}/terima` | Hitung barang yang datang: stok naik, data latih Mesin 2 tertulis. Barang yang belum ada di gudang pembeli dibuatkan saat itu. `tanggal` opsional, tidak boleh sesudah hari ini atau sebelum barang dikirim |
 | POST | `/usaha/{usaha_id}/pesanan/{pesanan_id}/ulasan` | Penilaian pesanan yang selesai, sekali per pesanan. Rating dihitung dari rata-rata tiga aspek |
 | GET | `/usaha/{usaha_id}/katalog` | Distributor (rating dari ulasan), penawaran, paket kontrak, dan promo |
 | GET | `/usaha/{usaha_id}/distributor/{distributor_id}/ulasan` | Ulasan terbaru satu distributor |
@@ -779,12 +779,14 @@ docker push yonobengkel/turnify-flow-backend:<versi>
 
 Daftar ini ada supaya tidak ada yang menyangka bagian ini sudah selesai.
 
-- **Yang masih data contoh** meski masuk dengan akun simulasi:
-  - profil usaha (mengubahnya belum tersimpan);
-  - data kasir di Beranda;
-  - tab *Riwayat* pergerakan stok per barang;
-  - penilaian setelah pesanan selesai dan bukti pembayaran;
-  - katalog penawaran milik distributor (menambah atau menonaktifkan barang).
+- **Yang belum punya jalur ke server**, dan di layarnya ditandai catatan purwarupa: bukti
+  pembayaran, permintaan pembatalan, pengingat, undangan pengguna, dan jadwal pesanan rutin.
+- **Pemeriksaan legalitas** belum ada petugasnya, jadi akun baru langsung aktif. Layar
+  pendaftaran menyebut hal ini.
+- **Masuk lewat nomor HP dan Lupa Kata Sandi** menunggu OTP. Masuk ke akun hanya lewat email
+  dan kata sandi, dan layar Lupa Kata Sandi belum mengubah kata sandi apa pun.
+- **Portal POS untuk warung kelontong** belum tersedia, karena barangnya belum punya daftar menu.
+- **Area kirim distributor** dipakai saran Mesin 2, tetapi pesanan di luar area belum ditolak.
 - **Pesanan rutin** hanya menyimpan sakelarnya; draf pesanannya belum dibuat
   otomatis oleh server.
 - **Keranjang** disimpan di peramban (per usaha), bukan di server, jadi tidak ikut
@@ -795,7 +797,7 @@ Daftar ini ada supaya tidak ada yang menyangka bagian ini sudah selesai.
   masih perkiraan di garis lurus dari gudang ke tempat usaha; belum ada pelacakan kurir
   sungguhan.
 - **Ringkasan Penjualan** tanpa laba kotor, karena harga pokok per menu belum ada.
-- **Halaman depan:** nomor kontaknya masih 08xxx-xxxx-xxxx, dan foto blok distributornya
+- **Halaman depan:** foto blok distributornya
   (dari Downpic, hanya 390 × 260) perlu diganti foto berlisensi beresolusi lebih tinggi
   sebelum proyek dipakai di luar kuliah. Foto hero sudah diganti gambar warung dari Ilham
   (27 Okt 2026, 1536 × 1024).

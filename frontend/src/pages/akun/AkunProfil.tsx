@@ -244,7 +244,7 @@ function FormProfil() {
                   value={nomor}
                   onChange={(e) => setNomor(e.target.value)}
                   galat={tampilkan('nomor')}
-                  bantuan="Nomor yang kami hubungi lewat WhatsApp untuk kabar verifikasi dan pesanan."
+                  bantuan="Nomor ini tampil untuk distributor yang menerima pesananmu."
                 />
                 <Kolom
                   label="Email"
@@ -351,6 +351,19 @@ function FormProfil() {
  */
 function BlokVerifikasi() {
   const profil = useAplikasi((s) => s.profil)
+  const server = useAplikasi((s) => s.sumberData === 'server')
+
+  // Akun dari halaman Daftar: aktif tanpa diperiksa, karena belum ada petugas pemeriksa.
+  if (profil.verifikasi === 'terverifikasi' && server && profil.tingkatVerifikasi !== 'penuh') {
+    return (
+      <section aria-label="Status verifikasi">
+        <Peringatan nada="info" judul="Akun aktif, belum diperiksa">
+          Belum ada petugas pemeriksa di purwarupa ini, jadi akun baru langsung aktif dan bisa mengajukan kontrak serta
+          membuat pesanan. NIB yang kamu isi tersimpan, tetapi belum dicocokkan.
+        </Peringatan>
+      </section>
+    )
+  }
 
   if (profil.verifikasi === 'terverifikasi') {
     return (
@@ -381,7 +394,7 @@ function BlokVerifikasi() {
     return (
       <section aria-label="Status verifikasi">
         <Peringatan nada="menipis" judul="Akun sedang diperiksa">
-          Kami kabari lewat WhatsApp begitu selesai. Sementara ini kamu tetap bisa memakai semua fitur kecuali
+          Kabarnya muncul di sini begitu selesai. Sementara ini kamu tetap bisa memakai semua fitur kecuali
           mengajukan kontrak dan membuat pesanan.
           <div className="mt-2.5">
             <GarisWaktu langkahAktif={2} gagal={false} />

@@ -145,6 +145,9 @@ class Kontrak(SQLModel, table=True):
 
     pesanan_rutin_aktif: bool = Field(default=False, **bawaan(False))
     pesanan_rutin_berikutnya: date | None = Field(default=None)
+    #: Dibuat `dataset.variasi_demo`, jadi boleh dibuang saat variasi dipasang ulang.
+    #: Kontrak dari layar tidak pernah ditandai.
+    dari_variasi: bool = Field(default=False, **bawaan(False))
 
     alasan_ditolak: str | None = Field(default=None, sa_column=Column(Text))
     pengajuan_berhenti_waktu: datetime | None = Field(default=None, sa_column=kolom_waktu(nullable=True))

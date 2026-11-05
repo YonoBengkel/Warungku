@@ -360,7 +360,7 @@ export default function Akun() {
         judul="Keluar dari akun ini?"
         pesan={
           <>
-            Data stok dan pesananmu tetap tersimpan. Kamu perlu memasukkan nomor HP dan kata sandi lagi untuk
+            Data stok dan pesananmu tetap tersimpan. Kamu perlu memasukkan email dan kata sandi lagi untuk
             membukanya.
           </>
         }

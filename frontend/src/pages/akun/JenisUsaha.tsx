@@ -25,19 +25,19 @@ const CONTOH: Record<CaraHitungStok, { ikon: typeof IkonToko; contoh: string; be
     contoh:
       'Satu gelas kopi susu terjual, yang berkurang adalah biji kopi dan susunya — bukan "kopi susu"-nya.',
     bentukForm:
-      'Detail Barang menampilkan tab "Resep", tempat kamu menulis bahan dan takaran untuk satu porsi.',
+      'Resep tiap menu ditulis di tab Produksi, bagian Menu: bahan dan takaran untuk satu porsi.',
   },
   kemasan: {
     ikon: IkonKotak,
     contoh: 'Satu botol teh terjual, stok botol teh berkurang satu. Selesai, tidak ada hitungan lain.',
-    bentukForm: 'Detail Barang menyembunyikan tab "Resep", karena tidak ada bahan yang perlu dipotong.',
+    bentukForm: 'Resep tidak perlu ditulis, karena tidak ada bahan yang perlu dipotong.',
   },
   keduanya: {
     ikon: IkonToko,
     contoh:
       'Kopi susu memotong biji kopi dan susu, sementara botol teh di kulkas berkurang satu per satu. Dua-duanya jalan berdampingan.',
     bentukForm:
-      'Detail Barang tetap menampilkan tab "Resep", dan kamu cukup mengisinya untuk barang yang memang diracik.',
+      'Resep cukup ditulis untuk menu yang memang diracik, di tab Produksi bagian Menu.',
   },
 }
 

@@ -13,7 +13,7 @@ import {
   IkonTelepon,
 } from '@/icons'
 import { cx, nomorHp as formatHp } from '@/lib/format'
-import { BANTUAN } from '@/lib/label'
+import { BANTUAN, NOMOR_BANTUAN } from '@/lib/label'
 import { useAplikasi } from '@/store/aplikasi'
 
 /**
@@ -25,7 +25,6 @@ import { useAplikasi } from '@/store/aplikasi'
  * lebih merusak kepercayaan daripada tidak ada jawaban sama sekali.
  */
 
-const NOMOR_BANTUAN = '081137700190'
 const VERSI = '1.0.0'
 
 interface ButirFaq {
@@ -176,12 +175,12 @@ const FAQ: ButirFaq[] = [
   },
   {
     id: 'faq-harga-jual',
-    tanya: 'Kenapa harga jual tidak ada di aplikasi ini?',
+    tanya: 'Di mana harga jual diatur?',
     jawab: (
       <>
         <p>
-          Harga jual, diskon, dan promo dikelola di aplikasi kasirmu. Kalau kami ikut menyimpannya, akan ada dua
-          angka untuk satu barang, dan cepat atau lambat keduanya berbeda.
+          Di Portal UMKM, tab Produksi, bagian Menu. Portal POS memakai harga itu saat kasir membuat nota, dan tiap nota
+          menyimpan harganya sendiri, jadi mengubah harga tidak mengubah nota yang sudah lewat.
         </p>
         <p className="mt-2">
           Total penjualanmu tetap terlihat di Ringkasan Penjualan, dihitung dari nota kasir apa adanya: harga seperti
@@ -199,7 +198,7 @@ const FAQ: ButirFaq[] = [
 const TIDAK_DILAKUKAN = [
   'Tidak menggantikan aplikasi kasirmu. Penjualan tetap dicatat di sana, aplikasi ini membaca hasilnya.',
   'Tidak memproses pembayaran. Kamu membayar langsung ke distributor; aplikasi hanya menyimpan catatan dan buktinya.',
-  'Tidak mengurus harga jual, promo, atau hitungan untung. Itu semua milik aplikasi kasir.',
+  'Tidak mengurus promo untuk pelanggan atau hitungan untung.',
   'Tidak menjamin barang pasti tersedia di distributor. Stok yang tampil adalah yang mereka laporkan.',
 ]
 

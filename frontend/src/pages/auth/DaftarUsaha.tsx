@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
 import { Tombol } from '@/components/ui/dasar'
 import { AreaTeks, Kolom, Pilihan, PilihanKartu } from '@/components/ui/formulir'
-import { IkonLokasi } from '@/icons'
+import { Peringatan } from '@/components/ui/umpanBalik'
+import { daftarUmkm, GalatApi, ServerTakTerjangkau } from '@/lib/api'
 import { LABEL_CARA_HITUNG, LABEL_JENIS_USAHA, URUTAN_JENIS_USAHA } from '@/lib/label'
+import { ambilIsianDaftar, hapusIsianDaftar } from '@/lib/pendaftaran'
 import type { CaraHitungStok, JenisUsaha } from '@/lib/types'
 import { useAplikasi } from '@/store/aplikasi'
 import { CATATAN_DAFTAR, LayarAuth } from '@/components/ui/LayarAuth'
@@ -11,14 +13,12 @@ import { CATATAN_DAFTAR, LayarAuth } from '@/components/ui/LayarAuth'
 /* Urutan kartu dikunci: yang paling sering dipilih pemilik warung ada di atas. */
 const URUTAN_CARA: CaraHitungStok[] = ['racikan', 'kemasan', 'keduanya']
 
-/* Alamat contoh yang dipakai tombol "Ambil lokasi saat ini" pada purwarupa ini. */
-const LOKASI_TERDETEKSI = {
-  alamat: 'Jl. Kaliurang KM 5,6 No. 24, Sinduadi, Mlati',
-  kota: 'Sleman, DI Yogyakarta',
-}
+/* Wilayah yang dilayani distributor di purwarupa ini. Saran distributor mencocokkan kota ini dengan area kirimnya. */
+const DAFTAR_KOTA = ['Kota Yogyakarta', 'Sleman', 'Bantul', 'Kulon Progo']
 
 /**
- * Langkah 2 dari 5: identitas usaha dan satu pertanyaan bisnis.
+ * Langkah 2 dari 5: identitas usaha dan satu pertanyaan bisnis. Akunnya dibuat di sini,
+ * lalu pendaftar langsung masuk. Kembali ke layar ini sesudahnya hanya memperbarui profil.
  *
  * Pertanyaan "Apa yang kamu jual?" ditulis dengan bahasa dagang, bukan bahasa
  * sistem. Jawabannya cuma menentukan bentuk awal formulir Tambah Barang, tidak
@@ -27,24 +27,29 @@ const LOKASI_TERDETEKSI = {
 export default function DaftarUsaha() {
   const navigate = useNavigate()
   const ubahProfil = useAplikasi((s) => s.ubahProfil)
+  const masukServer = useAplikasi((s) => s.masukServer)
   const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
+  const sudahAkun = useAplikasi((s) => s.sesiServer != null)
+  const profil = useAplikasi((s) => s.profil)
+  const isian = ambilIsianDaftar()
 
-  const [namaUsaha, setNamaUsaha] = useState('')
-  const [jenisUsaha, setJenisUsaha] = useState<JenisUsaha | ''>('')
-  const [alamat, setAlamat] = useState('')
-  const [kota, setKota] = useState('')
-  const [namaPemilik, setNamaPemilik] = useState('')
-  const [email, setEmail] = useState('')
-  const [cara, setCara] = useState<CaraHitungStok | null>(null)
+  const [namaUsaha, setNamaUsaha] = useState(sudahAkun ? profil.namaUsaha : '')
+  const [jenisUsaha, setJenisUsaha] = useState<JenisUsaha | ''>(sudahAkun ? profil.jenisUsaha : '')
+  const [alamat, setAlamat] = useState(sudahAkun ? profil.alamat : '')
+  const [kota, setKota] = useState(sudahAkun ? profil.kota : '')
+  const [namaPemilik, setNamaPemilik] = useState(sudahAkun ? profil.namaPemilik : '')
+  const [email, setEmail] = useState(sudahAkun ? profil.email : '')
+  const [cara, setCara] = useState<CaraHitungStok | null>(sudahAkun ? profil.caraHitung : null)
   const [galat, setGalat] = useState<{
     namaUsaha?: string
     jenisUsaha?: string
     alamat?: string
+    kota?: string
     namaPemilik?: string
     email?: string
     cara?: string
   }>({})
-  const [mencariLokasi, setMencariLokasi] = useState(false)
+  const [galatUmum, setGalatUmum] = useState<string | null>(null)
   const [memuat, setMemuat] = useState(false)
   const [percobaanGagal, setPercobaanGagal] = useState(0)
 
@@ -52,18 +57,10 @@ export default function DaftarUsaha() {
     if (percobaanGagal > 0) sorotGalatPertama()
   }, [percobaanGagal])
 
-  function ambilLokasi() {
-    setMencariLokasi(true)
-    window.setTimeout(() => {
-      setMencariLokasi(false)
-      setAlamat(LOKASI_TERDETEKSI.alamat)
-      setKota(LOKASI_TERDETEKSI.kota)
-      setGalat((g) => ({ ...g, alamat: undefined }))
-      tampilkanRacun('Alamat terisi dari lokasi kamu sekarang. Periksa dulu sebelum lanjut.', 'info')
-    }, 900)
-  }
+  // Dibuka langsung atau sesudah muat ulang: kata sandinya sudah tidak ada, jadi mulai dari langkah 1.
+  if (!isian && !sudahAkun) return <Navigate to="/daftar" replace />
 
-  function lanjut() {
+  async function lanjut() {
     const baru: typeof galat = {}
     if (namaUsaha.trim().length < 3) {
       baru.namaUsaha =
@@ -77,46 +74,91 @@ export default function DaftarUsaha() {
       baru.alamat =
         'Alamat usaha belum lengkap. Tulis nama jalan dan nomor supaya kurir bisa menemukannya. Contoh: Jl. Kaliurang KM 5,6 No. 24.'
     }
+    if (!kota) {
+      baru.kota = 'Kota belum dipilih. Pilih wilayah tempat usahamu berada. Contoh: Sleman.'
+    }
     if (namaPemilik.trim().length < 3) {
       baru.namaPemilik =
         'Nama pemilik belum diisi. Tulis nama lengkap sesuai KTP. Contoh: Bagas Prasetyo.'
     }
-    if (email.trim().length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) {
-      baru.email = 'Email harus memuat tanda @ dan nama domain. Perbaiki penulisannya. Contoh: halo@kopikita.id.'
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) {
+      baru.email = 'Email dipakai untuk masuk, dan harus memuat tanda @ dan nama domain. Contoh: halo@kopikita.id.'
     }
     if (!cara) {
       baru.cara = 'Pilih salah satu dari tiga kartu di atas supaya formulir Tambah Barang menyesuaikan jualanmu.'
     }
     setGalat(baru)
+    setGalatUmum(null)
     if (Object.keys(baru).length > 0 || !cara || !jenisUsaha) {
       setPercobaanGagal((n) => n + 1)
       return
     }
 
+    const isiProfil = {
+      namaUsaha: namaUsaha.trim(),
+      jenisUsaha,
+      alamat: alamat.trim(),
+      kota,
+      namaPemilik: namaPemilik.trim(),
+      email: email.trim(),
+      caraHitung: cara,
+    }
+
     setMemuat(true)
-    window.setTimeout(() => {
+    if (sudahAkun || !isian) {
+      const tersimpan = await ubahProfil(isiProfil)
       setMemuat(false)
-      /* Kota hanya ditulis kalau benar-benar terbaca. Menimpanya dengan teks
-         kosong akan menghapus kota yang sudah ada di profil tanpa diminta. */
-      ubahProfil({
-        namaUsaha: namaUsaha.trim(),
+      if (tersimpan) navigate('/daftar/legalitas')
+      return
+    }
+    try {
+      await daftarUmkm({
+        email: isiProfil.email,
+        kataSandi: isian.kataSandi,
+        nama: isiProfil.namaPemilik,
+        nomorHp: isian.nomorHp,
+        namaUsaha: isiProfil.namaUsaha,
         jenisUsaha,
-        alamat: alamat.trim(),
-        namaPemilik: namaPemilik.trim(),
-        email: email.trim(),
+        kota,
+        alamat: isiProfil.alamat,
         caraHitung: cara,
-        ...(kota.trim() ? { kota: kota.trim() } : {}),
       })
-      /* Tidak lagi menyebut "tinggal satu langkah": sesudah legalitas masih ada
-         data kasir dan batas aman, dan janji yang meleset di sini membuat dua
-         layar berikutnya terasa seperti jebakan. */
-      tampilkanRacun(`Data ${namaUsaha.trim()} tercatat di peramban ini. Lanjut ke data legalitas.`, 'info')
-      navigate('/daftar/legalitas')
-    }, 650)
+    } catch (e) {
+      setMemuat(false)
+      if (e instanceof ServerTakTerjangkau) {
+        // Server mati saat demo: alurnya tetap bisa dilihat, dan toast menyebut akunnya belum ada.
+        await ubahProfil({ ...isiProfil, nomorHp: isian.nomorHp })
+        tampilkanRacun('Turnify Flow belum bisa dihubungi, jadi akunnya belum dibuat. Isianmu hanya tercatat di peramban ini.', 'menipis')
+        navigate('/daftar/legalitas')
+        return
+      }
+      const pesan = e instanceof GalatApi ? e.message : 'Akun belum bisa dibuat. Coba lagi sebentar lagi.'
+      if (pesan.startsWith('Email')) setGalat({ email: pesan })
+      // Server lebih ketat daripada pemeriksaan di layar: domain seperti contoh.test ditolak di sana.
+      else if (e instanceof GalatApi && e.status === 422 && pesan.includes('"email"')) {
+        setGalat({ email: 'Alamat email ini tidak diterima. Pakai alamat email yang aktif. Contoh: halo@kopikita.id.' })
+      } else setGalatUmum(pesan)
+      setPercobaanGagal((n) => n + 1)
+      return
+    }
+    try {
+      await masukServer(isiProfil.email, isian.kataSandi)
+    } catch {
+      // Akunnya sudah ada, hanya langkah masuknya yang gagal. Mengulang formulir ini akan ditolak.
+      setMemuat(false)
+      hapusIsianDaftar()
+      tampilkanRacun('Akunmu sudah dibuat. Masuk dengan email dan kata sandi tadi.', 'info')
+      navigate('/masuk')
+      return
+    }
+    setMemuat(false)
+    hapusIsianDaftar()
+    tampilkanRacun('Akunmu sudah dibuat. Berikutnya data legalitas.', 'aman')
+    navigate('/daftar/legalitas')
   }
 
   return (
-    <LayarAuth langkah={2} judul="Tentang Usaha Kamu" kembaliKe="/daftar" purwarupa={CATATAN_DAFTAR}>
+    <LayarAuth langkah={2} judul="Tentang Usaha Kamu" kembaliKe={sudahAkun ? undefined : '/daftar'} purwarupa={CATATAN_DAFTAR}>
       <form
         noValidate
         onSubmit={(e) => {
@@ -173,22 +215,28 @@ export default function DaftarUsaha() {
               bantuan="Alamat ini dipakai distributor untuk menghitung ongkos kirim."
               onChange={(e) => setAlamat(e.target.value)}
             />
-            <Tombol
-              ragam="garis"
-              ukuran="sedang"
-              className="mt-2.5"
-              memuat={mencariLokasi}
-              ikonKiri={mencariLokasi ? undefined : <IkonLokasi size={17} />}
-              onClick={ambilLokasi}
-            >
-              {mencariLokasi ? 'Sedang mencari lokasi' : 'Ambil lokasi saat ini'}
-            </Tombol>
-            {kota && (
-              <p className="mt-2 text-isi text-ink-3">
-                Kota terbaca: <span className="font-semibold text-ink-2">{kota}</span>
-              </p>
-            )}
           </div>
+
+          <Pilihan
+            label="Kota atau Kabupaten"
+            wajib
+            value={kota}
+            galat={galat.kota}
+            bantuan="Saran distributor mencocokkan wilayah ini dengan area kirimnya. Di purwarupa ini distributor mengirim ke empat wilayah ini."
+            onChange={(e) => {
+              setKota(e.target.value)
+              setGalat((g) => ({ ...g, kota: undefined }))
+            }}
+          >
+            <option value="" disabled>
+              Pilih wilayah
+            </option>
+            {DAFTAR_KOTA.map((k) => (
+              <option key={k} value={k}>
+                {k}
+              </option>
+            ))}
+          </Pilihan>
 
           <Kolom
             label="Nama Pemilik"
@@ -202,13 +250,14 @@ export default function DaftarUsaha() {
 
           <Kolom
             label="Email"
+            wajib
             type="email"
             inputMode="email"
             autoComplete="email"
             placeholder="halo@kopikita.id"
             value={email}
             galat={galat.email}
-            bantuan="Dipakai kalau kamu ingin menerima salinan nota pesanan."
+            bantuan="Dipakai untuk masuk ke akunmu."
             onChange={(e) => setEmail(e.target.value)}
           />
         </div>
@@ -250,9 +299,15 @@ export default function DaftarUsaha() {
           )}
         </section>
 
+        {galatUmum && (
+          <Peringatan nada="kritis" judul="Akun belum bisa dibuat" className="mt-5">
+            {galatUmum}
+          </Peringatan>
+        )}
+
         <div className="sticky bottom-0 mt-6 -mx-5 sm:-mx-6 -mb-5 sm:-mb-6 px-5 sm:px-6 pt-3 pb-4 bg-surface/95 backdrop-blur-sm border-t border-line rounded-b-lg">
           <Tombol type="submit" penuh ukuran="besar" memuat={memuat}>
-            {memuat ? 'Sedang menyimpan' : 'Lanjut ke Data Legalitas'}
+            {memuat ? 'Sedang membuat akun' : sudahAkun ? 'Simpan dan Lanjut' : 'Buat Akun dan Lanjut'}
           </Tombol>
         </div>
       </form>

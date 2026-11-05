@@ -16,7 +16,7 @@ kalau ada yang menjaganya. Di sinilah penjaganya, dan
 from __future__ import annotations
 
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
@@ -143,6 +143,12 @@ def ringkas_barang(sesi: Session, usaha_id: int) -> list[BarangRingkas]:
             ).bindparams(u=usaha_id)
         ).all()
     )
+    # Dihitung dari catatan, bukan kolom barang: barang dari layar selalu menulis 0 di kolom itu.
+    hari_tercatat = dict(
+        sesi.exec(
+            text("SELECT barang_id, count(*) FROM permintaan_harian WHERE usaha_id = :u GROUP BY barang_id").bindparams(u=usaha_id)
+        ).all()
+    )
     # Terakhir terpakai per barang, dan hari acuan usaha: data simulasi berhenti
     # sebelum hari ini, jadi "sudah lama tidak terpakai" diukur dari hari
     # terakhir yang tercatat. Kalau diukur dari hari ini, semua barang lambat
@@ -213,7 +219,7 @@ def ringkas_barang(sesi: Session, usaha_id: int) -> list[BarangRingkas]:
             harga_beli_terakhir=b.harga_beli_terakhir,
             harga_beli_per_satuan=_harga_per_satuan(b.harga_beli_terakhir, kemasan.get(b.id, [])),
             pemakaian_harian=Decimal(pakai.get(b.id) or 0).quantize(Decimal("0.001")),
-            hari_data_terkumpul=b.hari_data_terkumpul,
+            hari_data_terkumpul=max(b.hari_data_terkumpul, hari_tercatat.get(b.id, 0)),
             ingatkan_kedaluwarsa=b.ingatkan_kedaluwarsa,
             kedaluwarsa=b.kedaluwarsa,
             terhubung_kasir=b.terhubung_kasir,
@@ -307,10 +313,15 @@ def pemakaian_bulanan(
     """
     Bahan halaman Prediksi: pemakaian tiap barang per 30 hari, lalu perkiraan 30 hari ke depan.
 
-    Sebulan dihitung 30 hari mundur dari hari terakhir yang tercatat, bukan bulan
-    kalender: bulan kalender yang baru berjalan lima hari akan terlihat sepi
-    padahal datanya saja yang belum lengkap. Hari tersensor stok habis tidak
-    dianggap pemakaian nol; pemakaian periode = rata-rata hari tak tersensor x 30.
+    Sebulan dihitung 30 hari mundur dari hari asal jalan Mesin 1 terbaru barang itu, bukan
+    bulan kalender: bulan kalender yang baru berjalan lima hari akan terlihat sepi padahal
+    datanya saja yang belum lengkap. Hari tersensor stok habis tidak dianggap pemakaian nol;
+    pemakaian periode = rata-rata hari tak tersensor x 30.
+
+    Berpangkal di hari asal, bukan hari terakhir yang tercatat: nota hari ini menggeser hari
+    terakhir, sehingga blok tidak lagi sejajar dengan uji balik dan perkiraan 30 hari tinggal
+    sisanya. Nota baru ikut terbaca sesudah Mesin 1 jalan lagi. Barang yang belum pernah diramal
+    memakai hari terakhir usahanya.
     """
     with Session(mesin()) as sesi:
         _usaha_atau_404(sesi, usaha_id)
@@ -321,21 +332,7 @@ def pemakaian_bulanan(
         ).scalar()
         if akhir is None:
             return []
-        riwayat = sesi.exec(
-            text(
-                """
-                SELECT barang_id,
-                       floor((:akhir - tanggal) / 30)::int AS k,
-                       min(tanggal) AS awal, max(tanggal) AS ujung,
-                       avg(jumlah) FILTER (WHERE NOT stok_habis) AS rata,
-                       count(*) FILTER (WHERE NOT stok_habis) AS n
-                  FROM permintaan_harian
-                 WHERE usaha_id = :u AND tanggal > :akhir - 30 * :p
-                 GROUP BY barang_id, k
-                 ORDER BY barang_id, k DESC
-                """
-            ).bindparams(u=usaha_id, p=periode, akhir=akhir)
-        ).all()
+        # Baris ke depan jalan terbaru: hari asalnya sehari sebelum perkiraan pertama.
         depan = sesi.exec(
             text(
                 """
@@ -343,19 +340,48 @@ def pemakaian_bulanan(
                     SELECT DISTINCT ON (barang_id) barang_id, jalan_id
                       FROM prediksi WHERE usaha_id = :u
                      ORDER BY barang_id, dijalankan_pada DESC
+                ), ke_depan AS (
+                    SELECT p.*, min(p.tanggal_target) OVER (PARTITION BY p.barang_id) - 1 AS asal
+                      FROM prediksi p JOIN terbaru t USING (barang_id, jalan_id)
+                     WHERE COALESCE(p.model_versi, '') NOT LIKE '%uji-balik%'
                 )
-                SELECT p.barang_id, sum(p.p10) AS p10, sum(p.p50) AS p50, sum(p.p90) AS p90,
-                       sum(p.p50) FILTER (
-                           WHERE p.tanggal_target <= (SELECT max(tanggal) FROM permintaan_harian h WHERE h.barang_id = p.barang_id) + :persediaan
-                       ) AS p50_persediaan,
-                       max(p.model_nama) AS model_nama, max(p.dijalankan_pada) AS dijalankan_pada
-                  FROM prediksi p JOIN terbaru t USING (barang_id, jalan_id)
-                 WHERE p.tanggal_target > (SELECT max(tanggal) FROM permintaan_harian h WHERE h.barang_id = p.barang_id)
-                   AND p.tanggal_target <= (SELECT max(tanggal) FROM permintaan_harian h WHERE h.barang_id = p.barang_id) + 30
-                 GROUP BY p.barang_id
+                SELECT barang_id, asal, sum(p10) AS p10, sum(p50) AS p50, sum(p90) AS p90,
+                       sum(p50) FILTER (WHERE tanggal_target <= asal + :persediaan) AS p50_persediaan,
+                       max(model_nama) AS model_nama, max(dijalankan_pada) AS dijalankan_pada
+                  FROM ke_depan
+                 WHERE tanggal_target <= asal + 30
+                 GROUP BY barang_id, asal
                 """
             ).bindparams(u=usaha_id, persediaan=HARI_PERSEDIAAN)
         ).all()
+        asal = {r.barang_id: r.asal for r in depan}
+
+        def blok(hari_asal: date, syarat: str, ids: list[int]) -> list:
+            return sesi.exec(
+                text(
+                    f"""
+                    SELECT barang_id,
+                           floor((:asal - tanggal) / 30)::int AS k,
+                           min(tanggal) AS awal, max(tanggal) AS ujung,
+                           avg(jumlah) FILTER (WHERE NOT stok_habis) AS rata,
+                           count(*) FILTER (WHERE NOT stok_habis) AS n
+                      FROM permintaan_harian
+                     WHERE usaha_id = :u AND {syarat}
+                       AND tanggal <= :asal AND tanggal > :asal - 30 * :p
+                     GROUP BY barang_id, k
+                    """
+                ).bindparams(u=usaha_id, p=periode, asal=hari_asal, ids=ids)
+            ).all()
+
+        # Satu kueri per hari asal, biasanya satu atau dua. Tanpa gabungan tabel, jadi rencananya
+        # tetap aman saat statistik belum mengenal baris usaha ini.
+        per_asal: dict[date, list[int]] = {}
+        for barang_id, hari_asal in asal.items():
+            per_asal.setdefault(hari_asal, []).append(barang_id)
+        riwayat = blok(akhir, "barang_id <> ALL(:ids)", list(asal))
+        for hari_asal, ids in per_asal.items():
+            riwayat += blok(hari_asal, "barang_id = ANY(:ids)", ids)
+        riwayat.sort(key=lambda r: (r.barang_id, -r.k))
         # Uji balik bulanan dari jalan terbaru barang itu: satu baris per periode,
         # tanggal_target = hari pertama periode (lihat ml/layanan.py).
         balik = sesi.exec(
@@ -383,7 +409,10 @@ def pemakaian_bulanan(
                     tanggal=tengah,
                     jumlah=(Decimal(r.rata) * 30).quantize(Decimal("0.001")) if r.rata is not None else Decimal(0),
                     hari_tercatat=r.n,
-                    uji_balik=uji_balik.get((r.barang_id, r.awal)),
+                    # Hari pertama blok, sama dengan `tanggal_target` uji balik di ml/layanan.py.
+                    uji_balik=uji_balik.get(
+                        (r.barang_id, asal.get(r.barang_id, akhir) - timedelta(days=30 * (r.k + 1) - 1))
+                    ),
                 )
             )
         for bid, h in hasil.items():

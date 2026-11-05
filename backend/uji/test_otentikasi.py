@@ -183,10 +183,25 @@ def test_daftar_membuat_akun_dan_usaha_lalu_bisa_masuk(klien):
 
     # Email yang sama ditolak — bukan membuat akun kedua diam-diam.
     assert klien.post("/auth/umkm/daftar", json=badan).status_code == 409
+    # Nomor HP yang sama juga, dengan pesan, bukan galat basis data.
+    r = klien.post("/auth/umkm/daftar", json={**badan, "email": "lain-" + email})
+    assert r.status_code == 409 and "Nomor HP" in r.json()["detail"]
 
     masuk = klien.post("/auth/umkm/masuk", json={"email": email, "kata_sandi": "rahasia123"})
     assert masuk.status_code == 200
     assert masuk.json()["usaha_id"] == usaha_id
+
+    # Akun baru langsung aktif: belum ada petugas pemeriksa yang bisa membuka kuncinya.
+    kepala = {"Authorization": "Bearer " + masuk.json()["token"]}
+    profil = klien.get(f"/usaha/{usaha_id}/profil", headers=kepala).json()
+    assert profil["verifikasi"] == "terverifikasi" and profil["cara_hitung"] == "kemasan"
+
+    # Warung kelontong tidak punya daftar menu, jadi Portal POS-nya tertutup.
+    assert klien.post("/auth/pos/masuk", json={"email": email, "kata_sandi": "rahasia123"}).status_code == 200
+    with mesin().begin() as kon:
+        kon.execute(text("UPDATE usaha SET jenis_usaha = 'warung-kelontong' WHERE id = :u"), {"u": usaha_id})
+    r = klien.post("/auth/pos/masuk", json={"email": email, "kata_sandi": "rahasia123"})
+    assert r.status_code == 403 and "warung kelontong" in r.json()["detail"]
 
     with mesin().begin() as kon:
         kon.execute(text("DELETE FROM keanggotaan WHERE usaha_id = :u"), {"u": usaha_id})

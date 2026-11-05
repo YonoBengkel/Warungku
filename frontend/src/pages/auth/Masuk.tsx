@@ -2,11 +2,9 @@ import { useEffect, useId, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Tombol } from '@/components/ui/dasar'
 import { Kolom } from '@/components/ui/formulir'
-import { TabSegmen } from '@/components/ui/navigasi'
 import { Peringatan } from '@/components/ui/umpanBalik'
-import { IkonMata, IkonMataTutup, IkonTelepon } from '@/icons'
-import { cx, nomorHp } from '@/lib/format'
-import { profilAwal } from '@/data/dummy'
+import { IkonMata, IkonMataTutup } from '@/icons'
+import { cx } from '@/lib/format'
 import { GalatApi, ServerTakTerjangkau } from '@/lib/api'
 import { AKUN_BU_RATMI, AKUN_KASIR, AKUN_KOPI_KITA, AKUN_WARUNG_MADURA } from '@/lib/akunSimulasi'
 import { useAplikasi } from '@/store/aplikasi'
@@ -16,10 +14,9 @@ import { LayarAuth } from '@/components/ui/LayarAuth'
  * Masuk berdiri di luar kerangka 4 tab, jadi ia membangun tata letaknya sendiri:
  * satu kolom terpusat, kartu putih, tanpa navigasi bawah.
  *
- * Nomor HP jadi cara masuk utama karena itulah yang selalu diingat pemilik
- * warung dan satu-satunya kanal yang kami pakai untuk mengabari hasil verifikasi.
- * Email disimpan sebagai tab kedua, bukan dihapus, karena sebagian pemilik
- * mendaftarkan usahanya lewat email kantor.
+ * Email dan kata sandi satu-satunya jalan ke akun. Masuk lewat nomor HP menunggu OTP: tab
+ * yang dulu menerima nomor apa saja hanya membuka data contoh, padahal pendaftar baru
+ * mengira itu akunnya. Data contoh kini tombol tersendiri di bawah formulir.
  */
 export default function Masuk() {
   const navigate = useNavigate()
@@ -28,11 +25,9 @@ export default function Masuk() {
   const masukPos = useAplikasi((s) => s.masukPos)
   const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
 
-  const [tab, setTab] = useState<'hp' | 'email'>('hp')
-  const [hp, setHp] = useState('')
   const [email, setEmail] = useState('')
   const [sandi, setSandi] = useState('')
-  const [galat, setGalat] = useState<{ hp?: string; email?: string; sandi?: string }>({})
+  const [galat, setGalat] = useState<{ email?: string; sandi?: string }>({})
   const [memuat, setMemuat] = useState(false)
   const [percobaanGagal, setPercobaanGagal] = useState(0)
 
@@ -42,13 +37,8 @@ export default function Masuk() {
 
   function kirim() {
     const baru: typeof galat = {}
-    if (tab === 'hp') {
-      const g = periksaHp(hp)
-      if (g) baru.hp = g
-    } else {
-      const g = periksaEmail(email)
-      if (g) baru.email = g
-    }
+    const g = periksaEmail(email)
+    if (g) baru.email = g
     if (sandi.length === 0) {
       baru.sandi = 'Kata sandi belum diisi. Tulis kata sandi yang kamu pakai saat mendaftar. Contoh: turnify2024.'
     }
@@ -61,17 +51,6 @@ export default function Masuk() {
     /* Isian sengaja tidak dikosongkan saat menunggu: kalau sesuatu meleset,
        pengguna tidak perlu mengetik ulang dari nol. */
     setMemuat(true)
-
-    // Nomor HP belum didukung server (OTP ditunda), jadi tab HP tetap membuka data contoh.
-    if (tab === 'hp') {
-      window.setTimeout(() => {
-        setMemuat(false)
-        aturMasuk(true)
-        tampilkanRacun('Selamat datang kembali di Turnify Flow.', 'aman')
-        navigate('/beranda')
-      }, 700)
-      return
-    }
 
     masukServer(email.trim(), sandi)
       .then(() => {
@@ -107,16 +86,14 @@ export default function Masuk() {
       .finally(() => setMemuat(false))
   }
 
-  function isiAkunContoh() {
-    setTab('hp')
-    setHp(profilAwal.nomorHp)
-    setSandi('turnify2024')
-    setGalat({})
+  /** Tanpa akun dan tanpa server. Pita di kerangka terus menyebut bahwa ini data contoh. */
+  function bukaDataContoh() {
+    aturMasuk(true)
+    navigate('/beranda')
   }
 
   /** Akun contoh di data simulasi, dibuat oleh `python -m dataset.buat_dataset`. */
   function isiAkunServer(akun: { email: string; kataSandi: string }) {
-    setTab('email')
     setEmail(akun.email)
     setSandi(akun.kataSandi)
     setGalat({})
@@ -126,21 +103,8 @@ export default function Masuk() {
     <LayarAuth>
       <h1 className="text-judul font-extrabold text-ink tracking-tight">Masuk ke Turnify Flow</h1>
       <p className="mt-1 text-isi text-ink-3 leading-relaxed">
-        Pakai nomor HP yang kamu daftarkan. Nomor itu juga yang kami hubungi kalau ada kabar soal pesanan.
+        Pakai email dan kata sandi yang kamu daftarkan.
       </p>
-
-      <TabSegmen
-        className="mt-4"
-        aktif={tab}
-        ubah={(v) => {
-          setTab(v)
-          setGalat({})
-        }}
-        tab={[
-          { nilai: 'hp', label: 'Pakai Nomor HP' },
-          { nilai: 'email', label: 'Pakai Email' },
-        ]}
-      />
 
       {/* Formulir sungguhan supaya tombol Enter di papan ketik HP ikut mengirim. */}
       <form
@@ -151,31 +115,17 @@ export default function Masuk() {
         }}
         className="mt-4 space-y-4"
       >
-        {tab === 'hp' ? (
-          <Kolom
-            label="Nomor HP"
-            wajib
-            type="tel"
-            inputMode="numeric"
-            autoComplete="tel"
-            placeholder="081234567890"
-            value={hp}
-            galat={galat.hp}
-            onChange={(e) => setHp(e.target.value.replace(/[^\d+]/g, ''))}
-          />
-        ) : (
-          <Kolom
-            label="Email"
-            wajib
-            type="email"
-            inputMode="email"
-            autoComplete="email"
-            placeholder="halo@kopikita.id"
-            value={email}
-            galat={galat.email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        )}
+        <Kolom
+          label="Email"
+          wajib
+          type="email"
+          inputMode="email"
+          autoComplete="email"
+          placeholder="halo@kopikita.id"
+          value={email}
+          galat={galat.email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
 
         <KolomSandi
           label="Kata Sandi"
@@ -227,20 +177,19 @@ export default function Masuk() {
         </Link>
       </p>
 
-      {/* Purwarupa: satu ketukan untuk mencoba tanpa mengingat nomor contoh. */}
+      {/* Purwarupa: satu ketukan untuk mencoba tanpa mengingat akun apa pun. */}
       <div className="mt-5 pt-4 border-t border-line">
         <Peringatan nada="netral" judul="Mau melihat-lihat dulu?">
-          Akun contoh memakai nomor {nomorHp(profilAwal.nomorHp)} atas nama {profilAwal.namaUsaha}.
+          Data contoh bisa dibuka tanpa akun, tetapi perubahannya tidak tersimpan.
           <button
             type="button"
-            onClick={isiAkunContoh}
-            className="mt-1 inline-flex items-center gap-1.5 min-h-11 text-isi font-bold underline underline-offset-2"
+            onClick={bukaDataContoh}
+            className="mt-1 flex items-center gap-1.5 min-h-11 text-isi font-bold underline underline-offset-2"
           >
-            <IkonTelepon size={14} />
-            Isikan nomor akun contoh
+            Buka data contoh
           </button>
           <span className="block mt-1">
-            Untuk melihat angka dari mesin analitik, masuk lewat email dengan akun simulasi:
+            Untuk melihat angka dari mesin analitik, pakai akun simulasi:
           </span>
           <button
             type="button"
@@ -367,17 +316,6 @@ function sorotGalatPertama() {
 }
 
 /** Pesan kesalahan selalu tiga unsur: apa yang salah, cara memperbaiki, contoh benar. */
-function periksaHp(v: string): string | null {
-  const d = v.replace(/\D/g, '')
-  if (d.length === 0) {
-    return 'Nomor HP belum diisi. Tulis nomor HP aktif yang diawali 08. Contoh: 081234567890.'
-  }
-  if (!d.startsWith('08') || d.length < 10 || d.length > 13) {
-    return 'Nomor HP harus diawali 08 dan berisi 10-13 angka. Contoh: 081234567890.'
-  }
-  return null
-}
-
 function periksaEmail(v: string): string | null {
   const t = v.trim()
   if (t.length === 0) {

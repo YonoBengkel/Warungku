@@ -77,6 +77,7 @@ export default function KontrakDetail() {
   const terkunci = useTerkunci()
 
   const kontrak = useAplikasi((s) => s.kontrak.find((k) => k.id === id))
+  const memulihkanSesi = useAplikasi((s) => s.memulihkanSesi)
   const barang = useAplikasi((s) => s.barang.find((b) => b.id === kontrak?.barangId))
   const tambahKeKeranjang = useAplikasi((s) => s.tambahKeKeranjang)
   const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
@@ -91,6 +92,17 @@ export default function KontrakDetail() {
 
   const tabMentah = params.get('tab')
   const tab: Segmen = tabMentah === 'riwayat' || tabMentah === 'dokumen' ? tabMentah : 'ringkasan'
+
+  if (!kontrak && memulihkanSesi) {
+    return (
+      <div className="pb-6 lg:pb-0">
+        <KepalaHalaman judul="Kontrak" kembaliKe="/pesanan?tab=kontrak" />
+        <p className="mt-4 text-isi text-ink-3" role="status">
+          Memuat kontrak…
+        </p>
+      </div>
+    )
+  }
 
   if (!kontrak) {
     return (
@@ -270,7 +282,9 @@ export default function KontrakDetail() {
               ) : (
                 <p className="mt-4 border-t border-line pt-3.5 flex items-center gap-2 text-kartu font-semibold text-aman-ink">
                   <IkonCentangLingkaran size={18} />
-                  Kuota bulan ini sudah terpenuhi.
+                  {kontrak.periodeBerjalan.diterima < kontrak.periodeBerjalan.kuota
+                    ? 'Kuota bulan ini terpenuhi begitu kiriman yang di jalan diterima.'
+                    : 'Kuota bulan ini sudah terpenuhi.'}
                 </p>
               )}
             </Kartu>
@@ -491,7 +505,7 @@ export default function KontrakDetail() {
               <JejakDokumen
                 waktu={kontrak.berakhir}
                 judul="Masa kontrak berakhir"
-                detail="Setelah tanggal ini harga kembali ke harga beli sekali, kecuali kamu memperpanjang."
+                detail="Setelah tanggal ini harga kembali ke harga beli sekali. Untuk berlanjut, ajukan kontrak baru."
                 akanDatang
               />
             </ol>

@@ -267,11 +267,13 @@ export async function terimaBarangServer(
   sesi: SesiServer,
   pesananId: string,
   baris: Array<{ barisId: string; jumlah: number; alasan: AlasanSelisih | null; catatan: string }>,
+  tanggal: string,
 ): Promise<Pesanan> {
   const p = await minta<PesananApi>(`/usaha/${sesi.usahaId}/pesanan/${pesananId}/terima`, {
     method: 'POST',
     token: sesi.token,
     body: JSON.stringify({
+      tanggal,
       baris: baris.map((b) => ({
         baris_id: Number(b.barisId),
         jumlah_diterima: b.jumlah,

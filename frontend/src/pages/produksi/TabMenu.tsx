@@ -68,7 +68,7 @@ export function TabMenu({ judul }: { judul?: string }) {
       namaMenu: m?.namaMenu ?? '',
       kategori: m?.kategori ?? '',
       harga: m ? angka(m.hargaJual) : '',
-      bahan: resep ? resep.bahan.map((b) => ({ barangId: b.barangId, takaran: String(b.takaran) })) : [barisKosong()],
+      bahan: resep ? resep.bahan.map((b) => ({ barangId: b.barangId, takaran: angka(b.takaran, 3) })) : [barisKosong()],
     })
     setGalat({})
   }

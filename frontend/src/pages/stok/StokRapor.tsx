@@ -6,9 +6,9 @@ import { Kartu, Lencana, TombolTautan } from '@/components/ui/dasar'
 import { KepalaHalaman } from '@/components/ui/navigasi'
 import { BilahProgres, KeadaanKosong, Penjelasan, Peringatan } from '@/components/ui/umpanBalik'
 import { IkonCentang, IkonKotak, IkonPeringatan, IkonSilang } from '@/icons'
-import { angka, cx, jumlahSatuan, namaHariSingkat, tanggalRingkas } from '@/lib/format'
+import { angka, bulanRingkas, bulanTahun, cx, jumlahSatuan, namaHariSingkat, tanggalRingkas } from '@/lib/format'
 import { satuanTampil } from '@/lib/satuan'
-import { perkiraanUntuk, trenBarang } from '@/data/dummy'
+import { bulananGagalDimuat, perkiraanUntuk, trenBarang, trenBulanan } from '@/data/dummy'
 import { useAplikasi } from '@/store/aplikasi'
 
 /**
@@ -26,6 +26,9 @@ import { useAplikasi } from '@/store/aplikasi'
  *    perkiraan mengecil, saran belanja ikut mengecil, barang makin sering
  *    habis, dan datanya makin salah. Karena itu penandaannya otomatis, dan
  *    alasannya ditulis terang-terangan di layar, bukan disembunyikan.
+ *
+ * Data server dinilai per periode 30 hari dari uji balik Mesin 1, yaitu perkiraan
+ * yang dibuat dari data sebelum periode itu dimulai. Data contoh tetap per hari.
  */
 
 interface BarisRapor {
@@ -55,9 +58,31 @@ function bulatRapi(n: number): number {
 export default function StokRapor() {
   const { id = '' } = useParams()
   const barang = useAplikasi((s) => s.barang.find((b) => b.id === id))
+  const server = useAplikasi((s) => s.sumberData === 'server')
 
   const rapor = useMemo(() => {
     if (!barang) return null
+
+    // Satuan yang sama dengan daftar Stok dan detail barang (lib/satuan). Rapor
+    // dengan satuannya sendiri membuat angka yang sama terbaca berbeda di dua
+    // layar yang dibuka berurutan.
+    const { isi: faktor, nama: unit } = satuanTampil(barang)
+
+    const ringkas = (baris: BarisRapor[]) => {
+      const dipakai = baris.filter((x) => !x.habis)
+      const rataTampil = dipakai.reduce((a, x) => a + x.kenyataan, 0) / Math.max(1, dipakai.length) / faktor
+      const toleransi = bulatRapi(Math.max(faktor > 1 ? 0.05 : 1, rataTampil * 0.12))
+      const tepat = dipakai.filter((x) => Math.abs(x.perkiraan - x.kenyataan) / faktor < toleransi).length
+      return { baris, faktor, unit, toleransi, tepat, dinilai: dipakai.length, habis: baris.length - dipakai.length }
+    }
+
+    if (server) {
+      if (bulananGagalDimuat()) return null
+      const baris = trenBulanan(barang.id)
+        .filter((t) => t.aktual != null && t.prediksi != null)
+        .map((t) => ({ tanggal: t.tanggal, perkiraan: t.prediksi as number, kenyataan: t.aktual as number, habis: false }))
+      return baris.length > 0 ? ringkas(baris) : null
+    }
 
     const titik = trenBarang(barang.id)
       .filter((t) => t.aktual != null)
@@ -94,20 +119,8 @@ export default function StokRapor() {
       }
     }
 
-    // Satuan yang sama dengan daftar Stok dan detail barang (lib/satuan). Rapor
-    // dengan satuannya sendiri membuat angka yang sama terbaca berbeda di dua
-    // layar yang dibuka berurutan.
-    const { isi: faktor, nama: unit } = satuanTampil(barang)
-
-    const dipakai = baris.filter((x) => !x.habis)
-    const rataTampil = dipakai.reduce((a, x) => a + x.kenyataan, 0) / Math.max(1, dipakai.length) / faktor
-    const toleransi = bulatRapi(Math.max(faktor > 1 ? 0.05 : 1, rataTampil * 0.12))
-    const tepat = dipakai.filter(
-      (x) => Math.abs(x.perkiraan - x.kenyataan) / faktor < toleransi,
-    ).length
-
-    return { baris, faktor, unit, toleransi, tepat, dinilai: dipakai.length, habis: baris.length - dipakai.length }
-  }, [barang])
+    return ringkas(baris)
+  }, [barang, server])
 
   /* ---------------------------------------------------------------- */
   /* Barang tidak ditemukan                                            */
@@ -136,7 +149,7 @@ export default function StokRapor() {
   /* Belum ada perkiraan yang bisa dinilai                             */
   /* ---------------------------------------------------------------- */
 
-  if (perkiraan.kematangan === 'belum-bisa' || !rapor) {
+  if ((!server && perkiraan.kematangan === 'belum-bisa') || !rapor) {
     return (
       <div className="pb-6 lg:pb-0">
         <KepalaHalaman judul="Rapor Perkiraan" keterangan={barang.nama} kembaliKe={`/stok/${barang.id}`} />
@@ -152,7 +165,8 @@ export default function StokRapor() {
             ) : (
               <>
                 <p className="mt-2 text-isi text-ink-2 leading-relaxed">
-                  Rapor ini mengadu perkiraan dengan kenyataan, dan {barang.nama} belum punya perkiraan.
+                  Rapor ini mengadu perkiraan dengan kenyataan, dan {barang.nama} belum punya perkiraan
+                  {server ? ' dari periode yang sudah lewat' : ''}.
                 </p>
                 {/* Bilah ini hanya masuk akal selagi datanya memang belum cukup.
                     Barang baru yang riwayat pemakaiannya belum terbentuk tidak
@@ -172,7 +186,9 @@ export default function StokRapor() {
                   </div>
                 ) : (
                   <p className="mt-4 text-isi text-ink-3 leading-relaxed">
-                    Rapor terisi sendiri setelah beberapa hari penjualan tercatat.
+                    {server
+                      ? 'Rapor terisi sendiri setelah riwayat pemakaiannya cukup untuk diuji per 30 hari.'
+                      : 'Rapor terisi sendiri setelah beberapa hari penjualan tercatat.'}
                   </p>
                 )}
               </>
@@ -192,12 +208,14 @@ export default function StokRapor() {
   }
 
   const tampil = (n: number) => Math.round((n / rapor.faktor) * 100) / 100
-  const tujuhTerakhir = rapor.baris.slice(-7)
+  const tujuhTerakhir = rapor.baris.slice(server ? -6 : -7)
+  const judulTerakhir = server ? 'Enam periode terakhir' : 'Tujuh hari terakhir'
+  const tulisWaktu = (t: string) => (server ? bulanTahun(t) : `${namaHariSingkat(t)}, ${tanggalRingkas(t)}`)
 
   /* Grafik memakai satuan tampil yang sama dengan tabel. Dua satuan berbeda
      dalam satu layar membuat pembacanya harus mengalikan seribu di kepala. */
   const dataGrafik: BatangData[] = tujuhTerakhir.map((r) => ({
-    label: namaHariSingkat(r.tanggal),
+    label: server ? bulanRingkas(r.tanggal) : namaHariSingkat(r.tanggal),
     nilai: tampil(r.kenyataan),
     sorot: r.habis,
   }))
@@ -219,11 +237,13 @@ export default function StokRapor() {
                 Yang dinilai adalah hari tanpa kehabisan stok, bukan 14 hari
                 penuh, jadi kalimatnya menyebut jumlah yang benar-benar dinilai. */}
             <p className="text-subjudul font-extrabold text-ink leading-snug">
-              Dari {angka(rapor.dinilai)} hari yang bisa dinilai, perkiraan kami meleset kurang dari{' '}
-              {jumlahSatuan(rapor.toleransi, rapor.unit)} di {angka(rapor.tepat)} hari.
+              Dari {angka(rapor.dinilai)} {server ? 'periode 30 hari' : 'hari'} yang bisa dinilai, perkiraan kami meleset
+              kurang dari {jumlahSatuan(rapor.toleransi, rapor.unit)} di {angka(rapor.tepat)} {server ? 'periode' : 'hari'}.
             </p>
             <p className="mt-2 text-isi text-ink-3 leading-relaxed">
-              {rapor.habis === 0
+              {server
+                ? 'Perkiraan tiap periode dibuat Mesin 1 hanya dari data sebelum periode itu dimulai, jadi tidak mengintip hasilnya. Hari saat stok habis tidak ikut dihitung.'
+                : rapor.habis === 0
                 ? `Semua ${angka(rapor.baris.length)} hari terakhir ikut dinilai karena stoknya tidak pernah habis.`
                 : `${angka(rapor.habis)} dari ${angka(rapor.baris.length)} hari terakhir tidak dinilai karena stoknya habis.`}
             </p>
@@ -233,7 +253,7 @@ export default function StokRapor() {
               tabel, supaya badan halaman tidak pernah bergeser ke samping. */}
           <section aria-labelledby="judul-tujuh-hari">
             <h2 id="judul-tujuh-hari" className="mb-3 text-kartu font-bold text-ink">
-              Tujuh hari terakhir
+              {judulTerakhir}
             </h2>
 
             <ul className="space-y-2.5 lg:hidden">
@@ -243,9 +263,7 @@ export default function StokRapor() {
                 return (
                   <li key={r.tanggal} className="bg-surface border border-line rounded-lg p-4">
                     <div className="flex items-center justify-between gap-3">
-                      <p className="text-kartu font-semibold text-ink">
-                        {namaHariSingkat(r.tanggal)}, {tanggalRingkas(r.tanggal)}
-                      </p>
+                      <p className="text-kartu font-semibold text-ink">{tulisWaktu(r.tanggal)}</p>
                       <PenandaKetepatan habis={r.habis} tepat={tepat} />
                     </div>
                     <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-isi">
@@ -271,12 +289,12 @@ export default function StokRapor() {
             <div className="hidden lg:block overflow-x-auto border border-line rounded-lg bg-surface">
               <table className="w-full text-left border-collapse">
                 <caption className="sr-only">
-                  Perbandingan perkiraan dan kenyataan pemakaian {barang.nama} pada tujuh hari terakhir
+                  Perbandingan perkiraan dan kenyataan pemakaian {barang.nama} pada {judulTerakhir.toLowerCase()}
                 </caption>
                 <thead>
                   <tr className="border-b border-line">
                     <th scope="col" className="px-4 py-3 text-isi font-bold text-ink-2">
-                      Tanggal
+                      {server ? 'Periode' : 'Tanggal'}
                     </th>
                     <th scope="col" className="px-4 py-3 text-isi font-bold text-ink-2 text-right">
                       Perkiraan
@@ -299,7 +317,7 @@ export default function StokRapor() {
                         className={cx('border-b border-line last:border-0', r.habis && 'bg-surface-2')}
                       >
                         <td className="px-4 py-3 text-isi font-semibold text-ink align-top">
-                          {namaHariSingkat(r.tanggal)}, {tanggalRingkas(r.tanggal)}
+                          {tulisWaktu(r.tanggal)}
                           {r.habis && (
                             <span className="block mt-1 text-isi font-normal text-ink-2 leading-snug">
                               Stok habis &mdash; penjualan hari ini tidak dihitung
@@ -327,10 +345,12 @@ export default function StokRapor() {
         <div className="lg:col-span-5 space-y-4 mt-4 lg:mt-0">
           <Kartu>
             <h2 className="text-kartu font-bold text-ink">
-              Pemakaian tujuh hari terakhir ({rapor.unit})
+              Pemakaian {judulTerakhir.toLowerCase()} ({rapor.unit})
             </h2>
             <p className="mt-0.5 mb-2 text-isi text-ink-3 leading-snug">
-              {hariHabis.length === 0
+              {server
+                ? 'Tiap batang adalah pemakaian 30 hari, dihitung dari hari yang stoknya tidak habis.'
+                : hariHabis.length === 0
                 ? 'Tidak ada hari kehabisan stok dalam tujuh hari ini.'
                 : `Hari saat stok habis: ${hariHabis
                     .map((r) => `${namaHariSingkat(r.tanggal)} ${tanggalRingkas(r.tanggal)}`)

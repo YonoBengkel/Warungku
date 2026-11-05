@@ -379,7 +379,10 @@ def _tambah_bulan(t: datetime, n: int) -> datetime:
 
 
 def hapus(kon, usaha_id: int) -> None:
-    """Buang variasi lama: pesanan berawalan V, semua kontrak usaha ini, koreksi stok, dan menu demo."""
+    """
+    Buang variasi lama: pesanan berawalan V, kontrak bertanda variasi, koreksi stok, dan menu demo.
+    Kontrak dari layar tetap ada, karena skrip ini bisa berjalan di tengah pameran sesudah data digeser.
+    """
     p = {"u": usaha_id}
     email = kon.execute(text("SELECT email FROM usaha WHERE id = :u"), p).scalar()
     # Menu demo dihapus sebelum barang V: resep yang dipasangkan saat demo bisa
@@ -408,14 +411,16 @@ def hapus(kon, usaha_id: int) -> None:
         f"DELETE FROM pesanan_jejak WHERE pesanan_id IN ({pesanan})",
         f"DELETE FROM pesanan_baris WHERE pesanan_id IN ({pesanan})",
         "DELETE FROM pesanan WHERE usaha_id = :u AND nomor LIKE 'PS-%-V%'",
-        "UPDATE pesanan SET kontrak_id = NULL WHERE kontrak_id IN (SELECT id FROM kontrak WHERE usaha_id = :u)",
-        "DELETE FROM kontrak_periode WHERE kontrak_id IN (SELECT id FROM kontrak WHERE usaha_id = :u)",
-        "DELETE FROM kontrak WHERE usaha_id = :u",
+        "UPDATE pesanan SET kontrak_id = NULL WHERE kontrak_id IN (SELECT id FROM kontrak WHERE usaha_id = :u AND dari_variasi)",
+        "DELETE FROM kontrak_periode WHERE kontrak_id IN (SELECT id FROM kontrak WHERE usaha_id = :u AND dari_variasi)",
+        "DELETE FROM kontrak WHERE usaha_id = :u AND dari_variasi",
     ):
         kon.execute(text(sql), p)
     baru = "SELECT id FROM barang WHERE usaha_id = :u AND kode_barang LIKE 'V%'"
     for sql in (
         f"UPDATE pesanan_baris SET barang_id = NULL WHERE barang_id IN ({baru})",
+        # Kontrak dari layar untuk barang ini tetap berjalan; saat diterima, barangnya dicari lewat penawaran.
+        f"UPDATE kontrak SET barang_id = NULL WHERE barang_id IN ({baru})",
         f"UPDATE notifikasi SET barang_id = NULL WHERE barang_id IN ({baru})",
         f"DELETE FROM pemetaan_menu_bahan WHERE barang_id IN ({baru})",
         f"DELETE FROM rekomendasi_skor WHERE barang_id IN ({baru})",
@@ -658,7 +663,7 @@ def _satu_kontrak(
         "kuota_min_per_bulan": paket["kuota_min_per_bulan"], "harga_satuan": paket["harga_satuan"],
         "satuan": pw["satuan"], "mulai": mulai, "berakhir": berakhir, "status": StatusKontrak.AKTIF,
         "dalam_perjalanan": 0, "ketentuan_kuota_kurang": paket["ketentuan_kuota_kurang"],
-        "pesanan_rutin_aktif": status == "aktif-rutin",
+        "dari_variasi": True, "pesanan_rutin_aktif": status == "aktif-rutin",
         "pesanan_rutin_berikutnya": (hari_ini + timedelta(days=5)).date() if status == "aktif-rutin" else None,
     }
     if status == "akan-berakhir":
@@ -842,12 +847,10 @@ def _pembeli_distributor(kon, distributor_id: int, demo: list[int]) -> list[int]
 
 
 def hapus_distributor(kon) -> None:
-    """Buang variasi portal distributor: pesanan W, kontrak kedai non-demo, dan promo variasi."""
+    """Buang variasi portal distributor: pesanan W, kontrak variasi kedai non-demo, dan promo variasi."""
     pesanan = "SELECT id FROM pesanan WHERE nomor LIKE 'PS-%-W%'"
     demo = _demo_usaha(kon)
-    # Data dasar tidak punya kontrak sama sekali; kontrak kedai di luar akun
-    # demo hanya bisa berasal dari variasi ini.
-    kontrak = "SELECT id FROM kontrak WHERE usaha_id <> ALL(:demo)"
+    kontrak = "SELECT id FROM kontrak WHERE usaha_id <> ALL(:demo) AND dari_variasi"
     for sql in (
         f"UPDATE pergerakan SET pesanan_id = NULL WHERE pesanan_id IN ({pesanan})",
         f"DELETE FROM ulasan WHERE pesanan_id IN ({pesanan})",
@@ -857,7 +860,7 @@ def hapus_distributor(kon) -> None:
         "DELETE FROM pesanan WHERE nomor LIKE 'PS-%-W%'",
         f"UPDATE pesanan SET kontrak_id = NULL WHERE kontrak_id IN ({kontrak})",
         f"DELETE FROM kontrak_periode WHERE kontrak_id IN ({kontrak})",
-        "DELETE FROM kontrak WHERE usaha_id <> ALL(:demo)",
+        "DELETE FROM kontrak WHERE usaha_id <> ALL(:demo) AND dari_variasi",
     ):
         kon.execute(text(sql), {"demo": demo})
     judul = [x[2] for x in PROMO]

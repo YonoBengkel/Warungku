@@ -13,7 +13,8 @@ import {
 } from '@/icons'
 import { useAplikasi } from '@/store/aplikasi'
 import { TandaMerek } from '@/components/ui/Merek'
-import { cx } from '@/lib/format'
+import { cx, nomorHp } from '@/lib/format'
+import { NOMOR_BANTUAN } from '@/lib/label'
 
 /**
  * Pintu masuk pengunjung yang belum masuk.
@@ -120,7 +121,7 @@ export default function Hero() {
                   </TombolAtasUngu>
                   <TombolAtasUngu ke="/daftar">Daftarkan Usaha</TombolAtasUngu>
                 </div>
-                <p className="mt-4 text-isi">Belum punya akun? Pendaftarannya tiga langkah, dan bisa dilanjutkan nanti.</p>
+                <p className="mt-4 text-isi">Belum punya akun? Pendaftarannya lima langkah, dan dua yang terakhir bisa dilewati dulu.</p>
               </div>
 
               {/* Foto 1536 × 1024 mengisi panel kanan setinggi hero sampai tepi atas,
@@ -190,8 +191,8 @@ export default function Hero() {
               </h3>
               <ul className="mt-3 space-y-2">
                 {[
-                  'Tidak ada kasir, tidak ada struk pelanggan, tidak ada laci uang. Itu tetap milik aplikasi kasirmu.',
-                  'Tidak ada untung atau margin. Ringkasan penjualan dibaca dari nota kasirmu apa adanya; harga jualnya tetap diatur di kasir.',
+                  'Bukan aplikasi kasir. Struk pelanggan dan laci uang tetap milik aplikasi kasirmu. Portal POS di sini hanya kasir peraga, untuk memperlihatkan nota kasir yang masuk ke Turnify Flow.',
+                  'Tidak ada untung atau margin. Ringkasan penjualan dibaca dari nota kasir apa adanya, karena harga pokok tiap menu tidak kami tahu.',
                   'Tidak ada pembayaran di dalam aplikasi. Pembayaran ke distributor dicatat di luar, seperti yang sudah kamu lakukan sekarang.',
                 ].map((baris) => (
                   <li key={baris} className="flex items-start gap-2.5">
@@ -231,7 +232,7 @@ export default function Hero() {
                   id="judul-distributor"
                   className="mt-3 text-[1.375rem] sm:text-angka font-extrabold text-ink tracking-tight leading-tight max-w-[24ch]"
                 >
-                  Pesanan warung dan kafe di area kirimmu, dalam satu portal.
+                  Pesanan warung dan kafe, dalam satu portal.
                 </h2>
                 <p className="mt-2 text-kartu text-ink-2 leading-relaxed max-w-[56ch]">
                   Distributor menerima pesanan dari usaha yang mencari barangnya, menawarkan kontrak bulanan dan promo,
@@ -290,7 +291,7 @@ export default function Hero() {
               </p>
               <p className="mt-3 flex items-center gap-2 text-subjudul font-bold text-ink tabular">
                 <IkonTelepon size={18} className="text-brand shrink-0" />
-                08xxx-xxxx-xxxx
+                {nomorHp(NOMOR_BANTUAN)}
               </p>
               <Link
                 to="/akun/bantuan"

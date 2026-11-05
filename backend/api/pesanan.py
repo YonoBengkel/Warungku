@@ -28,11 +28,11 @@ Tiga aturan dijaga di sini:
 from __future__ import annotations
 
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from decimal import ROUND_HALF_UP, Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
-from sqlalchemy import text
+from sqlalchemy import func, text
 from sqlmodel import Session, select
 
 from warungku.basis_data import mesin
@@ -72,6 +72,7 @@ from .skema import (
 rute_umkm = APIRouter(prefix="/usaha/{usaha_id}", tags=["pesanan"])
 rute_distributor = APIRouter(prefix="/distributor/{distributor_id}", tags=["pesanan"])
 
+WIB = timezone(timedelta(hours=7))
 #: Sama dengan `data/dataset/pola.py::BULAN_HUJAN`.
 BULAN_HUJAN = frozenset({11, 12, 1, 2, 3})
 #: Lama kirim bawaan kalau barang tujuan tidak diketahui.
@@ -190,8 +191,30 @@ def _geser_dalam_perjalanan(sesi: Session, p: Pesanan, arah: int) -> None:
 
 
 
-def _jejak(sesi: Session, p: Pesanan, status: StatusPesanan, keterangan: str) -> None:
-    sesi.add(PesananJejak(pesanan_id=p.id, waktu=_sekarang(), status=status, keterangan=keterangan))
+def _jejak(sesi: Session, p: Pesanan, status: StatusPesanan, keterangan: str, waktu: datetime | None = None) -> None:
+    sesi.add(PesananJejak(pesanan_id=p.id, waktu=waktu or _sekarang(), status=status, keterangan=keterangan))
+
+
+def _waktu_terima(sesi: Session, tanggal: date | None, p: Pesanan) -> datetime:
+    """
+    Waktu barang diterima dari hari yang dipilih pemilik usaha, paling awal hari barangnya
+    berangkat. Jam sekarang dipertahankan, supaya jejak barunya tetap bermikrodetik dan tidak
+    terbaca sebagai baris pembangkit.
+    """
+    sekarang = _sekarang()
+    if tanggal is None:
+        return sekarang
+    hari_ini = sekarang.astimezone(WIB).date()
+    if tanggal > hari_ini:
+        raise HTTPException(422, "Tanggal barang diterima tidak boleh sesudah hari ini.")
+    berangkat = sesi.exec(
+        select(func.min(PesananJejak.waktu)).where(
+            PesananJejak.pesanan_id == p.id, PesananJejak.status == StatusPesanan.DIKIRIM
+        )
+    ).one()
+    if tanggal < waktu_pesanan(berangkat or p.dibuat_pada).astimezone(WIB).date():
+        raise HTTPException(422, "Tanggal barang diterima tidak boleh sebelum barangnya dikirim.")
+    return sekarang - timedelta(days=(hari_ini - tanggal).days)
 
 
 def _wajib_status(p: Pesanan, *diizinkan: StatusPesanan) -> None:
@@ -255,9 +278,25 @@ def _barang_tujuan(sesi: Session, usaha_id: int, penawaran: Penawaran) -> Barang
     """Barang di gudang yang bertambah saat penawaran ini diterima: dicocokkan lewat produk master."""
     if penawaran.produk_master_id is None:
         return None
-    return sesi.exec(
+    b = sesi.exec(
         select(Barang).where(Barang.usaha_id == usaha_id, Barang.produk_master_id == penawaran.produk_master_id)
     ).first()
+    if b is not None:
+        return b
+    # Barang yang ditambah lewat layar sebelum produknya ada di katalog: ditautkan saat pertama
+    # dibeli. Kalau tidak, penerimaan membuat baris kembar dan resep tetap memotong baris lama.
+    b = sesi.exec(
+        select(Barang).where(
+            Barang.usaha_id == usaha_id,
+            Barang.produk_master_id.is_(None),
+            Barang.satuan == penawaran.satuan_isi,
+            func.lower(Barang.nama) == penawaran.nama.strip().lower(),
+        )
+    ).first()
+    if b is not None:
+        b.produk_master_id = penawaran.produk_master_id
+        sesi.add(b)
+    return b
 
 
 def _barang_baru_dari_penawaran(sesi: Session, usaha_id: int, pn: Penawaran) -> Barang:
@@ -319,7 +358,7 @@ def buat_pesanan(badan: PesananBaru, usaha_id: int = Depends(usaha_saya)):
             tujuan = [(_barang_tujuan(sesi, usaha_id, pn), pn, n) for pn, n in isi]
             hari_kirim = max((bt.hari_kirim for bt, _, _ in tujuan if bt is not None), default=HARI_KIRIM_BAWAAN)
             p = Pesanan(
-                nomor=f"PS-{waktu:%y%m%d}-T{secrets.token_hex(3).upper()}",
+                nomor=f"PS-{waktu.astimezone(WIB):%y%m%d}-T{secrets.token_hex(3).upper()}",
                 usaha_id=usaha_id,
                 distributor_id=distributor_id,
                 kontrak_id=kontrak_id,
@@ -334,7 +373,7 @@ def buat_pesanan(badan: PesananBaru, usaha_id: int = Depends(usaha_saya)):
             sesi.add(p)
             sesi.flush()
             # Nomor mengikuti pola data lama (PS-yymmdd-id) begitu id diketahui.
-            p.nomor = f"PS-{waktu:%y%m%d}-{p.id}"
+            p.nomor = f"PS-{waktu.astimezone(WIB):%y%m%d}-{p.id}"
             for barang, pn, n in tujuan:
                 if kontrak is not None:
                     # Harga kontrak adalah kesepakatan yang mengikat: promo tidak memotongnya.
@@ -415,7 +454,7 @@ def terima_barang(badan: Penerimaan, pesanan_id: int = Path(ge=1), usaha_id: int
         if set(isian) != set(semua):
             raise HTTPException(422, "Setiap baris pesanan harus diisi jumlah diterimanya, tidak lebih dan tidak kurang.")
 
-        waktu = _sekarang()
+        waktu = _waktu_terima(sesi, badan.tanggal, p)
         if p.kirim_waktu_sampai is None:
             p.kirim_waktu_sampai = waktu
         ada_catatan = False
@@ -451,7 +490,8 @@ def terima_barang(badan: Penerimaan, pesanan_id: int = Path(ge=1), usaha_id: int
                 Pergerakan(
                     usaha_id=usaha_id,
                     barang_id=barang.id,
-                    waktu=waktu,
+                    # Saat dicatat, bukan tanggal yang dimundurkan, supaya "stok jadi" di riwayat tetap nyambung.
+                    waktu=_sekarang(),
                     jenis=JenisPergerakan.MASUK,
                     jumlah=masuk,
                     stok_sesudah=barang.stok,
@@ -475,6 +515,7 @@ def terima_barang(badan: Penerimaan, pesanan_id: int = Path(ge=1), usaha_id: int
         _jejak(
             sesi, p, p.status,
             "Barang diterima dengan catatan selisih." if ada_catatan else "Barang diterima lengkap dan sesuai.",
+            waktu=waktu,
         )
         sesi.flush()
         _tulis_fitur(sesi, p, list(semua.values()))

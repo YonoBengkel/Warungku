@@ -610,9 +610,12 @@ export default function PesananDetail() {
 
           {(pesanan.status === 'disiapkan' || pesanan.status === 'dikirim') && (
             <div className="space-y-2">
-              <TombolTautan ke={`/pesanan/${pesanan.id}/terima`} penuh ukuran="besar" ikonKiri={<IkonPasokan size={18} />}>
-                Barang Sudah Sampai
-              </TombolTautan>
+              {/* Server hanya menerima hitungan untuk pesanan yang sudah dikirim. */}
+              {pesanan.status === 'dikirim' && (
+                <TombolTautan ke={`/pesanan/${pesanan.id}/terima`} penuh ukuran="besar" ikonKiri={<IkonPasokan size={18} />}>
+                  Barang Sudah Sampai
+                </TombolTautan>
+              )}
               {/* Barang yang sudah diserahkan tidak bisa dibatalkan lagi; yang
                   tersisa hanya menghitungnya dan mencatat selisih kalau ada. */}
               {pesanan.pengiriman ? (

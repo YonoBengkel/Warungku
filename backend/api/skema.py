@@ -616,6 +616,8 @@ class Penerimaan(BaseModel):
     """Hasil hitung barang di tempat. Satu baris per baris pesanan."""
 
     baris: list[BarisPenerimaan] = Field(min_length=1)
+    #: Hari barang datang menurut pemilik usaha, tanggal WIB. Kosong berarti hari ini.
+    tanggal: date | None = None
 
 
 class KonfirmasiPesanan(BaseModel):

@@ -5,7 +5,7 @@ import { Kolom } from '@/components/ui/formulir'
 import { KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
 import { IkonPanci, IkonTambah } from '@/icons'
 import { GalatApi } from '@/lib/api'
-import { bacaAngkaIndonesia, jumlahSatuan, rupiah } from '@/lib/format'
+import { angka, bacaAngkaIndonesia, jumlahSatuan, rupiah } from '@/lib/format'
 import type { ProdukJadi, RingkasanProduksi } from '@/lib/apiProduksi'
 import { simpanProdukJadi } from '@/lib/apiProduksi'
 import { useAplikasi } from '@/store/aplikasi'
@@ -17,7 +17,7 @@ function formulirDari(p?: ProdukJadi) {
     satuan: p?.satuan ?? '',
     isiBersih: p?.isiBersih ?? '',
     harga: p ? String(p.hargaJual) : '',
-    bahan: p && p.resep.length > 0 ? p.resep.map((b) => ({ barangId: b.barangId, takaran: String(b.takaran) })) : [barisKosong()],
+    bahan: p && p.resep.length > 0 ? p.resep.map((b) => ({ barangId: b.barangId, takaran: angka(b.takaran, 3) })) : [barisKosong()],
   }
 }
 

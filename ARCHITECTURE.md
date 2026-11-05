@@ -34,6 +34,23 @@ flowchart LR
   dan dibatalkan, dan pengajuan kontrak yang belum dijawab bisa ditarik (`/tarik`). Kontrol yang belum punya jalur ke
   server (bukti bayar, permintaan pembatalan, pengingat, undangan pengguna, jadwal pesanan rutin) menampilkan
   `CatatanPurwarupa` di mode data server, bukan pesan "tersimpan".
+- **Pendaftaran membuat akun sungguhan (audit 5 Nov 2026).** Langkah 1 `/daftar` hanya menyimpan nomor HP dan kata sandi di memori
+  (`frontend/src/lib/pendaftaran.ts`), jadi muat ulang kembali ke langkah 1. Langkah 2 `/daftar/usaha` memanggil
+  `POST /auth/umkm/daftar` lalu masuk, dan langkah sesudahnya berjalan dengan sesi server. Sesudah akun ada, langkah 1 tidak bisa
+  dibuka lagi dan langkah 2 hanya mengubah profil. Akun baru langsung `terverifikasi`, karena belum ada petugas pemeriksa dan
+  verifikasi yang menggantung mengunci pesanan dan kontrak selamanya. Layar menyebut hal ini. Nomor HP unik di `pengguna`, jadi
+  nomor kembar dijawab 409.
+- **Masuk hanya lewat email dan kata sandi.** Tab nomor HP dihapus: tab itu menerima nomor apa saja dan membuka data contoh, padahal
+  pendaftar baru mengira itu akunnya. Masuk lewat nomor HP dan Lupa Kata Sandi menunggu OTP. Data contoh dibuka lewat tombol
+  tersendiri di halaman Masuk, dan pita di kerangka tetap menandainya.
+- **Barang dari layar masuk rantai (audit 5 Nov 2026).** `tambah_barang` menautkan barang ke `produk_master` kalau nama atau nama
+  lainnya persis sama, satuannya sama, dan produk itu belum punya baris di gudang (`_produk_master_untuk` di `backend/api/stok.py`).
+  Barang yang produknya baru muncul di katalog sesudahnya ditautkan saat pertama dipesan (`_barang_tujuan` di
+  `backend/api/pesanan.py`), jadi penerimaan tidak membuat baris kembar. `hari_data_terkumpul` dihitung dari `permintaan_harian`,
+  karena kolom barang dari layar selalu 0.
+- **Tanggal penerimaan (audit 5 Nov 2026).** `POST .../terima` menerima `tanggal` opsional, tidak boleh sesudah hari ini atau sebelum
+  barang dikirim. Tanggal itu mengisi `kirim_waktu_sampai`, kuota kontrak, dan jejak pesanan, yang dipakai Mesin 2. Buku besar
+  pergerakan tetap memakai waktu pencatatan, karena stok berubah saat dicatat. Tombol Terima hanya tampil saat pesanan `dikirim`.
 - **Barang yang dijual distributor tersimpan di server (keputusan 4 Nov 2026).** `backend/api/katalog.py` menulis `penawaran`.
   Barang baru tertaut ke `produk_master` menurut namanya, supaya masuk ke gudang pembeli: pembeli yang belum punya barangnya
   mendapat baris `barang` baru saat barang diterima (`backend/api/pesanan.py`). Menyembunyikan barang tidak menghentikan
@@ -75,6 +92,11 @@ flowchart LR
   Mesin 2. Autovacuum bisa belum sempat, dan analisis yang berbarengan dengan commit besar kehilangan hitungan perubahannya.
   `pemakaian_bulanan` membaca hari terakhir sebagai kueri sendiri, supaya statistik basi tidak membuat perencana menghitung ulang
   `max(tanggal)` untuk tiap baris, karena kueri ini ikut menahan layar saat masuk akun.
+- **Pemakaian bulanan berpangkal di hari asal (audit 5 Nov 2026).** `pemakaian_bulanan` menghitung blok 30 hari mundur dari hari
+  asal jalan Mesin 1 terbaru tiap barang, yaitu sehari sebelum `tanggal_target` pertama dari `prediksi` bukan uji balik. Berpangkal
+  di hari terakhir yang tercatat membuat satu nota POS baru menggeser semua blok, sehingga garis uji balik jatuh ke periode yang
+  salah dan perkiraan 30 hari tinggal sisanya. Barang yang belum pernah diramal memakai hari terakhir usahanya. Rapor Stok membaca
+  jawaban yang sama, jadi angkanya mengikuti periode ini.
 - **Daftar pesanan berhalaman.** Kedua portal memuat 100 pesanan terbaru, sisanya lewat Muat pesanan lebih lama (`mulai`).
   Pesanan lama yang dibuka dari tautan diambil sendiri lewat `GET /pesanan/{id}`.
 - **Nota adalah pintu masuk.** `POST /usaha/{id}/transaksi` (`backend/api/gudang.py`) menyimpan nota, menerjemahkan
@@ -121,6 +143,9 @@ Keenam tahap sudah ada di kode (2026-10-31 sampai 2026-11-01), ditambah QR simul
   Kasir (`/penjualan/riwayat`, tab Nota dan Shift), yang memuat 25 tiap kali. `GET /usaha/{id}/transaksi` menerima `batas`
   (paling banyak 50) dan `mulai`, tidak memuat nota `DEMO-`, dan baris notanya membawa harga satuan.
 - **Pembatalan nota:** `POST /usaha/{id}/transaksi/{nomor}/ajukan-batal` (kasir, hanya mencatat alasan di `pengajuan_batal`) dan `.../batal` (pemilik). Pembatalan mengunci barisnya, mengembalikan persis yang dipotong nota itu lewat pergerakan `koreksi` yang menunjuk nota yang sama (jadi jumlah semua pergerakan tetap sama dengan stok), mengurangi `permintaan_harian`, lalu menandai `dibatalkan`. Aman diulang. Nomor nota batal tetap terpakai. Ringkasan, daftar nota, dan menu kasir sudah mengabaikan nota batal. Pembatalan hanya untuk pemilik, ditegakkan server lewat jenis token (lihat Peran kasir).
+- **Warung kelontong tanpa Portal POS.** `POST /auth/pos/masuk` menjawab 403 untuk usaha berjenis `warung-kelontong`, karena barangnya
+  dijual apa adanya dan tidak punya daftar menu. Panduan Kasir dan Pengguna & Hak Akses menyebut hal yang sama, dan panduan untuk
+  jenis usaha lain tidak lagi memuat kode sambungan atau uji koneksi yang tidak melakukan apa-apa.
 - **Peran kasir:** akun kasir adalah `pengguna` dengan `keanggotaan` berperan pegawai, dibuat pemilik lewat `POST /usaha/{id}/kasir` dan masuk lewat `POST /auth/pos/masuk`. Tokennya berjenis `kasir`, bukan `umkm`. `usaha_saya` hanya menerima `umkm`, jadi semua endpoint ditolak bagi kasir kecuali yang memakai `kasir_atau_pemilik`: `POST` dan `GET /transaksi`, `GET /menu-jual`, `POST .../ajukan-batal`, shift, dan QR simulasi (`/qr`). Pintu `/auth/umkm/masuk` menolak akun kasir. Daftar terbuka sengaja pendek: endpoint baru otomatis tertutup bagi kasir sampai ada yang sengaja membukanya.
 - **Shift kas:** tabel `shift_kas` (satu shift terbuka per usaha, dijaga indeks unik sebagian). Nota yang masuk saat shift terbuka diberi `shift_id`. Saat ditutup, rekap tunai, QRIS, dan transfer (nol untuk nota sejak revisi V8) dibekukan dan selisih = uang dihitung dikurangi (modal + tunai). Hanya tunai yang masuk laci. Pembatalan nota sesudah shift ditutup tidak mengubah rekap itu.
 - **QR simulasi (revisi V8):** tabel `pembayaran_qr` (migrasi `b8e2f5a1c4d7`). Kasir membuat tagihan lewat `POST /usaha/{id}/qr`

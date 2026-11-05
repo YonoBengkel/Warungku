@@ -1104,6 +1104,15 @@ export function pasangDataServer(bulanan: Map<string, BulananBarang> | null, bar
   for (const b of barang) barangServer.set(b.id, b)
 }
 
+/**
+ * Barang dari server sudah terbaca, tetapi pemakaian bulanannya gagal dimuat. Fungsi
+ * bulanan di berkas ini akan jatuh ke angka contoh, jadi layar harus menampilkan
+ * keadaan gagal, bukan angka karangan berlabel model (audit 5 Nov 2026).
+ */
+export function bulananGagalDimuat(): boolean {
+  return barangServer.size > 0 && bulananServer === null
+}
+
 /** Berapa bulan riwayat yang digambar: setahun penuh, lalu satu bulan perkiraan. */
 const BULAN_RIWAYAT = 12
 
@@ -2247,7 +2256,7 @@ export function sisaHariPeriode(): number {
  * tidak punya kartu rekomendasi.
  */
 export function layakDiperkirakan(b: Barang): boolean {
-  return !b.dicatatManual && b.hariDataTerkumpul >= 14
+  return !bulananGagalDimuat() && !b.dicatatManual && b.hariDataTerkumpul >= 14
 }
 
 /** 14 hari data → 0,62. 90 hari atau lebih → 0,93. Di antaranya lurus saja. */

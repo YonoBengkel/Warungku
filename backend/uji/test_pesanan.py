@@ -27,7 +27,7 @@ from sqlmodel import Session
 
 from api.otentikasi import acak_kata_sandi
 from api.utama import app
-from dataset.variasi_demo import _jam_berangkat
+from dataset.variasi_demo import _jam_berangkat, hapus, hapus_distributor
 from warungku.basis_data import mesin
 from warungku.enum import (
     CaraHitungStok,
@@ -155,6 +155,7 @@ def dunia():
     with mesin().begin() as kon:
         u, d = ids["usaha"], ids["distributor"]
         kon.execute(text("DELETE FROM fitur_pesanan WHERE usaha_id = :u"), {"u": u})
+        kon.execute(text("DELETE FROM permintaan_harian WHERE usaha_id = :u"), {"u": u})
         kon.execute(text("DELETE FROM ulasan WHERE usaha_id = :u"), {"u": u})
         kon.execute(text("DELETE FROM pergerakan WHERE usaha_id = :u"), {"u": u})
         kon.execute(text("DELETE FROM pesanan_jejak WHERE pesanan_id IN (SELECT id FROM pesanan WHERE usaha_id = :u)"), {"u": u})
@@ -169,7 +170,7 @@ def dunia():
         kon.execute(text("DELETE FROM penawaran WHERE distributor_id = :d"), {"d": d})
         kon.execute(text("DELETE FROM kemasan WHERE barang_id IN (SELECT id FROM barang WHERE usaha_id = :u)"), {"u": u})
         kon.execute(text("DELETE FROM barang WHERE usaha_id = :u"), {"u": u})
-        kon.execute(text("DELETE FROM produk_master WHERE nama_kanonik = 'Teh Melati Uji'"))
+        kon.execute(text("DELETE FROM produk_master WHERE nama_kanonik = ANY(:n)"), {"n": ["Teh Melati Uji", "Madu Hutan Uji", "Sirup Uji Rantai"]})
         kon.execute(text("DELETE FROM keanggotaan WHERE usaha_id = :u"), {"u": u})
         kon.execute(text("DELETE FROM promo WHERE distributor_id = :d"), {"d": d})
         kon.execute(text("DELETE FROM distributor WHERE id = :d"), {"d": d})
@@ -423,6 +424,101 @@ def test_jejak_berangkat_simulasi_pindah_sesudah_barang_disiapkan(dunia):
     ]
 
 
+def test_tanggal_diterima_dipakai_di_jejak_dan_waktu_sampai(dunia):
+    w, klien = dunia, TestClient(app)
+    u, d = f"/usaha/{w['usaha']}", f"/distributor/{w['distributor']}"
+    p = _buat(klien, w)
+    for langkah, badan in (("konfirmasi", {}), ("kirim", {"kurir": "Kurir Uji"})):
+        assert klien.post(f"{d}/pesanan/{p['id']}/{langkah}", headers=w["kepala_dist"], json=badan).status_code == 200
+    # Pesanan dan pengirimannya tiga hari lalu, supaya tanggal yang dimundurkan masih sah.
+    with mesin().begin() as kon:
+        kon.execute(text("UPDATE pesanan SET dibuat_pada = dibuat_pada - interval '3 days' WHERE id = :p"), {"p": p["id"]})
+        kon.execute(text("UPDATE pesanan_jejak SET waktu = waktu - interval '3 days' WHERE pesanan_id = :p"), {"p": p["id"]})
+    wib = timezone(timedelta(hours=7))
+    hari_ini = datetime.now(wib).date()
+    badan = {"baris": [{"baris_id": p["baris"][0]["id"], "jumlah_diterima": "3"}]}
+
+    def kirim(tanggal):
+        return klien.post(f"{u}/pesanan/{p['id']}/terima", headers=w["kepala_umkm"], json={**badan, "tanggal": str(tanggal)})
+
+    assert kirim(hari_ini + timedelta(days=1)).status_code == 422
+    assert kirim(hari_ini - timedelta(days=4)).status_code == 422
+    r = kirim(hari_ini - timedelta(days=1))
+    assert r.status_code == 200, r.text
+    baru = r.json()
+    kemarin = hari_ini - timedelta(days=1)
+    assert datetime.fromisoformat(baru["kirim_waktu_sampai"]).astimezone(wib).date() == kemarin
+    assert datetime.fromisoformat(baru["jejak"][-1]["waktu"]).astimezone(wib).date() == kemarin
+    # Tanggal mundur tetap bermikrodetik: tidak boleh terbaca sebagai baris pembangkit dan digeser 7 jam.
+    assert datetime.fromisoformat(baru["jejak"][-1]["waktu"]).microsecond != 0 or datetime.fromisoformat(baru["jejak"][-1]["waktu"]).second != 0
+    # Buku besar tetap memakai waktu pencatatan, supaya "stok jadi" di riwayat nyambung.
+    with mesin().connect() as kon:
+        waktu = kon.execute(
+            text("SELECT waktu FROM pergerakan WHERE pesanan_id = :p AND jenis = 'masuk'"), {"p": p["id"]}
+        ).scalar_one()
+    assert waktu.astimezone(wib).date() == hari_ini
+
+
+def test_barang_dari_layar_masuk_rantai(dunia):
+    w, klien = dunia, TestClient(app)
+    u, d = f"/usaha/{w['usaha']}", f"/distributor/{w['distributor']}"
+    r = klien.post(f"{d}/penawaran", headers=w["kepala_dist"], json=_penawaran_baru(nama="Madu Hutan Uji", satuan_isi="ml", kemasan_isi="500"))
+    assert r.status_code == 201, r.text
+    pn = r.json()
+    with mesin().connect() as kon:
+        master = kon.execute(text("SELECT produk_master_id FROM penawaran WHERE id = :p"), {"p": pn["id"]}).scalar_one()
+    assert _katalog_umkm(klien, w, pn["id"])["barang_id_terkait"] is None
+
+    # Satuan berbeda tidak ditautkan: stoknya akan tercampur.
+    baru = {"kategori": "Bahan", "stok_awal": "0", "batas_aman": "1"}
+    r = klien.post(f"{u}/barang", headers=w["kepala_umkm"], json={**baru, "nama": "Madu Hutan Uji", "satuan": "pcs"})
+    assert r.status_code == 201, r.text
+    lain = r.json()["id"]
+    # Nama sama tanpa peduli huruf besar dan satuannya cocok: tertaut ke produk katalog.
+    r = klien.post(f"{u}/barang", headers=w["kepala_umkm"], json={**baru, "nama": "madu hutan uji", "satuan": "ml"})
+    assert r.status_code == 201, r.text
+    bid = r.json()["id"]
+    assert r.json()["hari_data_terkumpul"] == 0
+    with mesin().connect() as kon:
+        assert kon.execute(text("SELECT produk_master_id FROM barang WHERE id = :b"), {"b": lain}).scalar_one() is None
+        assert kon.execute(text("SELECT produk_master_id FROM barang WHERE id = :b"), {"b": bid}).scalar_one() == master
+    assert _katalog_umkm(klien, w, pn["id"])["barang_id_terkait"] == bid
+
+    # Pembeliannya masuk ke baris yang sama, bukan baris kembar.
+    r = klien.post(f"{u}/pesanan", headers=w["kepala_umkm"], json={"baris": [{"penawaran_id": pn["id"], "jumlah": "2"}]})
+    assert r.status_code == 201, r.text
+    [p] = r.json()
+    assert p["baris"][0]["barang_id"] == bid
+    _majukan_sampai_dikirim(klien, w, p["id"])
+    r = klien.post(f"{u}/pesanan/{p['id']}/terima", headers=w["kepala_umkm"],
+                   json={"baris": [{"baris_id": p["baris"][0]["id"], "jumlah_diterima": "2"}]})
+    assert r.status_code == 200, r.text
+    assert _stok(bid) == Decimal("1000.000")
+    with mesin().connect() as kon:
+        assert kon.execute(
+            text("SELECT count(*) FROM barang WHERE usaha_id = :u AND lower(nama) = 'madu hutan uji' AND satuan = 'ml'"),
+            {"u": w["usaha"]},
+        ).scalar_one() == 1
+
+    # Hari data terhitung dari catatan permintaan, bukan kolom barang yang selalu 0.
+    with mesin().begin() as kon:
+        kon.execute(
+            text("INSERT INTO permintaan_harian (usaha_id, barang_id, tanggal, jumlah) SELECT :u, :b, current_date - h, 2 FROM generate_series(1, 15) AS h"),
+            {"u": w["usaha"], "b": bid},
+        )
+    [isi] = [x for x in klien.get(f"{u}/barang", headers=w["kepala_umkm"]).json() if x["id"] == bid]
+    assert isi["hari_data_terkumpul"] == 15
+
+    # Produknya baru muncul di katalog sesudah barangnya ada: ditautkan saat pertama dipesan.
+    r = klien.post(f"{u}/barang", headers=w["kepala_umkm"], json={**baru, "nama": "Sirup Uji Rantai", "satuan": "ml"})
+    sirup = r.json()["id"]
+    r = klien.post(f"{d}/penawaran", headers=w["kepala_dist"], json=_penawaran_baru(nama="Sirup Uji Rantai", satuan_isi="ml"))
+    assert r.status_code == 201, r.text
+    r = klien.post(f"{u}/pesanan", headers=w["kepala_umkm"], json={"baris": [{"penawaran_id": r.json()["id"], "jumlah": "1"}]})
+    assert r.status_code == 201, r.text
+    assert r.json()[0]["baris"][0]["barang_id"] == sirup
+
+
 def test_katalog_mencocokkan_penawaran_ke_barang_pemanggil(dunia):
     w, klien = dunia, TestClient(app)
     r = klien.get(f"/usaha/{w['usaha']}/katalog", headers=w["kepala_umkm"])
@@ -646,6 +742,29 @@ def _paket(w: dict) -> int:
             ),
             {"p": w["penawaran"], "d": w["distributor"]},
         ).scalar_one()
+
+
+def test_pasang_ulang_variasi_hanya_membuang_kontrak_variasi(dunia):
+    """Nyala ulang di tengah pameran memasang ulang variasi: kontrak dari layar harus selamat."""
+    w, klien = dunia, TestClient(app)
+    u = f"/usaha/{w['usaha']}"
+    nyata = klien.post(f"{u}/kontrak", headers=w["kepala_umkm"], json={"paket_id": _paket(w)}).json()["id"]
+    with mesin().connect() as kon:
+        t = kon.begin()
+        kolom = """usaha_id, distributor_id, penawaran_id, paket_id, barang_id, nama_barang, durasi_bulan,
+                   kuota_min_per_bulan, harga_satuan, satuan, mulai, berakhir, status, dalam_perjalanan"""
+        variasi = kon.execute(
+            text(f"INSERT INTO kontrak ({kolom}, dari_variasi) SELECT {kolom}, true FROM kontrak WHERE id = :k RETURNING id"),
+            {"k": nyata},
+        ).scalar_one()
+        # Barang buatan variasi ikut dibuang, dan kontrak dari layar yang menunjuknya tidak boleh menggagalkannya.
+        kon.execute(text("UPDATE barang SET kode_barang = 'V-UJI' WHERE id = :b"), {"b": w["barang"]})
+        hapus(kon, w["usaha"])
+        hapus_distributor(kon)
+        sisa = kon.execute(text("SELECT id, barang_id FROM kontrak WHERE usaha_id = :u"), {"u": w["usaha"]}).all()
+        assert [tuple(r) for r in sisa] == [(nyata, None)], variasi
+        assert kon.execute(text("SELECT count(*) FROM barang WHERE id = :b"), {"b": w["barang"]}).scalar_one() == 0
+        t.rollback()
 
 
 def test_kontrak_dari_pengajuan_sampai_kuota_dan_berhenti(dunia):

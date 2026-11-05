@@ -307,7 +307,7 @@ export function BannerAkun() {
             </ul>
           ) : (
             <p className="mt-1 text-isi opacity-90 leading-relaxed">
-              Kami kabari lewat WhatsApp begitu selesai. Sementara ini kamu tetap bisa memakai semua fitur kecuali
+              Kabarnya muncul di sini begitu selesai. Sementara ini kamu tetap bisa memakai semua fitur kecuali
               mengajukan kontrak dan membuat pesanan.
             </p>
           )}
@@ -497,12 +497,21 @@ export function KartuPerkiraan({
             <> &middot; rata-rata pakai {jumlahTampil(barang, barang.pemakaianHarian)}/hari</>
           )}
         </p>
-        <div className="mt-2.5">
-          <BilahProgres nilai={terkumpul} maks={14} nada="netral" tinggi={6} />
-          <p className="mt-1.5 text-kecil text-ink-3">
-            Data terkumpul {terkumpul} dari 14 hari &mdash; perkiraan mulai muncul {14 - terkumpul} hari lagi.
+        {/* Barang manual dan barang yang tidak diramal Mesin 1 bisa saja sudah punya ratusan hari data. */}
+        {barang.dicatatManual ? (
+          <p className="mt-2.5 text-kecil text-ink-3">Barang ini dicatat manual, jadi tidak diperkirakan.</p>
+        ) : terkumpul < 14 ? (
+          <div className="mt-2.5">
+            <BilahProgres nilai={terkumpul} maks={14} nada="netral" tinggi={6} />
+            <p className="mt-1.5 text-kecil text-ink-3">
+              Data terkumpul {terkumpul} dari 14 hari &mdash; perkiraan mulai muncul {14 - terkumpul} hari lagi.
+            </p>
+          </div>
+        ) : (
+          <p className="mt-2.5 text-kecil text-ink-3">
+            Belum ada perkiraan untuk barang ini. Perkiraan dibuat untuk barang yang riwayat pemakaiannya cukup panjang.
           </p>
-        </div>
+        )}
         <TombolTautan ke={`/stok/${barang.id}/batas-aman`} ragam="garis" ukuran="kecil" className="mt-2.5">
           Atur batas aman
         </TombolTautan>

@@ -52,7 +52,6 @@ export const JUDUL = {
   keranjang: 'Keranjang',
   akun: 'Akun',
   dataKasir: 'Data dari Kasir',
-  hubungkanKasir: 'Hubungkan Aplikasi Kasir',
   riwayatKasir: 'Riwayat Data Kasir',
   batasAman: 'Batas Aman',
   caraHitung: 'Cara Hitung Stok',
@@ -205,6 +204,9 @@ export const LABEL_CARA_HITUNG: Record<CaraHitungStok, { judul: string; bantuan:
 }
 
 /** Urutan di daftar pilihan: yang paling banyak mendaftar ada di atas, "Lainnya" selalu terakhir. */
+/** Nomor bantuan Turnify Flow, dipakai halaman depan dan halaman Bantuan. */
+export const NOMOR_BANTUAN = '081137700190'
+
 export const URUTAN_JENIS_USAHA: JenisUsaha[] = [
   'kedai-kopi',
   'kedai-minuman',

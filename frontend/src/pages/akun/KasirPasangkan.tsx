@@ -370,7 +370,7 @@ export default function KasirPasangkan() {
                 {belum ? `${angka(belum.jumlahTerjual)} penjualan` : 'Penjualan'} yang sudah lewat{' '}
                 <strong>tidak</strong> dihitung ulang; luruskan lewat Koreksi Stok bila perlu.
               </li>
-              <li>Kamu bisa mengubah resepnya kapan saja dari tab Resep Menu.</li>
+              <li>Kamu bisa mengubah resepnya kapan saja dari tab Produksi, bagian Menu.</li>
             </ul>
           </Peringatan>
 

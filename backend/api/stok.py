@@ -107,6 +107,29 @@ def _bersih(nama_lain: list[str]) -> list[str]:
     return hasil
 
 
+def _produk_master_untuk(sesi: Session, usaha_id: int, badan: BarangMasuk) -> int | None:
+    """
+    Produk katalog untuk barang dari layar, kalau nama atau nama lainnya persis sama dan satuannya
+    sama. Tanpa tautan ini barangnya tidak dapat saran distributor, dan pembeliannya membuat baris
+    kembar. Satuan wajib sama karena isi kemasan penawaran ditambahkan apa adanya ke stok. Produk yang
+    sudah punya baris di gudang tidak ditautkan lagi: penerimaan butuh satu baris tujuan.
+    """
+    nama = [n.strip().lower() for n in (badan.nama, *badan.nama_lain) if n.strip()]
+    return sesi.exec(
+        text(
+            """
+            SELECT pm.id FROM produk_master pm
+             WHERE pm.satuan_dasar = :s
+               AND (lower(pm.nama_kanonik) = ANY(:n)
+                    OR EXISTS (SELECT 1 FROM unnest(pm.sinonim) s WHERE lower(s) = ANY(:n)))
+               AND NOT EXISTS (SELECT 1 FROM barang b WHERE b.usaha_id = :u AND b.produk_master_id = pm.id)
+             ORDER BY lower(pm.nama_kanonik) = :utama DESC, pm.id
+             LIMIT 1
+            """
+        ).bindparams(s=badan.satuan.strip(), n=nama, u=usaha_id, utama=nama[0])
+    ).scalar()
+
+
 @rute.post("/barang", status_code=201, response_model=BarangRingkas)
 def tambah_barang(
     badan: BarangMasuk, usaha_id: int = Depends(usaha_saya), saya: Identitas = Depends(identitas)
@@ -121,6 +144,7 @@ def tambah_barang(
             raise HTTPException(422, "Pengingat kedaluwarsa butuh tanggalnya. Isi tanggal, misalnya 30 Desember 2026.")
         b = Barang(
             usaha_id=usaha_id,
+            produk_master_id=_produk_master_untuk(sesi, usaha_id, badan),
             nama=badan.nama.strip(),
             deskripsi=(badan.deskripsi or "").strip() or None,
             nama_lain=_bersih(badan.nama_lain),

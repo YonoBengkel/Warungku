@@ -108,7 +108,7 @@ export function notifikasiDariServer(
       kategori: 'kontrak',
       tingkat: 'biasa',
       judul: `Kontrak ${k.namaBarang} berakhir ${hariLagi(hari)}`,
-      detail: 'Perpanjangan bisa diatur sebelum masa kontrak habis.',
+      detail: 'Sesudah itu harga kembali ke harga beli sekali. Ajukan kontrak baru kalau masih perlu.',
       butuhTindakan: false,
       tautan: `/kontrak/${k.id}`,
       aksiLabel: 'Lihat Kontrak',

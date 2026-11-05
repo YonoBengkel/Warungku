@@ -4,9 +4,13 @@ import { TandaMerek } from '@/components/ui/Merek'
 import { IkonKembali } from '@/icons'
 import { Peringatan } from '@/components/ui/umpanBalik'
 
-/** Pendaftaran belum memanggil POST /auth/umkm/daftar: isiannya hanya mengisi profil di peramban. */
+/** Yang tidak sungguhan di pendaftaran: pemeriksaan legalitas. */
 export const CATATAN_DAFTAR =
-  'Isian pendaftaran ini hanya tercatat di peramban ini dan belum membuat akun yang bisa dipakai masuk. Untuk mencoba Turnify Flow dengan data sungguhan, masuk dengan akun simulasi.'
+  'Akun yang kamu buat di sini sungguhan dan bisa dipakai masuk lagi lewat email. Belum ada petugas pemeriksa, jadi akun baru langsung aktif tanpa pemeriksaan legalitas.'
+
+/** Server tidak terjangkau saat akun dibuat: alurnya tetap bisa dilihat, tetapi akunnya belum ada. */
+export const CATATAN_DAFTAR_TANPA_SERVER =
+  'Kamu belum punya akun di server, jadi isian di sini hanya tercatat di peramban ini, dan yang tampil sesudah ini data contoh.'
 
 /** Lupa Sandi belum mengirim kode dan belum mengubah kata sandi akun mana pun. */
 export const CATATAN_LUPA_SANDI =
@@ -26,8 +30,8 @@ const KELAS_TAUTAN_KEMBALI =
  *
  * Tautan itu berbeda dari `kembaliKe`, yang mundur satu langkah pendaftaran.
  *
- * `purwarupa` memasang catatan jujur di atas isi kotak, untuk alur yang belum
- * mengirim apa pun ke Turnify Flow (Daftar dan Lupa Sandi, audit 3 Nov 2026).
+ * `purwarupa` memasang catatan jujur di atas isi kotak, untuk bagian alur yang
+ * belum sungguhan (Daftar dan Lupa Sandi).
  *
  * Penyebut bilah langkah dikunci ke 5 di ketiga layar pendaftaran: alurnya baru
  * selesai sesudah data kasir dan batas aman, dan penyebut yang berbeda antar

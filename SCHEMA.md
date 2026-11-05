@@ -97,7 +97,7 @@ erDiagram
 | `paket_kontrak` | Tawaran kontrak untuk SATU penawaran. | `distributor_id` ke `distributor`, `penawaran_id` ke `penawaran` | unik (penawaran_id, durasi_bulan) |
 | `promo_penawaran` | !!! abstract "Usage Documentation"     [Models](../concepts/models.md) | `penawaran_id` ke `penawaran`, `promo_id` ke `promo` | unik (promo_id, penawaran_id) |
 | `tingkat_keanggotaan` | Keuntungan per tingkat untuk promo keanggotaan, diisi distributor. | `promo_id` ke `promo` | - |
-| `kontrak` | Kesepakatan berjalan. Satu kontrak mengikat tepat satu barang. | `barang_id` ke `barang`, `distributor_id` ke `distributor`, `paket_id` ke `paket_kontrak`, `penawaran_id` ke `penawaran`, `usaha_id` ke `usaha` | - |
+| `kontrak` | Kesepakatan berjalan. Satu kontrak mengikat tepat satu barang. `dari_variasi` (migrasi `a1c5e9f27d40`) menandai baris buatan `dataset.variasi_demo`, satu-satunya yang boleh dibuang saat variasi dipasang ulang. Kontrak dari layar tidak pernah ditandai. | `barang_id` ke `barang`, `distributor_id` ke `distributor`, `paket_id` ke `paket_kontrak`, `penawaran_id` ke `penawaran`, `usaha_id` ke `usaha` | - |
 | `kontrak_periode` | Pemenuhan kuota per bulan. Tabel tersendiri, bukan JSON: ini sering dikueri (bar kuota, daftar kontrak, rekap distributor) dan perlu diindeks. | `kontrak_id` ke `kontrak` | unik (kontrak_id, periode) |
 | `pesanan` | Satu pesanan, dibaca dua portal. | `distributor_id` ke `distributor`, `kontrak_id` ke `kontrak`, `usaha_id` ke `usaha` | unik (nomor) |
 | `pesanan_baris` | Satu barang dalam satu pesanan. | `barang_id` ke `barang`, `penawaran_id` ke `penawaran`, `pesanan_id` ke `pesanan`, `promo_id` ke `promo` | - |

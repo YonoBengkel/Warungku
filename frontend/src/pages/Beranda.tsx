@@ -36,6 +36,7 @@ import {
 import { angka, angkaJumlah, cx, hariLagi, waktuNanti } from '@/lib/format'
 import { jumlahTampil } from '@/lib/satuan'
 import {
+  bulananGagalDimuat,
   layakDiperkirakan,
   penawaranById,
   penawaranSaranUntuk,
@@ -118,6 +119,7 @@ export default function Beranda() {
   )
   const barang = useAplikasi((s) => s.barang)
   const kontrak = useAplikasi((s) => s.kontrak)
+  const kontrakBerjalan = useMemo(() => kontrak.filter((k) => k.status === 'aktif' || k.status === 'akan-berakhir'), [kontrak])
   const pesanan = useAplikasi((s) => s.pesanan)
   const keranjang = useAplikasi((s) => s.keranjang)
   const profil = useAplikasi((s) => s.profil)
@@ -249,7 +251,7 @@ export default function Beranda() {
     }
 
     /* 3. Kuota kontrak yang kurang, digabung jadi satu baris kalau lebih dari satu. */
-    const kurang = kontrak
+    const kurang = kontrakBerjalan
       .filter((x) => statusKuota(x) === 'kurang')
       .map((k) => ({ k, sisa: Math.max(0, k.periodeBerjalan.kuota - k.periodeBerjalan.diterima - k.dalamPerjalanan) }))
     if (kurang.length === 1) {
@@ -288,7 +290,7 @@ export default function Beranda() {
         nada: 'info',
         Ikon: IkonKontrak,
         judul: `Kontrak ${k.namaBarang} berakhir ${hariLagi(hari)}`,
-        detail: 'Perpanjangan bisa diatur sebelum masa kontrak habis.',
+        detail: 'Sesudah itu harga kembali ke harga beli sekali. Ajukan kontrak baru kalau masih perlu.',
         aksi: { label: 'Kontrak', ke: `/kontrak/${k.id}` },
       })
     }
@@ -650,9 +652,11 @@ export default function Beranda() {
         ) : rekomendasi.length === 0 ? (
           <Kartu padat>
             <p className="text-isi text-ink-3">
-              {barang.some(layakDiperkirakan)
-                ? 'Belum ada barang yang perlu ditambah. Stok dan pesanan yang berjalan masih menutup batas aman.'
-                : 'Belum ada saran beli. Data pemakaian masih dikumpulkan.'}
+              {bulananGagalDimuat()
+                ? 'Saran beli belum bisa dimuat. Stok dan pesanan tetap bisa dipakai. Coba muat ulang halaman sebentar lagi.'
+                : barang.some(layakDiperkirakan)
+                  ? 'Belum ada barang yang perlu ditambah. Stok dan pesanan yang berjalan masih menutup batas aman.'
+                  : 'Belum ada saran beli. Data pemakaian masih dikumpulkan.'}
             </p>
           </Kartu>
         ) : (
@@ -774,12 +778,12 @@ export default function Beranda() {
       </Bagian>
 
       {/* Ringkasan kontrak: cermin dari tab Pesanan, bukan data baru */}
-      {kontrak.length > 0 && (
+      {kontrakBerjalan.length > 0 && (
         <Bagian
           id="judul-kontrak"
           judul="Kuota Kontrak Bulan Ini"
           besar
-          keterangan={`${kontrak.length} kontrak berjalan. Setiap barang punya kontrak sendiri.`}
+          keterangan={`${kontrakBerjalan.length} kontrak berjalan. Setiap barang punya kontrak sendiri.`}
           aksi={
             <Link
               to="/pesanan?tab=kontrak"
@@ -792,7 +796,7 @@ export default function Beranda() {
           className="mt-3 sm:mt-4 hidden lg:block"
         >
           <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-3 [&>*]:min-w-0">
-            {kontrak.slice(0, 4).map((k) => (
+            {kontrakBerjalan.slice(0, 4).map((k) => (
               <Kartu key={k.id} padat>
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <Link

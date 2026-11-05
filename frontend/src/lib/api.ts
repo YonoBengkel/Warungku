@@ -161,6 +161,34 @@ export async function masukUmkm(email: string, kataSandi: string): Promise<SesiS
   }
 }
 
+/** Buat akun pemilik usaha beserta usahanya. Sesudah ini tinggal masuk seperti biasa. */
+export async function daftarUmkm(isi: {
+  email: string
+  kataSandi: string
+  nama: string
+  nomorHp: string
+  namaUsaha: string
+  jenisUsaha: string
+  kota: string
+  alamat: string
+  caraHitung: string
+}): Promise<void> {
+  await minta<TokenApi>('/auth/umkm/daftar', {
+    method: 'POST',
+    body: JSON.stringify({
+      email: isi.email,
+      kata_sandi: isi.kataSandi,
+      nama: isi.nama,
+      nomor_hp: isi.nomorHp,
+      nama_usaha: isi.namaUsaha,
+      jenis_usaha: isi.jenisUsaha,
+      kota: isi.kota,
+      alamat: isi.alamat,
+      cara_hitung: isi.caraHitung,
+    }),
+  })
+}
+
 /** Pintu Portal POS: pemilik mendapat sesi penuh, kasir mendapat sesi yang hanya diterima endpoint POS. */
 export async function masukPos(email: string, kataSandi: string): Promise<SesiServer> {
   const t = await minta<TokenApi>('/auth/pos/masuk', {

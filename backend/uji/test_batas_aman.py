@@ -210,6 +210,58 @@ def test_pemakaian_bulanan_per_30_hari_mundur_dari_hari_terakhir(toko):
     assert r.status_code == 200 and r.json() == []
 
 
+def test_nota_baru_tidak_menggeser_blok_dan_perkiraan_bulanan(toko):
+    """Nota sesudah jalan Mesin 1 baru terbaca di jalan berikutnya: garis uji balik dan perkiraan tidak berubah."""
+    klien = TestClient(app)
+    r = klien.post("/auth/umkm/masuk", json={"email": toko["email"], "kata_sandi": SANDI})
+    assert r.status_code == 200, r.text
+    kepala = {"Authorization": "Bearer " + r.json()["token"]}
+    jalur = f"/usaha/{toko['usaha']}/pemakaian-bulanan"
+
+    with mesin().begin() as kon:
+        kon.execute(
+            text(
+                """
+                INSERT INTO permintaan_harian (usaha_id, barang_id, tanggal, jumlah)
+                SELECT :u, :b, :akhir - h, 4 FROM generate_series(1, 59) AS h
+                """
+            ),
+            {"u": toko["usaha"], "b": toko["bulan"], "akhir": AKHIR},
+        )
+    with Session(mesin()) as sesi:
+        for mundur, nilai in ((1, "118"), (2, "119")):
+            sesi.add(
+                Prediksi(
+                    usaha_id=toko["usaha"], barang_id=toko["bulan"], tanggal_target=AKHIR - timedelta(days=30 * mundur - 1),
+                    p10=Decimal(nilai), p50=Decimal(nilai), p90=Decimal(nilai), jalan_id="baru", model_nama="uji",
+                    model_versi="lightgbm/uji-balik-bulanan", dijalankan_pada=datetime(2026, 11, 1, 2, 0, tzinfo=timezone.utc),
+                    kematangan=KematanganPerkiraan.MANTAP, tingkat_layanan=TingkatLayanan.SEGAR,
+                )
+            )
+        sesi.commit()
+
+    def bacaan():
+        isi = klien.get(jalur, headers=kepala).json()
+        return next(b for b in isi if b["barang_id"] == toko["bulan"])
+
+    sebelum = bacaan()
+    assert [Decimal(p["uji_balik"]) for p in sebelum["periode"]] == [Decimal(119), Decimal(118)]
+    assert Decimal(sebelum["perkiraan_p50"]) == 60 and Decimal(sebelum["perkiraan_persediaan"]) == 42
+
+    # Nota tujuh hari sesudah hari asal, untuk barang ini dan barang lain yang belum pernah diramal.
+    with mesin().begin() as kon:
+        kon.execute(
+            text(
+                """
+                INSERT INTO permintaan_harian (usaha_id, barang_id, tanggal, jumlah)
+                VALUES (:u, :b, :t, 50), (:u, :lain, :t, 50)
+                """
+            ),
+            {"u": toko["usaha"], "b": toko["bulan"], "lain": toko["tanpa"], "t": AKHIR + timedelta(days=7)},
+        )
+    assert bacaan() == sebelum
+
+
 def test_mesin1_menuliskan_batas_aman_dalam_satu_jalan(toko):
     """Jalur sungguhan: perkiraan tersimpan, lalu batas aman barang berubah di transaksi yang sama."""
     from ml.layanan import _jalankan_mesin1

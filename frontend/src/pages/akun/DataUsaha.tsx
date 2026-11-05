@@ -147,7 +147,7 @@ function FormDataUsaha() {
     tampilkanRacun(
       server
         ? 'Data usaha tersimpan. Status verifikasimu tidak berubah, karena petugas pemeriksa belum ada di purwarupa ini.'
-        : 'Data usaha terkirim. Kami kabari lewat WhatsApp begitu pemeriksaan selesai.',
+        : 'Data usaha terkirim. Kabarnya muncul di sini begitu pemeriksaan selesai.',
       'info',
     )
     // Mengganti formulir di riwayat supaya tombol kembali tidak membukanya lagi (revisi V3, Q78).
@@ -302,7 +302,7 @@ function FormDataUsaha() {
               <p className="text-isi text-ink-3">
                 {server
                   ? 'Status verifikasimu tetap, karena petugas pemeriksa belum ada di purwarupa ini.'
-                  : 'Pemeriksaan biasanya selesai dalam 1 hari kerja. Kabarnya lewat WhatsApp ke nomor di profilmu.'}
+                  : 'Pemeriksaan biasanya selesai dalam 1 hari kerja. Kabarnya muncul di halaman ini.'}
               </p>
             )}
           </div>

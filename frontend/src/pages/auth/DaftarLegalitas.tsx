@@ -6,7 +6,7 @@ import { Kolom, KotakCentang } from '@/components/ui/formulir'
 import { Lembar } from '@/components/ui/lembar'
 import { IkonBantuan, IkonCentangLingkaran, IkonSampah, IkonUnggah } from '@/icons'
 import { useAplikasi } from '@/store/aplikasi'
-import { CATATAN_DAFTAR, LayarAuth } from '@/components/ui/LayarAuth'
+import { CATATAN_DAFTAR, CATATAN_DAFTAR_TANPA_SERVER, LayarAuth } from '@/components/ui/LayarAuth'
 
 /**
  * Langkah 3 dari 5: data legalitas, lalu langsung diantar ke sumber data penjualan.
@@ -23,6 +23,7 @@ export default function DaftarLegalitas() {
   const navigate = useNavigate()
   const ubahProfil = useAplikasi((s) => s.ubahProfil)
   const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
+  const server = useAplikasi((s) => s.sesiServer != null)
 
   const [nib, setNib] = useState('')
   const [npwp, setNpwp] = useState('')
@@ -71,7 +72,8 @@ export default function DaftarLegalitas() {
   function periksa(): boolean {
     const baru: typeof galat = {}
     if (belumPunyaNib) {
-      if (!foto) {
+      // Foto hanya dipakai pemeriksaan, dan akun server belum diperiksa siapa pun.
+      if (!server && !foto) {
         baru.foto =
           'Foto tempat usaha belum ada. Ambil satu foto tampak depan warung dari seberang jalan supaya papan namanya ikut terlihat. Contoh: foto warung beserta spanduknya di siang hari.'
       }
@@ -96,32 +98,41 @@ export default function DaftarLegalitas() {
     return true
   }
 
-  function simpan() {
+  async function simpan() {
     if (!periksa()) return
+    const isi = { nib: belumPunyaNib ? '' : nib.replace(/\D/g, ''), npwp: npwp.replace(/\D/g, '') }
     setMemuat(true)
-    window.setTimeout(() => {
-      setMemuat(false)
-      ubahProfil({
-        nib: belumPunyaNib ? '' : nib.replace(/\D/g, ''),
-        npwp: npwp.replace(/\D/g, ''),
-        verifikasi: 'menunggu',
-        tingkatVerifikasi: belumPunyaNib ? 'dasar' : 'penuh',
-      })
-      tampilkanRacun('Data legalitas tercatat di peramban ini. Pemeriksaan sungguhan belum berjalan di purwarupa ini.', 'info')
-      navigate('/akun/kasir?langkah=mulai')
-    }, 700)
+    // Akun server langsung aktif karena belum ada petugas pemeriksa. Mengajukan verifikasi di sini
+    // justru mengunci pesanan dan kontraknya tanpa ada yang bisa membukanya lagi.
+    const tersimpan = await ubahProfil(
+      server ? isi : { ...isi, verifikasi: 'menunggu', tingkatVerifikasi: belumPunyaNib ? 'dasar' : 'penuh' },
+    )
+    setMemuat(false)
+    if (!tersimpan) return
+    tampilkanRacun(
+      server
+        ? 'Data legalitas tersimpan di profil usahamu. Pemeriksaan sungguhan belum berjalan di purwarupa ini.'
+        : 'Data legalitas tercatat di peramban ini. Pemeriksaan sungguhan belum berjalan di purwarupa ini.',
+      'info',
+    )
+    navigate('/akun/kasir?langkah=mulai')
   }
 
   function isiNanti() {
     /* Tetap menandai akun menunggu pemeriksaan: banner Beranda-lah yang nanti
        mengingatkan, bukan layar ini yang menahan pengguna di sini. */
-    ubahProfil({ verifikasi: 'menunggu', tingkatVerifikasi: 'dasar' })
+    if (!server) void ubahProfil({ verifikasi: 'menunggu', tingkatVerifikasi: 'dasar' })
     tampilkanRacun('Data legalitas bisa dilengkapi kapan saja dari Akun, menu Data Usaha.', 'info')
     navigate('/akun/kasir?langkah=mulai')
   }
 
   return (
-    <LayarAuth langkah={3} judul="Data Legalitas" kembaliKe="/daftar/usaha" purwarupa={CATATAN_DAFTAR}>
+    <LayarAuth
+      langkah={3}
+      judul="Data Legalitas"
+      kembaliKe="/daftar/usaha"
+      purwarupa={server ? CATATAN_DAFTAR : CATATAN_DAFTAR_TANPA_SERVER}
+    >
       <form
         noValidate
         onSubmit={(e) => {
@@ -130,18 +141,22 @@ export default function DaftarLegalitas() {
         }}
       >
         <p className="text-isi text-ink-3 leading-relaxed">
-          Data ini yang diperiksa sebelum kamu bisa mengajukan kontrak dan membuat pesanan. Foto KTP tidak kami minta.
+          {server
+            ? 'Data ini disimpan di profil usahamu dan bisa dilengkapi nanti. Foto KTP tidak kami minta.'
+            : 'Data ini yang diperiksa sebelum kamu bisa mengajukan kontrak dan membuat pesanan. Foto KTP tidak kami minta.'}
         </p>
 
         <div className="mt-4 space-y-4">
           {belumPunyaNib ? (
-            <UnggahFoto
-              foto={foto}
-              galat={galat.foto}
-              berkasRef={berkasRef}
-              pilih={pilihFoto}
-              hapus={hapusFoto}
-            />
+            !server && (
+              <UnggahFoto
+                foto={foto}
+                galat={galat.foto}
+                berkasRef={berkasRef}
+                pilih={pilihFoto}
+                hapus={hapusFoto}
+              />
+            )
           ) : (
             <div>
               <Kolom
@@ -186,7 +201,7 @@ export default function DaftarLegalitas() {
                 Usaha saya belum punya NIB
               </span>
               <span className="block mt-0.5 text-isi text-ink-3 leading-snug">
-                Gantinya: satu foto tampak depan tempat usaha.
+                {server ? 'Bisa dilengkapi nanti dari Akun, menu Data Usaha.' : 'Gantinya: satu foto tampak depan tempat usaha.'}
               </span>
             </KotakCentang>
           </div>
@@ -204,7 +219,7 @@ export default function DaftarLegalitas() {
           />
         </div>
 
-        <section className="mt-6" aria-labelledby="judul-lencana">
+        <section className={server ? 'hidden' : 'mt-6'} aria-labelledby="judul-lencana">
           <h2 id="judul-lencana" className="text-[1rem] font-bold text-ink">
             Hasilnya nanti berupa lencana
           </h2>
@@ -234,9 +249,11 @@ export default function DaftarLegalitas() {
           </div>
         </section>
 
-        <p className="mt-5 text-isi text-ink-3 leading-relaxed">
-          Selama menunggu pemeriksaan, stok, perkiraan, dan penjelajahan katalog tetap jalan penuh.
-        </p>
+        {!server && (
+          <p className="mt-5 text-isi text-ink-3 leading-relaxed">
+            Selama menunggu pemeriksaan, stok, perkiraan, dan penjelajahan katalog tetap jalan penuh.
+          </p>
+        )}
 
         <div className="sticky bottom-0 mt-4 -mx-5 sm:-mx-6 -mb-5 sm:-mb-6 px-5 sm:px-6 pt-3 pb-4 bg-surface/95 backdrop-blur-sm border-t border-line rounded-b-lg space-y-2">
           <Tombol type="submit" penuh ukuran="besar" memuat={memuat}>

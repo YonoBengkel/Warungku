@@ -265,7 +265,6 @@ function DaftarKonektor() {
   const [params] = useSearchParams()
   const kasir = useAplikasi((s) => s.kasir)
   const ubahKasir = useAplikasi((s) => s.ubahKasir)
-  const hubungkanKasir = useAplikasi((s) => s.hubungkanKasir)
   const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
   const server = useAplikasi((s) => s.sumberData === 'server')
 
@@ -293,14 +292,9 @@ function DaftarKonektor() {
   }
 
   /* Purwarupa: jalur Gmail dan Spreadsheet belum punya pembacanya sendiri, jadi
-     yang benar-benar dijalankan tetap sambungan ke POS tunggal. Kalimatnya
-     dibuat jujur supaya tidak ada yang mengira dua jalur itu sudah hidup. */
+     keadaannya tidak diubah. Satu-satunya jalur nota yang hidup adalah Portal POS. */
   function sambungkanLewat(nama: string) {
-    hubungkanKasir()
-    tampilkanRacun(
-      `Sambungan lewat ${nama} masih kami siapkan. Sementara ini penjualan diambil dari ${POS_TUNGGAL.nama}.`,
-      'info',
-    )
+    tampilkanRacun(`Sambungan lewat ${nama} belum tersedia di purwarupa ini. Nota masuk lewat Portal POS.`, 'info')
   }
 
   const belumTersambung = <Lencana nada="netral">Belum tersambung</Lencana>
@@ -332,7 +326,7 @@ function DaftarKonektor() {
               className="w-full sm:w-auto"
               ikonKanan={<IkonPanahKanan size={16} />}
             >
-              {tersambungPos ? 'Atur Ulang' : 'Hubungkan'}
+              Lihat Panduan
             </TombolTautan>
           }
         />
@@ -401,7 +395,7 @@ function DaftarKonektor() {
         catat sendiri belum tersimpan.
       </CatatanPurwarupa>
       <p className="pt-3 text-kecil text-ink-3 leading-relaxed">
-        Bisa diganti nanti lewat Akun &rsaquo; Data dari Kasir; harga jual tetap tinggal di kasirmu.
+        Bisa diganti nanti lewat Akun &rsaquo; Data dari Kasir.
       </p>
 
       <Lembar

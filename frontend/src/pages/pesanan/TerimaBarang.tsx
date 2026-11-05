@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Kartu, Lencana, Pemisah, Tombol, TombolTautan } from '@/components/ui/dasar'
+import { Kartu, Pemisah, Tombol, TombolTautan } from '@/components/ui/dasar'
 import { AreaTeks, Kolom, PengaturJumlah } from '@/components/ui/formulir'
 import { BarisChip, BilahAksi, Chip, KepalaHalaman } from '@/components/ui/navigasi'
 import { KeadaanKosong, Peringatan } from '@/components/ui/umpanBalik'
-import { IkonCentangLingkaran, IkonPasokan, IkonUnggah } from '@/icons'
-import { angka, cx, jumlahSatuan, rupiah, tanggalLengkapHari } from '@/lib/format'
+import { IkonCentangLingkaran, IkonPasokan } from '@/icons'
+import { angka, cx, jumlahSatuan, rupiah, tanggalKolom, tanggalLengkapHari } from '@/lib/format'
+import { waktuBerangkat } from '@/lib/lacak'
 import { isiKemasan, jumlahTampil } from '@/lib/satuan'
 import { LABEL_SELISIH, type AlasanSelisih } from '@/lib/types'
 import { distributorById } from '@/data/dummy'
@@ -36,11 +37,6 @@ interface Koreksi {
   jumlah: number
   alasan: AlasanSelisih | null
   catatan: string
-  foto: number
-}
-
-function tanggalInput(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
 export default function TerimaBarang() {
@@ -48,17 +44,18 @@ export default function TerimaBarang() {
   const navigate = useNavigate()
 
   const pesanan = useAplikasi((s) => s.pesanan.find((p) => p.id === id))
+  const memulihkanSesi = useAplikasi((s) => s.memulihkanSesi)
   const barang = useAplikasi((s) => s.barang)
   const terimaBarang = useAplikasi((s) => s.terimaBarang)
   const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
 
-  const hariIni = tanggalInput(new Date())
+  const hariIni = tanggalKolom(new Date())
   const [tanggal, setTanggal] = useState(hariIni)
   const [galat, setGalat] = useState<string | null>(null)
   const [koreksi, setKoreksi] = useState<Record<string, Koreksi>>(() => {
     const awal: Record<string, Koreksi> = {}
     for (const b of pesanan?.baris ?? []) {
-      awal[b.penawaranId] = { dibuka: false, jumlah: b.jumlah, alasan: null, catatan: '', foto: 0 }
+      awal[b.penawaranId] = { dibuka: false, jumlah: b.jumlah, alasan: null, catatan: '' }
     }
     return awal
   })
@@ -76,7 +73,18 @@ export default function TerimaBarang() {
      punya entri, kita pakai jumlah pesanan sebagai kebenaran bawaan daripada
      membiarkan layar kosong. */
   function bacaKoreksi(penawaranId: string, jumlahDipesan: number): Koreksi {
-    return koreksi[penawaranId] ?? { dibuka: false, jumlah: jumlahDipesan, alasan: null, catatan: '', foto: 0 }
+    return koreksi[penawaranId] ?? { dibuka: false, jumlah: jumlahDipesan, alasan: null, catatan: '' }
+  }
+
+  if (!pesanan && memulihkanSesi) {
+    return (
+      <div className={KOLOM}>
+        <KepalaHalaman judul="Terima Barang" kembaliKe="/pesanan" />
+        <p className="mt-4 text-isi text-ink-3" role="status">
+          Memuat pesanan…
+        </p>
+      </div>
+    )
   }
 
   if (!pesanan) {
@@ -117,14 +125,34 @@ export default function TerimaBarang() {
     )
   }
 
+  if (pesanan.status !== 'dikirim') {
+    return (
+      <div className={KOLOM}>
+        <KepalaHalaman judul="Terima Barang" kembaliKe={`/pesanan/${pesanan.id}`} />
+        <section aria-labelledby="judul-belum-dikirim">
+          <h2 id="judul-belum-dikirim" className="sr-only">
+            Barangnya belum dikirim
+          </h2>
+          <KeadaanKosong
+            ikon={<IkonPasokan size={26} />}
+            judul="Barangnya belum dikirim"
+            pesan={`${pesanan.nomor} bisa dihitung di sini begitu distributor mengirim barangnya.`}
+            aksi={<TombolTautan ke={`/pesanan/${pesanan.id}`}>Lihat Pesanan</TombolTautan>}
+          />
+        </section>
+      </div>
+    )
+  }
+
   const ps = pesanan
   const distributor = distributorById(pesanan.distributorId)
+  const hariBerangkat = tanggalKolom(new Date(waktuBerangkat(pesanan.jejak) ?? pesanan.dibuatPada))
 
   function ubahKoreksi(penawaranId: string, jumlahDipesan: number, isi: Partial<Koreksi>) {
     setKoreksi((s) => ({
       ...s,
       [penawaranId]: {
-        ...(s[penawaranId] ?? { dibuka: false, jumlah: jumlahDipesan, alasan: null, catatan: '', foto: 0 }),
+        ...(s[penawaranId] ?? { dibuka: false, jumlah: jumlahDipesan, alasan: null, catatan: '' }),
         ...isi,
       },
     }))
@@ -169,6 +197,10 @@ export default function TerimaBarang() {
       setGalat(
         `Tanggal barang diterima belum terisi. Ketuk kolom tanggal lalu pilih hari barangnya datang. Contoh: ${hariIni}.`,
       )
+      return
+    }
+    if (tanggal > hariIni || tanggal < hariBerangkat) {
+      setGalat(`Tanggal barang diterima harus di antara hari barangnya dikirim dan hari ini. Contoh: ${hariIni}.`)
       return
     }
 
@@ -220,9 +252,10 @@ export default function TerimaBarang() {
             wajib
             type="date"
             value={tanggal}
+            min={hariBerangkat}
             max={hariIni}
             onChange={(e) => setTanggal(e.target.value)}
-            bantuan={`Bawaannya hari ini (${tanggalLengkapHari(new Date())}). Kalau barangnya datang kemarin, mundurkan tanggalnya — itu yang tercatat sebagai tanggal stok masuk.`}
+            bantuan={`Bawaannya hari ini (${tanggalLengkapHari(new Date())}). Kalau barangnya datang kemarin, mundurkan tanggalnya. Tanggal itu yang tercatat sebagai hari barang diterima.`}
           />
         </Kartu>
       </section>
@@ -296,7 +329,6 @@ export default function TerimaBarang() {
                             jumlah: b.jumlah,
                             alasan: null,
                             catatan: '',
-                            foto: 0,
                           })
                         }
                         className="min-h-11 text-isi font-semibold text-ink-3 hover:text-ink"
@@ -326,30 +358,6 @@ export default function TerimaBarang() {
                       value={k.catatan}
                       onChange={(e) => ubahKoreksi(b.penawaranId, b.jumlah, { catatan: e.target.value })}
                     />
-
-                    <div className="flex flex-wrap items-center gap-3">
-                      <label className="inline-flex items-center justify-center gap-2 h-11 px-4 rounded-md bg-sunken text-ink-2 text-isi font-semibold cursor-pointer hover:brightness-95">
-                        <IkonUnggah size={16} />
-                        Ambil Foto
-                        <input
-                          type="file"
-                          accept="image/*"
-                          capture="environment"
-                          multiple
-                          className="sr-only"
-                          onChange={(e) => {
-                            const n = e.target.files?.length ?? 0
-                            if (n > 0) ubahKoreksi(b.penawaranId, b.jumlah, { foto: k.foto + n })
-                            e.target.value = ''
-                          }}
-                        />
-                      </label>
-                      {k.foto > 0 && (
-                        <Lencana nada="aman">
-                          {k.foto} foto terlampir
-                        </Lencana>
-                      )}
-                    </div>
                   </div>
                 )}
               </Kartu>

@@ -26,6 +26,7 @@ const TIDAK_BOLEH = [
 export default function PenggunaServer() {
   const sesi = useAplikasi((s) => s.sesiServer)
   const profil = useAplikasi((s) => s.profil)
+  const kelontong = profil.jenisUsaha === 'warung-kelontong'
   const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
   const [daftar, setDaftar] = useState<AkunKasir[] | null>(null)
   const [galatMuat, setGalatMuat] = useState<string | null>(null)
@@ -84,9 +85,11 @@ export default function PenggunaServer() {
         keterangan={daftar ? `${1 + daftar.length} orang punya akses` : undefined}
         kembaliKe="/akun"
         aksi={
-          <Tombol ukuran="kecil" ikonKiri={<IkonTambah size={15} />} onClick={() => { setTambah(true); setGalat(null) }}>
-            Tambah Kasir
-          </Tombol>
+          kelontong ? undefined : (
+            <Tombol ukuran="kecil" ikonKiri={<IkonTambah size={15} />} onClick={() => { setTambah(true); setGalat(null) }}>
+              Tambah Kasir
+            </Tombol>
+          )
         }
       />
 
@@ -111,6 +114,12 @@ export default function PenggunaServer() {
             <Peringatan nada="kritis" judul="Daftar kasir belum bisa dimuat">{galatMuat}</Peringatan>
           ) : daftar === null ? (
             <p className="text-isi text-ink-3">Memuat&hellip;</p>
+          ) : kelontong ? (
+            <KeadaanKosong
+              ikon={<IkonProfil size={26} />}
+              judul="Portal POS belum untuk warung kelontong"
+              pesan="Barang warung dijual apa adanya dan belum punya daftar menu, jadi akun kasir belum bisa dipakai."
+            />
           ) : daftar.length === 0 ? (
             <KeadaanKosong ikon={<IkonProfil size={26} />} judul="Belum ada akun kasir" pesan="Tambah kasir supaya penjualan di Portal POS tercatat atas namanya, dan kasir tidak memakai akunmu." padat />
           ) : (

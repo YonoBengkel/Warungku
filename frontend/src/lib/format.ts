@@ -129,6 +129,11 @@ export function rupiahSumbu(n: number): string {
   return angka(n)
 }
 
+/** "2026-09-13" menurut jam peramban, bentuk yang dibaca `<input type="date">` dan server. */
+export function tanggalKolom(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 /** "13 September 2026" */
 export function tanggalPanjang(d: Date | string | number): string {
   const t = toDate(d)

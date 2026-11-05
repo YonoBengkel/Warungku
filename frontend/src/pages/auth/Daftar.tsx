@@ -1,35 +1,35 @@
 import { useEffect, useId, useState } from 'react'
 import type { ReactNode } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { Tombol } from '@/components/ui/dasar'
 import { Kolom, kelasBingkai } from '@/components/ui/formulir'
 import { IkonMata, IkonMataTutup } from '@/icons'
 import { cx } from '@/lib/format'
+import { simpanIsianDaftar } from '@/lib/pendaftaran'
 import { useAplikasi } from '@/store/aplikasi'
 import { CATATAN_DAFTAR, LayarAuth } from '@/components/ui/LayarAuth'
 
 /**
  * Langkah 1 dari 5: hanya nomor HP dan kata sandi.
  *
- * Akun sengaja dibuat di langkah pertama, bukan di akhir. Pendaftaran lima
- * layar hampir selalu terputus di tengah (baterai habis, pembeli datang), dan
- * kalau akunnya baru lahir di langkah tiga, semua isian sebelumnya ikut hilang.
- * Dengan pola ini nomor HP-nya sudah bisa dihubungi sejak menit pertama.
+ * Akunnya dibuat di langkah 2, karena server butuh data usaha sekaligus. Sesudah itu
+ * pendaftar sudah masuk, jadi langkah 3 sampai 5 boleh terputus tanpa kehilangan akun.
  */
 export default function Daftar() {
   const navigate = useNavigate()
-  const ubahProfil = useAplikasi((s) => s.ubahProfil)
-  const tampilkanRacun = useAplikasi((s) => s.tampilkanRacun)
+  const sudahAkun = useAplikasi((s) => s.sesiServer != null)
 
   const [hp, setHp] = useState('')
   const [sandi, setSandi] = useState('')
   const [galat, setGalat] = useState<{ hp?: string; sandi?: string }>({})
-  const [memuat, setMemuat] = useState(false)
   const [percobaanGagal, setPercobaanGagal] = useState(0)
 
   useEffect(() => {
     if (percobaanGagal > 0) sorotGalatPertama()
   }, [percobaanGagal])
+
+  // Akunnya sudah ada: nomor dan kata sandi yang diisi di sini tidak akan terpakai.
+  if (sudahAkun) return <Navigate to="/daftar/usaha" replace />
 
   function lanjut() {
     const baru: typeof galat = {}
@@ -43,13 +43,8 @@ export default function Daftar() {
       return
     }
 
-    setMemuat(true)
-    window.setTimeout(() => {
-      setMemuat(false)
-      ubahProfil({ nomorHp: hp.replace(/\D/g, '') })
-      tampilkanRacun('Langkah 1 tercatat di peramban ini. Lanjut ke data usaha.', 'info')
-      navigate('/daftar/usaha')
-    }, 650)
+    simpanIsianDaftar(hp.replace(/\D/g, ''), sandi)
+    navigate('/daftar/usaha')
   }
 
   return (
@@ -75,7 +70,7 @@ export default function Daftar() {
             placeholder="081234567890"
             value={hp}
             galat={galat.hp}
-            bantuan="Pakai nomor yang aktif WhatsApp-nya. Ke sinilah kabar pesanan dan hasil verifikasi dikirim."
+            bantuan="Nomor ini tampil untuk distributor yang menerima pesananmu."
             onChange={(e) => setHp(e.target.value.replace(/[^\d+]/g, ''))}
           />
 
@@ -90,9 +85,8 @@ export default function Daftar() {
         </div>
 
         <div className="mt-5 rounded-md bg-brand-soft text-brand-soft-ink p-3.5 text-isi leading-relaxed">
-          Begitu tombol di bawah ditekan, akunmu langsung tercipta. Kalau pendaftaran terputus di tengah jalan,
-          isian yang sudah masuk tidak hilang &mdash; tinggal masuk lagi pakai nomor ini dan lanjut dari langkah
-          terakhir.
+          Akunmu dibuat di langkah berikutnya, begitu data usaha terisi. Sesudah itu kamu masuk dengan email di langkah
+          itu dan kata sandi ini.
         </div>
 
         <p className="mt-5 text-center text-isi text-ink-2">
@@ -106,8 +100,8 @@ export default function Daftar() {
         </p>
 
         <BilahLanjut>
-          <Tombol type="submit" penuh ukuran="besar" memuat={memuat}>
-            {memuat ? 'Sedang membuat akun' : 'Lanjut ke Data Usaha'}
+          <Tombol type="submit" penuh ukuran="besar">
+            Lanjut ke Data Usaha
           </Tombol>
         </BilahLanjut>
       </form>

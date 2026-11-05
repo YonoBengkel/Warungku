@@ -84,6 +84,10 @@ tanpa NIB boleh membuat kontrak.
 - Kasir saat internet putus dan cetak struk ke printer.
 - Pajak, faktur, dan kepatuhan untuk warung sungguhan.
 - Konektor ke aplikasi kasir pihak ketiga.
+- Pemeriksaan legalitas oleh petugas. Akun baru langsung aktif, dan layar pendaftaran menyebutnya.
+- Masuk lewat nomor HP dan pemulihan kata sandi. Keduanya menunggu OTP.
+- Portal POS untuk warung kelontong. Barangnya dijual apa adanya dan belum punya daftar menu.
+- Penolakan pesanan di luar area kirim distributor.
 - Prediksi yang berubah seketika. Mesin analitik tetap berjalan terjadwal.
 
 ## Ukuran keberhasilan

@@ -20,6 +20,7 @@ import { angka, cx, rupiah, rupiahSumbu } from '@/lib/format'
 import { angkaTampil, jumlahTampil, satuanTampil, trenTampil } from '@/lib/satuan'
 import { JUDUL, LABEL_ARAH_PREDIKSI } from '@/lib/label'
 import {
+  bulananGagalDimuat,
   distributorById,
   layakDiperkirakan,
   modelBulananServer,
@@ -111,6 +112,56 @@ function labelPendek(nama: string): string {
 }
 
 export default function Prediksi() {
+  // Ikut berlangganan barang: percobaan ulang memasang data bulanan, lalu mengganti barang.
+  const barang = useAplikasi((s) => s.barang)
+  if (bulananGagalDimuat()) return <PrediksiGagal />
+  if (barang.length === 0) {
+    return (
+      <div>
+        <KepalaHalaman judul="Prediksi Stok" />
+        <h2 className="sr-only">Belum ada barang untuk diperkirakan</h2>
+        <KeadaanKosong
+          ikon={<IkonTrenNaik size={26} />}
+          judul="Belum ada barang untuk diperkirakan"
+          pesan="Tambah barang di tab Stok. Perkiraan muncul sesudah pemakaiannya tercatat."
+          aksi={<TombolTautan ke="/stok/baru">Tambah Barang</TombolTautan>}
+        />
+      </div>
+    )
+  }
+  return <IsiPrediksi />
+}
+
+/** Angka bulanan tidak terbaca. Tidak ada angka pengganti, karena angkanya akan karangan. */
+function PrediksiGagal() {
+  const segarkan = useAplikasi((s) => s.segarkanGudangServer)
+  const [memuat, setMemuat] = useState(false)
+
+  async function cobaLagi() {
+    setMemuat(true)
+    await segarkan().catch(() => {})
+    setMemuat(false)
+  }
+
+  return (
+    <div>
+      <KepalaHalaman judul="Prediksi Stok" />
+      <h2 className="sr-only">Perkiraan belum bisa dimuat</h2>
+      <KeadaanKosong
+        ikon={<IkonTrenNaik size={26} />}
+        judul="Perkiraan belum bisa dimuat"
+        pesan="Angka pemakaian bulanan belum terbaca, jadi tidak kami tampilkan. Stok dan pesanan tetap bisa dipakai seperti biasa."
+        aksi={
+          <Tombol memuat={memuat} onClick={cobaLagi}>
+            Coba Lagi
+          </Tombol>
+        }
+      />
+    </div>
+  )
+}
+
+function IsiPrediksi() {
   const barang = useAplikasi((s) => s.barang)
   const [param, setParam] = useSearchParams()
   /* Kategori dari barang yang sedang dimuat, data contoh maupun data server. */

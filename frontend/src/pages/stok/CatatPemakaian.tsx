@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Kartu, Tombol, TombolTautan } from '@/components/ui/dasar'
 import { Kolom } from '@/components/ui/formulir'
@@ -89,6 +89,9 @@ export default function CatatPemakaian() {
   const [kategori, setKategori] = useState('semua')
   const [teks, setTeks] = useState<Record<string, string>>({})
   const [dilewati, setDilewati] = useState<string[]>([])
+  const [menyimpan, setMenyimpan] = useState(false)
+  // Tombolnya baru nonaktif sesudah layar digambar ulang; ref menahan klik yang datang sebelum itu.
+  const sedangMenyimpan = useRef(false)
   const [tersimpan, setTersimpan] = useState<Tercatat[] | null>(null)
 
   const isian = useMemo(() => {
@@ -123,6 +126,7 @@ export default function CatatPemakaian() {
   }
 
   async function simpan() {
+    if (sedangMenyimpan.current) return
     const pemakaian: Record<string, number> = {}
     const catatan: Tercatat[] = []
     for (const b of barang) {
@@ -138,7 +142,12 @@ export default function CatatPemakaian() {
       }
     }
     // Isian tetap di layar kalau gagal tersimpan; toast galatnya sudah tampil.
-    if (!(await catatPemakaianHarian(pemakaian))) return
+    sedangMenyimpan.current = true
+    setMenyimpan(true)
+    const berhasil = await catatPemakaianHarian(pemakaian)
+    sedangMenyimpan.current = false
+    setMenyimpan(false)
+    if (!berhasil) return
     setTersimpan(catatan)
     setTeks({})
     setDilewati([])
@@ -308,7 +317,7 @@ export default function CatatPemakaian() {
 
           <Peringatan nada="netral" judul="Satu angka saja per barang">
             Isi berapa banyak yang keluar hari ini. Yang tidak dipakai boleh dikosongkan &mdash; stoknya
-            tidak akan berubah. Harga tidak ditanyakan di sini; urusan harga jual ada di aplikasi kasir.
+            tidak akan berubah. Harga tidak ditanyakan di sini.
           </Peringatan>
 
           {kendaliLewati}
@@ -432,7 +441,7 @@ export default function CatatPemakaian() {
           </p>
         }
       >
-        <Tombol penuh ukuran="besar" disabled={terisi.length === 0 || adaGalat} onClick={simpan}>
+        <Tombol penuh ukuran="besar" memuat={menyimpan} disabled={terisi.length === 0 || adaGalat} onClick={simpan}>
           Simpan &amp; Kurangi Stok
         </Tombol>
       </BilahAksi>

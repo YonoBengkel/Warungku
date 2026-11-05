@@ -102,6 +102,7 @@ class Daftar(BaseModel):
     jenis_usaha: str = Field(min_length=2, max_length=30)
     kota: str = Field(min_length=2, max_length=80)
     alamat: str = Field(min_length=4)
+    cara_hitung: str = "kemasan"
 
 
 class Token(BaseModel):
@@ -211,10 +212,13 @@ def daftar_umkm(badan: Daftar) -> Token:
         ada = sesi.exec(select(Pengguna).where(Pengguna.email == badan.email)).first()
         if ada is not None:
             raise HTTPException(status.HTTP_409_CONFLICT, "Email ini sudah terdaftar.")
+        if sesi.exec(select(Pengguna).where(Pengguna.nomor_hp == badan.nomor_hp)).first() is not None:
+            raise HTTPException(status.HTTP_409_CONFLICT, "Nomor HP ini sudah terdaftar. Pakai nomor lain, atau masuk dengan akun itu.")
         try:
             jenis = JenisUsaha(badan.jenis_usaha)
+            cara = CaraHitungStok(badan.cara_hitung)
         except ValueError:
-            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Jenis usaha tidak dikenal.")
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Jenis usaha atau cara hitung tidak dikenal.")
 
         pengguna = Pengguna(
             nomor_hp=badan.nomor_hp,
@@ -233,8 +237,10 @@ def daftar_umkm(badan: Daftar) -> Token:
             kota=badan.kota,
             nomor_hp=badan.nomor_hp,
             email=badan.email,
-            cara_hitung=CaraHitungStok.KEMASAN,
-            verifikasi=StatusVerifikasi.MENUNGGU,
+            cara_hitung=cara,
+            # Belum ada petugas pemeriksa di purwarupa ini. "Menunggu" akan mengunci pesanan dan
+            # kontrak akun baru tanpa ada yang bisa membukanya, dan layar pendaftaran menyebut ini.
+            verifikasi=StatusVerifikasi.TERVERIFIKASI,
             bergabung_sejak=datetime.now(timezone.utc).date(),
         )
         sesi.add(usaha)
@@ -280,8 +286,14 @@ def _masuk_usaha(badan: Masuk, *, untuk_pos: bool) -> Token:
                 status.HTTP_403_FORBIDDEN,
                 "Akun kasir hanya untuk Portal POS. Masuk lewat Portal POS.",
             )
-        token = _buat_token(pengguna, "kasir" if kasir else "umkm", usaha_id=anggota.usaha_id)
         usaha = sesi.get(Usaha, anggota.usaha_id)
+        # Barang warung kelontong dijual apa adanya dan tidak punya daftar menu, jadi kasirnya kosong.
+        if untuk_pos and usaha is not None and str(getattr(usaha.jenis_usaha, "value", usaha.jenis_usaha)) == "warung-kelontong":
+            raise HTTPException(
+                status.HTTP_403_FORBIDDEN,
+                "Portal POS belum tersedia untuk warung kelontong, karena barangnya belum punya daftar menu.",
+            )
+        token = _buat_token(pengguna, "kasir" if kasir else "umkm", usaha_id=anggota.usaha_id)
         token.nama_usaha = usaha.nama if usaha else None
         return token
 
