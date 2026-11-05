@@ -723,7 +723,7 @@ class Pembangkit:
         for status, jam, ket in (
             (StatusPesanan.MENUNGGU_KONFIRMASI, 8, "Pesanan dikirim ke distributor."),
             (StatusPesanan.DISIAPKAN, 10, "Distributor menerima pesanan dan menyiapkan barang."),
-            (StatusPesanan.DIKIRIM, 7, "Barang berangkat dari gudang distributor."),
+            (StatusPesanan.DIKIRIM, 13, "Barang berangkat dari gudang distributor."),
         ):
             self.tambah(
                 "pesanan_jejak",

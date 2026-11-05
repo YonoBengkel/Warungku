@@ -621,7 +621,7 @@ def _pesan(t_, usaha_id, dist_id, daftar, t, nomor, karakter, luar_kota, acak, a
     for status, jam, ket in (
         (StatusPesanan.MENUNGGU_KONFIRMASI, 8, "Pesanan dikirim ke distributor."),
         (StatusPesanan.DISIAPKAN, 10, "Distributor menerima pesanan dan menyiapkan barang."),
-        (StatusPesanan.DIKIRIM, 7, "Barang berangkat dari gudang distributor."),
+        (StatusPesanan.DIKIRIM, 13, "Barang berangkat dari gudang distributor."),
     ):
         t_.tambah("pesanan_jejak", {"pesanan_id": pesanan_id, "waktu": _wkt(t, jam, 0), "status": status, "keterangan": ket})
     baris = []

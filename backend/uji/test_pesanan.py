@@ -17,7 +17,7 @@ basis data simulasi.
 
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 
 import pytest
@@ -27,6 +27,7 @@ from sqlmodel import Session
 
 from api.otentikasi import acak_kata_sandi
 from api.utama import app
+from dataset.variasi_demo import _jam_berangkat
 from warungku.basis_data import mesin
 from warungku.enum import (
     CaraHitungStok,
@@ -45,8 +46,10 @@ from warungku.model import (
     Pengguna,
     Pesanan,
     PesananBaris,
+    PesananJejak,
     ProdukMaster,
     RekomendasiSkor,
+    Ulasan,
     Usaha,
 )
 
@@ -290,6 +293,134 @@ def test_pemilik_bisa_membatalkan_dan_distributor_melihat_pesanan_masuk(dunia):
     # Sudah batal: distributor tidak bisa lagi mengonfirmasi.
     r = klien.post(f"/distributor/{w['distributor']}/pesanan/{p['id']}/konfirmasi", headers=w["kepala_dist"], json={})
     assert r.status_code == 409
+
+
+def _pesanan_simulasi(w: dict, jam, status: StatusPesanan, jejak, ulasan=False) -> int:
+    """Pesanan seperti tulisan pembangkit: jam setempat di kolom UTC, tepat di menit."""
+    with Session(mesin()) as sesi:
+        p = Pesanan(
+            nomor=f"PS-SIM-{_cap()}", usaha_id=w["usaha"], distributor_id=w["distributor"], dibuat_pada=jam(8, 15),
+            status=status, status_bayar=StatusBayar.DIKONFIRMASI, perkiraan_tiba=jam(15), sudah_diulas=ulasan,
+            kirim_waktu_sampai=jam(11) if ulasan else None,
+        )
+        sesi.add(p)
+        sesi.flush()
+        sesi.add(PesananBaris(pesanan_id=p.id, penawaran_id=w["penawaran"], barang_id=w["barang"], nama="Biji Kopi Uji 1 kg",
+                              jumlah=Decimal("1"), satuan="kg", harga_satuan=140_000, isi_per_satuan=Decimal("1000")))
+        for st, h in jejak:
+            sesi.add(PesananJejak(pesanan_id=p.id, waktu=jam(h), status=st, keterangan="Simulasi"))
+        if ulasan:
+            sesi.add(Ulasan(pesanan_id=p.id, usaha_id=w["usaha"], distributor_id=w["distributor"], rating=5, waktu=jam(19),
+                            aspek_ketepatan_waktu=5, aspek_jumlah_sesuai=5, aspek_kondisi_barang=5))
+        sesi.commit()
+        return p.id
+
+
+def _waktu(s: str) -> datetime:
+    return datetime.fromisoformat(s)
+
+
+def test_jam_pesanan_simulasi_terbaca_sebagai_wib(dunia):
+    w, klien = dunia, TestClient(app)
+    u, d = f"/usaha/{w['usaha']}", f"/distributor/{w['distributor']}"
+
+    def jam(h, m=0):
+        return datetime(2020, 1, 4, h, m, tzinfo=timezone.utc)
+
+    pid = _pesanan_simulasi(
+        w, jam, StatusPesanan.SELESAI, ulasan=True,
+        jejak=((StatusPesanan.MENUNGGU_KONFIRMASI, 8), (StatusPesanan.DISIAPKAN, 10), (StatusPesanan.DIKIRIM, 13)),
+    )
+    for r in (klien.get(f"{u}/pesanan/{pid}", headers=w["kepala_umkm"]), klien.get(f"{d}/pesanan/{pid}", headers=w["kepala_dist"])):
+        assert r.status_code == 200, r.text
+        p = r.json()
+        assert _waktu(p["dibuat_pada"]) == jam(1, 15) and _waktu(p["perkiraan_tiba"]) == jam(8)
+        assert _waktu(p["kirim_waktu_sampai"]) == jam(4)
+        assert [(j["status"], _waktu(j["waktu"])) for j in p["jejak"]] == [
+            ("menunggu-konfirmasi", jam(1)), ("disiapkan", jam(3)), ("dikirim", jam(6)),
+        ]
+        # 19.00 setempat: tanggalnya tidak boleh terbawa ke hari berikutnya saat dibaca sebagai WIB.
+        assert _waktu(p["ulasan"]["waktu"]) == jam(12)
+    [ringkas] = [x for x in klien.get(f"{d}/pesanan", headers=w["kepala_dist"]).json() if x["id"] == pid]
+    assert _waktu(ringkas["dibuat_pada"]) == jam(1, 15) and _waktu(ringkas["perkiraan_tiba"]) == jam(8)
+    [ul] = klien.get(f"{u}/ulasan", headers=w["kepala_umkm"]).json()
+    assert _waktu(ul["waktu"]) == jam(12)
+
+
+def test_pesanan_sungguhan_tidak_digeser_dan_urut_dengan_simulasi(dunia):
+    w, klien = dunia, TestClient(app)
+    u, d = f"/usaha/{w['usaha']}", f"/distributor/{w['distributor']}"
+    sekarang = datetime.now(timezone.utc)
+    # Tiga jam ke depan di kolom, jadi tampil empat jam lalu. Urutan kolom mentah akan menaruhnya di atas.
+    dasar = sekarang.replace(second=0, microsecond=0) + timedelta(hours=3)
+
+    def jam(h, m=0):
+        return dasar + timedelta(hours=h - 8, minutes=m)
+
+    lama = _pesanan_simulasi(w, jam, StatusPesanan.MENUNGGU_KONFIRMASI, jejak=((StatusPesanan.MENUNGGU_KONFIRMASI, 8),))
+    baru = _buat(klien, w)
+    assert abs(_waktu(baru["dibuat_pada"]) - sekarang) < timedelta(minutes=5)
+    assert abs(_waktu(baru["jejak"][0]["waktu"]) - sekarang) < timedelta(minutes=5)
+    daftar = [x["id"] for x in klien.get(f"{u}/pesanan", headers=w["kepala_umkm"]).json()]
+    assert daftar.index(baru["id"]) < daftar.index(lama)
+    masuk = [x["id"] for x in klien.get(f"{d}/pesanan-masuk", headers=w["kepala_dist"]).json()]
+    assert masuk.index(baru["id"]) < masuk.index(lama)
+    ringkas = [x["id"] for x in klien.get(f"{d}/pesanan", headers=w["kepala_dist"]).json()]
+    assert ringkas.index(baru["id"]) < ringkas.index(lama)
+
+    # Langkah sungguhan pada pesanan simulasi jadi jejak terakhir, memakai jam sebenarnya.
+    r = klien.post(f"{d}/pesanan/{lama}/konfirmasi", headers=w["kepala_dist"], json={})
+    assert r.status_code == 200, r.text
+    jejak = r.json()["jejak"]
+    assert [j["status"] for j in jejak] == ["menunggu-konfirmasi", "disiapkan"]
+    assert abs(_waktu(jejak[1]["waktu"]) - sekarang) < timedelta(minutes=5)
+
+    # Ulasan sungguhan tetap memakai jam sebenarnya dan berada di atas ulasan simulasi.
+    with mesin().begin() as kon:
+        kon.execute(
+            text("UPDATE pesanan SET status = 'selesai', sudah_diulas = FALSE WHERE id = ANY(:p)"), {"p": [lama, baru["id"]]}
+        )
+        kon.execute(
+            text(
+                "INSERT INTO ulasan (pesanan_id, usaha_id, distributor_id, rating, waktu, aspek_ketepatan_waktu,"
+                " aspek_jumlah_sesuai, aspek_kondisi_barang) VALUES (:p, :u, :d, 4, :t, 4, 4, 4)"
+            ),
+            {"p": lama, "u": w["usaha"], "d": w["distributor"], "t": dasar},
+        )
+    r = klien.post(
+        f"{u}/pesanan/{baru['id']}/ulasan", headers=w["kepala_umkm"],
+        json={"aspek_ketepatan_waktu": 5, "aspek_jumlah_sesuai": 5, "aspek_kondisi_barang": 5},
+    )
+    assert r.status_code == 201, r.text
+    assert abs(_waktu(r.json()["ulasan"]["waktu"]) - sekarang) < timedelta(minutes=5)
+    ulasan = klien.get(f"{d}/ulasan", headers=w["kepala_dist"]).json()
+    assert [x["rating"] for x in ulasan] == [5, 4]
+
+
+def test_jejak_berangkat_simulasi_pindah_sesudah_barang_disiapkan(dunia):
+    w = dunia
+
+    def jam(h, m=0):
+        return datetime(2020, 1, 4, h, m, tzinfo=timezone.utc)
+
+    pid = _pesanan_simulasi(
+        w, jam, StatusPesanan.DIKIRIM,
+        jejak=((StatusPesanan.DIKIRIM, 7), (StatusPesanan.MENUNGGU_KONFIRMASI, 8), (StatusPesanan.DISIAPKAN, 10)),
+    )
+    # Jejak sungguhan yang kebetulan di jam yang sama tetap di tempatnya, karena membawa mikrodetik.
+    nyata = jam(7).replace(microsecond=5)
+    with Session(mesin()) as sesi:
+        sesi.add(PesananJejak(pesanan_id=pid, waktu=nyata, status=StatusPesanan.DIKIRIM, keterangan="Nyata"))
+        sesi.commit()
+    with mesin().begin() as kon:
+        assert _jam_berangkat(kon) >= 1
+        assert _jam_berangkat(kon) == 0
+        baris = kon.execute(
+            text("SELECT status::text, waktu FROM pesanan_jejak WHERE pesanan_id = :p ORDER BY waktu"), {"p": pid}
+        ).all()
+    assert [(s, t.astimezone(timezone.utc)) for s, t in baris] == [
+        ("dikirim", nyata), ("menunggu-konfirmasi", jam(8)), ("disiapkan", jam(10)), ("dikirim", jam(13)),
+    ]
 
 
 def test_katalog_mencocokkan_penawaran_ke_barang_pemanggil(dunia):

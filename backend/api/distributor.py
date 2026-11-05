@@ -22,6 +22,7 @@ from sqlmodel import Session
 from warungku.basis_data import mesin
 from warungku.model import Distributor
 
+from .gudang import WAKTU_PESANAN
 from .otentikasi import distributor_saya
 from .skema import (
     InfoUsahaDistributor,
@@ -192,10 +193,10 @@ def pesanan_masuk(
         _distributor_atau_404(sesi, distributor_id)
         baris = sesi.exec(
             text(
-                """
+                f"""
                 SELECT p.id, p.nomor, p.usaha_id, u.nama AS nama_usaha, u.kota,
-                       p.dibuat_pada, p.status, p.status_bayar, p.ongkos_kirim,
-                       p.perkiraan_tiba, p.dari_saran, p.sudah_diulas,
+                       {WAKTU_PESANAN.format(k="p.dibuat_pada")} AS dibuat_pada, p.status, p.status_bayar, p.ongkos_kirim,
+                       {WAKTU_PESANAN.format(k="p.perkiraan_tiba")} AS perkiraan_tiba, p.dari_saran, p.sudah_diulas,
                        COALESCE(n.jumlah_baris, 0) AS jumlah_baris,
                        COALESCE(n.nilai, 0)        AS nilai
                   FROM pesanan p
@@ -207,7 +208,7 @@ def pesanan_masuk(
                   ) n ON true
                  WHERE p.distributor_id = :d
                    AND (:s IS NULL OR p.status::text = :s)
-                 ORDER BY p.dibuat_pada DESC
+                 ORDER BY dibuat_pada DESC
                  LIMIT :n
                 """
             ).bindparams(d=distributor_id, s=status, n=batas)

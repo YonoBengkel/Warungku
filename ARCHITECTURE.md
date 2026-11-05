@@ -65,6 +65,11 @@ flowchart LR
   sedangkan semua jalur tulis aplikasi membawa detik dan mikrodetik, jadi aturan 7 jam yang sama berlaku untuk baris itu saja.
   `GET /usaha/{id}/barang` membawa `terakhir_berubah`, waktu pergerakan terakhir tiap barang dengan aturan yang sama, untuk
   urutan Terakhir berubah di daftar Stok dan peringatan saat isi kemasan diubah.
+- **Jam pesanan simulasi.** Waktu pesanan, jejak, perkiraan tiba, waktu sampai, dan ulasan buatan pembangkit juga jam setempat di
+  kolom UTC dan tepat di menit. Rute pesanan dan ulasan membacanya lewat `waktu_pesanan` dan `WAKTU_PESANAN` di
+  `backend/api/gudang.py`, termasuk untuk urutan, supaya terbaca sebagai WIB dan urut dengan baris sungguhan. Kolomnya sendiri tetap,
+  karena tanggal usaha dan Mesin 2 membacanya apa adanya. Jejak berangkat simulasi yang lama pukul 07.00 mendahului pesanan yang
+  masuk pukul 08.00, jadi `perbaiki_simulasi` memindahkannya ke 13.00, sama dengan pembangkit sekarang.
 - **Daftar pesanan berhalaman.** Kedua portal memuat 100 pesanan terbaru, sisanya lewat Muat pesanan lebih lama (`mulai`).
   Pesanan lama yang dibuka dari tautan diambil sendiri lewat `GET /pesanan/{id}`.
 - **Nota adalah pintu masuk.** `POST /usaha/{id}/transaksi` (`backend/api/gudang.py`) menyimpan nota, menerjemahkan

@@ -945,9 +945,24 @@ def _lengkapi_kiriman(kon) -> int:
     ).rowcount
 
 
+def _jam_berangkat(kon) -> int:
+    """
+    Jejak "barang berangkat" simulasi tertulis pukul 07.00, sebelum pesanannya masuk pukul 08.00.
+    Dipindah ke 13.00, sesudah distributor menyiapkan barang pukul 10.00, seperti pembangkit sekarang.
+    """
+    return kon.execute(
+        text(
+            """
+            UPDATE pesanan_jejak SET waktu = waktu + interval '6 hours'
+             WHERE status = 'dikirim' AND (waktu AT TIME ZONE 'UTC')::time = '07:00'
+            """
+        )
+    ).rowcount
+
+
 def perbaiki_simulasi(kon) -> dict[str, int]:
     """Perbaikan kecil data simulasi yang dijalankan setiap kali, juga saat variasinya masih segar."""
-    return {"gudang": _titik_gudang(kon), "kiriman": _lengkapi_kiriman(kon)}
+    return {"gudang": _titik_gudang(kon), "kiriman": _lengkapi_kiriman(kon), "jam_berangkat": _jam_berangkat(kon)}
 
 
 def _tandai_terlambat_sampai(kon, sekarang: datetime) -> int:
@@ -1181,7 +1196,8 @@ def ringkas(hasil: dict) -> list[str]:
     for kunci, h in hasil.items():
         if kunci == "perbaikan":
             baris.append(f"  data simulasi: {h['gudang']} titik gudang diisi, "
-                         f"{h['kiriman']} kiriman dilengkapi jasa kirim dan resi")
+                         f"{h['kiriman']} kiriman dilengkapi jasa kirim dan resi, "
+                         f"{h['jam_berangkat']} jejak berangkat dipindah")
         elif kunci == EMAIL_DISTRIBUTOR:
             baris.append(f"  {kunci}: {h['pesanan']} pesanan masuk dari {h['pembeli']} kedai, {h['kontrak']} kontrak, "
                          f"{h['promo']} promo berjalan (termasuk distributor lain)")

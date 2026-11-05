@@ -21,6 +21,7 @@ from sqlmodel import Session, select
 from warungku.basis_data import mesin
 from warungku.model import Usaha
 
+from .gudang import WAKTU_PESANAN
 from .otentikasi import distributor_saya, usaha_saya
 from .skema import DistributorKatalog, Katalog, PaketKontrakRingkas, PenawaranKatalog, UlasanPublik, UsahaRingkas
 
@@ -123,7 +124,7 @@ def _ulasan(syarat: str, nilai: int, batas: int) -> list[UlasanPublik]:
             text(
                 f"""
                 SELECT ul.id, ul.distributor_id, u.nama AS nama_usaha, u.kota AS kota_usaha,
-                       ul.rating, ul.isi, ul.waktu, p.nomor AS nomor_pesanan,
+                       ul.rating, ul.isi, {WAKTU_PESANAN.format(k="ul.waktu")} AS waktu, p.nomor AS nomor_pesanan,
                        ul.aspek_ketepatan_waktu, ul.aspek_jumlah_sesuai, ul.aspek_kondisi_barang,
                        h.jumlah AS jumlah_pesanan_penulis, h.sejak AS pelanggan_sejak
                   FROM ulasan ul
@@ -135,7 +136,7 @@ def _ulasan(syarat: str, nilai: int, batas: int) -> list[UlasanPublik]:
                        WHERE q.usaha_id = ul.usaha_id AND q.distributor_id = ul.distributor_id
                   ) h ON TRUE
                  WHERE {syarat}
-                 ORDER BY ul.waktu DESC
+                 ORDER BY waktu DESC
                  LIMIT :n
                 """
             ).bindparams(x=nilai, n=batas)

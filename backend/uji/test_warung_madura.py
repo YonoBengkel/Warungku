@@ -287,6 +287,26 @@ def test_data_lain_tidak_tersentuh(warung):
     assert lain == 0
 
 
+def test_jejak_pesanan_urut_dari_masuk_sampai_tiba(warung):
+    kon, _, u, _lama = warung
+    urutan = kon.execute(
+        text(
+            """
+            SELECT count(*), count(*) FILTER (WHERE masuk < siap AND siap < berangkat AND berangkat < tiba)
+              FROM (SELECT min(j.waktu) FILTER (WHERE j.status = 'menunggu-konfirmasi') AS masuk,
+                           min(j.waktu) FILTER (WHERE j.status = 'disiapkan') AS siap,
+                           min(j.waktu) FILTER (WHERE j.status = 'dikirim') AS berangkat,
+                           min(j.waktu) FILTER (WHERE j.status IN ('selesai', 'selesai-catatan')) AS tiba
+                      FROM pesanan p JOIN pesanan_jejak j ON j.pesanan_id = p.id
+                     WHERE p.usaha_id = :u AND p.status IN ('selesai', 'selesai-catatan')
+                     GROUP BY p.id) s
+            """
+        ),
+        {"u": u},
+    ).one()
+    assert urutan[0] > 0 and urutan[0] == urutan[1]
+
+
 def test_tanggal_sejajar_dan_ikut_geseran_berikutnya(warung):
     """Dijalankan terakhir di urutan berkas: geserannya mengubah tanggal barisnya."""
     kon, jumlah, u, _lama = warung

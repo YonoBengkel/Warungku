@@ -52,6 +52,7 @@ from warungku.model import (
     Usaha,
 )
 
+from .gudang import WAKTU_PESANAN, waktu_pesanan
 from .kontrak import periode_berjalan, status_terbaca
 from .otentikasi import distributor_saya, usaha_saya
 from .skema import (
@@ -77,6 +78,8 @@ BULAN_HUJAN = frozenset({11, 12, 1, 2, 3})
 HARI_KIRIM_BAWAAN = 2
 ALASAN_JUMLAH = {AlasanSelisih.KURANG.value, AlasanSelisih.LEBIH.value}
 ALASAN_KONDISI = {AlasanSelisih.RUSAK.value, AlasanSelisih.KUALITAS_BEDA.value, AlasanSelisih.SALAH_BARANG.value}
+#: Mengikuti waktu tampil, supaya pesanan simulasi dan pesanan sungguhan urut dengan benar.
+TERBARU_DULU = text(WAKTU_PESANAN.format(k="pesanan.dibuat_pada") + " DESC")
 
 
 def _sekarang() -> datetime:
@@ -112,11 +115,11 @@ def _lengkap(sesi: Session, p: Pesanan) -> PesananLengkap:
         distributor_id=p.distributor_id,
         nama_distributor=dist.nama if dist else "",
         kontrak_id=p.kontrak_id,
-        dibuat_pada=p.dibuat_pada,
+        dibuat_pada=waktu_pesanan(p.dibuat_pada),
         status=_nilai(p.status),
         status_bayar=_nilai(p.status_bayar),
         ongkos_kirim=p.ongkos_kirim,
-        perkiraan_tiba=p.perkiraan_tiba,
+        perkiraan_tiba=waktu_pesanan(p.perkiraan_tiba),
         jumlah_bukti=p.jumlah_bukti,
         dari_saran=p.dari_saran,
         dari_rutin=p.dari_rutin,
@@ -128,7 +131,7 @@ def _lengkap(sesi: Session, p: Pesanan) -> PesananLengkap:
         kirim_pengantar=p.kirim_pengantar,
         kirim_nomor_resi=p.kirim_nomor_resi,
         kirim_diterima_oleh=p.kirim_diterima_oleh,
-        kirim_waktu_sampai=p.kirim_waktu_sampai,
+        kirim_waktu_sampai=waktu_pesanan(p.kirim_waktu_sampai),
         kirim_catatan=p.kirim_catatan,
         baris=[
             BarisPesananLengkap(
@@ -148,8 +151,13 @@ def _lengkap(sesi: Session, p: Pesanan) -> PesananLengkap:
             )
             for b in baris
         ],
-        jejak=[JejakPesananLengkap(waktu=j.waktu, status=_nilai(j.status), keterangan=j.keterangan) for j in jejak],
-        ulasan=UlasanPesanan.model_validate(ulasan) if ulasan else None,
+        jejak=sorted(
+            (JejakPesananLengkap(waktu=waktu_pesanan(j.waktu), status=_nilai(j.status), keterangan=j.keterangan) for j in jejak),
+            key=lambda j: j.waktu,
+        ),
+        ulasan=(
+            UlasanPesanan.model_validate(ulasan).model_copy(update={"waktu": waktu_pesanan(ulasan.waktu)}) if ulasan else None
+        ),
     )
 
 
@@ -208,7 +216,7 @@ def daftar_pesanan(
     with Session(mesin()) as sesi:
         semua = sesi.exec(
             select(Pesanan).where(Pesanan.usaha_id == usaha_id)
-            .order_by(Pesanan.dibuat_pada.desc(), Pesanan.id.desc()).offset(mulai).limit(batas)
+            .order_by(TERBARU_DULU, Pesanan.id.desc()).offset(mulai).limit(batas)
         ).all()
         return [_lengkap(sesi, p) for p in semua]
 
@@ -634,7 +642,7 @@ def daftar_pesanan_masuk(
         semua = sesi.exec(
             select(Pesanan)
             .where(Pesanan.distributor_id == distributor_id, Pesanan.status != StatusPesanan.DRAF)
-            .order_by(Pesanan.dibuat_pada.desc(), Pesanan.id.desc())
+            .order_by(TERBARU_DULU, Pesanan.id.desc())
             .offset(mulai)
             .limit(batas)
         ).all()

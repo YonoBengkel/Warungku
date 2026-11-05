@@ -70,6 +70,18 @@ POLA_NOTA_SIMULASI = r"^[0-9]{8}-[0-9]{3}-[0-9]+$"
 WAKTU_PERGERAKAN = """CASE WHEN g.transaksi_id IS NULL AND date_trunc('minute', g.waktu) = g.waktu
                            THEN g.waktu - interval '7 hours' ELSE g.waktu END"""
 
+#: Waktu tampil kolom pesanan, jejak, dan ulasan, untuk kueri (`{k}` nama kolomnya). Aturannya sama:
+#: pembangkit menulis jam setempat tepat di menit, semua jalur tulis aplikasi membawa mikrodetik.
+#: Jam yang dijepit `geser_tanggal` ke waktu geseran bermikrodetik, dan memang sudah waktu sebenarnya.
+WAKTU_PESANAN = "CASE WHEN date_trunc('minute', {k}) = {k} THEN {k} - interval '7 hours' ELSE {k} END"
+
+
+def waktu_pesanan(waktu: datetime | None) -> datetime | None:
+    """`WAKTU_PESANAN` untuk nilai yang sudah dibaca."""
+    if waktu is None or waktu.second or waktu.microsecond:
+        return waktu
+    return waktu - timedelta(hours=7)
+
 
 def waktu_nota(nomor_struk: str, waktu: datetime) -> datetime:
     """Waktu nota untuk ditampilkan, supaya nota simulasi terbaca pada jam yang dimaksud."""
