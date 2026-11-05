@@ -321,6 +321,29 @@ class RiwayatHarian(BaseModel):
     stok_habis: bool
 
 
+class BarisPergerakan(BaseModel):
+    """Satu baris buku besar satu barang. `jumlah` positif untuk masuk, negatif untuk keluar."""
+
+    id: int
+    waktu: datetime
+    jenis: str
+    jumlah: Decimal
+    stok_sesudah: Decimal
+    keterangan: str | None
+    pesanan_id: int | None
+    #: Diikutkan karena daftar pesanan di layar hanya memuat yang terbaru.
+    nomor_pesanan: str | None
+    transaksi_id: int | None
+    oleh: str | None
+
+
+class RiwayatPergerakan(BaseModel):
+    """Satu halaman riwayat. `total` menghitung semua baris barang itu, bukan hanya halaman ini."""
+
+    total: int
+    baris: list[BarisPergerakan]
+
+
 class PerkiraanRingkas(BaseModel):
     barang_id: int
     tanggal_target: date

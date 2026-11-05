@@ -237,6 +237,8 @@ export interface Pergerakan {
   keterangan: string
   /** Pesanan asal, supaya riwayat bisa diketuk balik ke pesanannya. */
   pesananId: string | null
+  /** Nomor pesanan asal, kalau barisnya datang dari server. */
+  nomorPesanan?: string | null
   /** Struk asal untuk pergerakan yang lahir dari kasir. Null untuk yang lain. */
   transaksiId: string | null
   oleh: string

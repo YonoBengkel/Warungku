@@ -34,6 +34,7 @@ from .skema import (
     BarangRingkas,
     AlasanBatal,
     BarisNota,
+    BarisPergerakan,
     HasilBatal,
     HasilStruk,
     KemasanRingkas,
@@ -49,6 +50,7 @@ from .skema import (
     RingkasanMenuKasir,
     RingkasanSaranDistributor,
     RiwayatHarian,
+    RiwayatPergerakan,
     SaranDistributor,
     StrukMasuk,
 )
@@ -199,6 +201,49 @@ def ringkas_barang(sesi: Session, usaha_id: int) -> list[BarangRingkas]:
         )
         for b in barang
     ]
+
+
+@rute.get("/barang/{barang_id}/pergerakan", response_model=RiwayatPergerakan)
+def pergerakan_barang(
+    barang_id: int = Path(ge=1),
+    batas: int = Query(30, ge=1, le=100),
+    mulai: int = Query(0, ge=0),
+    usaha_id: int = Depends(usaha_saya),
+) -> RiwayatPergerakan:
+    """
+    Buku besar satu barang, terbaru di atas, berhalaman karena satu barang bisa punya ratusan baris.
+
+    Baris buatan pembangkit tidak punya nota dan jamnya tepat di menit, sedangkan semua jalur tulis
+    aplikasi membawa detik dan mikrodetik. Jamnya jam setempat yang ditulis apa adanya di kolom UTC
+    (lihat `waktu_nota`), jadi dimundurkan 7 jam supaya terbaca sebagai WIB dan urut dengan baris
+    sungguhan. Urutannya mengikuti waktu tampil itu, bukan kolom aslinya.
+    """
+    with Session(mesin()) as sesi:
+        _usaha_atau_404(sesi, usaha_id)
+        b = sesi.get(Barang, barang_id)
+        if b is None or b.usaha_id != usaha_id:
+            raise HTTPException(404, "Barang tidak ditemukan.")
+        total = sesi.exec(
+            text("SELECT count(*) FROM pergerakan WHERE usaha_id = :u AND barang_id = :b").bindparams(
+                u=usaha_id, b=barang_id
+            )
+        ).scalar_one()
+        baris = sesi.exec(
+            text(
+                """
+                SELECT g.id, g.jenis, g.jumlah, g.stok_sesudah, g.keterangan, g.pesanan_id, g.transaksi_id, g.oleh,
+                       p.nomor AS nomor_pesanan,
+                       CASE WHEN g.transaksi_id IS NULL AND date_trunc('minute', g.waktu) = g.waktu
+                            THEN g.waktu - interval '7 hours' ELSE g.waktu END AS waktu
+                  FROM pergerakan g
+                  LEFT JOIN pesanan p ON p.id = g.pesanan_id
+                 WHERE g.usaha_id = :u AND g.barang_id = :b
+                 ORDER BY waktu DESC, g.id DESC
+                 LIMIT :n OFFSET :m
+                """
+            ).bindparams(u=usaha_id, b=barang_id, n=batas, m=mulai)
+        ).all()
+        return RiwayatPergerakan(total=total, baris=[BarisPergerakan(**dict(r._mapping)) for r in baris])
 
 
 @rute.get("/barang/{barang_id}/riwayat", response_model=list[RiwayatHarian])

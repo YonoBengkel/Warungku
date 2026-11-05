@@ -59,6 +59,10 @@ flowchart LR
 - **Jam nota simulasi.** Jam nota simulasi adalah jam setempat yang ditulis apa adanya di kolom UTC, dan semua tanggal usaha di
   backend dihitung dengan `AT TIME ZONE 'UTC'`. Saat ditampilkan, `waktu_nota` di `backend/api/gudang.py` memundurkannya 7 jam untuk
   nota bernomor simulasi supaya terbaca sebagai WIB. Nota dari kasir sungguhan menyimpan waktu sebenarnya dan tidak diubah.
+- **Riwayat pergerakan.** Detail stok membaca buku besar lewat `GET /usaha/{id}/barang/{id}/pergerakan`, 30 baris tiap halaman
+  (`useRiwayatPergerakan`), karena satu barang bisa punya ratusan baris dan buku besar usaha tidak pernah dimuat ke peramban.
+  Tanpa server, panelnya tetap membaca data contoh di store. Baris pembangkit tidak punya nota dan jamnya tepat di menit,
+  sedangkan semua jalur tulis aplikasi membawa detik dan mikrodetik, jadi aturan 7 jam yang sama berlaku untuk baris itu saja.
 - **Daftar pesanan berhalaman.** Kedua portal memuat 100 pesanan terbaru, sisanya lewat Muat pesanan lebih lama (`mulai`).
   Pesanan lama yang dibuka dari tautan diambil sendiri lewat `GET /pesanan/{id}`.
 - **Nota adalah pintu masuk.** `POST /usaha/{id}/transaksi` (`backend/api/gudang.py`) menyimpan nota, menerjemahkan

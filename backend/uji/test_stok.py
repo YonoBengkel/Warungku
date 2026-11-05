@@ -11,7 +11,7 @@ Uji membuat usaha, pemilik, dan barangnya sendiri, lalu menghapusnya lagi.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 import pytest
@@ -160,6 +160,42 @@ def test_batas_aman_massal_dan_ganti_kategori(gudang):
     assert r.json() == {"diubah": 1}
     b = next(x for x in klien.get(f"/usaha/{ids['u1']}/barang", headers=kepala).json() if x["id"] == ids["barang"])
     assert (Decimal(b["batas_aman"]), b["sumber_batas_aman"], b["kategori"]) == (Decimal("350"), "sistem", "Bahan Pokok")
+
+
+def test_riwayat_pergerakan_berhalaman_dengan_jam_setempat(gudang):
+    ids, kepala, klien = gudang
+    r = klien.post(f"/usaha/{ids['u1']}/barang", headers=kepala, json={
+        "nama": "Santan Uji Riwayat", "kategori": "Bahan", "satuan": "pcs", "stok_awal": "10", "batas_aman": "2"})
+    assert r.status_code == 201, r.text
+    bid = r.json()["id"]
+    # Baris pembangkit: tanpa nota dan tepat di menit, dengan jam setempat yang ditulis di kolom UTC.
+    with mesin().begin() as kon:
+        for tanggal, jumlah in ((2, -2), (3, -1), (4, -3)):
+            kon.execute(
+                text(
+                    "INSERT INTO pergerakan (usaha_id, barang_id, waktu, jenis, jumlah, stok_sesudah, keterangan, oleh) "
+                    "VALUES (:u, :b, :w, 'terjual', :n, 5, 'Penjualan harian dari kasir', 'Kasir Open POS')"
+                ),
+                {"u": ids["u1"], "b": bid, "w": datetime(2020, 1, tanggal, 21, 45, tzinfo=timezone.utc), "n": jumlah},
+            )
+    jalur = f"/usaha/{ids['u1']}/barang/{bid}/pergerakan"
+    r = klien.get(jalur, headers=kepala, params={"batas": 2})
+    assert r.status_code == 200, r.text
+    isi = r.json()
+    assert isi["total"] == 4 and len(isi["baris"]) == 2
+    # Terbaru di atas: stok awal yang ditulis aplikasi membawa detik, jadi jamnya tidak diubah.
+    awal, simulasi = isi["baris"]
+    assert awal["jenis"] == "koreksi" and awal["keterangan"].startswith("Stok awal")
+    assert datetime.now(timezone.utc) - datetime.fromisoformat(awal["waktu"]) < timedelta(minutes=5)
+    assert simulasi["oleh"] == "Kasir Open POS" and Decimal(simulasi["jumlah"]) == Decimal("-3")
+    assert datetime.fromisoformat(simulasi["waktu"]) == datetime(2020, 1, 4, 14, 45, tzinfo=timezone.utc)
+    sisa = klien.get(jalur, headers=kepala, params={"batas": 2, "mulai": 2}).json()
+    assert [Decimal(g["jumlah"]) for g in sisa["baris"]] == [Decimal("-1"), Decimal("-2")] and sisa["total"] == 4
+    # Barang usaha lain, dan barang yang tidak ada, sama-sama tidak ditemukan.
+    assert klien.get(f"/usaha/{ids['u1']}/barang/{ids['lain']}/pergerakan", headers=kepala).status_code == 404
+    assert klien.get(f"/usaha/{ids['u2']}/barang/{ids['lain']}/pergerakan", headers=kepala).status_code == 403
+    assert klien.get(jalur).status_code == 401
+    assert klien.get(jalur, headers=kepala, params={"batas": 101}).status_code == 422
 
 
 def test_barang_usaha_lain_tidak_bisa_diubah(gudang):

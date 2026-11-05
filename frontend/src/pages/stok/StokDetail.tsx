@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import type { Barang, Pergerakan } from '@/lib/types'
 import { ChipKedaluwarsa, ChipStok, KartuPerkiraan } from '@/components/domain'
 import { KartuStruk } from '@/components/domain/KartuStruk'
-import { Bagian, Kartu, Lencana, Tombol, TombolTautan } from '@/components/ui/dasar'
+import { Bagian, Kartu, KerangkaBaris, Lencana, Tombol, TombolTautan } from '@/components/ui/dasar'
 import { PengaturJumlah } from '@/components/ui/formulir'
 import { KepalaHalaman, TabSegmen } from '@/components/ui/navigasi'
 import { KeadaanKosong, Penjelasan } from '@/components/ui/umpanBalik'
@@ -32,6 +32,7 @@ import {
   transaksiById,
 } from '@/data/dummy'
 import { useDataMesin } from '@/lib/dataMesin'
+import { useRiwayatPergerakan } from '@/lib/riwayatBarang'
 import { KUERI_DESKTOP, useKueriMedia } from '@/lib/media'
 import { LabelMetode, METODE_SARAN, metodePrediksi } from '@/components/domain/LabelMetode'
 import type { SaranServer } from '@/lib/api'
@@ -56,7 +57,6 @@ const BATAS_RIWAYAT = 5
 export default function StokDetail() {
   const { id = '' } = useParams()
   const barang = useAplikasi((s) => s.barang.find((b) => b.id === id))
-  const pergerakan = useAplikasi((s) => s.pergerakan)
   const pesanan = useAplikasi((s) => s.pesanan)
   const kontrak = useAplikasi((s) => s.kontrak.find((k) => k.barangId === id && k.status !== 'selesai'))
   const [tab, setTab] = useState<TabDetail>('ringkasan')
@@ -83,14 +83,8 @@ export default function StokDetail() {
     return { jumlah, pesananId, tiba }
   }, [pesanan, id])
 
-  const riwayat = useMemo(
-    () =>
-      pergerakan
-        .filter((g) => g.barangId === id)
-        .slice()
-        .sort((a, b) => +new Date(b.waktu) - +new Date(a.waktu)),
-    [pergerakan, id],
-  )
+  const riwayatBarang = useRiwayatPergerakan(barang)
+  const riwayat = riwayatBarang.baris
 
   if (!barang) {
     return (
@@ -408,6 +402,38 @@ export default function StokDetail() {
       aksi={<TombolTautan ke={`/stok/${barang.id}/koreksi`}>Koreksi Stok</TombolTautan>}
     />
   )
+  const panelRiwayat = (isi: Pergerakan[]) => {
+    if (riwayatBarang.status === 'memuat') return <KerangkaBaris jumlah={BATAS_RIWAYAT} />
+    if (riwayatBarang.status === 'gagal') {
+      return (
+        <KeadaanKosong
+          padat
+          ikon={<IkonKotak size={26} />}
+          judul="Riwayat belum bisa dimuat"
+          pesan="Sisa stok di halaman ini tidak terpengaruh. Coba muat lagi sebentar lagi."
+          aksi={
+            <Tombol ragam="garis" onClick={riwayatBarang.cobaLagi}>
+              Coba Lagi
+            </Tombol>
+          }
+        />
+      )
+    }
+    if (isi.length === 0) return riwayatKosong
+    return (
+      <>
+        {daftarRiwayat(isi)}
+        {/* Di desktop panelnya mulai dari lima baris: yang lebih lama baru diminta sesudah Lihat semua. */}
+        {isi.length === riwayat.length && riwayat.length < riwayatBarang.total && (
+          <div className="mt-3 flex justify-center">
+            <Tombol ragam="garis" memuat={riwayatBarang.memuatLagi} onClick={riwayatBarang.muatLagi}>
+              Muat riwayat lebih lama
+            </Tombol>
+          </div>
+        )}
+      </>
+    )
+  }
   const daftarRiwayat = (isi: Pergerakan[]) => (
     <ul id="daftar-riwayat" className="space-y-2">
       {isi.map((g) => (
@@ -449,7 +475,7 @@ export default function StokDetail() {
           <Bagian
             id="judul-riwayat"
             judul="Riwayat pergerakan"
-            keterangan={riwayat.length > 0 ? `${riwayat.length} pergerakan tercatat` : undefined}
+            keterangan={riwayatBarang.total > 0 ? `${angka(riwayatBarang.total)} pergerakan tercatat` : undefined}
             aksi={
               riwayat.length > BATAS_RIWAYAT ? (
                 <Tombol
@@ -465,9 +491,7 @@ export default function StokDetail() {
             }
             className={cx('h-full lg:p-4', kartuTren ? 'col-span-2 xl:col-span-1' : 'col-span-2 xl:col-span-3')}
           >
-            {riwayat.length === 0
-              ? riwayatKosong
-              : daftarRiwayat(riwayatSemua ? riwayat : riwayat.slice(0, BATAS_RIWAYAT))}
+            {panelRiwayat(riwayatSemua ? riwayat : riwayat.slice(0, BATAS_RIWAYAT))}
           </Bagian>
         </div>
       ) : (
@@ -478,7 +502,7 @@ export default function StokDetail() {
           <TabSegmen<TabDetail>
             tab={[
               { nilai: 'ringkasan', label: 'Ringkasan' },
-              { nilai: 'riwayat', label: 'Riwayat', jumlah: riwayat.length },
+              { nilai: 'riwayat', label: 'Riwayat', jumlah: riwayatBarang.total },
             ]}
             aktif={tab}
             ubah={setTab}
@@ -490,7 +514,7 @@ export default function StokDetail() {
             </div>
           ) : (
             <div role="tabpanel" aria-label="Riwayat pergerakan">
-              {riwayat.length === 0 ? riwayatKosong : daftarRiwayat(riwayat)}
+              {panelRiwayat(riwayat)}
             </div>
           )}
         </div>
@@ -645,7 +669,7 @@ function nomorPesanan(
   gerak: Pergerakan,
 ): string | null {
   if (!gerak.pesananId) return null
-  return daftar.find((p) => p.id === gerak.pesananId)?.nomor ?? null
+  return gerak.nomorPesanan ?? daftar.find((p) => p.id === gerak.pesananId)?.nomor ?? null
 }
 
 /**
@@ -680,12 +704,14 @@ function BarisRiwayat({
 
   let judul = 'Pergerakan stok'
   // Bahan baku UMKM produsen: pemakaiannya datang dari sesi masak, bukan kasir.
-  if (gerak.jenis === 'terjual' && gerak.keterangan?.startsWith('Dipakai produksi')) judul = 'Dipakai produksi'
+  if (gerak.jenis === 'terjual' && gerak.keterangan?.startsWith('Dipakai produksi')) judul = gerak.keterangan
   else if (gerak.jenis === 'terjual') judul = dicatatManual ? 'Pemakaian dicatat manual' : 'Terjual dari kasir'
   else if (gerak.jenis === 'masuk') judul = nomorPesanan ? `Masuk dari pesanan ${nomorPesanan}` : 'Barang masuk'
   else if (gerak.jenis === 'hitung-fisik') judul = 'Hasil hitung fisik'
   else if (gerak.jenis === 'koreksi') judul = 'Koreksi stok'
 
+  // Alasan koreksi atau asal barang masuk yang tidak tersebut di judul, mis. "Stok awal saat pendaftaran".
+  const catatan = gerak.jenis !== 'terjual' && !gerak.pesananId && gerak.keterangan !== judul ? gerak.keterangan : ''
 
   const isi = (
     <>
@@ -700,12 +726,17 @@ function BarisRiwayat({
           {besaran}
         </p>
       </div>
+      {catatan && <p className="mt-0.5 text-isi text-ink-2 leading-snug">{catatan}</p>}
       <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-kecil text-ink-3">
         <span>
           {tanggalRingkas(gerak.waktu)} &middot; {jam(gerak.waktu)}
         </span>
-        <span>&middot;</span>
-        <span>oleh {gerak.oleh}</span>
+        {gerak.oleh && (
+          <>
+            <span>&middot;</span>
+            <span>oleh {gerak.oleh}</span>
+          </>
+        )}
         <span>&middot;</span>
         <span>
           stok jadi {jumlahTampil(barang, Math.max(0, gerak.stokSesudah))}

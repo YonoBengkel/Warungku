@@ -73,7 +73,9 @@ from .buat_dataset import AKHIR, _wkt
 from .geser_tanggal import akhir_data, id_simulasi
 from .katalog import DISTRIBUTOR, deskripsi_kemasan
 
-OLEH = "Variasi demo"
+OLEH = "Pemilik toko"
+#: Penanda lama. Terbaca di riwayat pergerakan, jadi basis data yang masih memuatnya dipasang ulang.
+OLEH_LAMA = "Variasi demo"
 UMUR_BASI = timedelta(days=3)
 WIB = timezone(timedelta(hours=7))
 
@@ -435,10 +437,13 @@ def hapus(kon, usaha_id: int) -> None:
             {"u": usaha_id, "n": nama},
         )
     kena = [r[0] for r in kon.execute(
-        text("SELECT DISTINCT barang_id FROM pergerakan WHERE usaha_id = :u AND oleh = :o"), {"u": usaha_id, "o": OLEH}
+        text("SELECT DISTINCT barang_id FROM pergerakan WHERE usaha_id = :u AND oleh = ANY(:o)"),
+        {"u": usaha_id, "o": [OLEH, OLEH_LAMA]},
     )]
     if kena:
-        kon.execute(text("DELETE FROM pergerakan WHERE usaha_id = :u AND oleh = :o"), {"u": usaha_id, "o": OLEH})
+        kon.execute(
+            text("DELETE FROM pergerakan WHERE usaha_id = :u AND oleh = ANY(:o)"), {"u": usaha_id, "o": [OLEH, OLEH_LAMA]}
+        )
         # Stok kembali ke saldo buku besar tanpa koreksi variasi.
         kon.execute(
             text(
@@ -1078,6 +1083,8 @@ def basi(kon) -> bool:
         return True
     # Koreksi stok variasi bertanggal akhir data. Sesudah data digeser, koreksi yang
     # dipasang setelah geseran pertama tertinggal di akhir data yang lama.
+    if kon.execute(text("SELECT EXISTS (SELECT 1 FROM pergerakan WHERE oleh = :o)"), {"o": OLEH_LAMA}).scalar():
+        return True
     koreksi = kon.execute(
         text("SELECT max(waktu) FROM pergerakan WHERE oleh = :o AND jenis = 'koreksi'"), {"o": OLEH}
     ).scalar()

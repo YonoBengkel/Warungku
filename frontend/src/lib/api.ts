@@ -1,8 +1,10 @@
 import type {
   Barang,
   CaraHitungStok,
+  JenisPergerakan,
   JenisUsaha,
   KematanganPerkiraan,
+  Pergerakan,
   ProfilUsaha,
   StatusVerifikasi,
   SumberBatasAman,
@@ -513,6 +515,46 @@ export async function ambilRiwayat(sesi: SesiServer, barangId: string, hari = 28
     { token: sesi.token },
   )
   return isi.map((h) => ({ tanggal: h.tanggal, jumlah: angka(h.jumlah), stokHabis: h.stok_habis }))
+}
+
+/** Satu halaman buku besar satu barang, terbaru di atas. `total` menghitung semua barisnya. */
+export async function ambilPergerakan(
+  sesi: SesiServer,
+  barangId: string,
+  mulai: number,
+  batas: number,
+): Promise<{ total: number; baris: Pergerakan[] }> {
+  const isi = await minta<{
+    total: number
+    baris: Array<{
+      id: number
+      waktu: string
+      jenis: JenisPergerakan
+      jumlah: string
+      stok_sesudah: string
+      keterangan: string | null
+      pesanan_id: number | null
+      nomor_pesanan: string | null
+      transaksi_id: number | null
+      oleh: string | null
+    }>
+  }>(`/usaha/${sesi.usahaId}/barang/${barangId}/pergerakan?batas=${batas}&mulai=${mulai}`, { token: sesi.token })
+  return {
+    total: isi.total,
+    baris: isi.baris.map((g) => ({
+      id: String(g.id),
+      barangId,
+      waktu: g.waktu,
+      jenis: g.jenis,
+      jumlah: angka(g.jumlah),
+      stokSesudah: angka(g.stok_sesudah),
+      keterangan: g.keterangan ?? '',
+      pesananId: g.pesanan_id != null ? String(g.pesanan_id) : null,
+      nomorPesanan: g.nomor_pesanan,
+      transaksiId: g.transaksi_id != null ? String(g.transaksi_id) : null,
+      oleh: g.oleh ?? '',
+    })),
+  }
 }
 
 export async function ambilSaran(sesi: SesiServer, barangId: string): Promise<SaranServer[]> {

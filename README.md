@@ -561,6 +561,7 @@ turnify-flow/
 | POST | `/usaha/{usaha_id}/batas-aman/ikut-saran` | Batas aman beberapa barang mengikuti saran sistem |
 | POST | `/usaha/{usaha_id}/kategori/ganti` | Ganti nama satu kategori, atau gabungkan beberapa kategori |
 | GET | `/usaha/{usaha_id}/barang/{barang_id}/riwayat` | Pemakaian harian terakhir; hari stok habis ditandai |
+| GET | `/usaha/{usaha_id}/barang/{barang_id}/pergerakan` | Buku besar satu barang, terbaru di atas, berhalaman (`batas`, `mulai`), dengan jumlah seluruh barisnya |
 | GET | `/usaha/{usaha_id}/barang/{barang_id}/saran` | Saran distributor terbaru Mesin 2, dibaca dari tabel |
 | GET | `/usaha/{usaha_id}/saran-distributor` | Saran Mesin 2 dirangkum per distributor: rata-rata skor, peluang lancar, barang yang menempatkannya di urutan pertama |
 | GET | `/usaha/{usaha_id}/pemakaian-bulanan` | Pemakaian per 30 hari beserta uji balik Mesin 1 tiap periode (`uji_balik`), perkiraan 30 hari ke depan, dan kebutuhan 21 hari untuk saran beli (`perkiraan_persediaan`), semua barang |
