@@ -33,7 +33,7 @@
 name: backend
 
 x-backend: &backend
-  image: yonobengkel/turnify-flow-backend:0.22.0
+  image: yonobengkel/turnify-flow-backend:0.23.0
   build:
     context: ..
     dockerfile: deployment/Dockerfile
