@@ -6,7 +6,9 @@ Langkah membuka aplikasi untuk pengunjung lewat QR di banner: frontend di Vercel
 QR di banner -> frontend di Vercel -> Cloudflare Tunnel -> API dan basis data di device tim
 ```
 
-QR hanya memuat alamat Vercel, jadi device dan alamat tunnel boleh berganti tanpa mencetak ulang banner. Kalau device mati, halaman tetap terbuka dengan data contoh dan pita penandanya.
+QR hanya memuat alamat Vercel, `https://turnify-flow.vercel.app`, jadi device dan alamat tunnel boleh berganti tanpa mencetak ulang banner. Kalau device mati, halaman tetap terbuka dengan data contoh dan pita penandanya.
+
+Proyek Vercel-nya `turnify-flow` di akun `yonobengkel`, dan tidak terhubung ke GitHub, supaya push tidak mengubah situs saat pameran. Perubahan frontend baru terbit dengan `vercel deploy --prod` dari folder `frontend`. `VITE_API_URL` berisi `https://api.invalid` selama backend belum tersambung, karena nilai bawaan `localhost` bisa memunculkan permintaan izin jaringan lokal di peramban pengunjung.
 
 ## Siapa bisa apa
 
@@ -27,7 +29,7 @@ Butuh Docker Desktop, dan device yang dicolok listrik dengan mode tidur dimatika
 
    ```
    WARUNGKU_SANDI_BOOTH=<kata sandi panjang buatan tim>
-   WARUNGKU_ASAL_TAMBAHAN=https://<nama proyek>.vercel.app
+   WARUNGKU_ASAL_TAMBAHAN=https://turnify-flow.vercel.app
    ```
 
 3. Nyalakan API dan tunnel:
