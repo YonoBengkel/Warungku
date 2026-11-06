@@ -75,6 +75,12 @@ permintaan normal: barang yang pernah kehabisan stok 2,8% lawan 4,1% dengan atur
 Keputusan Ilham, 4 November 2026: kuota kontrak yang belum terpenuhi hanya menjadi peringatan, transaksi tidak diblokir. Akun
 tanpa NIB boleh membuat kontrak.
 
+## Pameran
+
+Pengunjung membuka aplikasi lewat QR di banner (`docs/PAMERAN.md`). Keputusan Ilham, 6 November 2026: frontend di Vercel, backend di device
+tim, dan akun simulasi hanya bisa membaca. Semua tombol tetap bisa ditekan tanpa mengubah basis data, sedangkan pengunjung yang ingin mencoba
+sungguhan mendaftar akun sendiri.
+
 ## Bukan lingkup MVP
 
 - Pembayaran sungguhan atau payment gateway. Uang hanya dicatat.

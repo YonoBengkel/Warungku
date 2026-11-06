@@ -239,6 +239,38 @@ export function PitaDataContoh({ portal }: { portal: 'umkm' | 'distributor' }) {
 }
 
 /**
+ * Akun simulasi saat pameran: semua pengunjung berbagi data yang sama, jadi tidak ada yang
+ * tersimpan. Tombol tetap bisa ditekan, dan simpan terakhir menjawab lewat `PESAN_BACA_SAJA`
+ * di `backend/api/pameran.py`. Portal distributor tidak punya pendaftaran.
+ */
+export function PitaBacaSaja({ portal }: { portal: 'umkm' | 'distributor' }) {
+  const bacaSaja = useAplikasi((s) => (portal === 'umkm' ? s.sesiServer?.bacaSaja : s.sesiDistributor?.bacaSaja))
+  const aturMasuk = useAplikasi((s) => s.aturMasuk)
+  const navigate = useNavigate()
+  if (!bacaSaja) return null
+  return (
+    <div role="status" className="border-b border-menipis/30 bg-menipis-soft text-menipis-ink">
+      <p className="max-w-[1400px] mx-auto px-4 sm:px-6 py-2 text-isi font-semibold leading-snug">
+        <IkonPeringatan size={16} className="inline-block align-[-3px] mr-1.5" />
+        Kamu sedang mencoba akun simulasi. Semua tombol boleh ditekan, tetapi perubahannya tidak disimpan.{' '}
+        {portal === 'umkm' && (
+          <button
+            type="button"
+            onClick={() => {
+              aturMasuk(false)
+              navigate('/daftar')
+            }}
+            className="inline-block py-3 -my-3 font-bold underline underline-offset-2"
+          >
+            Daftar akun sendiri
+          </button>
+        )}
+      </p>
+    </div>
+  )
+}
+
+/**
  * Catatan di samping kontrol yang di mode data server belum tersimpan di server
  * (audit 3 Nov 2026). Di mode data contoh tidak tampil, karena pita di atas sudah
  * bilang perubahan tidak tersimpan.

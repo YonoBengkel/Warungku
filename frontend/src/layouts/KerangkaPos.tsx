@@ -1,4 +1,5 @@
 import { Navigate, NavLink, useNavigate } from 'react-router-dom'
+import { PitaBacaSaja } from '@/components/domain'
 import { Avatar, Tombol } from '@/components/ui/dasar'
 import { IkonKeluar } from '@/icons'
 import { cx } from '@/lib/format'
@@ -67,6 +68,7 @@ export default function KerangkaPos() {
           <span className="max-sm:sr-only">Keluar</span>
         </Tombol>
       </header>
+      <PitaBacaSaja portal="umkm" />
       <main id="konten" className="flex-1 min-h-0">
         <IsiHalaman />
       </main>

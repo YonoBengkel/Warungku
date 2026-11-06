@@ -54,6 +54,10 @@ x-backend: &backend
     # jaringan yang sama bisa membukanya. siapkan.cmd mengisinya dengan alamat Wi-Fi
     # laptop; kontainer tidak bisa melihat alamat itu sendiri. Kosong = tombol cadangan saja.
     WARUNGKU_ALAMAT_QR: ${WARUNGKU_ALAMAT_QR:-}
+    # Pameran (docs/PAMERAN.md). Alamat frontend di Vercel, dan kata sandi tim di booth.
+    # Mengisi kata sandi ini membuat akun simulasi hanya bisa membaca. Kosong = seperti biasa.
+    WARUNGKU_ASAL_TAMBAHAN: ${WARUNGKU_ASAL_TAMBAHAN:-}
+    WARUNGKU_SANDI_BOOTH: ${WARUNGKU_SANDI_BOOTH:-}
     TZ: Asia/Jakarta
 
 services:
@@ -67,8 +71,10 @@ services:
       POSTGRES_PASSWORD: warungku
       POSTGRES_DB: warungku_dev
       TZ: Asia/Jakarta
+    # Hanya untuk komputer ini. Kata sandi basis data ada di repo publik, jadi port ini tidak
+    # boleh terbuka ke Wi-Fi yang sama, apalagi di tempat pameran.
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5433:5432"
     volumes:
       - warungku_data:/var/lib/postgresql/data
     healthcheck:
@@ -99,7 +105,18 @@ services:
     # dan 3 setiap empat jam, lalu menulis hasilnya ke basis data.
     command: ["uvicorn", "ml.layanan:app", "--host", "0.0.0.0", "--port", "8001"]
     ports:
-      - "8001:8001"
+      - "127.0.0.1:8001:8001"
+
+  # Alamat HTTPS sementara untuk API, tanpa domain. Alamatnya berganti tiap kontainer ini
+  # dinyalakan ulang: docker logs turnify-tunnel. Langkahnya di docs/PAMERAN.md.
+  tunnel:
+    image: cloudflare/cloudflared:2025.11.1
+    container_name: turnify-tunnel
+    profiles: ["pameran"]
+    restart: "no"
+    depends_on:
+      - api
+    command: ["tunnel", "--no-autoupdate", "--url", "http://api:8000"]
 
 volumes:
   warungku_data:

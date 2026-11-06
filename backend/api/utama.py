@@ -16,7 +16,7 @@ from sqlalchemy import text
 from warungku.basis_data import mesin
 from warungku.konfigurasi import alamat_layanan_model
 
-from . import distributor, gudang, kasir, katalog, kontrak, otentikasi, penjualan, pesanan, produksi, profil, promo, stok
+from . import distributor, gudang, kasir, katalog, kontrak, otentikasi, pameran, penjualan, pesanan, produksi, profil, promo, stok
 
 app = FastAPI(
     title="Turnify Flow API",
@@ -25,8 +25,11 @@ app = FastAPI(
         "Layanan baca-tulis basis data Turnify Flow. Tidak memanggil model: "
         "keluaran model dibaca dari tabel yang ditulis layanan `ml`."
     ),
+    # Di mode pameran alamat ini terbuka untuk umum, dan peta rutenya tidak perlu ikut dipajang.
+    **({"docs_url": None, "redoc_url": None, "openapi_url": None} if otentikasi.mode_pameran() else {}),
 )
 
+pameran.pasang(app)
 app.add_middleware(
     CORSMiddleware,
     # Port pengembangan Vite. Daftar diperketat saat dipasang sungguhan —
@@ -64,7 +67,7 @@ app.include_router(penjualan.rute_distributor)
 @app.get("/", include_in_schema=False)
 def akar() -> RedirectResponse:
     """Alamat utama tidak punya halaman; arahkan ke dokumentasi interaktif."""
-    return RedirectResponse("/docs")
+    return RedirectResponse("/sehat" if otentikasi.mode_pameran() else "/docs")
 
 
 @app.get("/sehat", tags=["sistem"])

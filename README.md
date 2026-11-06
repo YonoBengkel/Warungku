@@ -546,7 +546,7 @@ turnify-flow/
 | Method | Endpoint | Keterangan |
 | --- | --- | --- |
 | POST | `/auth/umkm/daftar` | Buat akun pemilik usaha beserta usahanya (satu akun, satu usaha), dipanggil langkah 2 layar Daftar. Akun langsung aktif. Email atau nomor HP kembar dijawab 409 |
-| POST | `/auth/umkm/masuk` | Masuk sebagai pemilik usaha |
+| POST | `/auth/umkm/masuk` | Masuk sebagai pemilik usaha. Di mode pameran (`docs/PAMERAN.md`) kata sandi publik akun simulasi hanya membuka akses baca |
 | POST | `/auth/pos/masuk` | Masuk ke Portal POS: kasir mendapat token kasir, pemilik mendapat token pemilik. Warung kelontong ditolak 403 karena belum punya daftar menu |
 | POST | `/auth/distributor/masuk` | Masuk sebagai distributor |
 | GET | `/auth/saya` | Siapa pemegang token ini |
@@ -823,6 +823,7 @@ Daftar ini ada supaya tidak ada yang menyangka bagian ini sudah selesai.
 
 | Dokumen | Isi |
 | --- | --- |
+| [`docs/PAMERAN.md`](docs/PAMERAN.md) | Membuka aplikasi untuk pengunjung pameran: Vercel, tunnel, dan akun simulasi baca saja |
 | [`docs/laporan/`](docs/laporan/) | Laporan progres untuk dosen (Word dan PDF), laporan implementasi lengkap dan ringkas |
 | [`docs/proses-bisnis/`](docs/proses-bisnis/) | Dokumen proses bisnis, flowchart B2B/B2C, Gantt |
 | [`DESIGN.md`](DESIGN.md) | Acuan tampilan untuk kode antarmuka: token warna, skala teks, hierarki tombol, kosakata, larangan |

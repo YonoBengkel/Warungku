@@ -275,7 +275,8 @@ export default function Kasir() {
         </Peringatan>
       </div>
     )
-  if (shift === null) return <BukaKas onBuka={setShift} />
+  // Akun simulasi tidak bisa membuka kas, dan tanpa ini pengunjung tertahan di layar pertama.
+  if (shift === null && !sesi?.bacaSaja) return <BukaKas onBuka={setShift} />
 
   return (
     <div className="h-full lg:grid lg:grid-cols-[minmax(0,1fr)_23rem]">

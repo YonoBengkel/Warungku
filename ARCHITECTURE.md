@@ -40,6 +40,13 @@ flowchart LR
   dibuka lagi dan langkah 2 hanya mengubah profil. Akun baru langsung `terverifikasi`, karena belum ada petugas pemeriksa dan
   verifikasi yang menggantung mengunci pesanan dan kontrak selamanya. Layar menyebut hal ini. Nomor HP unik di `pengguna`, jadi
   nomor kembar dijawab 409.
+- **Mode pameran (`WARUNGKU_SANDI_BOOTH`, langkahnya di `docs/PAMERAN.md`).** Frontend di Vercel, API dan basis data di device tim
+  lewat Cloudflare Tunnel, dan `frontend/vercel.json` mengarahkan semua alamat ke `index.html`. Kata sandi publik akun `@warungku.test`
+  menghasilkan token `baca_saja`, dan penjaga di `backend/api/pameran.py` menolak semua permintaan tulis dari token itu sebelum sampai ke
+  rute, jadi rute baru ikut tertutup. Kata sandi booth membuka akun yang sama dengan akses penuh. Penolakannya tampil lewat satu toast
+  dari `minta` (`lib/api.ts`), `PitaBacaSaja` menandai sesinya, dan Portal POS melewati Buka Kas supaya pengunjung tidak tertahan. Mode ini
+  juga membatasi percobaan masuk dan daftar per alamat dan mematikan `/docs`. Port basis data dan layanan model hanya terbuka untuk komputer
+  itu, karena kata sandi basis datanya ada di repo.
 - **Masuk hanya lewat email dan kata sandi.** Tab nomor HP dihapus: tab itu menerima nomor apa saja dan membuka data contoh, padahal
   pendaftar baru mengira itu akunnya. Masuk lewat nomor HP dan Lupa Kata Sandi menunggu OTP. Data contoh dibuka lewat tombol
   tersendiri di halaman Masuk, dan pita di kerangka tetap menandainya.

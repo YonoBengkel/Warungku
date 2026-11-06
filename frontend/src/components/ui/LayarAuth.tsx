@@ -6,7 +6,7 @@ import { Peringatan } from '@/components/ui/umpanBalik'
 
 /** Yang tidak sungguhan di pendaftaran: pemeriksaan legalitas. */
 export const CATATAN_DAFTAR =
-  'Akun yang kamu buat di sini sungguhan dan bisa dipakai masuk lagi lewat email. Belum ada petugas pemeriksa, jadi akun baru langsung aktif tanpa pemeriksaan legalitas.'
+  'Akun yang kamu buat di sini sungguhan dan bisa dipakai masuk lagi lewat email. Belum ada petugas pemeriksa, jadi akun baru langsung aktif tanpa pemeriksaan legalitas. Isi dengan data karangan saja, tidak perlu data asli.'
 
 /** Server tidak terjangkau saat akun dibuat: alurnya tetap bisa dilihat, tetapi akunnya belum ada. */
 export const CATATAN_DAFTAR_TANPA_SERVER =

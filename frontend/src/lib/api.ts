@@ -72,6 +72,15 @@ export interface SesiServer {
   email?: string
   /** Akun kasir (Portal POS) hanya diterima endpoint POS. Kosong berarti pemilik. */
   peran?: 'umkm' | 'kasir'
+  /** Akun simulasi saat pameran: boleh melihat dan menekan apa saja, tetapi tidak ada yang tersimpan. */
+  bacaSaja?: boolean
+}
+
+/* Tidak semua pemanggil menampilkan galatnya, padahal tombol yang diam terlihat seperti rusak.
+   Penolakan baca saja disampaikan dari satu tempat. Store mengisinya, karena store mengimpor berkas ini. */
+let saatDitolakBacaSaja: ((pesan: string) => void) | null = null
+export function aturSaatDitolakBacaSaja(fn: (pesan: string) => void) {
+  saatDitolakBacaSaja = fn
 }
 
 /* ------------------------------------------------------------------ */
@@ -112,13 +121,14 @@ export async function minta<T>(jalur: string, opsi: RequestInit & { token?: stri
       },
     })
   } catch {
-    throw new ServerTakTerjangkau(`Turnify Flow di ${ALAMAT} tidak bisa dihubungi.`)
+    throw new ServerTakTerjangkau('Turnify Flow belum bisa dihubungi. Coba lagi sebentar lagi.')
   }
   if (!jawab.ok) {
     let pesan = 'Permintaan belum berhasil. Coba lagi sebentar lagi.'
     try {
       const isi = await jawab.json()
       if (typeof isi?.detail === 'string') pesan = isi.detail
+      if (isi?.baca_saja) saatDitolakBacaSaja?.(pesan)
       else if (Array.isArray(isi?.detail) && isi.detail.length > 0) pesan = pesanValidasi(isi.detail)
     } catch {
       /* Badan bukan JSON; pakai pesan bawaan. */
@@ -143,6 +153,7 @@ interface TokenApi {
   usaha_id: number | null
   nama_usaha?: string | null
   kedaluwarsa_pada: string
+  baca_saja?: boolean | null
 }
 
 export async function masukUmkm(email: string, kataSandi: string): Promise<SesiServer> {
@@ -158,6 +169,7 @@ export async function masukUmkm(email: string, kataSandi: string): Promise<SesiS
     namaUsaha: t.nama_usaha ?? null,
     kedaluwarsaPada: t.kedaluwarsa_pada,
     email,
+    bacaSaja: t.baca_saja === true,
   }
 }
 
@@ -204,6 +216,7 @@ export async function masukPos(email: string, kataSandi: string): Promise<SesiSe
     kedaluwarsaPada: t.kedaluwarsa_pada,
     email,
     peran: t.peran === 'kasir' ? 'kasir' : 'umkm',
+    bacaSaja: t.baca_saja === true,
   }
 }
 
@@ -656,6 +669,7 @@ export interface SesiDistributor {
   distributorId: number
   namaPengguna: string
   kedaluwarsaPada: string
+  bacaSaja?: boolean
 }
 
 /** Sesi portal distributor terpisah dari sesi UMKM: tokennya pun berbeda jenis. */
@@ -685,7 +699,7 @@ export async function masukDistributor(email: string, kataSandi: string): Promis
     body: JSON.stringify({ email, kata_sandi: kataSandi }),
   })
   if (t.distributor_id == null) throw new GalatApi(403, 'Akun ini bukan distributor.')
-  return { token: t.token, distributorId: t.distributor_id, namaPengguna: t.nama, kedaluwarsaPada: t.kedaluwarsa_pada }
+  return { token: t.token, distributorId: t.distributor_id, namaPengguna: t.nama, kedaluwarsaPada: t.kedaluwarsa_pada, bacaSaja: t.baca_saja === true }
 }
 
 export interface RingkasanSegmen {

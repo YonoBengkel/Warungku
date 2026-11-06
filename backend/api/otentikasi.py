@@ -27,6 +27,7 @@ jauh lebih baik daripada rahasia bawaan yang ikut terpasang ke mana-mana.
 
 from __future__ import annotations
 
+import hmac
 import os
 import secrets
 from datetime import datetime, timedelta, timezone
@@ -45,6 +46,8 @@ from warungku.model import Distributor, Keanggotaan, Pengguna, Usaha
 
 ALGORITMA = "HS256"
 UMUR_TOKEN = timedelta(hours=12)
+#: Akun data simulasi. Pendaftaran menolak domain .test, jadi akun pengunjung tidak mungkin berakhiran ini.
+DOMAIN_SIMULASI = "@warungku.test"
 
 _pengacak = PasswordHasher()
 _skema = HTTPBearer(auto_error=False)
@@ -59,6 +62,31 @@ def rahasia() -> str:
     if "_WARUNGKU_RAHASIA_SEMENTARA" not in os.environ:
         os.environ["_WARUNGKU_RAHASIA_SEMENTARA"] = secrets.token_urlsafe(48)
     return os.environ["_WARUNGKU_RAHASIA_SEMENTARA"]
+
+
+def sandi_booth() -> str:
+    return os.environ.get("WARUNGKU_SANDI_BOOTH", "").strip()
+
+
+def mode_pameran() -> bool:
+    """Aplikasi dibuka untuk umum. Rinciannya di `api/pameran.py`."""
+    return bool(sandi_booth())
+
+
+def _periksa_sandi(pengguna: Pengguna | None, kata_sandi: str) -> tuple[bool, bool | None]:
+    """
+    Kata sandinya benar atau tidak, dan apakah tokennya hanya boleh membaca.
+
+    Di mode pameran kata sandi publik akun simulasi hanya membuka akses baca, dan
+    `WARUNGKU_SANDI_BOOTH` membuka akun yang sama dengan akses penuh untuk tim di booth.
+    """
+    if pengguna is None:
+        return False, None
+    if mode_pameran() and pengguna.email.endswith(DOMAIN_SIMULASI):
+        if hmac.compare_digest(kata_sandi.encode(), sandi_booth().encode()):
+            return True, None
+        return cocok(pengguna.kata_sandi_hash, kata_sandi), True
+    return cocok(pengguna.kata_sandi_hash, kata_sandi), None
 
 
 def acak_kata_sandi(kata_sandi: str) -> str:
@@ -113,6 +141,8 @@ class Token(BaseModel):
     nama: str
     usaha_id: int | None = None
     distributor_id: int | None = None
+    #: Akun simulasi di mode pameran: `api/pameran.py` menolak semua permintaan tulisnya.
+    baca_saja: bool | None = None
     #: Untuk sapaan di layar; tidak ikut ke dalam token.
     nama_usaha: str | None = None
     kedaluwarsa_pada: datetime
@@ -260,7 +290,8 @@ def _masuk_usaha(badan: Masuk, *, untuk_pos: bool) -> Token:
     """
     with Session(mesin()) as sesi:
         pengguna = sesi.exec(select(Pengguna).where(Pengguna.email == badan.email)).first()
-        if pengguna is None or not cocok(pengguna.kata_sandi_hash, badan.kata_sandi):
+        benar, baca_saja = _periksa_sandi(pengguna, badan.kata_sandi)
+        if not benar:
             # Pesan yang sama untuk email tidak ada dan kata sandi salah:
             # membedakannya memberi tahu penebak bahwa emailnya benar.
             raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Email atau kata sandi salah.")
@@ -293,7 +324,7 @@ def _masuk_usaha(badan: Masuk, *, untuk_pos: bool) -> Token:
                 status.HTTP_403_FORBIDDEN,
                 "Portal POS belum tersedia untuk warung kelontong, karena barangnya belum punya daftar menu.",
             )
-        token = _buat_token(pengguna, "kasir" if kasir else "umkm", usaha_id=anggota.usaha_id)
+        token = _buat_token(pengguna, "kasir" if kasir else "umkm", usaha_id=anggota.usaha_id, baca_saja=baca_saja)
         token.nama_usaha = usaha.nama if usaha else None
         return token
 
@@ -313,7 +344,8 @@ def masuk_pos(badan: Masuk) -> Token:
 def masuk_distributor(badan: Masuk) -> Token:
     with Session(mesin()) as sesi:
         pengguna = sesi.exec(select(Pengguna).where(Pengguna.email == badan.email)).first()
-        if pengguna is None or not cocok(pengguna.kata_sandi_hash, badan.kata_sandi):
+        benar, baca_saja = _periksa_sandi(pengguna, badan.kata_sandi)
+        if not benar:
             raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Email atau kata sandi salah.")
         if not pengguna.aktif:
             raise HTTPException(status.HTTP_403_FORBIDDEN, "Akun ini tidak aktif.")
@@ -331,7 +363,7 @@ def masuk_distributor(badan: Masuk) -> Token:
                     "Akun ini terdaftar sebagai pemilik usaha. Masuk lewat portal UMKM.",
                 )
             raise HTTPException(status.HTTP_403_FORBIDDEN, "Akun ini bukan distributor.")
-        return _buat_token(pengguna, "distributor", distributor_id=dist.id)
+        return _buat_token(pengguna, "distributor", distributor_id=dist.id, baca_saja=baca_saja)
 
 
 @rute.get("/saya", response_model=Identitas)

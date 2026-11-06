@@ -85,6 +85,7 @@ import {
   sesiTersimpan,
   simpanSesi,
   simpanSesiDistributor,
+  aturSaatDitolakBacaSaja,
 } from '@/lib/api'
 import type { SesiDistributor, SesiServer } from '@/lib/api'
 import { ambilProfilDistributor, simpanInfoUsaha, simpanLayanan, simpanLokasiGudang } from '@/lib/apiDistributor'
@@ -374,6 +375,7 @@ interface KeadaanAplikasi {
 }
 
 let nomorRacun = 0
+let ditolakBacaSajaPada = 0
 let memeriksaNota = false
 let urutPesanan = 10
 let urutBelanja = 0
@@ -2448,6 +2450,9 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
   },
 
   tampilkanRacun: (pesan, nada = 'aman', aksi) => {
+    // Sesudah penolakan baca saja, pemanggilnya sering menyusul dengan "gagal, coba lagi".
+    if (nada === 'kritis' && Date.now() - ditolakBacaSajaPada < 1500) return
+    if (get().racun.some((r) => r.pesan === pesan)) return
     const id = (nomorRacun += 1)
     set((s) => ({ racun: [...s.racun, { id, pesan, nada, aksi }] }))
     // Pemberitahuan yang membawa tautan diberi waktu lebih lama: orang perlu
@@ -2457,6 +2462,11 @@ export const useAplikasi = create<KeadaanAplikasi>((set, get) => ({
 
   tutupRacun: (id) => set((s) => ({ racun: s.racun.filter((r) => r.id !== id) })),
 }))
+
+aturSaatDitolakBacaSaja((pesan) => {
+  useAplikasi.getState().tampilkanRacun(pesan, 'info')
+  ditolakBacaSajaPada = Date.now()
+})
 
 /* ------------------------------------------------------------------ */
 /* Pembaca turunan                                                     */
